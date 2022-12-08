@@ -1,0 +1,10 @@
+*.pyc
+*.png
+*.jpg
+*.wav
+*.tar
+*.json
+*.ipynb_checkpoints/
+experiments/*
+plots/*
+
