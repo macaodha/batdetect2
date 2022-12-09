@@ -13,7 +13,7 @@ Code for detecting and classifying bat echolocation calls in high frequency audi
 
 
 ### Try the model on Colab
-Click [here](https://colab.research.google.com/github.com/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run run the model using Colab.
+Click [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run run the model using Colab.
 
 
 ### Running the model on your own data
