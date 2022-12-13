@@ -74,7 +74,7 @@ def run_nms(outputs, params, sampling_rate):
 
 
 def non_max_suppression(heat, kernel_size):
-    # kernel can be an int or list/tuple    
+    # kernel can be an int or list/tuple
     if type(kernel_size) is int:
         kernel_size_h = kernel_size
         kernel_size_w = kernel_size
@@ -94,7 +94,7 @@ def get_topk_scores(scores, K):
 
     topk_scores, topk_inds = torch.topk(scores.view(batch, -1), K)
     topk_inds = topk_inds % (height * width)
-    topk_ys   = (topk_inds // width).long()
+    topk_ys   = torch.div(topk_inds, width, rounding_mode='floor').long()
     topk_xs   = (topk_inds % width).long()
 
     return topk_scores, topk_ys, topk_xs

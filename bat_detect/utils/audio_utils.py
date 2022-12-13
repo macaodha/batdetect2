@@ -77,7 +77,7 @@ def load_audio_file(audio_file, time_exp_fact, target_samp_rate, scale=False):
     # resample - need to do this after correcting for time expansion
     sampling_rate_old = sampling_rate
     sampling_rate = target_samp_rate
-    audio_raw = librosa.resample(audio_raw, sampling_rate_old, sampling_rate, res_type='polyphase')
+    audio_raw = librosa.resample(audio_raw, orig_sr=sampling_rate_old, target_sr=sampling_rate, res_type='polyphase')
 
     # convert to float32 and scale
     audio_raw = audio_raw.astype(np.float32)
@@ -135,7 +135,7 @@ def gen_mag_spectrogram(x, fs, ms, overlap_perc):
     step = nfft - noverlap
 
     # compute spec
-    spec, _ = librosa.core.spectrum._spectrogram(x, power=1, n_fft=nfft, hop_length=step, center=False)
+    spec, _ = librosa.core.spectrum._spectrogram(y=x, power=1, n_fft=nfft, hop_length=step, center=False)
 
     # remove DC component and flip vertical orientation
     spec = np.flipud(spec[1:, :])

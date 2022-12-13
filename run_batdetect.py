@@ -37,10 +37,10 @@ def main(args):
 
 if __name__ == "__main__":
 
-    info_str = '\nBatDetect - Detection and Classification\n' + \
+    info_str = '\nBatDetect2 - Detection and Classification\n' + \
                '  Assumes audio files are mono, not stereo.\n' + \
                '  Spaces in the input paths will throw an error. Wrap in quotes "".\n' + \
-               '  Input files should be short in duration e.g. < 1 minute.\n'
+               '  Input files should be short in duration e.g. < 30 seconds.\n'
 
     print(info_str)
     parser = argparse.ArgumentParser()
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_preds_if_empty', action='store_true', default=False, dest='save_preds_if_empty',
                         help='Save empty annotation file if no detections made.')
     parser.add_argument('--model_path', type=str, default='',
-                         help='Path to trained BatDetect model')
+                         help='Path to trained BatDetect2 model')
     args = vars(parser.parse_args())
 
     args['spec_slices'] = False  # used for visualization
