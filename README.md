@@ -21,11 +21,13 @@ You can also run this notebook locally.
 ### Running the model on your own data
 After following the above steps to install the code you can run the model on your own data by opening the command line where the code is located and typing:  
 `python run_batdetect.py AUDIO_DIR ANN_DIR DETECTION_THRESHOLD`  
+e.g.
+`python run_batdetect.py example_data/audio/ example_data/anns/ 0.3`  
+
 
 `AUDIO_DIR` is the path on your computer to the audio wav files of interest.  
 `ANN_DIR` is the path on your computer where the model predictions will be saved. The model will output both `.csv` and `.json` results for each audio file.   
-`DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off threshold applied to the calls. A smaller number will result in more calls detected, but with the chance of introducing more mistakes:  
-`python run_batdetect.py example_data/audio/ example_data/anns/ 0.3`  
+`DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off threshold applied to the calls. A smaller number will result in more calls detected, but with the chance of introducing more mistake.   
 
 There are also optional arguments, e.g. you can request that the model outputs features (i.e. estimated call parameters) such as duration, max_frequency, etc. by setting the flag `--spec_features`. These will be saved as `*_spec_features.csv` files:  
 `python run_batdetect.py example_data/audio/ example_data/anns/ 0.3 --spec_features`   
@@ -34,13 +36,14 @@ You can also specify which model to use by setting the `--model_path` argument. 
 
 
 ### Data and annotations  
-The raw audio data and annotations used to train the models in the paper will be added soon.  
+The raw audio data and annotations used to train the models in the paper will be added soon. 
+The audio interface used to annotate audio data for training and evaluation is available [here](https://github.com/macaodha/batdetect2_GUI).  
 
 
 ### Warning  
-Note the models developed and shared as part of this repository should be used with caution.  
-While they have been evaluated on held out audio data, great care should be taken when using the models for any form of biodiversity assessment.  
-Your data may differ, and as a result it is very strongly recommended that you validate the model first using data with known species to ensure that the outputs can be trusted.  
+The models developed and shared as part of this repository should be used with caution.
+While they have been evaluated on held out audio data, great care should be taken when using the model outputs for any form of biodiversity assessment.
+Your data may differ, and as a result it is very strongly recommended that you validate the model first using data with known species to ensure that the outputs can be trusted.
 
 
 ### FAQ

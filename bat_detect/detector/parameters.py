@@ -6,8 +6,8 @@ import datetime
 def mk_dir(path):
     if not os.path.isdir(path):
         os.makedirs(path)
-
-
+    
+    
 def get_params(make_dirs=False, exps_dir='../../experiments/'):
     params = {}
 

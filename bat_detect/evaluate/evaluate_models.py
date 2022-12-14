@@ -44,22 +44,6 @@ def get_blank_annotation(ip_str):
     return copy.deepcopy(res), copy.deepcopy(ann)
 
 
-def get_default_bd_args():
-    args = {}
-    args['detection_threshold'] = 0.001
-    args['time_expansion_factor'] = 1
-    args['audio_dir'] = ''
-    args['ann_dir'] = ''
-    args['spec_slices'] = False
-    args['chunk_size']  = 3
-    args['spec_features'] = False
-    args['cnn_features'] = False
-    args['quiet'] = True
-    args['save_preds_if_empty'] = True
-    args['ann_dir']     = os.path.join(args['ann_dir'], '')
-    return args
-
-
 def create_genus_mapping(gt_test, preds, class_names):
     # rolls the per class predictions and ground truth back up to genus level
     class_names_genus, cls_to_genus = np.unique([cc.split(' ')[0] for cc in class_names], return_inverse=True)
@@ -555,7 +539,7 @@ if __name__ == "__main__":
     #
     if args['bd_model_path'] != '':
         # load model
-        bd_args = get_default_bd_args()
+        bd_args = du.get_default_bd_args()
         model, params_bd = du.load_model(args['bd_model_path'])
 
         # check if the class names are the same
