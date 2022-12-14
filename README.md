@@ -31,7 +31,8 @@ e.g.
 There are also optional arguments, e.g. you can request that the model outputs features (i.e. estimated call parameters) such as duration, max_frequency, etc. by setting the flag `--spec_features`. These will be saved as `*_spec_features.csv` files:  
 `python run_batdetect.py example_data/audio/ example_data/anns/ 0.3 --spec_features`   
 
-You can also specify which model to use by setting the `--model_path` argument. If not specified, it will default to using a model trained on UK data.  
+You can also specify which model to use by setting the `--model_path` argument. If not specified, it will default to using a model trained on UK data e.g.    
+`python run_batdetect.py example_data/audio/ example_data/anns/ 0.3 --model_path models/Net2DFast_UK_same.pth.tar`  
 
 
 ### Training the model on your own data  

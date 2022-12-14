@@ -21,7 +21,6 @@ import bat_detect.detector.parameters as parameters
 import bat_detect.utils.audio_utils as au
 import bat_detect.utils.plot_utils as viz
 import bat_detect.utils.detector_utils as du
-import config
 
 
 if __name__ == "__main__":

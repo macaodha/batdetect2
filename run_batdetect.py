@@ -1,6 +1,5 @@
 import os
 import argparse
-import config
 import bat_detect.utils.detector_utils as du
 
 
@@ -57,15 +56,12 @@ if __name__ == "__main__":
                         help='Minimize output printing')
     parser.add_argument('--save_preds_if_empty', action='store_true', default=False, dest='save_preds_if_empty',
                         help='Save empty annotation file if no detections made.')
-    parser.add_argument('--model_path', type=str, default='',
+    parser.add_argument('--model_path', type=str, default='models/Net2DFast_UK_same.pth.tar',
                          help='Path to trained BatDetect2 model')
     args = vars(parser.parse_args())
 
     args['spec_slices'] = False  # used for visualization
     args['chunk_size']  = 2     # if files greater than this amount (seconds) they will be broken down into small chunks
     args['ann_dir']     = os.path.join(args['ann_dir'], '')
-
-    if args['model_path'] == '':
-        args['model_path'] = os.path.join('models', os.path.basename(config.MODEL_PATH))
 
     main(args)

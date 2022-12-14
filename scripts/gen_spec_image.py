@@ -47,7 +47,7 @@ if __name__ == "__main__":
         help='Start time for cropped file')
     parser.add_argument('--stop_time', type=float, default=0.5,
         help='End time for cropped file')
-    parser.add_argument('--time_exp', type=int, default=1,
+    parser.add_argument('--time_expansion_factor', type=int, default=1,
         help='Time expansion factor')
         
     args_cmd = vars(parser.parse_args())
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     bd_args = du.get_default_bd_args()
     model, params_bd = du.load_model(args_cmd['model_path'])
     bd_args['detection_threshold'] = args_cmd['detection_threshold']
-    bd_args['time_expansion_factor'] = args_cmd['time_exp']
+    bd_args['time_expansion_factor'] = args_cmd['time_expansion_factor']
     
     # load the annotation if it exists
     gt_present = False
