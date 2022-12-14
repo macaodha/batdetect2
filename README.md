@@ -67,3 +67,9 @@ If you find our work useful in your research please consider citing our paper:
 
 ### Acknowledgements
 Thanks to all the contributors who spent time collecting and annotating audio data.  
+
+
+### TODOs
+- [x] Release the code and pretrained model  
+- [ ] Release the datasets and annotations used the experiments in the paper 
+- [ ] Add the scripts used to generate the tables and figures from the paper 
