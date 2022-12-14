@@ -2,6 +2,8 @@
 `python train_model.py data_dir annotation_dir` e.g.   
 `python train_model.py /data1/bat_data/data/ /data1/bat_data/annotations/anns/` 
 
+More comprehensive instructions are provided in the finetune directory.  
+
 
 ## Training on your own data
 You can either use the finetuning scripts to finetune from an existing training dataset. Follow the instructions in the `../finetune/` directory.  

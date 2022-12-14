@@ -32,16 +32,16 @@ This is a limitation of our current training data. If you have such data or woul
 Currently we do not do any sophisticated post processing on the results output by the model. We return a probability associated with each species for each call. You can use these predictions to clean up the noisy predictions for sequences of calls.  
 
 
+#### Can I trust the model outputs?  
+The models developed and shared as part of this repository should be used with caution. While they have been evaluated on held out audio data, great care should be taken when using the model outputs for any form of biodiversity assessment. Your data may differ, and as a result it is very strongly recommended that you validate the model first using data with known species to ensure that the outputs can be trusted.
+
+
 #### The code works well but it is slow?
 Try a different/faster computer. On a reasonably recent desktop it takes about 13 seconds (on the GPU) or 1.3 minutes (on the CPU) to process 7.5 minutes of audio. In general, we observe a factor of ~5-10 speed up using recent Nvidia GPUs compared to CPU only systems.
 
 
 #### My audio files are very big and as a result the code is slow.
-If your audio files are very long in duration (i.e. mulitple minutes) it might be better to split them up into several smaller files. `sox` is a command line tool that can achieve this. It's easy to install on Ubuntu (e.g. `sudo apt-get install sox`) and is also available for Windows and OSX [here](http://sox.sourceforge.net/). To split up a file into 8 second chunks:  
-`sox INPUT_FILENAME.wav OUTPUT_FILENAME.wav trim 0 8 : newfile : restart`  
-This will result in a bunch of individual wav files appended with a number e.g. OUTPUT_FILENAME001.wav, OUTPUT_FILENAME002.wav, ... If you have time expanded files you might want to take the time expansion factor into account when splitting the files e.g. if the files are time expanded by 10 you should multiply the chuck length by 10. So to get 8 seconds in real time you would want to split the files into 8x10 second chunks.
-
-
+If your audio files are very long in duration (i.e. multiple minutes) it might be better to split them up into several smaller files. Have a look at the instructions and scripts in our annotation GUI codebase for how to crop your files into shorter ones - see [here](https://github.com/macaodha/batdetect2_GUI). 
 
 
 ## Training a new model
@@ -62,4 +62,4 @@ In principle yes, however you may need to change some of the training hyper-para
 ## Usage
 
 #### Can I use the code for commercial purposes or incorporate raw source code or trained models into my commercial system?
-No. This codebase is only for non-commercial use.
+No. This codebase is currently only for non-commercial use. See the license.  

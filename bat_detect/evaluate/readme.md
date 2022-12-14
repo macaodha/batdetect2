@@ -1,4 +1,4 @@
-# Evaluating model
+# Evaluating BatDetect2
 This script evaluates a trained model and outputs several plots summarizing the performance. It is used as follows:  
 `python path_to_store_images/ path_to_audio_files/ path_to_annotation_file/ path_to_trained_model/`
 
