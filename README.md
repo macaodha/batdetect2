@@ -55,7 +55,7 @@ For more information please consult our [FAQ](faq.md).
 
 
 ### Reference
-If you find our work useful in your research please consider citing our paper:
+If you find our work useful in your research please consider citing our paper which you can find [here](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1):
 ```
 @article{batdetect2_2022,
     title     = {Towards a General Approach for Bat Echolocation Detection and Classification},
