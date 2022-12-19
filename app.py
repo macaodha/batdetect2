@@ -8,6 +8,7 @@ import bat_detect.utils.detector_utils as du
 import bat_detect.utils.audio_utils as au
 import bat_detect.utils.plot_utils as viz
 
+
 # setup the arguments
 args = {}
 args = du.get_default_bd_args()
@@ -18,28 +19,6 @@ args['model_path'] = 'models/Net2DFast_UK_same.pth.tar'
 # load the model
 model, params = du.load_model(args['model_path'])
 
-"""
-# read the audio file 
-sampling_rate, audio = au.load_audio_file(audio_file, args['time_expansion_factor'], params['target_samp_rate'], params['scale_raw_audio'])
-duration = audio.shape[0] / sampling_rate
-print('File duration: {} seconds'.format(duration))
-
-# generate spectrogram for visualization
-spec, spec_viz = au.generate_spectrogram(audio, sampling_rate, params, True, False)
-
-
-# display the detections on top of the spectrogram
-# note, if the audio file is very long, this image will be very large - best to crop the audio first
-start_time = 0.0
-detections = [ann for ann in results['pred_dict']['annotation']]
-fig = plt.figure(1, figsize=(spec.shape[1]/100, spec.shape[0]/100), dpi=100, frameon=False)
-spec_duration = au.x_coords_to_time(spec.shape[1], sampling_rate, params['fft_win_length'], params['fft_overlap'])
-viz.create_box_image(spec, fig, detections, start_time, start_time+spec_duration, spec_duration, params, spec.max()*1.1, False)
-plt.ylabel('Freq - kHz')
-plt.xlabel('Time - secs')
-plt.title(os.path.basename(audio_file))
-plt.show()
-"""
 
 df =  gr.Dataframe(
         headers=["species", "time_in_file", "species_prob"],
