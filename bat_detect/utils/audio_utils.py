@@ -64,7 +64,7 @@ def generate_spectrogram(audio, sampling_rate, params, return_spec_for_viz=False
     return spec, spec_for_viz
 
 
-def load_audio_file(audio_file, time_exp_fact, target_samp_rate, scale=False):
+def load_audio_file(audio_file, time_exp_fact, target_samp_rate, scale=False, max_duration=False):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=wavfile.WavFileWarning)
         #sampling_rate, audio_raw = wavfile.read(audio_file)
@@ -79,6 +79,11 @@ def load_audio_file(audio_file, time_exp_fact, target_samp_rate, scale=False):
     sampling_rate = target_samp_rate
     audio_raw = librosa.resample(audio_raw, orig_sr=sampling_rate_old, target_sr=sampling_rate, res_type='polyphase')
 
+    # clipping maximum duration
+    if max_duration is not False:
+        max_duration = np.minimum(int(sampling_rate*max_duration), audio_raw.shape[0])
+        audio_raw = audio_raw[:max_duration]
+        
     # convert to float32 and scale
     audio_raw = audio_raw.astype(np.float32)
     if scale:
