@@ -13,8 +13,10 @@ Code for detecting and classifying bat echolocation calls in high frequency audi
 `conda install --file requirements.txt`  
 
 
-### Try the model
-Click [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run the model using Google Colab. You can also run this notebook locally.  
+### Try the model  
+1) You can try a demo of the model (for UK species) on [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).  
+
+2) Alternatively, click [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run the model using Google Colab. You can also run this notebook locally.  
 
 
 ### Running the model on your own data
