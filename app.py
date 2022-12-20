@@ -26,6 +26,7 @@ df =  gr.Dataframe(
         datatype=["str", "str", "str", "str"],
         row_count=1,
         col_count=(4, "fixed"),
+        label='Predictions'
     )
     
 examples = [['example_data/audio/20170701_213954-MYOMYS-LR_0_0.5.wav', 0.3],
@@ -96,7 +97,7 @@ gr.Interface(
     fn = make_prediction,
     inputs = [gr.Audio(source="upload", type="filepath", optional=True), 
               gr.Dropdown([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])],
-    outputs = [df, "image"],
+    outputs = [df, gr.Image(label="Visualisation")],
     theme = "huggingface",
     title = "BatDetect2 Demo",
     description = descr_txt,
