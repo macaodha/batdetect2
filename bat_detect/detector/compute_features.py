@@ -3,9 +3,7 @@ import numpy as np
 
 def convert_int_to_freq(spec_ind, spec_height, min_freq, max_freq):
     spec_ind = spec_height - spec_ind
-    return round(
-        (spec_ind / float(spec_height)) * (max_freq - min_freq) + min_freq, 2
-    )
+    return round((spec_ind / float(spec_height)) * (max_freq - min_freq) + min_freq, 2)
 
 
 def extract_spec_slices(spec, pred_nms, params):
@@ -27,9 +25,7 @@ def extract_spec_slices(spec, pred_nms, params):
     for ff in range(len(pred_nms["det_probs"])):
         x_start = int(np.maximum(0, x_pos_pad[ff]))
         x_end = int(
-            np.minimum(
-                spec.shape[1] - 1, np.round(x_pos_pad[ff] + bb_width_pad[ff])
-            )
+            np.minimum(spec.shape[1] - 1, np.round(x_pos_pad[ff] + bb_width_pad[ff]))
         )
         slices.append(spec[:, x_start:x_end].astype(np.float16))
     return slices
@@ -66,15 +62,11 @@ def get_feats(spec, pred_nms, params):
 
     feature_names = get_feature_names()
     num_detections = len(pred_nms["det_probs"])
-    features = (
-        np.ones((num_detections, len(feature_names)), dtype=np.float32) * -1
-    )
+    features = np.ones((num_detections, len(feature_names)), dtype=np.float32) * -1
 
     for ff in range(num_detections):
         x_start = int(np.maximum(0, x_pos[ff]))
-        x_end = int(
-            np.minimum(spec.shape[1] - 1, np.round(x_pos[ff] + bb_width[ff]))
-        )
+        x_end = int(np.minimum(spec.shape[1] - 1, np.round(x_pos[ff] + bb_width[ff])))
         # y low is the lowest freq but it will have a higher value due to array starting at 0 at top
         y_low = int(np.minimum(spec.shape[0] - 1, y_pos[ff]))
         y_high = int(np.maximum(0, np.round(y_pos[ff] - bb_height[ff])))
@@ -126,8 +118,7 @@ def get_feats(spec, pred_nms, params):
 
             if ff > 0:
                 features[ff, 8] = round(
-                    pred_nms["start_times"][ff]
-                    - pred_nms["start_times"][ff - 1],
+                    pred_nms["start_times"][ff] - pred_nms["start_times"][ff - 1],
                     5,
                 )
 

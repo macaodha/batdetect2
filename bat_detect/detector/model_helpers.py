@@ -20,22 +20,18 @@ class SelfAttention(nn.Module):
     def forward(self, x):
         x = x.squeeze(2).permute(0, 2, 1)
 
-        kk = torch.matmul(
-            x, self.key_fun.weight.T
-        ) + self.key_fun.bias.unsqueeze(0).unsqueeze(0)
-        qq = torch.matmul(
-            x, self.que_fun.weight.T
-        ) + self.que_fun.bias.unsqueeze(0).unsqueeze(0)
-        vv = torch.matmul(
-            x, self.val_fun.weight.T
-        ) + self.val_fun.bias.unsqueeze(0).unsqueeze(0)
+        kk = torch.matmul(x, self.key_fun.weight.T) + self.key_fun.bias.unsqueeze(
+            0
+        ).unsqueeze(0)
+        qq = torch.matmul(x, self.que_fun.weight.T) + self.que_fun.bias.unsqueeze(
+            0
+        ).unsqueeze(0)
+        vv = torch.matmul(x, self.val_fun.weight.T) + self.val_fun.bias.unsqueeze(
+            0
+        ).unsqueeze(0)
 
-        kk_qq = torch.bmm(kk, qq.permute(0, 2, 1)) / (
-            self.temperature * self.att_dim
-        )
-        att_weights = F.softmax(
-            kk_qq, 1
-        )  # each col of each attention matrix sums to 1
+        kk_qq = torch.bmm(kk, qq.permute(0, 2, 1)) / (self.temperature * self.att_dim)
+        att_weights = F.softmax(kk_qq, 1)  # each col of each attention matrix sums to 1
         att = torch.bmm(vv.permute(0, 2, 1), att_weights)
 
         op = torch.matmul(
@@ -47,9 +43,7 @@ class SelfAttention(nn.Module):
 
 
 class ConvBlockDownCoordF(nn.Module):
-    def __init__(
-        self, in_chn, out_chn, ip_height, k_size=3, pad_size=1, stride=1
-    ):
+    def __init__(self, in_chn, out_chn, ip_height, k_size=3, pad_size=1, stride=1):
         super(ConvBlockDownCoordF, self).__init__()
         self.coords = nn.Parameter(
             torch.linspace(-1, 1, ip_height)[None, None, ..., None],
@@ -73,9 +67,7 @@ class ConvBlockDownCoordF(nn.Module):
 
 
 class ConvBlockDownStandard(nn.Module):
-    def __init__(
-        self, in_chn, out_chn, ip_height=None, k_size=3, pad_size=1, stride=1
-    ):
+    def __init__(self, in_chn, out_chn, ip_height=None, k_size=3, pad_size=1, stride=1):
         super(ConvBlockDownStandard, self).__init__()
         self.conv = nn.Conv2d(
             in_chn,
@@ -107,14 +99,10 @@ class ConvBlockUpF(nn.Module):
         self.up_scale = up_scale
         self.up_mode = up_mode
         self.coords = nn.Parameter(
-            torch.linspace(-1, 1, ip_height * up_scale[0])[
-                None, None, ..., None
-            ],
+            torch.linspace(-1, 1, ip_height * up_scale[0])[None, None, ..., None],
             requires_grad=False,
         )
-        self.conv = nn.Conv2d(
-            in_chn + 1, out_chn, kernel_size=k_size, padding=pad_size
-        )
+        self.conv = nn.Conv2d(in_chn + 1, out_chn, kernel_size=k_size, padding=pad_size)
         self.conv_bn = nn.BatchNorm2d(out_chn)
 
     def forward(self, x):
@@ -148,9 +136,7 @@ class ConvBlockUpStandard(nn.Module):
         super(ConvBlockUpStandard, self).__init__()
         self.up_scale = up_scale
         self.up_mode = up_mode
-        self.conv = nn.Conv2d(
-            in_chn, out_chn, kernel_size=k_size, padding=pad_size
-        )
+        self.conv = nn.Conv2d(in_chn, out_chn, kernel_size=k_size, padding=pad_size)
         self.conv_bn = nn.BatchNorm2d(out_chn)
 
     def forward(self, x):

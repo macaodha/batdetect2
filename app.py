@@ -82,9 +82,7 @@ def generate_results_image(audio_file, anns):
     duration = audio.shape[0] / sampling_rate
 
     # generate spec
-    spec, spec_viz = au.generate_spectrogram(
-        audio, sampling_rate, params, True, False
-    )
+    spec, spec_viz = au.generate_spectrogram(audio, sampling_rate, params, True, False)
 
     # create fig
     plt.close("all")

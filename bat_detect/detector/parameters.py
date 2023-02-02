@@ -22,9 +22,7 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     params["experiment"] = os.path.join(exps_dir, now_str, "")
     params["model_file_name"] = os.path.join(params["experiment"], model_name)
     params["op_im_dir"] = os.path.join(params["experiment"], "op_ims", "")
-    params["op_im_dir_test"] = os.path.join(
-        params["experiment"], "op_ims_test", ""
-    )
+    params["op_im_dir_test"] = os.path.join(params["experiment"], "op_ims_test", "")
     # params['notes']           = ''  # can save notes about an experiment here
 
     # spec parameters
@@ -36,12 +34,8 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     )  # in milliseconds, amount of time per stft time step
     params["fft_overlap"] = 0.75  # stft window overlap
 
-    params[
-        "max_freq"
-    ] = 120000  # in Hz, everything above this will be discarded
-    params[
-        "min_freq"
-    ] = 10000  # in Hz, everything below this will be discarded
+    params["max_freq"] = 120000  # in Hz, everything above this will be discarded
+    params["min_freq"] = 10000  # in Hz, everything below this will be discarded
 
     params[
         "resize_factor"
@@ -57,13 +51,9 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     ] = 32  # spectrogram should be divisible by this amount in width and height
 
     # spec processing params
-    params[
-        "denoise_spec_avg"
-    ] = True  # removes the mean for each frequency band
+    params["denoise_spec_avg"] = True  # removes the mean for each frequency band
     params["scale_raw_audio"] = False  # scales the raw audio to [-1, 1]
-    params[
-        "max_scale_spec"
-    ] = False  # scales the spectrogram so that it is max 1
+    params["max_scale_spec"] = False  # scales the spectrogram so that it is max 1
     params["spec_scale"] = "pcen"  # 'log', 'pcen', 'none'
 
     # detection params
@@ -83,21 +73,13 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     params["target_sigma"] = 2.0
 
     # augmentation params
-    params[
-        "aug_prob"
-    ] = 0.20  # augmentations will be performed with this probability
+    params["aug_prob"] = 0.20  # augmentations will be performed with this probability
     params["augment_at_train"] = True
     params["augment_at_train_combine"] = True
-    params[
-        "echo_max_delay"
-    ] = 0.005  # simulate echo by adding copy of raw audio
+    params["echo_max_delay"] = 0.005  # simulate echo by adding copy of raw audio
     params["stretch_squeeze_delta"] = 0.04  # stretch or squeeze spec
-    params[
-        "mask_max_time_perc"
-    ] = 0.05  # max mask size - here percentage, not ideal
-    params[
-        "mask_max_freq_perc"
-    ] = 0.10  # max mask size - here percentage, not ideal
+    params["mask_max_time_perc"] = 0.05  # max mask size - here percentage, not ideal
+    params["mask_max_freq_perc"] = 0.10  # max mask size - here percentage, not ideal
     params[
         "spec_amp_scaling"
     ] = 2.0  # multiply the "volume" by 0:X times current amount
@@ -113,16 +95,12 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
 
     # loss params
     params["train_loss"] = "focal"  # mse or focal
-    params[
-        "det_loss_weight"
-    ] = 1.0  # weight for the detection part of the loss
+    params["det_loss_weight"] = 1.0  # weight for the detection part of the loss
     params["size_loss_weight"] = 0.1  # weight for the bbox size loss
     params["class_loss_weight"] = 2.0  # weight for the classification loss
     params["individual_loss_weight"] = 0.0  # not used
     if params["individual_loss_weight"] == 0.0:
-        params[
-            "emb_dim"
-        ] = 0  # number of dimensions used for individual id embedding
+        params["emb_dim"] = 0  # number of dimensions used for individual id embedding
     else:
         params["emb_dim"] = 3
 

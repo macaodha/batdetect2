@@ -28,9 +28,7 @@ if __name__ == "__main__":
 
     print(info_str)
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "audio_path", type=str, help="Input directory for audio"
-    )
+    parser.add_argument("audio_path", type=str, help="Input directory for audio")
     parser.add_argument(
         "train_ann_path",
         type=str,
@@ -41,9 +39,7 @@ if __name__ == "__main__":
         type=str,
         help="Path to where test annotation file is stored",
     )
-    parser.add_argument(
-        "model_path", type=str, help="Path to pretrained model"
-    )
+    parser.add_argument("model_path", type=str, help="Path to pretrained model")
     parser.add_argument(
         "--op_model_name",
         type=str,
@@ -82,9 +78,7 @@ if __name__ == "__main__":
         params["device"] = "cuda"
     else:
         params["device"] = "cpu"
-        print(
-            "\nNote, this will be a lot faster if you use computer with a GPU.\n"
-        )
+        print("\nNote, this will be a lot faster if you use computer with a GPU.\n")
 
     print("\nAudio directory:      " + args["audio_path"])
     print("Train file:           " + args["train_ann_path"])
@@ -98,9 +92,7 @@ if __name__ == "__main__":
     )
 
     if args["train_from_scratch"]:
-        print(
-            "\nTraining model from scratch i.e. not using pretrained weights"
-        )
+        print("\nTraining model from scratch i.e. not using pretrained weights")
         model, params_train = du.load_model(args["model_path"], False)
     else:
         model, params_train = du.load_model(args["model_path"], True)
@@ -137,17 +129,13 @@ if __name__ == "__main__":
         data_train,
         params["class_names"],
         params["class_inv_freq"],
-    ) = tu.load_set_of_anns(
-        train_sets, classes_to_ignore, params["events_of_interest"]
-    )
+    ) = tu.load_set_of_anns(train_sets, classes_to_ignore, params["events_of_interest"])
     print("Number of files", len(data_train))
 
     params["genus_names"], params["genus_mapping"] = tu.get_genus_mapping(
         params["class_names"]
     )
-    params["class_names_short"] = tu.get_short_class_names(
-        params["class_names"]
-    )
+    params["class_names_short"] = tu.get_short_class_names(params["class_names"])
 
     # load test annotations
     test_sets = []
@@ -230,9 +218,7 @@ if __name__ == "__main__":
                 param.requires_grad = False
 
     optimizer = torch.optim.Adam(model.parameters(), lr=params["lr"])
-    scheduler = CosineAnnealingLR(
-        optimizer, params["num_epochs"] * len(train_loader)
-    )
+    scheduler = CosineAnnealingLR(optimizer, params["num_epochs"] * len(train_loader))
     if params["train_loss"] == "mse":
         det_criterion = losses.mse_loss
     elif params["train_loss"] == "focal":
@@ -307,9 +293,7 @@ if __name__ == "__main__":
             test_plt_class.update_and_save(
                 epoch, [rs["avg_prec"] for rs in test_res["class_pr"]]
             )
-            pu.plot_pr_curve_class(
-                params["experiment"], "test_pr", "test_pr", test_res
-            )
+            pu.plot_pr_curve_class(params["experiment"], "test_pr", "test_pr", test_res)
 
             # save finetuned model
             print("saving model to: " + params["model_file_name"])

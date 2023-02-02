@@ -1,10 +1,5 @@
 import numpy as np
-from sklearn.metrics import (
-    accuracy_score,
-    auc,
-    balanced_accuracy_score,
-    roc_curve,
-)
+from sklearn.metrics import accuracy_score, auc, balanced_accuracy_score, roc_curve
 
 
 def compute_error_auc(op_str, gt, pred, prob):
@@ -17,10 +12,7 @@ def compute_error_auc(op_str, gt, pred, prob):
     fpr, tpr, thresholds = roc_curve(gt, pred)
     roc_auc = auc(fpr, tpr)
 
-    print(
-        op_str
-        + ", class acc = {:.3f}, ROC AUC = {:.3f}".format(class_acc, roc_auc)
-    )
+    print(op_str + ", class acc = {:.3f}, ROC AUC = {:.3f}".format(class_acc, roc_auc))
     # return class_acc, roc_auc
 
 
@@ -114,14 +106,10 @@ def compute_pre_rec(
             confidence.append(pp["det_probs"][valid_inds])
         elif eval_mode == "per_class":
             # per class
-            confidence.append(
-                pp["class_probs"].T[valid_inds, class_of_interest]
-            )
+            confidence.append(pp["class_probs"].T[valid_inds, class_of_interest])
         elif eval_mode == "top_class":
             # per class - note that sometimes 'class_probs' can be num_classes+1 in size
-            top_class = np.argmax(
-                pp["class_probs"].T[valid_inds, :num_classes], 1
-            )
+            top_class = np.argmax(pp["class_probs"].T[valid_inds, :num_classes], 1)
             confidence.append(pp["class_probs"].T[valid_inds, top_class])
             pred_class.append(top_class)
 
@@ -170,9 +158,7 @@ def compute_pre_rec(
             num_positives += len(gg["start_times"][valid_inds])
         elif eval_mode == "per_class":
             # all valid ones with class of interest
-            num_positives += (
-                gg["class_ids"][valid_inds] == class_of_interest
-            ).sum()
+            num_positives += (gg["class_ids"][valid_inds] == class_of_interest).sum()
         elif eval_mode == "top_class":
             # all valid ones with non generic class
             num_positives += (gg["class_ids"][valid_inds] > -1).sum()
@@ -254,9 +240,7 @@ def compute_pre_rec(
         results["avg_prec"] = np.nan
         results["rec_at_x"] = np.nan
     else:
-        results["avg_prec"] = np.round(
-            calc_average_precision(recall, precision), 5
-        )
+        results["avg_prec"] = np.round(calc_average_precision(recall, precision), 5)
         results["rec_at_x"] = np.round(calc_recall_at_x(recall, precision), 5)
 
     return results
@@ -299,20 +283,12 @@ def compute_file_accuracy(gts, preds, num_classes):
 
     # compute min and max scoring range - then threshold
     min_val = 0
-    mins = [
-        pp["class_probs"].min()
-        for pp in preds
-        if pp["class_probs"].shape[1] > 0
-    ]
+    mins = [pp["class_probs"].min() for pp in preds if pp["class_probs"].shape[1] > 0]
     if len(mins) > 0:
         min_val = np.min(mins)
 
     max_val = 1.0
-    maxes = [
-        pp["class_probs"].max()
-        for pp in preds
-        if pp["class_probs"].shape[1] > 0
-    ]
+    maxes = [pp["class_probs"].max() for pp in preds if pp["class_probs"].shape[1] > 0]
     if len(maxes) > 0:
         max_val = np.max(maxes)
 
@@ -334,9 +310,7 @@ def compute_file_accuracy(gts, preds, num_classes):
 
     # pick the result corresponding to the overall best threshold
     pred_valid_all = np.vstack(pred_valid_all)
-    acc_per_thresh = (
-        np.array(gt_valid)[..., np.newaxis] == pred_valid_all
-    ).mean(0)
+    acc_per_thresh = (np.array(gt_valid)[..., np.newaxis] == pred_valid_all).mean(0)
     best_thresh = np.argmax(acc_per_thresh)
     best_acc = acc_per_thresh[best_thresh]
     pred_valid = pred_valid_all[:, best_thresh].astype(np.int).tolist()

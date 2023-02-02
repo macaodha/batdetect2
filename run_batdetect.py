@@ -23,9 +23,7 @@ def main(args):
             if args["save_preds_if_empty"] or (
                 len(results["pred_dict"]["annotation"]) > 0
             ):
-                results_path = audio_file.replace(
-                    args["audio_dir"], args["ann_dir"]
-                )
+                results_path = audio_file.replace(args["audio_dir"], args["ann_dir"])
                 du.save_results_to_file(results, results_path)
         except:
             error_files.append(audio_file)
@@ -50,9 +48,7 @@ if __name__ == "__main__":
 
     print(info_str)
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "audio_dir", type=str, help="Input directory for audio"
-    )
+    parser.add_argument("audio_dir", type=str, help="Input directory for audio")
     parser.add_argument(
         "ann_dir",
         type=str,

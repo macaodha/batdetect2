@@ -73,9 +73,7 @@ def generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, params):
     y_2d_det = np.zeros((1, op_height, op_width), dtype=np.float32)
     y_2d_size = np.zeros((2, op_height, op_width), dtype=np.float32)
     # num classes and "background" class
-    y_2d_classes = np.zeros(
-        (num_classes + 1, op_height, op_width), dtype=np.float32
-    )
+    y_2d_classes = np.zeros((num_classes + 1, op_height, op_width), dtype=np.float32)
 
     # create 2D ground truth heatmaps
     for ii in valid_inds:
@@ -128,8 +126,7 @@ def draw_gaussian(heatmap, center, sigmax, sigmay=None):
     x0 = y0 = size // 2
     # g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
     g = np.exp(
-        -((x - x0) ** 2) / (2 * sigmax**2)
-        - ((y - y0) ** 2) / (2 * sigmay**2)
+        -((x - x0) ** 2) / (2 * sigmax**2) - ((y - y0) ** 2) / (2 * sigmay**2)
     )
     g_x = max(0, -ul[0]), min(br[0], h) - ul[0]
     g_y = max(0, -ul[1]), min(br[1], w) - ul[1]
@@ -278,9 +275,7 @@ def combine_audio_aug(audio, sampling_rate, ann, audio2, sampling_rate2, ann2):
             # when combining calls from different files, assume they come from different individuals
             if kk == "individual_ids":
                 if (ann[kk] > -1).sum() > 0:
-                    ann2[kk][ann2[kk] > -1] += (
-                        np.max(ann[kk][ann[kk] > -1]) + 1
-                    )
+                    ann2[kk][ann2[kk] > -1] += np.max(ann[kk][ann[kk] > -1]) + 1
 
             if (kk != "class_id_file") and (kk != "annotated"):
                 ann[kk] = np.hstack((ann[kk], ann2[kk]))[inds]
@@ -289,9 +284,7 @@ def combine_audio_aug(audio, sampling_rate, ann, audio2, sampling_rate2, ann2):
 
 
 class AudioLoader(torch.utils.data.Dataset):
-    def __init__(
-        self, data_anns_ip, params, dataset_name=None, is_train=False
-    ):
+    def __init__(self, data_anns_ip, params, dataset_name=None, is_train=False):
 
         self.data_anns = []
         self.is_train = is_train
@@ -314,9 +307,7 @@ class AudioLoader(torch.utils.data.Dataset):
 
                 # convert class name into class label
                 if aa["class"] in self.params["class_names"]:
-                    aa["class_id"] = self.params["class_names"].index(
-                        aa["class"]
-                    )
+                    aa["class_id"] = self.params["class_names"].index(aa["class"])
                 else:
                     aa["class_id"] = -1
 
@@ -324,12 +315,8 @@ class AudioLoader(torch.utils.data.Dataset):
                     filtered_annotations.append(aa)
 
             dd["annotation"] = filtered_annotations
-            dd["start_times"] = np.array(
-                [aa["start_time"] for aa in dd["annotation"]]
-            )
-            dd["end_times"] = np.array(
-                [aa["end_time"] for aa in dd["annotation"]]
-            )
+            dd["start_times"] = np.array([aa["start_time"] for aa in dd["annotation"]])
+            dd["end_times"] = np.array([aa["end_time"] for aa in dd["annotation"]])
             dd["high_freqs"] = np.array(
                 [float(aa["high_freq"]) for aa in dd["annotation"]]
             )
@@ -406,18 +393,12 @@ class AudioLoader(torch.utils.data.Dataset):
             )
 
             if audio_raw.shape[0] - length_samples > 0:
-                sample_crop = np.random.randint(
-                    audio_raw.shape[0] - length_samples
-                )
+                sample_crop = np.random.randint(audio_raw.shape[0] - length_samples)
             else:
                 sample_crop = 0
             audio_raw = audio_raw[sample_crop : sample_crop + length_samples]
-            ann["start_times"] = ann["start_times"] - sample_crop / float(
-                sampling_rate
-            )
-            ann["end_times"] = ann["end_times"] - sample_crop / float(
-                sampling_rate
-            )
+            ann["start_times"] = ann["start_times"] - sample_crop / float(sampling_rate)
+            ann["end_times"] = ann["end_times"] - sample_crop / float(sampling_rate)
 
         # pad audio
         if self.is_train:
@@ -496,9 +477,7 @@ class AudioLoader(torch.utils.data.Dataset):
                 spec = scale_vol_aug(spec, self.params)
 
             if np.random.random() < self.params["aug_prob"]:
-                spec = warp_spec_aug(
-                    spec, ann, self.return_spec_for_viz, self.params
-                )
+                spec = warp_spec_aug(spec, ann, self.return_spec_for_viz, self.params)
 
             if np.random.random() < self.params["aug_prob"]:
                 spec = mask_time_aug(spec, self.params)
@@ -509,9 +488,7 @@ class AudioLoader(torch.utils.data.Dataset):
         outputs = {}
         outputs["spec"] = spec
         if self.return_spec_for_viz:
-            outputs["spec_for_viz"] = torch.from_numpy(spec_for_viz).unsqueeze(
-                0
-            )
+            outputs["spec_for_viz"] = torch.from_numpy(spec_for_viz).unsqueeze(0)
 
         # create ground truth heatmaps
         (
@@ -519,9 +496,7 @@ class AudioLoader(torch.utils.data.Dataset):
             outputs["y_2d_size"],
             outputs["y_2d_classes"],
             ann_aug,
-        ) = generate_gt_heatmaps(
-            spec_op_shape, sampling_rate, ann, self.params
-        )
+        ) = generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, self.params)
 
         # hack to get around requirement that all vectors are the same length in
         # the output batch

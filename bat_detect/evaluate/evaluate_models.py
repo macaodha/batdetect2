@@ -207,9 +207,7 @@ def load_sonobat_preds(dataset, id, sb_meta, set_class_name=None):
                 ann_c["class"] = file_res[id]["species_1"]
             else:
                 ann_c["class"] = set_class_name
-            ann_c["start_time"] = np.round(
-                da_c.iloc[aa]["TimeInFile"] / 1000.0, 5
-            )
+            ann_c["start_time"] = np.round(da_c.iloc[aa]["TimeInFile"] / 1000.0, 5)
             ann_c["end_time"] = np.round(
                 ann_c["start_time"] + da_c.iloc[aa]["CallDuration"] / 1000.0, 5
             )
@@ -267,9 +265,7 @@ def assign_to_gt(gt, pred, iou_thresh):
         iou_m = np.zeros((num_preds, num_gts))
         for ii in range(num_preds):
             for jj in range(num_gts):
-                iou_m[ii, jj] = bb_overlap(
-                    gt["annotation"][jj], pred["annotation"][ii]
-                )
+                iou_m[ii, jj] = bb_overlap(gt["annotation"][jj], pred["annotation"][ii])
 
         # greedily assign detections to ground truths
         # needs to be greater than some threshold and we cannot assign GT
@@ -278,9 +274,7 @@ def assign_to_gt(gt, pred, iou_thresh):
         for jj in range(num_gts):
             max_iou = np.argmax(iou_m[:, jj])
             if iou_m[max_iou, jj] > iou_thresh:
-                pred["annotation"][max_iou]["class"] = gt["annotation"][jj][
-                    "class"
-                ]
+                pred["annotation"][max_iou]["class"] = gt["annotation"][jj]["class"]
                 iou_m[max_iou, :] = -1.0
 
     return pred
@@ -290,25 +284,17 @@ def parse_data(data, class_names, non_event_classes, is_pred=False):
     class_names_all = class_names + non_event_classes
 
     data["class_names"] = np.array([aa["class"] for aa in data["annotation"]])
-    data["start_times"] = np.array(
-        [aa["start_time"] for aa in data["annotation"]]
-    )
+    data["start_times"] = np.array([aa["start_time"] for aa in data["annotation"]])
     data["end_times"] = np.array([aa["end_time"] for aa in data["annotation"]])
-    data["high_freqs"] = np.array(
-        [float(aa["high_freq"]) for aa in data["annotation"]]
-    )
-    data["low_freqs"] = np.array(
-        [float(aa["low_freq"]) for aa in data["annotation"]]
-    )
+    data["high_freqs"] = np.array([float(aa["high_freq"]) for aa in data["annotation"]])
+    data["low_freqs"] = np.array([float(aa["low_freq"]) for aa in data["annotation"]])
 
     if is_pred:
         # when loading predictions
         data["det_probs"] = np.array(
             [float(aa["det_prob"]) for aa in data["annotation"]]
         )
-        data["class_probs"] = np.zeros(
-            (len(class_names) + 1, len(data["annotation"]))
-        )
+        data["class_probs"] = np.zeros((len(class_names) + 1, len(data["annotation"])))
         data["class_ids"] = np.array(
             [class_names_all.index(aa["class"]) for aa in data["annotation"]]
         ).astype(np.int32)
@@ -334,8 +320,7 @@ def load_gt_data(datasets, events_of_interest, class_names, classes_to_ignore):
             [dd], events_of_interest=events_of_interest, verbose=True
         )
         gt_dataset = [
-            parse_data(gg, class_names, classes_to_ignore, False)
-            for gg in gt_dataset
+            parse_data(gg, class_names, classes_to_ignore, False) for gg in gt_dataset
         ]
 
         for gt in gt_dataset:
@@ -371,9 +356,7 @@ def eval_rf_model(clf, pred, un_train_class, num_classes):
     # stores the prediction in place
     if pred["feats"].shape[0] > 0:
         pred["class_probs"] = np.zeros((num_classes, pred["feats"].shape[0]))
-        pred["class_probs"][un_train_class, :] = clf.predict_proba(
-            pred["feats"]
-        ).T
+        pred["class_probs"][un_train_class, :] = clf.predict_proba(pred["feats"]).T
         pred["det_probs"] = pred["class_probs"][:-1, :].sum(0)
     else:
         pred["class_probs"] = np.zeros((num_classes, 0))
@@ -474,12 +457,8 @@ if __name__ == "__main__":
         help="Output directory for plots",
     )
     parser.add_argument("data_dir", type=str, help="Path to root of datasets")
-    parser.add_argument(
-        "ann_dir", type=str, help="Path to extracted annotations"
-    )
-    parser.add_argument(
-        "bd_model_path", type=str, help="Path to BatDetect model"
-    )
+    parser.add_argument("ann_dir", type=str, help="Path to extracted annotations")
+    parser.add_argument("bd_model_path", type=str, help="Path to BatDetect model")
     parser.add_argument(
         "--test_file",
         type=str,
@@ -519,9 +498,7 @@ if __name__ == "__main__":
         default="",
         help="Text to add as title of plots",
     )
-    parser.add_argument(
-        "--rand_seed", type=int, default=2001, help="Random seed"
-    )
+    parser.add_argument("--rand_seed", type=int, default=2001, help="Random seed")
     args = vars(parser.parse_args())
 
     np.random.seed(args["rand_seed"])
@@ -554,9 +531,7 @@ if __name__ == "__main__":
         test_dict["dataset_name"] = args["test_file"].replace(".json", "")
         test_dict["is_test"] = True
         test_dict["is_binary"] = True
-        test_dict["ann_path"] = os.path.join(
-            args["ann_dir"], args["test_file"]
-        )
+        test_dict["ann_path"] = os.path.join(args["ann_dir"], args["test_file"])
         test_dict["wav_path"] = args["data_dir"]
         test_sets = [test_dict]
 
@@ -607,9 +582,7 @@ if __name__ == "__main__":
         for ii, gt in enumerate(gt_test):
             sb_pred = load_sonobat_preds(gt["dataset_name"], gt["id"], sb_meta)
             if sb_pred["class_name"] != "":
-                sb_pred = parse_data(
-                    sb_pred, class_names, classes_to_ignore, True
-                )
+                sb_pred = parse_data(sb_pred, class_names, classes_to_ignore, True)
                 sb_pred["class_probs"][
                     sb_pred["class_ids"],
                     np.arange(sb_pred["class_probs"].shape[1]),
@@ -644,9 +617,7 @@ if __name__ == "__main__":
         x_train = []
         y_train = []
         for gt in gt_train:
-            pred = load_sonobat_preds(
-                gt["dataset_name"], gt["id"], sb_meta, "Not Bat"
-            )
+            pred = load_sonobat_preds(gt["dataset_name"], gt["id"], sb_meta, "Not Bat")
 
             if len(pred["annotation"]) > 0:
                 # compute detection overlap with ground truth to determine which are the TP detections
@@ -663,9 +634,7 @@ if __name__ == "__main__":
         # run the model on the test set
         preds_sb_rf = []
         for gt in gt_test:
-            pred = load_sonobat_preds(
-                gt["dataset_name"], gt["id"], sb_meta, "Not Bat"
-            )
+            pred = load_sonobat_preds(gt["dataset_name"], gt["id"], sb_meta, "Not Bat")
             pred = parse_data(pred, class_names, classes_to_ignore, True)
             pred = eval_rf_model(clf_sb, pred, un_train_class, num_classes)
             preds_sb_rf.append(pred)
@@ -697,9 +666,7 @@ if __name__ == "__main__":
         x_train = []
         y_train = []
         for gt in gt_train:
-            pred = load_tadarida_pred(
-                args["td_ip_dir"], gt["dataset_name"], gt["id"]
-            )
+            pred = load_tadarida_pred(args["td_ip_dir"], gt["dataset_name"], gt["id"])
             # compute detection overlap with ground truth to determine which are the TP detections
             assign_to_gt(gt, pred, args["iou_thresh"])
             pred = parse_data(pred, class_names, classes_to_ignore, True)
@@ -714,9 +681,7 @@ if __name__ == "__main__":
         # run the model on the test set
         preds_td = []
         for gt in gt_test:
-            pred = load_tadarida_pred(
-                args["td_ip_dir"], gt["dataset_name"], gt["id"]
-            )
+            pred = load_tadarida_pred(args["td_ip_dir"], gt["dataset_name"], gt["id"])
             pred = parse_data(pred, class_names, classes_to_ignore, True)
             pred = eval_rf_model(clf_td, pred, un_train_class, num_classes)
             preds_td.append(pred)
