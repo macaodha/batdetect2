@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument(
         "--model_path",
         type=str,
-        default=os.path.join(CURRENT_DIR, "models/Net2DFast_UK_same.pth.tar"),
+        default=du.DEFAULT_MODEL_PATH,
         help="Path to trained BatDetect2 model",
     )
     args = vars(parser.parse_args())
@@ -97,8 +97,11 @@ def main():
     print(f"Number of audio files: {len(files)}")
     print("\nSaving results to: " + args["ann_dir"])
 
+    default_config = du.get_default_config()
+
     # set up run config
     run_config = {
+        **default_config,
         **args,
         **params,
     }
@@ -119,6 +122,7 @@ def main():
         except (RuntimeError, ValueError, LookupError) as err:
             error_files.append(audio_file)
             print(f"Error processing file!: {err}")
+            raise err
 
     print("\nResults saved to: " + args["ann_dir"])
 

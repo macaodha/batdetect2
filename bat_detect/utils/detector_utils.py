@@ -12,10 +12,12 @@ import bat_detect.detector.post_process as pp
 import bat_detect.utils.audio_utils as au
 from bat_detect.detector import models
 from bat_detect.detector.parameters import (
+    DENOISE_SPEC_AVG,
     DETECTION_THRESHOLD,
     FFT_OVERLAP,
     FFT_WIN_LENGTH_S,
     MAX_FREQ_HZ,
+    MAX_SCALE_SPEC,
     MIN_FREQ_HZ,
     NMS_KERNEL_SIZE,
     NMS_TOP_K_PER_SEC,
@@ -23,6 +25,7 @@ from bat_detect.detector.parameters import (
     SCALE_RAW_AUDIO,
     SPEC_DIVIDE_FACTOR,
     SPEC_HEIGHT,
+    SPEC_SCALE,
     TARGET_SAMPLERATE_HZ,
 )
 
@@ -35,12 +38,13 @@ except ImportError:
 DEFAULT_MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
     "models",
-    "model.pth",
+    "Net2DFast_UK_same.pth.tar",
 )
 
 __all__ = [
     "load_model",
     "get_audio_files",
+    "get_default_config",
     "format_results",
     "save_results_to_file",
     "iterate_over_chunks",
@@ -313,7 +317,7 @@ def format_results(
     annotations: List[Annotation] = [
         {
             "start_time": round(float(start_time), 4),
-            "end_time": round(end_time, 4),
+            "end_time": round(float(end_time), 4),
             "low_freq": int(low_freq),
             "high_freq": int(high_freq),
             "class": str(class_names[class_index]),
@@ -331,7 +335,7 @@ def format_results(
             class_prob,
             det_prob,
         ) in zip(
-            predictions["start_time"],
+            predictions["start_times"],
             predictions["end_times"],
             predictions["low_freqs"],
             predictions["high_freqs"],
@@ -347,7 +351,7 @@ def format_results(
         "issues": False,
         "notes": "Automatically generated.",
         "time_exp": time_exp,
-        "duration": round(duration, 4),
+        "duration": round(float(duration), 4),
         "annotation": annotations,
         "class_name": class_names[np.argmax(class_overall)],
     }
@@ -458,7 +462,8 @@ def save_results_to_file(results, op_path: str) -> None:
     if "spec_feats" in results.keys():
         # create csv file with spectrogram features
         spec_feats_df = pd.DataFrame(
-            results["spec_feats"], columns=results["spec_feat_names"]
+            results["spec_feats"],
+            columns=results["spec_feat_names"],
         )
         spec_feats_df.to_csv(
             op_path + "_spec_features.csv",
@@ -505,6 +510,21 @@ class SpectrogramParameters(TypedDict):
 
     device: torch.device
     """Device to store the spectrogram on."""
+
+    max_freq: int
+    """Maximum frequency to display in the spectrogram."""
+
+    min_freq: int
+    """Minimum frequency to display in the spectrogram."""
+
+    spec_scale: str
+    """Scale to use for the spectrogram."""
+
+    denoise_spec_avg: bool
+    """Whether to denoise the spectrogram by averaging."""
+
+    max_scale_spec: bool
+    """Whether to scale the spectrogram so that its max is 1."""
 
 
 def compute_spectrogram(
@@ -640,6 +660,15 @@ class ProcessingConfiguration(TypedDict):
     spec_height: int
     """Height of the spectrogram in pixels."""
 
+    spec_scale: str
+    """Scale to use for the spectrogram."""
+
+    denoise_spec_avg: bool
+    """Whether to denoise the spectrogram by averaging."""
+
+    max_scale_spec: bool
+    """Whether to scale the spectrogram so that its max is 1."""
+
     scale_raw_audio: bool
     """Whether to scale the raw audio to be between -1 and 1."""
 
@@ -735,6 +764,7 @@ def process_spectrogram(
             "resize_factor": config["resize_factor"],
             "nms_top_k_per_sec": config["nms_top_k_per_sec"],
             "detection_threshold": config["detection_threshold"],
+            "max_scale_spec": config["max_scale_spec"],
         },
         np.array([float(samplerate)]),
     )
@@ -788,6 +818,11 @@ def process_audio_array(
             "resize_factor": config["resize_factor"],
             "spec_divide_factor": config["spec_divide_factor"],
             "device": config["device"],
+            "max_freq": config["max_freq"],
+            "min_freq": config["min_freq"],
+            "spec_scale": config["spec_scale"],
+            "denoise_spec_avg": config["denoise_spec_avg"],
+            "max_scale_spec": config["max_scale_spec"],
         },
         return_np=config["spec_features"] or config["spec_slices"],
     )
@@ -842,7 +877,7 @@ def process_file(
         time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
-        max_duration=config["max_duration"],
+        max_duration=config.get("max_duration"),
     )
 
     # loop through larger file and split into chunks
@@ -930,7 +965,7 @@ def summarize_results(results, predictions, config):
             )
 
 
-def get_default_run_config(**kwargs) -> ProcessingConfiguration:
+def get_default_config(**kwargs) -> ProcessingConfiguration:
     """Get default configuration for running detection model."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -958,6 +993,9 @@ def get_default_run_config(**kwargs) -> ProcessingConfiguration:
         "max_freq": MAX_FREQ_HZ,
         "min_freq": MIN_FREQ_HZ,
         "nms_top_k_per_sec": NMS_TOP_K_PER_SEC,
+        "spec_scale": SPEC_SCALE,
+        "denoise_spec_avg": DENOISE_SPEC_AVG,
+        "max_scale_spec": MAX_SCALE_SPEC,
     }
     return {
         **args,

@@ -13,6 +13,9 @@ SCALE_RAW_AUDIO = False
 DETECTION_THRESHOLD = 0.01
 NMS_KERNEL_SIZE = 9
 NMS_TOP_K_PER_SEC = 200
+SPEC_SCALE = "pcen"
+DENOISE_SPEC_AVG = True
+MAX_SCALE_SPEC = False
 
 
 def mk_dir(path):
@@ -70,14 +73,14 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     # spec processing params
     params[
         "denoise_spec_avg"
-    ] = True  # removes the mean for each frequency band
+    ] = DENOISE_SPEC_AVG  # removes the mean for each frequency band
     params[
         "scale_raw_audio"
     ] = SCALE_RAW_AUDIO  # scales the raw audio to [-1, 1]
     params[
         "max_scale_spec"
-    ] = False  # scales the spectrogram so that it is max 1
-    params["spec_scale"] = "pcen"  # 'log', 'pcen', 'none'
+    ] = MAX_SCALE_SPEC  # scales the spectrogram so that it is max 1
+    params["spec_scale"] = SPEC_SCALE  # 'log', 'pcen', 'none'
 
     # detection params
     params[
