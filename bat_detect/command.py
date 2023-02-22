@@ -99,7 +99,9 @@ def main():
             if args["save_preds_if_empty"] or (
                 len(results["pred_dict"]["annotation"]) > 0
             ):
-                results_path = audio_file.replace(args["audio_dir"], args["ann_dir"])
+                results_path = audio_file.replace(
+                    args["audio_dir"], args["ann_dir"]
+                )
                 du.save_results_to_file(results, results_path)
         except:
             error_files.append(audio_file)

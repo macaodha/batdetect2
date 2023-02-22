@@ -58,7 +58,9 @@ if __name__ == "__main__":
 
     print(info_str)
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset_name", type=str, help="Name to call your dataset")
+    parser.add_argument(
+        "dataset_name", type=str, help="Name to call your dataset"
+    )
     parser.add_argument("audio_dir", type=str, help="Input directory for audio")
     parser.add_argument(
         "ann_dir",
@@ -147,10 +149,14 @@ if __name__ == "__main__":
         test_files = load_file_names(args["test_file"])
         file_names_all = [dd["id"] for dd in data_all]
         train_inds = [
-            file_names_all.index(ff) for ff in train_files if ff in file_names_all
+            file_names_all.index(ff)
+            for ff in train_files
+            if ff in file_names_all
         ]
         test_inds = [
-            file_names_all.index(ff) for ff in test_files if ff in file_names_all
+            file_names_all.index(ff)
+            for ff in test_files
+            if ff in file_names_all
         ]
 
     else:

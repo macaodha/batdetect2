@@ -57,7 +57,9 @@ def create_box_image(
 
     if plot_class_names:
         for ii, bb in enumerate(boxes):
-            txt = " ".join([sp[:3] for sp in detections_ip[ii]["class"].split(" ")])
+            txt = " ".join(
+                [sp[:3] for sp in detections_ip[ii]["class"].split(" ")]
+            )
             font_info = {
                 "color": "white",
                 "size": 10,
@@ -87,7 +89,9 @@ def save_ann_spec(
     y_extent = [0, duration, min_freq, max_freq]
 
     plt.close("all")
-    fig = plt.figure(0, figsize=(spec.shape[1] / 100, spec.shape[0] / 100), dpi=100)
+    fig = plt.figure(
+        0, figsize=(spec.shape[1] / 100, spec.shape[0] / 100), dpi=100
+    )
     plt.imshow(
         spec,
         aspect="auto",
@@ -124,12 +128,16 @@ def save_ann_spec(
     plt.savefig(op_path)
 
 
-def plot_pts(fig_id, feats, class_names, colors, marker_size=4.0, plot_legend=False):
+def plot_pts(
+    fig_id, feats, class_names, colors, marker_size=4.0, plot_legend=False
+):
     plt.figure(fig_id)
     un_class, labels = np.unique(class_names, return_inverse=True)
     un_labels = np.unique(labels)
     if un_labels.shape[0] > len(colors):
-        colors = [plt.cm.jet(float(ii) / un_labels.shape[0]) for ii in un_labels]
+        colors = [
+            plt.cm.jet(float(ii) / un_labels.shape[0]) for ii in un_labels
+        ]
 
     for ii, u in enumerate(un_labels):
         inds = np.where(labels == u)[0]
@@ -236,7 +244,9 @@ def plot_spec(
     ax0.imshow(spec, aspect="auto", cmap="plasma", extent=y_extent)
     ax0.xaxis.set_ticklabels([])
     font_info = {"color": "white", "size": 12, "weight": "bold"}
-    ax0.text(0, params["min_freq"] // freq_scale, "Ground Truth", fontdict=font_info)
+    ax0.text(
+        0, params["min_freq"] // freq_scale, "Ground Truth", fontdict=font_info
+    )
 
     plt.grid(False)
     if plot_boxes:
@@ -261,7 +271,9 @@ def plot_spec(
     ax1.imshow(spec, aspect="auto", cmap="plasma", extent=y_extent)
     ax1.xaxis.set_ticklabels([])
     font_info = {"color": "white", "size": 12, "weight": "bold"}
-    ax1.text(0, params["min_freq"] // freq_scale, "Prediction", fontdict=font_info)
+    ax1.text(
+        0, params["min_freq"] // freq_scale, "Prediction", fontdict=font_info
+    )
 
     plt.grid(False)
     if plot_boxes:
@@ -296,7 +308,9 @@ def plot_spec(
         )
         # ax2.xaxis.set_ticklabels([])
         font_info = {"color": "white", "size": 12, "weight": "bold"}
-        ax2.text(0, params["min_freq"] // freq_scale, "Heatmap", fontdict=font_info)
+        ax2.text(
+            0, params["min_freq"] // freq_scale, "Heatmap", fontdict=font_info
+        )
 
         plt.grid(False)
 
@@ -394,11 +408,15 @@ def plot_confusion_matrix(
     # shorten the class names for plotting
     class_names = []
     for cc in class_names_long:
-        class_name_sm = "".join([cc_sm[:3] + " " for cc_sm in cc.split(" ")])[:-1]
+        class_name_sm = "".join([cc_sm[:3] + " " for cc_sm in cc.split(" ")])[
+            :-1
+        ]
         class_names.append(class_name_sm)
 
     num_classes = len(class_names)
-    cm = confusion_matrix(gt, pred, labels=np.arange(num_classes)).astype(np.float32)
+    cm = confusion_matrix(gt, pred, labels=np.arange(num_classes)).astype(
+        np.float32
+    )
     cm_norm = cm.sum(1)
 
     valid_inds = np.where(cm_norm > 0)[0]
@@ -487,7 +505,9 @@ class LossPlotter(object):
         if self.logy:
             plt.gca().set_yscale("log")
         plt.grid(True)
-        plt.legend(bbox_to_anchor=(1.01, 1), loc="upper left", borderaxespad=0.0)
+        plt.legend(
+            bbox_to_anchor=(1.01, 1), loc="upper left", borderaxespad=0.0
+        )
         plt.tight_layout()
         plt.savefig(self.op_file_name)
         plt.close(0)
@@ -502,15 +522,19 @@ class LossPlotter(object):
 
     def save_confusion_matrix(self, gt, pred):
         plt.figure(0)
-        cm = confusion_matrix(gt, pred, np.arange(len(self.class_names))).astype(
-            np.float32
-        )
+        cm = confusion_matrix(
+            gt, pred, np.arange(len(self.class_names))
+        ).astype(np.float32)
         cm_norm = cm.sum(1)
         valid_inds = np.where(cm_norm > 0)[0]
-        cm[valid_inds, :] = cm[valid_inds, :] / cm_norm[valid_inds][..., np.newaxis]
+        cm[valid_inds, :] = (
+            cm[valid_inds, :] / cm_norm[valid_inds][..., np.newaxis]
+        )
         plt.imshow(cm, vmin=0, vmax=1, cmap="plasma")
         plt.colorbar()
-        plt.xticks(np.arange(cm.shape[1]), self.class_names, rotation="vertical")
+        plt.xticks(
+            np.arange(cm.shape[1]), self.class_names, rotation="vertical"
+        )
         plt.yticks(np.arange(cm.shape[0]), self.class_names)
         plt.xlabel("Predicted")
         plt.ylabel("Ground Truth")

@@ -62,7 +62,9 @@ def save_images_batch(model, data_loader, params):
     data_loader.dataset.return_spec_for_viz = False
 
 
-def save_image(spec_viz, outputs, ind, inputs, params, op_file_name, plot_title):
+def save_image(
+    spec_viz, outputs, ind, inputs, params, op_file_name, plot_title
+):
     pred_nms, _ = pp.run_nms(outputs, params, inputs["sampling_rate"].float())
     pred_hm = outputs["pred_det"][ind, 0, :].data.cpu().numpy()
     spec_viz = spec_viz[ind, 0, :]
@@ -85,10 +87,14 @@ def save_image(spec_viz, outputs, ind, inputs, params, op_file_name, plot_title)
     )
 
 
-def loss_fun(outputs, gt_det, gt_size, gt_class, det_criterion, params, class_inv_freq):
+def loss_fun(
+    outputs, gt_det, gt_size, gt_class, det_criterion, params, class_inv_freq
+):
 
     # detection loss
-    loss = params["det_loss_weight"] * det_criterion(outputs["pred_det"], gt_det)
+    loss = params["det_loss_weight"] * det_criterion(
+        outputs["pred_det"], gt_det
+    )
 
     # bounding box size loss
     loss += params["size_loss_weight"] * losses.bbox_size_loss(
@@ -105,7 +111,9 @@ def loss_fun(outputs, gt_det, gt_size, gt_class, det_criterion, params, class_in
     return loss
 
 
-def train(model, epoch, data_loader, det_criterion, optimizer, scheduler, params):
+def train(
+    model, epoch, data_loader, det_criterion, optimizer, scheduler, params
+):
 
     model.train()
 
@@ -218,7 +226,9 @@ def test(model, epoch, data_loader, det_criterion, params):
             test_loss.update(loss.item(), data.shape[0])
 
             # do NMS
-            pred_nms, _ = pp.run_nms(outputs, params, inputs["sampling_rate"].float())
+            pred_nms, _ = pp.run_nms(
+                outputs, params, inputs["sampling_rate"].float()
+            )
             predictions.extend(pred_nms)
 
             ground_truths.extend(parse_gt_data(inputs))
@@ -328,7 +338,9 @@ if __name__ == "__main__":
     # setup arg parser and populate it with exiting parameters - will not work with lists
     parser = argparse.ArgumentParser()
     parser.add_argument("data_dir", type=str, help="Path to root of datasets")
-    parser.add_argument("ann_dir", type=str, help="Path to extracted annotations")
+    parser.add_argument(
+        "ann_dir", type=str, help="Path to extracted annotations"
+    )
     parser.add_argument(
         "--train_split",
         type=str,
@@ -387,12 +399,14 @@ if __name__ == "__main__":
     params["genus_names"], params["genus_mapping"] = tu.get_genus_mapping(
         params["class_names"]
     )
-    params["class_names_short"] = tu.get_short_class_names(params["class_names"])
+    params["class_names_short"] = tu.get_short_class_names(
+        params["class_names"]
+    )
 
     # standardize the low and high frequency value for specified classes
-    params["standardize_classs_names"] = params["standardize_classs_names_ip"].split(
-        ";"
-    )
+    params["standardize_classs_names"] = params[
+        "standardize_classs_names_ip"
+    ].split(";")
     for cc in params["standardize_classs_names"]:
         if cc in params["class_names"]:
             data_train = tu.standardize_low_freq(data_train, cc)
@@ -442,7 +456,9 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(model.parameters(), lr=params["lr"])
     # optimizer = torch.optim.SGD(model.parameters(), lr=params['lr'], momentum=0.9)
-    scheduler = CosineAnnealingLR(optimizer, params["num_epochs"] * len(train_loader))
+    scheduler = CosineAnnealingLR(
+        optimizer, params["num_epochs"] * len(train_loader)
+    )
     if params["train_loss"] == "mse":
         det_criterion = losses.mse_loss
     elif params["train_loss"] == "focal":
@@ -505,7 +521,9 @@ if __name__ == "__main__":
 
         if epoch % params["num_eval_epochs"] == 0:
             # detection accuracy on test set
-            test_res, test_loss = test(model, epoch, test_loader, det_criterion, params)
+            test_res, test_loss = test(
+                model, epoch, test_loader, det_criterion, params
+            )
             test_plt_ls.update_and_save(epoch, [test_loss["test_loss"]])
             test_plt.update_and_save(
                 epoch,
@@ -520,7 +538,9 @@ if __name__ == "__main__":
             test_plt_class.update_and_save(
                 epoch, [rs["avg_prec"] for rs in test_res["class_pr"]]
             )
-            pu.plot_pr_curve_class(params["experiment"], "test_pr", "test_pr", test_res)
+            pu.plot_pr_curve_class(
+                params["experiment"], "test_pr", "test_pr", test_res
+            )
 
             # save trained model
             print("saving model to: " + params["model_file_name"])

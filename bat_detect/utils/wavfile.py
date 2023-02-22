@@ -235,7 +235,9 @@ def write(filename, rate, data):
         # kind of numeric data in the numpy array
         dkind = data.dtype.kind
         if not (
-            dkind == "i" or dkind == "f" or (dkind == "u" and data.dtype.itemsize == 1)
+            dkind == "i"
+            or dkind == "f"
+            or (dkind == "u" and data.dtype.itemsize == 1)
         ):
             raise ValueError("Unsupported data type '%s'" % data.dtype)
 
@@ -268,7 +270,9 @@ def write(filename, rate, data):
         # Write the data (16, comp, noc, etc) in the correct binary format
         # for the wav header. the string format (first arg) specifies how many bytes for each
         # value.
-        fid.write(struct.pack("<ihHIIHH", 16, comp, noc, rate, sbytes, ba, bits))
+        fid.write(
+            struct.pack("<ihHIIHH", 16, comp, noc, rate, sbytes, ba, bits)
+        )
         # data chunk: the word 'data' followed by the size followed by the actual data
         fid.write(b"data")
         fid.write(struct.pack("<i", data.nbytes))

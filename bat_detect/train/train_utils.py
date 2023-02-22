@@ -25,7 +25,9 @@ def get_blank_dataset_dict(dataset_name, is_test, ann_path, wav_path):
 def get_short_class_names(class_names, str_len=3):
     class_names_short = []
     for cc in class_names:
-        class_names_short.append(" ".join([sp[:str_len] for sp in cc.split(" ")]))
+        class_names_short.append(
+            " ".join([sp[:str_len] for sp in cc.split(" ")])
+        )
     return class_names_short
 
 
@@ -155,7 +157,9 @@ def load_set_of_anns(
         str_len = np.max([len(cc) for cc in class_names]) + 5
         for cc in range(len(class_names)):
             print(
-                str(cc).ljust(5) + class_names[cc].ljust(str_len) + str(class_cnts[cc])
+                str(cc).ljust(5)
+                + class_names[cc].ljust(str_len)
+                + str(class_cnts[cc])
             )
 
     if len(classes_to_ignore) == 0:

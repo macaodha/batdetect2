@@ -56,19 +56,25 @@ class InteractivePlotter:
         self.annotated = np.zeros(
             self.labels.shape[0], dtype=np.int
         )  # can populate this with 1's where we have labels
-        self.labels_cols = [colors[self.labels[ii]] for ii in range(len(self.labels))]
+        self.labels_cols = [
+            colors[self.labels[ii]] for ii in range(len(self.labels))
+        ]
         self.freq_lims = freq_lims
 
         self.allow_training = allow_training
         self.pt_size = 5.0
-        self.spec_pad = 0.2  # this much padding has been applied to the spec slices
+        self.spec_pad = (
+            0.2  # this much padding has been applied to the spec slices
+        )
         self.fig_width = 12
         self.fig_height = 8
 
         self.current_id = 0
         max_ind = np.argmax([ss.shape[1] for ss in self.spec_slices])
         self.max_width = self.spec_slices[max_ind].shape[1]
-        self.blank_spec = np.zeros((self.spec_slices[0].shape[0], self.max_width))
+        self.blank_spec = np.zeros(
+            (self.spec_slices[0].shape[0], self.max_width)
+        )
 
     def plot(self, fig_id):
         self.fig, self.ax = plt.subplots(
@@ -141,7 +147,8 @@ class InteractivePlotter:
                 ) // 2
                 new_spec[
                     :,
-                    w_diff : self.spec_slices[self.current_id].shape[1] + w_diff,
+                    w_diff : self.spec_slices[self.current_id].shape[1]
+                    + w_diff,
                 ] = self.spec_slices[self.current_id]
                 self.spec_im.set_data(new_spec)
                 self.spec_im.set_clim(vmin=0, vmax=new_spec.max())
@@ -172,7 +179,9 @@ class InteractivePlotter:
                 info_str = (
                     self.call_info[self.current_id]["file_name"]
                     + ", time="
-                    + str(round(self.call_info[self.current_id]["start_time"], 3))
+                    + str(
+                        round(self.call_info[self.current_id]["start_time"], 3)
+                    )
                     + ", prob="
                     + str(round(self.call_info[self.current_id]["det_prob"], 3))
                 )

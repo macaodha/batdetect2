@@ -24,7 +24,8 @@ def split_diff(ann_dir, wav_dir, load_extra=True):
                 "dataset_name": "BatDetective",
                 "is_test": False,
                 "is_binary": True,  # just a bat / not bat dataset ie no classes
-                "ann_path": ann_dir + "train_set_bulgaria_batdetective_with_bbs.json",
+                "ann_path": ann_dir
+                + "train_set_bulgaria_batdetective_with_bbs.json",
                 "wav_path": wav_dir + "bat_detective/audio/",
             }
         )
@@ -151,7 +152,8 @@ def split_same(ann_dir, wav_dir, load_extra=True):
                 "dataset_name": "BatDetective",
                 "is_test": False,
                 "is_binary": True,
-                "ann_path": ann_dir + "train_set_bulgaria_batdetective_with_bbs.json",
+                "ann_path": ann_dir
+                + "train_set_bulgaria_batdetective_with_bbs.json",
                 "wav_path": wav_dir + "bat_detective/audio/",
             }
         )

@@ -20,7 +20,9 @@ import bat_detect.utils.audio_utils as au
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("audio_path", type=str, help="Input directory for audio")
+    parser.add_argument(
+        "audio_path", type=str, help="Input directory for audio"
+    )
     parser.add_argument(
         "op_dir",
         type=str,
@@ -31,7 +33,9 @@ if __name__ == "__main__":
         type=str,
         help="Path to where single annotation json file is stored",
     )
-    parser.add_argument("--uk_split", type=str, default="", help="Set as: diff or same")
+    parser.add_argument(
+        "--uk_split", type=str, default="", help="Set as: diff or same"
+    )
     parser.add_argument(
         "--file_type",
         type=str,
@@ -84,7 +88,9 @@ if __name__ == "__main__":
         norm_type=params["norm_type"],
     )
 
-    op_file_name = os.path.join(args["op_dir"], dataset_name + "." + args["file_type"])
+    op_file_name = os.path.join(
+        args["op_dir"], dataset_name + "." + args["file_type"]
+    )
     vz.save_summary_image(
         x_train, y_train, class_names, params, op_file_name, class_names_order
     )

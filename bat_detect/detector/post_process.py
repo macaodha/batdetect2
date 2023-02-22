@@ -24,7 +24,9 @@ def run_nms(outputs, params, sampling_rate):
     pred_size = outputs["pred_size"]  # box size
 
     pred_det_nms = non_max_suppression(pred_det, params["nms_kernel_size"])
-    freq_rescale = (params["max_freq"] - params["min_freq"]) / pred_det.shape[-2]
+    freq_rescale = (params["max_freq"] - params["min_freq"]) / pred_det.shape[
+        -2
+    ]
 
     # NOTE there will be small differences depending on which sampling rate is chosen
     # as we are choosing the same sampling rate for the entire batch
@@ -60,7 +62,8 @@ def run_nms(outputs, params, sampling_rate):
             params["fft_overlap"],
         )
         pred["end_times"] = x_coords_to_time(
-            (pred["x_pos"].float() + pred["bb_width"]) / params["resize_factor"],
+            (pred["x_pos"].float() + pred["bb_width"])
+            / params["resize_factor"],
             sampling_rate[ii].item(),
             params["fft_win_length"],
             params["fft_overlap"],
@@ -68,7 +71,9 @@ def run_nms(outputs, params, sampling_rate):
         pred["low_freqs"] = (
             pred_size[ii].shape[1] - pred["y_pos"].float()
         ) * freq_rescale + params["min_freq"]
-        pred["high_freqs"] = pred["low_freqs"] + pred["bb_height"] * freq_rescale
+        pred["high_freqs"] = (
+            pred["low_freqs"] + pred["bb_height"] * freq_rescale
+        )
 
         # extract the per class votes
         if "pred_class" in outputs:

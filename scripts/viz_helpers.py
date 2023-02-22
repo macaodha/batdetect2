@@ -23,7 +23,9 @@ def generate_spectrogram_data(
     # spec = au.gen_mag_spectrogram_pt(audio, sampling_rate, params['fft_win_length'], params['fft_overlap']).numpy()
     if spec.shape[0] < max_freq:
         freq_pad = max_freq - spec.shape[0]
-        spec = np.vstack((np.zeros((freq_pad, spec.shape[1]), dtype=np.float32), spec))
+        spec = np.vstack(
+            (np.zeros((freq_pad, spec.shape[1]), dtype=np.float32), spec)
+        )
     spec = spec[-max_freq : spec.shape[0] - min_freq, :]
 
     if norm_type == "log":
@@ -33,7 +35,11 @@ def generate_spectrogram_data(
             * (
                 1.0
                 / (
-                    np.abs(np.hanning(int(params["fft_win_length"] * sampling_rate)))
+                    np.abs(
+                        np.hanning(
+                            int(params["fft_win_length"] * sampling_rate)
+                        )
+                    )
                     ** 2
                 ).sum()
             )
@@ -106,7 +112,9 @@ def load_data(
                 max_samps = params["spec_width"] * (nfft - noverlap) + noverlap
 
                 if max_samps > audio.shape[0]:
-                    audio = np.hstack((audio, np.zeros(max_samps - audio.shape[0])))
+                    audio = np.hstack(
+                        (audio, np.zeros(max_samps - audio.shape[0]))
+                    )
                 audio = audio[:max_samps].astype(np.float32)
 
                 audio = au.pad_audio(
@@ -139,7 +147,9 @@ def load_data(
                         params["fft_overlap"],
                     )
                 )
-                y1 = (ann["low_freq"] - params["min_freq"]) * params["fft_win_length"]
+                y1 = (ann["low_freq"] - params["min_freq"]) * params[
+                    "fft_win_length"
+                ]
                 coords.append((y1, x1))
 
     _, file_ids = np.unique(file_names, return_inverse=True)

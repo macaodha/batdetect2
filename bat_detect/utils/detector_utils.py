@@ -67,6 +67,7 @@ def get_audio_files(ip_dir: str) -> List[str]:
 
 class ModelParameters(TypedDict):
     """Model parameters."""
+
     model_name: str
     num_filters: int
     emb_dim: int
@@ -77,8 +78,7 @@ class ModelParameters(TypedDict):
 
 
 def load_model(
-    model_path: str=DEFAULT_MODEL_PATH,
-    load_weights: bool=True
+    model_path: str = DEFAULT_MODEL_PATH, load_weights: bool = True
 ) -> Tuple[torch.nn.Module, ModelParameters]:
     """Load model from file.
 
@@ -211,7 +211,9 @@ def convert_results(
         results["spec_feat_names"] = feats.get_feature_names()
     if len(cnn_feats) > 0:
         results["cnn_feats"] = cnn_feats
-        results["cnn_feat_names"] = [str(ii) for ii in range(cnn_feats.shape[1])]
+        results["cnn_feat_names"] = [
+            str(ii) for ii in range(cnn_feats.shape[1])
+        ]
     if len(spec_slices) > 0:
         results["spec_slices"] = spec_slices
 
@@ -245,7 +247,9 @@ def save_results_to_file(results, op_path):
 
     # save features
     if "spec_feats" in results.keys():
-        df = pd.DataFrame(results["spec_feats"], columns=results["spec_feat_names"])
+        df = pd.DataFrame(
+            results["spec_feats"], columns=results["spec_feat_names"]
+        )
         df.to_csv(
             op_path + "_spec_features.csv",
             sep=",",
@@ -254,7 +258,9 @@ def save_results_to_file(results, op_path):
         )
 
     if "cnn_feats" in results.keys():
-        df = pd.DataFrame(results["cnn_feats"], columns=results["cnn_feat_names"])
+        df = pd.DataFrame(
+            results["cnn_feats"], columns=results["cnn_feat_names"]
+        )
         df.to_csv(
             op_path + "_cnn_features.csv",
             sep=",",
@@ -289,7 +295,9 @@ def compute_spectrogram(audio, sampling_rate, params, return_np=False):
     # resize the spec
     rs = params["resize_factor"]
     spec_op_shape = (int(params["spec_height"] * rs), int(spec.shape[-1] * rs))
-    spec = F.interpolate(spec, size=spec_op_shape, mode="bilinear", align_corners=False)
+    spec = F.interpolate(
+        spec, size=spec_op_shape, mode="bilinear", align_corners=False
+    )
 
     if return_np:
         spec_np = spec[0, 0, :].cpu().data.numpy()
@@ -350,7 +358,9 @@ def process_file(
         chunk_time = args["chunk_size"] * chunk_id
         chunk_length = int(sampling_rate * args["chunk_size"])
         start_sample = chunk_id * chunk_length
-        end_sample = np.minimum((chunk_id + 1) * chunk_length, audio_full.shape[0])
+        end_sample = np.minimum(
+            (chunk_id + 1) * chunk_length, audio_full.shape[0]
+        )
         audio = audio_full[start_sample:end_sample]
 
         # load audio file and compute spectrogram
@@ -385,7 +395,9 @@ def process_file(
                 cnn_feats.append(features[0])
 
             if args["spec_slices"]:
-                spec_slices.extend(feats.extract_spec_slices(spec_np, pred_nms, params))
+                spec_slices.extend(
+                    feats.extract_spec_slices(spec_np, pred_nms, params)
+                )
 
     # convert the predictions into output dictionary
     file_id = os.path.basename(audio_file)
@@ -406,7 +418,10 @@ def process_file(
     # summarize results
     if not args["quiet"]:
         num_detections = len(results["pred_dict"]["annotation"])
-        print("{}".format(num_detections) + " call(s) detected above the threshold.")
+        print(
+            "{}".format(num_detections)
+            + " call(s) detected above the threshold."
+        )
 
     # print results for top n classes
     if not args["quiet"] and (num_detections > 0):
@@ -416,7 +431,8 @@ def process_file(
         print("species name".ljust(30) + "probablity present")
         for cc in np.argsort(class_overall)[::-1][:top_n]:
             print(
-                params["class_names"][cc].ljust(30) + str(round(class_overall[cc], 3))
+                params["class_names"][cc].ljust(30)
+                + str(round(class_overall[cc], 3))
             )
 
     if return_raw_preds:

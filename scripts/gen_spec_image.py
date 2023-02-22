@@ -25,7 +25,9 @@ import bat_detect.utils.plot_utils as viz
 def filter_anns(anns, start_time, stop_time):
     anns_op = []
     for aa in anns:
-        if (aa["start_time"] >= start_time) and (aa["start_time"] < stop_time - 0.02):
+        if (aa["start_time"] >= start_time) and (
+            aa["start_time"] < stop_time - 0.02
+        ):
             anns_op.append(aa)
     return anns_op
 
@@ -130,7 +132,9 @@ if __name__ == "__main__":
     print("File duration: {} seconds".format(duration))
 
     # create spec for viz
-    spec, _ = au.generate_spectrogram(audio, sampling_rate, params_bd, True, False)
+    spec, _ = au.generate_spectrogram(
+        audio, sampling_rate, params_bd, True, False
+    )
 
     # run model and filter detections so only keep ones in relevant time range
     results = du.process_file(args_cmd["audio_file"], model, params_bd, bd_args)
@@ -153,7 +157,9 @@ if __name__ == "__main__":
     )
     op_path_clean = os.path.join(args_cmd["op_dir"], op_path_clean)
     op_path_pred = (
-        os.path.basename(args_cmd["audio_file"])[:-4] + "_pred." + args_cmd["file_type"]
+        os.path.basename(args_cmd["audio_file"])[:-4]
+        + "_pred."
+        + args_cmd["file_type"]
     )
     op_path_pred = os.path.join(args_cmd["op_dir"], op_path_pred)
 

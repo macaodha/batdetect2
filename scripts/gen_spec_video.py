@@ -27,7 +27,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_file", type=str, help="Path to input audio file")
-    parser.add_argument("model_path", type=str, help="Path to trained BatDetect model")
+    parser.add_argument(
+        "model_path", type=str, help="Path to trained BatDetect model"
+    )
     parser.add_argument(
         "--op_dir",
         type=str,
@@ -42,7 +44,9 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not plot class names",
     )
-    parser.add_argument("--disable_axis", action="store_true", help="Do not plot axis")
+    parser.add_argument(
+        "--disable_axis", action="store_true", help="Do not plot axis"
+    )
     parser.add_argument(
         "--detection_threshold",
         type=float,
@@ -129,7 +133,9 @@ if __name__ == "__main__":
                 detections.append(bb)
 
         # plot boxes
-        fig = plt.figure(1, figsize=(spec.shape[1] / dpi, spec.shape[0] / dpi), dpi=dpi)
+        fig = plt.figure(
+            1, figsize=(spec.shape[1] / dpi, spec.shape[0] / dpi), dpi=dpi
+        )
         duration = au.x_coords_to_time(
             spec.shape[1],
             sampling_rate,
@@ -188,7 +194,9 @@ if __name__ == "__main__":
             if ii > 0:
                 spec_op[:, int(col), :] = 1.0
                 if reveal_boxes:
-                    spec_op[:, int(col) + 1 :, :] = spec_blank[:, int(col) + 1 :, :]
+                    spec_op[:, int(col) + 1 :, :] = spec_blank[
+                        :, int(col) + 1 :, :
+                    ]
             elif ii == 0 and reveal_boxes:
                 spec_op = spec_blank
 

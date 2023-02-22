@@ -39,7 +39,9 @@ def generate_spectrogram(
     min_freq = round(params["min_freq"] * params["fft_win_length"])
     if spec.shape[0] < max_freq:
         freq_pad = max_freq - spec.shape[0]
-        spec = np.vstack((np.zeros((freq_pad, spec.shape[1]), dtype=spec.dtype), spec))
+        spec = np.vstack(
+            (np.zeros((freq_pad, spec.shape[1]), dtype=spec.dtype), spec)
+        )
     spec_cropped = spec[-max_freq : spec.shape[0] - min_freq, :]
 
     if params["spec_scale"] == "log":
@@ -49,7 +51,11 @@ def generate_spectrogram(
             * (
                 1.0
                 / (
-                    np.abs(np.hanning(int(params["fft_win_length"] * sampling_rate)))
+                    np.abs(
+                        np.hanning(
+                            int(params["fft_win_length"] * sampling_rate)
+                        )
+                    )
                     ** 2
                 ).sum()
             )
@@ -82,7 +88,11 @@ def generate_spectrogram(
             * (
                 1.0
                 / (
-                    np.abs(np.hanning(int(params["fft_win_length"] * sampling_rate)))
+                    np.abs(
+                        np.hanning(
+                            int(params["fft_win_length"] * sampling_rate)
+                        )
+                    )
                     ** 2
                 ).sum()
             )
@@ -122,7 +132,9 @@ def load_audio_file(
 
     # clipping maximum duration
     if max_duration is not False:
-        max_duration = np.minimum(int(sampling_rate * max_duration), audio_raw.shape[0])
+        max_duration = np.minimum(
+            int(sampling_rate * max_duration), audio_raw.shape[0]
+        )
         audio_raw = audio_raw[:max_duration]
 
     # convert to float32 and scale
@@ -159,7 +171,9 @@ def pad_audio(
         # too small
         # used during training to ensure all the batches are the same size
         diff = fixed_width * step + noverlap - audio_raw.shape[0]
-        audio_raw = np.hstack((audio_raw, np.zeros(diff, dtype=audio_raw.dtype)))
+        audio_raw = np.hstack(
+            (audio_raw, np.zeros(diff, dtype=audio_raw.dtype))
+        )
 
     elif fixed_width is not None and spec_width > fixed_width:
         # too big
@@ -167,13 +181,18 @@ def pad_audio(
         diff = fixed_width * step + noverlap - audio_raw.shape[0]
         audio_raw = audio_raw[:diff]
 
-    elif spec_width_rs < min_size or (np.floor(spec_width_rs) % divide_factor) != 0:
+    elif (
+        spec_width_rs < min_size
+        or (np.floor(spec_width_rs) % divide_factor) != 0
+    ):
         # need to be at least min_size
         div_amt = np.ceil(spec_width_rs / float(divide_factor))
         div_amt = np.maximum(1, div_amt)
         target_size = int(div_amt * divide_factor * (1.0 / resize_factor))
         diff = target_size * step + noverlap - audio_raw.shape[0]
-        audio_raw = np.hstack((audio_raw, np.zeros(diff, dtype=audio_raw.dtype)))
+        audio_raw = np.hstack(
+            (audio_raw, np.zeros(diff, dtype=audio_raw.dtype))
+        )
 
     return audio_raw
 
