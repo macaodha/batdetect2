@@ -5,7 +5,6 @@ import bat_detect.utils.detector_utils as du
 
 
 def main(args):
-
     print("Loading model: " + args["model_path"])
     model, params = du.load_model(args["model_path"])
 

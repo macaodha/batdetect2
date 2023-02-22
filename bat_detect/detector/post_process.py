@@ -1,7 +1,11 @@
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 np.seterr(divide="ignore", invalid="ignore")
 
@@ -18,7 +22,33 @@ def overall_class_pred(det_prob, class_prob):
     return weighted_pred / weighted_pred.sum()
 
 
-def run_nms(outputs, params, sampling_rate):
+class NonMaximumSuppressionConfig(TypedDict):
+    """Configuration for non-maximum suppression."""
+
+    nms_kernel_size: int
+    """Size of the kernel for non-maximum suppression."""
+
+    max_freq: float
+    """Maximum frequency to consider in Hz."""
+
+    min_freq: float
+    """Minimum frequency to consider in Hz."""
+
+    fft_win_length: float
+    """Length of the FFT window in seconds."""
+
+    fft_overlap: float
+    """Overlap of the FFT windows in seconds."""
+
+    nms_top_k_per_sec: float
+    """Number of top detections to keep per second."""
+
+    detection_threshold: float
+    """Threshold for detection probability."""
+
+
+def run_nms(outputs, params: NonMaximumSuppressionConfig, sampling_rate: int):
+    """Run non-maximum suppression on the output of the model."""
 
     pred_det = outputs["pred_det"]  # probability of box
     pred_size = outputs["pred_size"]  # box size
@@ -92,6 +122,7 @@ def run_nms(outputs, params, sampling_rate):
         # convert to numpy
         for kk in pred.keys():
             pred[kk] = pred[kk].cpu().numpy().astype(np.float32)
+
         preds.append(pred)
 
     return preds, feats

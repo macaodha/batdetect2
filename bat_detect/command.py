@@ -1,3 +1,9 @@
+"""Main script for running BatDetect2 on audio files.
+
+Example usage:
+    python command.py /path/to/audio/ /path/to/ann/ 0.1
+
+"""
 import argparse
 import os
 
@@ -7,7 +13,6 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def parse_args():
-
     info_str = (
         "\nBatDetect2 - Detection and Classification\n"
         + "  Assumes audio files are mono, not stereo.\n"
@@ -88,14 +93,22 @@ def main():
 
     print("\nInput directory: " + args["audio_dir"])
     files = du.get_audio_files(args["audio_dir"])
-    print("Number of audio files: {}".format(len(files)))
+
+    print(f"Number of audio files: {len(files)}")
     print("\nSaving results to: " + args["ann_dir"])
+
+    # set up run config
+    run_config = {
+        **args,
+        **params,
+    }
 
     # process files
     error_files = []
-    for ii, audio_file in enumerate(files):
+    for audio_file in files:
         try:
-            results = du.process_file(audio_file, model, params, args)
+            results = du.process_file(audio_file, model, run_config)
+
             if args["save_preds_if_empty"] or (
                 len(results["pred_dict"]["annotation"]) > 0
             ):
@@ -103,9 +116,9 @@ def main():
                     args["audio_dir"], args["ann_dir"]
                 )
                 du.save_results_to_file(results, results_path)
-        except:
+        except (RuntimeError, ValueError, LookupError) as err:
             error_files.append(audio_file)
-            print("Error processing file!")
+            print(f"Error processing file!: {err}")
 
     print("\nResults saved to: " + args["ann_dir"])
 

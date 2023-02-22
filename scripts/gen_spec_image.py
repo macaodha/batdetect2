@@ -136,8 +136,13 @@ if __name__ == "__main__":
         audio, sampling_rate, params_bd, True, False
     )
 
+    run_config = {
+        **params_bd,
+        **bd_args,
+    }
+
     # run model and filter detections so only keep ones in relevant time range
-    results = du.process_file(args_cmd["audio_file"], model, params_bd, bd_args)
+    results = du.process_file(args_cmd["audio_file"], model, run_config)
     pred_anns = filter_anns(
         results["pred_dict"]["annotation"],
         args_cmd["start_time"],

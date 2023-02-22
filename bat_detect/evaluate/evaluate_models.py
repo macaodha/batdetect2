@@ -6,14 +6,12 @@ import argparse
 import copy
 import json
 import os
-import sys
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
-sys.path.append("../../")
-import bat_detect.detector.parameters as parameters
+from bat_detect.detector import parameters
 import bat_detect.train.evaluate as evl
 import bat_detect.train.train_utils as tu
 import bat_detect.utils.detector_utils as du
@@ -749,14 +747,18 @@ if __name__ == "__main__":
             print("Warning: Class names are not the same as the trained model")
             assert False
 
+        run_config = {
+            **bd_args,
+            **params_bd,
+            "return_raw_preds": True,
+        }
+
         preds_bd = []
         for ii, gg in enumerate(gt_test):
             pred = du.process_file(
                 gg["file_path"],
                 model,
-                params_bd,
-                bd_args,
-                return_raw_preds=True,
+                run_config,
             )
             preds_bd.append(pred)
 

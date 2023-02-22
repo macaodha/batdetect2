@@ -1,5 +1,3 @@
-import os
-
 import gradio as gr
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,7 +35,6 @@ examples = [
 
 
 def make_prediction(file_name=None, detection_threshold=0.3):
-
     if file_name is not None:
         audio_file = file_name
     else:
@@ -46,9 +43,17 @@ def make_prediction(file_name=None, detection_threshold=0.3):
     if detection_threshold is not None and detection_threshold != "":
         args["detection_threshold"] = float(detection_threshold)
 
+    run_config = {
+        **params,
+        **args,
+        "max_duration": max_duration,
+    }
+
     # process the file to generate predictions
     results = du.process_file(
-        audio_file, model, params, args, max_duration=max_duration
+        audio_file,
+        model,
+        run_config,
     )
 
     anns = [ann for ann in results["pred_dict"]["annotation"]]

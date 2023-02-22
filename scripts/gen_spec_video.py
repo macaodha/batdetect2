@@ -122,7 +122,12 @@ if __name__ == "__main__":
         print("  Loading model and running detector on entire file ...")
         model, det_params = du.load_model(args_cmd["model_path"])
         det_params["detection_threshold"] = args["detection_threshold"]
-        results = du.process_file(audio_file, model, det_params, args)
+
+        run_config = {
+            **det_params,
+            **args,
+        }
+        results = du.process_file(audio_file, model, run_config)
 
         print("  Processing detections and plotting ...")
         detections = []
