@@ -46,3 +46,6 @@ build-backend = "pdm.pep517.api"
 
 [project.scripts]
 batdetect2 = "bat_detect.command:main"
+
+[tool.black]
+line-length = 80
