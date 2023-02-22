@@ -739,7 +739,7 @@ if __name__ == "__main__":
     #
     if args["bd_model_path"] != "":
         # load model
-        bd_args = du.get_default_bd_args()
+        bd_args = du.get_default_run_config()
         model, params_bd = du.load_model(args["bd_model_path"])
 
         # check if the class names are the same

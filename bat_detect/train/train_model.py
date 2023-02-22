@@ -553,5 +553,6 @@ if __name__ == "__main__":
             torch.save(op_state, params["model_file_name"])
 
     # save an image with associated prediction for each batch in the test set
-    if not args["do_not_save_images"]:
-        save_images_batch(model, test_loader, params)
+    # TODO: args variable does not exist
+    # if not args["do_not_save_images"]:
+    #     save_images_batch(model, test_loader, params)

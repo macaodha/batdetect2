@@ -9,7 +9,7 @@ import bat_detect.utils.plot_utils as viz
 
 # setup the arguments
 args = {}
-args = du.get_default_bd_args()
+args = du.get_default_run_config()
 args["detection_threshold"] = 0.3
 args["time_expansion_factor"] = 1
 args["model_path"] = "models/Net2DFast_UK_same.pth.tar"

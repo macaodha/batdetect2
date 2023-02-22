@@ -49,3 +49,10 @@ batdetect2 = "bat_detect.command:main"
 
 [tool.black]
 line-length = 80
+
+[[tool.mypy.overrides]]
+module = [
+    "librosa",
+    "pandas",
+]
+ignore_missing_imports = true

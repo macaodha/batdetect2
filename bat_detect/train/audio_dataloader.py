@@ -1,7 +1,4 @@
 import copy
-import os
-import random
-import sys
 
 import librosa
 import numpy as np
@@ -9,7 +6,6 @@ import torch
 import torch.nn.functional as F
 import torchaudio
 
-sys.path.append(os.path.join("..", ".."))
 import bat_detect.utils.audio_utils as au
 
 
@@ -218,7 +214,10 @@ def resample_aug(audio, sampling_rate, params):
     sampling_rate_old = sampling_rate
     sampling_rate = np.random.choice(params["aug_sampling_rates"])
     audio = librosa.resample(
-        audio, sampling_rate_old, sampling_rate, res_type="polyphase"
+        audio,
+        orig_sr=sampling_rate_old,
+        target_sr=sampling_rate,
+        res_type="polyphase",
     )
 
     audio = au.pad_audio(
@@ -237,7 +236,10 @@ def resample_aug(audio, sampling_rate, params):
 def resample_audio(num_samples, sampling_rate, audio2, sampling_rate2):
     if sampling_rate != sampling_rate2:
         audio2 = librosa.resample(
-            audio2, sampling_rate2, sampling_rate, res_type="polyphase"
+            audio2,
+            orig_sr=sampling_rate2,
+            target_sr=sampling_rate,
+            res_type="polyphase",
         )
         sampling_rate2 = sampling_rate
     if audio2.shape[0] < num_samples:

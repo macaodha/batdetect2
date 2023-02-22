@@ -86,7 +86,7 @@ if __name__ == "__main__":
     args_cmd = vars(parser.parse_args())
 
     # load the model
-    bd_args = du.get_default_bd_args()
+    bd_args = du.get_default_run_config()
     model, params_bd = du.load_model(args_cmd["model_path"])
     bd_args["detection_threshold"] = args_cmd["detection_threshold"]
     bd_args["time_expansion_factor"] = args_cmd["time_expansion_factor"]

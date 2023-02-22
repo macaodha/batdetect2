@@ -89,7 +89,7 @@ if __name__ == "__main__":
         os.makedirs(op_dir)
 
     params = parameters.get_params(False)
-    args = du.get_default_bd_args()
+    args = du.get_default_run_config()
     args["time_expansion_factor"] = args_cmd["time_expansion_factor"]
     args["detection_threshold"] = args_cmd["detection_threshold"]
 

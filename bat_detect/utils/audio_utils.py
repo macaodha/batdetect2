@@ -7,7 +7,6 @@ import torch
 
 from . import wavfile
 
-
 __all__ = [
     "load_audio_file",
 ]
@@ -163,9 +162,11 @@ def load_audio_file(
 
     # clipping maximum duration
     if max_duration is not None:
-        max_duration = np.minimum(
-            int(sampling_rate * max_duration),
-            audio_raw.shape[0],
+        max_duration = int(
+            np.minimum(
+                int(sampling_rate * max_duration),
+                audio_raw.shape[0],
+            )
         )
         audio_raw = audio_raw[:max_duration]
 

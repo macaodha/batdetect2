@@ -11,6 +11,20 @@ import bat_detect.detector.compute_features as feats
 import bat_detect.detector.post_process as pp
 import bat_detect.utils.audio_utils as au
 from bat_detect.detector import models
+from bat_detect.detector.parameters import (
+    DETECTION_THRESHOLD,
+    FFT_OVERLAP,
+    FFT_WIN_LENGTH_S,
+    MAX_FREQ_HZ,
+    MIN_FREQ_HZ,
+    NMS_KERNEL_SIZE,
+    NMS_TOP_K_PER_SEC,
+    RESIZE_FACTOR,
+    SCALE_RAW_AUDIO,
+    SPEC_DIVIDE_FACTOR,
+    SPEC_HEIGHT,
+    TARGET_SAMPLERATE_HZ,
+)
 
 try:
     from typing import TypedDict
@@ -24,23 +38,17 @@ DEFAULT_MODEL_PATH = os.path.join(
     "model.pth",
 )
 
-__all__ = ["load_model", "get_audio_files", "DEFAULT_MODEL_PATH"]
-
-
-def get_default_bd_args():
-    args = {}
-    args["detection_threshold"] = 0.001
-    args["time_expansion_factor"] = 1
-    args["audio_dir"] = ""
-    args["ann_dir"] = ""
-    args["spec_slices"] = False
-    args["chunk_size"] = 3
-    args["spec_features"] = False
-    args["cnn_features"] = False
-    args["quiet"] = True
-    args["save_preds_if_empty"] = True
-    args["ann_dir"] = os.path.join(args["ann_dir"], "")
-    return args
+__all__ = [
+    "load_model",
+    "get_audio_files",
+    "format_results",
+    "save_results_to_file",
+    "iterate_over_chunks",
+    "process_spectrogram",
+    "process_audio_array",
+    "process_file",
+    "DEFAULT_MODEL_PATH",
+]
 
 
 def get_audio_files(ip_dir: str) -> List[str]:
@@ -80,7 +88,7 @@ class ModelParameters(TypedDict):
     ip_height: int
     """Input height in pixels."""
 
-    resize_factor: int
+    resize_factor: float
     """Resize factor."""
 
     class_names: List[str]
@@ -117,6 +125,8 @@ def load_model(
 
     params = net_params["params"]
     params["device"] = device
+
+    model: torch.nn.Module
 
     if params["model_name"] == "Net2DFast":
         model = models.Net2DFast(
@@ -159,9 +169,9 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
     num_preds = np.sum([len(pp["det_probs"]) for pp in predictions])
 
     if num_preds > 0:
-        for kk in predictions[0].keys():
-            predictions_m[kk] = np.hstack(
-                [pp[kk] for pp in predictions if pp["det_probs"].shape[0] > 0]
+        for key in predictions[0].keys():
+            predictions_m[key] = np.hstack(
+                [pp[key] for pp in predictions if pp["det_probs"].shape[0] > 0]
             )
     else:
         # hack in case where no detected calls as we need some of the key names in dict
@@ -176,7 +186,10 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
     return predictions_m, spec_feats, cnn_feats, spec_slices
 
 
-class Annotation(TypedDict("WithClass", {"class": str})):
+DictWithClass = TypedDict("DictWithClass", {"class": str})
+
+
+class Annotation(DictWithClass):
     """Format of annotations.
 
     This is the format of a single annotation as  expected by the annotation
@@ -214,7 +227,7 @@ class FileAnnotations(TypedDict):
     This is the format of the results expected by the annotation tool.
     """
 
-    file_id: str
+    id: str
     """File ID."""
 
     annotated: bool
@@ -232,26 +245,32 @@ class FileAnnotations(TypedDict):
     class_name: str
     """Class predicted at file level"""
 
+    notes: str
+    """Notes of file."""
+
     annotation: List[Annotation]
+    """List of annotations."""
 
 
-class Results(TypedDict):
+class RunResults(TypedDict):
+    """Run results."""
+
     pred_dict: FileAnnotations
     """Predictions in the format expected by the annotation tool."""
 
-    spec_feats: Optional[np.ndarray]
+    spec_feats: Optional[List[np.ndarray]]
     """Spectrogram features."""
 
     spec_feat_names: Optional[List[str]]
     """Spectrogram feature names."""
 
-    cnn_feats: Optional[np.ndarray]
+    cnn_feats: Optional[List[np.ndarray]]
     """CNN features."""
 
     cnn_feat_names: Optional[List[str]]
     """CNN feature names."""
 
-    spec_slices: Optional[np.ndarray]
+    spec_slices: Optional[List[np.ndarray]]
     """Spectrogram slices."""
 
 
@@ -343,7 +362,7 @@ def convert_results(
     spec_feats,
     cnn_feats,
     spec_slices,
-) -> Results:
+) -> RunResults:
     """Convert results to dictionary as expected by the annotation tool.
 
     Args:
@@ -369,8 +388,14 @@ def convert_results(
     )
 
     # combine into final results dictionary
-    results = {}
-    results["pred_dict"] = pred_dict
+    results: RunResults = {
+        "pred_dict": pred_dict,
+        "spec_feats": None,
+        "spec_feat_names": None,
+        "cnn_feats": None,
+        "cnn_feat_names": None,
+        "spec_slices": None,
+    }
 
     # add spectrogram features if they exist
     if len(spec_feats) > 0:
@@ -463,19 +488,16 @@ def save_results_to_file(results, op_path: str) -> None:
 class SpectrogramParameters(TypedDict):
     """Parameters for generating spectrograms."""
 
-    fft_win_length: int
-    """Length of the FFT window in samples."""
+    fft_win_length: float
+    """Length of the FFT window in seconds."""
 
-    fft_overlap: int
-    """Number of samples to overlap between FFT windows."""
+    fft_overlap: float
+    """Percentage of overlap between FFT windows."""
 
     spec_height: int
     """Height of the spectrogram in pixels."""
 
-    spec_width: int
-    """Width of the spectrogram in pixels."""
-
-    resize_factor: int
+    resize_factor: float
     """Factor to resize the spectrogram by."""
 
     spec_divide_factor: int
@@ -605,13 +627,14 @@ class ProcessingConfiguration(TypedDict):
 
     fft_win_length: float
     """Length of the FFT window in seconds."""
+
     fft_overlap: float
     """Length of the FFT window in samples."""
 
     resize_factor: float
     """Factor to resize the spectrogram by."""
 
-    spec_divide_factor: float
+    spec_divide_factor: int
     """Factor to divide the spectrogram by."""
 
     spec_height: int
@@ -644,27 +667,36 @@ class ProcessingConfiguration(TypedDict):
     nms_kernel_size: int
     """Size of the kernel for non-maximum suppression."""
 
-    max_freq: float
+    max_freq: int
     """Maximum frequency to consider in Hz."""
 
-    min_freq: float
+    min_freq: int
     """Minimum frequency to consider in Hz."""
 
     nms_top_k_per_sec: float
     """Number of top detections to keep per second."""
 
-    detection_threshold: float
-    """Threshold for detection probability."""
-
     quiet: bool
     """Whether to suppress output."""
+
+    chunk_size: float
+    """Size of chunks to process in seconds."""
+
+    cnn_features: bool
+    """Whether to return CNN features."""
+
+    spec_features: bool
+    """Whether to return spectrogram features."""
+
+    spec_slices: bool
+    """Whether to return spectrogram slices."""
 
 
 def process_spectrogram(
     spec: torch.Tensor,
     samplerate: int,
     model: torch.nn.Module,
-    config: pp.NonMaximumSuppressionConfig,
+    config: ProcessingConfiguration,
 ):
     """Process a spectrogram with detection model.
 
@@ -692,17 +724,29 @@ def process_spectrogram(
         outputs = model(spec, return_feats=config["cnn_features"])
 
     # run non-max suppression
-    pred_nms, features = pp.run_nms(
+    pred_nms_list, features = pp.run_nms(
         outputs,
-        config,
+        {
+            "nms_kernel_size": config["nms_kernel_size"],
+            "max_freq": config["max_freq"],
+            "min_freq": config["min_freq"],
+            "fft_win_length": config["fft_win_length"],
+            "fft_overlap": config["fft_overlap"],
+            "resize_factor": config["resize_factor"],
+            "nms_top_k_per_sec": config["nms_top_k_per_sec"],
+            "detection_threshold": config["detection_threshold"],
+        },
         np.array([float(samplerate)]),
     )
 
-    pred_nms = pred_nms[0]
+    pred_nms = pred_nms_list[0]
 
     # if we have a background class
-    if pred_nms["class_probs"].shape[0] > len(config["class_names"]):
-        pred_nms["class_probs"] = pred_nms["class_probs"][:-1, :]
+    class_probs = pred_nms.get("class_probs")
+    if (class_probs is not None) and (
+        class_probs.shape[0] > len(config["class_names"])
+    ):
+        pred_nms["class_probs"] = class_probs[:-1, :]
 
     return pred_nms, features
 
@@ -737,7 +781,14 @@ def process_audio_array(
     _, spec, spec_np = compute_spectrogram(
         audio,
         sampling_rate,
-        config,
+        {
+            "fft_win_length": config["fft_win_length"],
+            "fft_overlap": config["fft_overlap"],
+            "spec_height": config["spec_height"],
+            "resize_factor": config["resize_factor"],
+            "spec_divide_factor": config["spec_divide_factor"],
+            "device": config["device"],
+        },
         return_np=config["spec_features"] or config["spec_slices"],
     )
 
@@ -756,7 +807,7 @@ def process_file(
     audio_file: str,
     model: torch.nn.Module,
     config: ProcessingConfiguration,
-) -> Union[Results, Any]:
+) -> Union[RunResults, Any]:
     """Process a single audio file with detection model.
 
     Will split the audio file into chunks if it is too long and
@@ -788,7 +839,7 @@ def process_file(
     # load audio file
     sampling_rate, audio_full = au.load_audio_file(
         audio_file,
-        time_exp_fact=config["time_expansion"],
+        time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
         max_duration=config["max_duration"],
@@ -840,7 +891,7 @@ def process_file(
     # convert results to a dictionary in the right format
     results = convert_results(
         file_id=os.path.basename(audio_file),
-        time_exp=config["time_expansion"],
+        time_exp=config.get("time_expansion", 1) or 1,
         duration=audio_full.shape[0] / float(sampling_rate),
         params=config,
         predictions=predictions,
@@ -877,3 +928,38 @@ def summarize_results(results, predictions, config):
                 config["class_names"][class_index].ljust(30)
                 + str(round(class_overall[class_index], 3))
             )
+
+
+def get_default_run_config(**kwargs) -> ProcessingConfiguration:
+    """Get default configuration for running detection model."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    args: ProcessingConfiguration = {
+        "detection_threshold": DETECTION_THRESHOLD,
+        "spec_slices": False,
+        "chunk_size": 3,
+        "spec_features": False,
+        "cnn_features": False,
+        "quiet": True,
+        "target_samp_rate": TARGET_SAMPLERATE_HZ,
+        "fft_win_length": FFT_WIN_LENGTH_S,
+        "fft_overlap": FFT_OVERLAP,
+        "resize_factor": RESIZE_FACTOR,
+        "spec_divide_factor": SPEC_DIVIDE_FACTOR,
+        "spec_height": SPEC_HEIGHT,
+        "scale_raw_audio": SCALE_RAW_AUDIO,
+        "device": device,
+        "class_names": [],
+        "time_expansion": 1,
+        "top_n": 3,
+        "return_raw_preds": False,
+        "max_duration": None,
+        "nms_kernel_size": NMS_KERNEL_SIZE,
+        "max_freq": MAX_FREQ_HZ,
+        "min_freq": MIN_FREQ_HZ,
+        "nms_top_k_per_sec": NMS_TOP_K_PER_SEC,
+    }
+    return {
+        **args,
+        **kwargs,
+    }

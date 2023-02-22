@@ -523,7 +523,7 @@ class LossPlotter(object):
     def save_confusion_matrix(self, gt, pred):
         plt.figure(0)
         cm = confusion_matrix(
-            gt, pred, np.arange(len(self.class_names))
+            gt, pred, labels=np.arange(len(self.class_names))
         ).astype(np.float32)
         cm_norm = cm.sum(1)
         valid_inds = np.where(cm_norm > 0)[0]

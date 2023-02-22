@@ -1,7 +1,18 @@
 import datetime
 import os
 
-import numpy as np
+TARGET_SAMPLERATE_HZ = 256000
+FFT_WIN_LENGTH_S = 512 / 256000.0
+FFT_OVERLAP = 0.75
+MAX_FREQ_HZ = 120000
+MIN_FREQ_HZ = 10000
+RESIZE_FACTOR = 0.5
+SPEC_DIVIDE_FACTOR = 32
+SPEC_HEIGHT = 256
+SCALE_RAW_AUDIO = False
+DETECTION_THRESHOLD = 0.01
+NMS_KERNEL_SIZE = 9
+NMS_TOP_K_PER_SEC = 200
 
 
 def mk_dir(path):
@@ -30,35 +41,39 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     # spec parameters
     params[
         "target_samp_rate"
-    ] = 256000  # resamples all audio so that it is at this rate
-    params["fft_win_length"] = (
-        512 / 256000.0
-    )  # in milliseconds, amount of time per stft time step
-    params["fft_overlap"] = 0.75  # stft window overlap
+    ] = TARGET_SAMPLERATE_HZ  # resamples all audio so that it is at this rate
+    params[
+        "fft_win_length"
+    ] = FFT_WIN_LENGTH_S  # in milliseconds, amount of time per stft time step
+    params["fft_overlap"] = FFT_OVERLAP  # stft window overlap
 
     params[
         "max_freq"
-    ] = 120000  # in Hz, everything above this will be discarded
-    params["min_freq"] = 10000  # in Hz, everything below this will be discarded
+    ] = MAX_FREQ_HZ  # in Hz, everything above this will be discarded
+    params[
+        "min_freq"
+    ] = MIN_FREQ_HZ  # in Hz, everything below this will be discarded
 
     params[
         "resize_factor"
-    ] = 0.5  # resize so the spectrogram at the input of the network
+    ] = RESIZE_FACTOR  # resize so the spectrogram at the input of the network
     params[
         "spec_height"
-    ] = 256  # units are number of frequency bins (before resizing is performed)
+    ] = SPEC_HEIGHT  # units are number of frequency bins (before resizing is performed)
     params[
         "spec_train_width"
     ] = 512  # units are number of time steps (before resizing is performed)
     params[
         "spec_divide_factor"
-    ] = 32  # spectrogram should be divisible by this amount in width and height
+    ] = SPEC_DIVIDE_FACTOR  # spectrogram should be divisible by this amount in width and height
 
     # spec processing params
     params[
         "denoise_spec_avg"
     ] = True  # removes the mean for each frequency band
-    params["scale_raw_audio"] = False  # scales the raw audio to [-1, 1]
+    params[
+        "scale_raw_audio"
+    ] = SCALE_RAW_AUDIO  # scales the raw audio to [-1, 1]
     params[
         "max_scale_spec"
     ] = False  # scales the spectrogram so that it is max 1
@@ -73,11 +88,13 @@ def get_params(make_dirs=False, exps_dir="../../experiments/"):
     ] = 0.01  # if start of GT calls are within this time from the start/end of file ignore
     params[
         "detection_threshold"
-    ] = 0.01  # the smaller this is the better the recall will be
-    params["nms_kernel_size"] = 9
+    ] = DETECTION_THRESHOLD  # the smaller this is the better the recall will be
+    params[
+        "nms_kernel_size"
+    ] = NMS_KERNEL_SIZE  # size of the kernel for non-max suppression
     params[
         "nms_top_k_per_sec"
-    ] = 200  # keep top K highest predictions per second of audio
+    ] = NMS_TOP_K_PER_SEC  # keep top K highest predictions per second of audio
     params["target_sigma"] = 2.0
 
     # augmentation params
