@@ -114,7 +114,7 @@ if __name__ == "__main__":
     # load audio and crop
     print("\nProcessing: " + os.path.basename(args_cmd["audio_file"]))
     print("\nOutput directory: " + args_cmd["op_dir"])
-    sampling_rate, audio = au.load_audio_file(
+    sampling_rate, audio = au.load_audio(
         args_cmd["audio_file"],
         args_cmd["time_exp"],
         params_bd["target_samp_rate"],

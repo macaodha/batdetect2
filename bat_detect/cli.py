@@ -92,7 +92,7 @@ def main():
     model, params = du.load_model(args["model_path"])
 
     print("\nInput directory: " + args["audio_dir"])
-    files = du.get_audio_files(args["audio_dir"])
+    files = du.list_audio_files(args["audio_dir"])
 
     print(f"Number of audio files: {len(files)}")
     print("\nSaving results to: " + args["ann_dir"])

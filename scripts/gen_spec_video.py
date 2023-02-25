@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # load audio file
     print("\nProcessing: " + os.path.basename(audio_file))
     print("\nOutput directory: " + op_dir)
-    sampling_rate, audio = au.load_audio_file(
+    sampling_rate, audio = au.load_audio(
         audio_file, args["time_expansion_factor"], params["target_samp_rate"]
     )
     audio = audio[

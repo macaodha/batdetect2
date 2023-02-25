@@ -373,7 +373,7 @@ class AudioLoader(torch.utils.data.Dataset):
             index = np.random.randint(0, len(self.data_anns))
 
         audio_file = self.data_anns[index]["file_path"]
-        sampling_rate, audio_raw = au.load_audio_file(
+        sampling_rate, audio_raw = au.load_audio(
             audio_file,
             self.data_anns[index]["time_exp"],
             self.params["target_samp_rate"],

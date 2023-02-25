@@ -43,19 +43,19 @@ DEFAULT_MODEL_PATH = os.path.join(
 
 __all__ = [
     "load_model",
-    "get_audio_files",
-    "get_default_config",
-    "format_results",
+    "list_audio_files",
+    "format_single_result",
     "save_results_to_file",
     "iterate_over_chunks",
     "process_spectrogram",
     "process_audio_array",
     "process_file",
     "DEFAULT_MODEL_PATH",
+    "DEFAULT_PROCESSING_CONFIGURATIONS",
 ]
 
 
-def get_audio_files(ip_dir: str) -> List[str]:
+def list_audio_files(ip_dir: str) -> List[str]:
     """Get all audio files in directory.
 
     Args:
@@ -98,13 +98,12 @@ class ModelParameters(TypedDict):
     class_names: List[str]
     """Class names. The model is trained to detect these classes."""
 
-    device: torch.device
-
 
 def load_model(
     model_path: str = DEFAULT_MODEL_PATH,
     load_weights: bool = True,
-) -> Tuple[torch.nn.Module, ModelParameters]:
+    device: Optional[torch.device] = None,
+) -> Tuple[models.DetectionModel, ModelParameters]:
     """Load model from file.
 
     Args:
@@ -120,7 +119,8 @@ def load_model(
     """
 
     # load model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if not os.path.isfile(model_path):
         raise FileNotFoundError("Model file not found.")
@@ -128,9 +128,8 @@ def load_model(
     net_params = torch.load(model_path, map_location=device)
 
     params = net_params["params"]
-    params["device"] = device
 
-    model: torch.nn.Module
+    model: models.DetectionModel
 
     if params["model_name"] == "Net2DFast":
         model = models.Net2DFast(
@@ -162,7 +161,7 @@ def load_model(
     if load_weights:
         model.load_state_dict(net_params["state_dict"])
 
-    model = model.to(params["device"])
+    model = model.to(device)
     model.eval()
 
     return model, params
@@ -285,30 +284,11 @@ class ResultParams(TypedDict):
     """Class names."""
 
 
-def format_results(
-    file_id: str,
-    time_exp: float,
-    duration: float,
+def get_annotations_from_preds(
     predictions,
     class_names: List[str],
-) -> FileAnnotations:
-    """Format results into the format expected by the annotation tool.
-
-    Args:
-        file_id (str): File ID.
-        time_exp (float): Time expansion factor.
-        duration (float): Duration of audio file.
-        predictions (dict): Predictions.
-
-    Returns:
-        dict: Results in the format expected by the annotation tool.
-    """
-    # Get a single class prediction for the file
-    class_overall = pp.overall_class_pred(
-        predictions["det_probs"],
-        predictions["class_probs"],
-    )
-
+) -> List[Annotation]:
+    """Get list of annotations from predictions."""
     # Get the best class prediction probability and index for each detection
     class_prob_best = predictions["class_probs"].max(0)
     class_ind_best = predictions["class_probs"].argmax(0)
@@ -344,6 +324,32 @@ def format_results(
             predictions["det_probs"],
         )
     ]
+    return annotations
+
+
+def format_single_result(
+    file_id: str,
+    time_exp: float,
+    duration: float,
+    predictions,
+    class_names: List[str],
+) -> FileAnnotations:
+    """Format results into the format expected by the annotation tool.
+
+    Args:
+        file_id (str): File ID.
+        time_exp (float): Time expansion factor.
+        duration (float): Duration of audio file.
+        predictions (dict): Predictions.
+
+    Returns:
+        dict: Results in the format expected by the annotation tool.
+    """
+    # Get a single class prediction for the file
+    class_overall = pp.overall_class_pred(
+        predictions["det_probs"],
+        predictions["class_probs"],
+    )
 
     return {
         "id": file_id,
@@ -352,7 +358,7 @@ def format_results(
         "notes": "Automatically generated.",
         "time_exp": time_exp,
         "duration": round(float(duration), 4),
-        "annotation": annotations,
+        "annotation": get_annotations_from_preds(predictions, class_names),
         "class_name": class_names[np.argmax(class_overall)],
     }
 
@@ -383,7 +389,7 @@ def convert_results(
         dict: Dictionary with results.
 
     """
-    pred_dict = format_results(
+    pred_dict = format_single_result(
         file_id,
         time_exp,
         duration,
@@ -490,47 +496,11 @@ def save_results_to_file(results, op_path: str) -> None:
         json.dump(results["pred_dict"], jsonfile, indent=2, sort_keys=True)
 
 
-class SpectrogramParameters(TypedDict):
-    """Parameters for generating spectrograms."""
-
-    fft_win_length: float
-    """Length of the FFT window in seconds."""
-
-    fft_overlap: float
-    """Percentage of overlap between FFT windows."""
-
-    spec_height: int
-    """Height of the spectrogram in pixels."""
-
-    resize_factor: float
-    """Factor to resize the spectrogram by."""
-
-    spec_divide_factor: int
-    """Factor to divide the spectrogram by."""
-
-    device: torch.device
-    """Device to store the spectrogram on."""
-
-    max_freq: int
-    """Maximum frequency to display in the spectrogram."""
-
-    min_freq: int
-    """Minimum frequency to display in the spectrogram."""
-
-    spec_scale: str
-    """Scale to use for the spectrogram."""
-
-    denoise_spec_avg: bool
-    """Whether to denoise the spectrogram by averaging."""
-
-    max_scale_spec: bool
-    """Whether to scale the spectrogram so that its max is 1."""
-
-
 def compute_spectrogram(
     audio: np.ndarray,
     sampling_rate: int,
-    params: SpectrogramParameters,
+    params: au.SpectrogramParameters,
+    device: torch.device,
     return_np: bool = False,
 ) -> Tuple[float, torch.Tensor, Optional[np.ndarray]]:
     """Compute a spectrogram from an audio array.
@@ -578,7 +548,7 @@ def compute_spectrogram(
     spec, _ = au.generate_spectrogram(audio, sampling_rate, params)
 
     # convert to pytorch
-    spec = torch.from_numpy(spec).to(params["device"])
+    spec = torch.from_numpy(spec).to(device)
 
     # add batch and channel dimensions
     spec = spec.unsqueeze(0).unsqueeze(0)
@@ -672,9 +642,6 @@ class ProcessingConfiguration(TypedDict):
     scale_raw_audio: bool
     """Whether to scale the raw audio to be between -1 and 1."""
 
-    device: torch.device
-    """Device to run the model on."""
-
     class_names: List[str]
     """Names of the classes the model can detect."""
 
@@ -721,33 +688,12 @@ class ProcessingConfiguration(TypedDict):
     """Whether to return spectrogram slices."""
 
 
-def process_spectrogram(
+def _process_spectrogram(
     spec: torch.Tensor,
     samplerate: int,
-    model: torch.nn.Module,
+    model: models.DetectionModel,
     config: ProcessingConfiguration,
-):
-    """Process a spectrogram with detection model.
-
-    Will run non-maximum suppression on the output of the model.
-
-    Parameters
-    ----------
-    spec : torch.Tensor
-
-    samplerate : int
-
-    model : torch.nn.Module
-        Detection model.
-
-    config : pp.NonMaximumSuppressionConfig
-        Parameters for non-maximum suppression.
-
-    Returns
-    -------
-    pred_nms : Dict[str, np.ndarray]
-    features : Dict[str, np.ndarray]
-    """
+) -> Tuple[List[Annotation], List[np.ndarray]]:
     # evaluate model
     with torch.no_grad():
         outputs = model(spec, return_feats=config["cnn_features"])
@@ -781,12 +727,96 @@ def process_spectrogram(
     return pred_nms, features
 
 
+def process_spectrogram(
+    spec: torch.Tensor,
+    samplerate: int,
+    model: models.DetectionModel,
+    config: ProcessingConfiguration,
+) -> Tuple[List[Annotation], List[np.ndarray]]:
+    """Process a spectrogram with detection model.
+
+    Will run non-maximum suppression on the output of the model.
+
+    Parameters
+    ----------
+    spec : torch.Tensor
+
+    samplerate : int
+
+    model : torch.nn.Module
+        Detection model.
+
+    config : pp.NonMaximumSuppressionConfig
+        Parameters for non-maximum suppression.
+
+    Returns
+    -------
+    annotations : List[Annotation]
+        List of annotations predicted by the model.
+    features : List[np.ndarray]
+        List of CNN features associated with each annotation.
+        Is empty if `config["cnn_features"]` is False.
+    """
+    pred_nms, features = _process_spectrogram(
+        spec,
+        samplerate,
+        model,
+        config,
+    )
+
+    annotations = get_annotations_from_preds(
+        pred_nms,
+        config["class_names"],
+    )
+
+    return annotations, features
+
+
+def _process_audio_array(
+    audio: np.ndarray,
+    sampling_rate: int,
+    model: torch.nn.Module,
+    config: ProcessingConfiguration,
+    device: torch.device,
+) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
+    # load audio file and compute spectrogram
+    _, spec, _ = compute_spectrogram(
+        audio,
+        sampling_rate,
+        {
+            "fft_win_length": config["fft_win_length"],
+            "fft_overlap": config["fft_overlap"],
+            "spec_height": config["spec_height"],
+            "resize_factor": config["resize_factor"],
+            "spec_divide_factor": config["spec_divide_factor"],
+            "max_freq": config["max_freq"],
+            "min_freq": config["min_freq"],
+            "spec_scale": config["spec_scale"],
+            "denoise_spec_avg": config["denoise_spec_avg"],
+            "max_scale_spec": config["max_scale_spec"],
+        },
+        device,
+        return_np=False,
+    )
+
+    # process spectrogram with model
+    pred_nms, features = _process_spectrogram(
+        spec,
+        sampling_rate,
+        model,
+        config,
+    )
+
+    return pred_nms, features, spec
+
+
 def process_audio_array(
     audio: np.ndarray,
     sampling_rate: int,
     model: torch.nn.Module,
     config: ProcessingConfiguration,
-):
+    device: torch.device,
+) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
     """Process a single audio array with detection model.
 
     Parameters
@@ -801,47 +831,42 @@ def process_audio_array(
     config : ProcessingConfiguration
         Configuration for processing.
 
+    device : torch.device
+        Device to use for processing.
+
     Returns
     -------
-    pred_nms : Dict[str, np.ndarray]
-    features : Dict[str, np.ndarray]
-    spec_np : np.ndarray
-    """
-    # load audio file and compute spectrogram
-    _, spec, spec_np = compute_spectrogram(
-        audio,
-        sampling_rate,
-        {
-            "fft_win_length": config["fft_win_length"],
-            "fft_overlap": config["fft_overlap"],
-            "spec_height": config["spec_height"],
-            "resize_factor": config["resize_factor"],
-            "spec_divide_factor": config["spec_divide_factor"],
-            "device": config["device"],
-            "max_freq": config["max_freq"],
-            "min_freq": config["min_freq"],
-            "spec_scale": config["spec_scale"],
-            "denoise_spec_avg": config["denoise_spec_avg"],
-            "max_scale_spec": config["max_scale_spec"],
-        },
-        return_np=config["spec_features"] or config["spec_slices"],
-    )
+    annotations : List[Annotation]
+        List of annotations predicted by the model.
 
-    # process spectrogram with model
-    pred_nms, features = process_spectrogram(
-        spec,
+    features : List[np.ndarray]
+        List of CNN features associated with each annotation.
+
+    spec : torch.Tensor
+        Spectrogram of the audio used as input.
+
+    """
+    pred_nms, features, spec = _process_audio_array(
+        audio,
         sampling_rate,
         model,
         config,
+        device,
     )
 
-    return pred_nms, features, spec_np
+    annotations = get_annotations_from_preds(
+        pred_nms,
+        config["class_names"],
+    )
+
+    return annotations, features, spec
 
 
 def process_file(
     audio_file: str,
     model: torch.nn.Module,
     config: ProcessingConfiguration,
+    device: torch.device,
 ) -> Union[RunResults, Any]:
     """Process a single audio file with detection model.
 
@@ -872,7 +897,7 @@ def process_file(
     spec_slices = []
 
     # load audio file
-    sampling_rate, audio_full = au.load_audio_file(
+    sampling_rate, audio_full = au.load_audio(
         audio_file,
         time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],
@@ -881,7 +906,7 @@ def process_file(
     )
 
     # loop through larger file and split into chunks
-    # TODO fix so that it overlaps correctly and takes care of
+    # TODO: fix so that it overlaps correctly and takes care of
     # duplicate detections at borders
     for chunk_time, audio in iterate_over_chunks(
         audio_full,
@@ -889,11 +914,12 @@ def process_file(
         config["chunk_size"],
     ):
         # Run detection model on chunk
-        pred_nms, features, spec_np = process_audio_array(
+        pred_nms, features, spec_np = _process_audio_array(
             audio,
             sampling_rate,
             model,
             config,
+            device,
         )
 
         # add chunk time to start and end times
@@ -965,39 +991,30 @@ def summarize_results(results, predictions, config):
             )
 
 
-def get_default_config(**kwargs) -> ProcessingConfiguration:
-    """Get default configuration for running detection model."""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    args: ProcessingConfiguration = {
-        "detection_threshold": DETECTION_THRESHOLD,
-        "spec_slices": False,
-        "chunk_size": 3,
-        "spec_features": False,
-        "cnn_features": False,
-        "quiet": True,
-        "target_samp_rate": TARGET_SAMPLERATE_HZ,
-        "fft_win_length": FFT_WIN_LENGTH_S,
-        "fft_overlap": FFT_OVERLAP,
-        "resize_factor": RESIZE_FACTOR,
-        "spec_divide_factor": SPEC_DIVIDE_FACTOR,
-        "spec_height": SPEC_HEIGHT,
-        "scale_raw_audio": SCALE_RAW_AUDIO,
-        "device": device,
-        "class_names": [],
-        "time_expansion": 1,
-        "top_n": 3,
-        "return_raw_preds": False,
-        "max_duration": None,
-        "nms_kernel_size": NMS_KERNEL_SIZE,
-        "max_freq": MAX_FREQ_HZ,
-        "min_freq": MIN_FREQ_HZ,
-        "nms_top_k_per_sec": NMS_TOP_K_PER_SEC,
-        "spec_scale": SPEC_SCALE,
-        "denoise_spec_avg": DENOISE_SPEC_AVG,
-        "max_scale_spec": MAX_SCALE_SPEC,
-    }
-    return {
-        **args,
-        **kwargs,
-    }
+DEFAULT_PROCESSING_CONFIGURATIONS: ProcessingConfiguration = {
+    "detection_threshold": DETECTION_THRESHOLD,
+    "spec_slices": False,
+    "chunk_size": 3,
+    "spec_features": False,
+    "cnn_features": False,
+    "quiet": True,
+    "target_samp_rate": TARGET_SAMPLERATE_HZ,
+    "fft_win_length": FFT_WIN_LENGTH_S,
+    "fft_overlap": FFT_OVERLAP,
+    "resize_factor": RESIZE_FACTOR,
+    "spec_divide_factor": SPEC_DIVIDE_FACTOR,
+    "spec_height": SPEC_HEIGHT,
+    "scale_raw_audio": SCALE_RAW_AUDIO,
+    "class_names": [],
+    "time_expansion": 1,
+    "top_n": 3,
+    "return_raw_preds": False,
+    "max_duration": None,
+    "nms_kernel_size": NMS_KERNEL_SIZE,
+    "max_freq": MAX_FREQ_HZ,
+    "min_freq": MIN_FREQ_HZ,
+    "nms_top_k_per_sec": NMS_TOP_K_PER_SEC,
+    "spec_scale": SPEC_SCALE,
+    "denoise_spec_avg": DENOISE_SPEC_AVG,
+    "max_scale_spec": MAX_SCALE_SPEC,
+}

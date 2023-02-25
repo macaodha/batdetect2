@@ -1,9 +1,11 @@
+from typing import NamedTuple, Optional
+
 import torch
 import torch.fft
 import torch.nn.functional as F
 from torch import nn
 
-from .model_helpers import (
+from bat_detect.detector.model_helpers import (
     ConvBlockDownCoordF,
     ConvBlockDownStandard,
     ConvBlockUpF,
@@ -11,11 +13,86 @@ from .model_helpers import (
     SelfAttention,
 )
 
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
+
 __all__ = [
     "Net2DFast",
     "Net2DFastNoAttn",
     "Net2DFastNoCoordConv",
+    "ModelOutput",
+    "DetectionModel",
 ]
+
+
+class ModelOutput(NamedTuple):
+    """Output of the detection model."""
+
+    pred_det: torch.Tensor
+    """Tensor with predict detection probabilities."""
+
+    pred_size: torch.Tensor
+    """Tensor with predicted bounding box sizes."""
+
+    pred_class: torch.Tensor
+    """Tensor with predicted class probabilities."""
+
+    pred_class_un_norm: torch.Tensor
+    """Tensor with predicted class probabilities before softmax."""
+
+    pred_emb: Optional[torch.Tensor]
+    """Tensor with embeddings."""
+
+    features: Optional[torch.Tensor]
+    """Tensor with intermediate features."""
+
+
+class DetectionModel(Protocol):
+    """Protocol for detection models.
+
+    This protocol is used to define the interface for the detection models.
+    This allows us to use the same code for training and inference, even
+    though the models are different.
+    """
+
+    num_classes: int
+    """Number of classes the model can classify."""
+
+    emb_dim: int
+    """Dimension of the embedding vector."""
+
+    num_filts: int
+    """Number of filters in the model."""
+
+    resize_factor: float
+    """Factor by which the input is resized."""
+
+    ip_height: int
+    """Height of the input image."""
+
+    def forward(
+        self,
+        ip: torch.Tensor,
+        return_feats: bool = False,
+    ) -> ModelOutput:
+        """Forward pass of the model.
+
+        When `return_feats` is `True`, the model should return the
+        intermediate features of the model.
+        """
+
+    def __call__(
+        self,
+        ip: torch.Tensor,
+        return_feats: bool = False,
+    ) -> ModelOutput:
+        """Forward pass of the model.
+
+        When `return_feats` is `True`, the model should return the
+        int
+        """
 
 
 class Net2DFast(nn.Module):
@@ -27,7 +104,7 @@ class Net2DFast(nn.Module):
         ip_height=128,
         resize_factor=0.5,
     ):
-        super(Net2DFast, self).__init__()
+        super().__init__()
         self.num_classes = num_classes
         self.emb_dim = emb_dim
         self.num_filts = num_filts
@@ -102,7 +179,7 @@ class Net2DFast(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False):
+    def forward(self, ip, return_feats=False) -> ModelOutput:
 
         # encoder
         x1 = self.conv_dn_0(ip)
@@ -125,17 +202,14 @@ class Net2DFast(nn.Module):
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
-        op = {}
-        op["pred_det"] = comb[:, :-1, :, :].sum(1).unsqueeze(1)
-        op["pred_size"] = F.relu(self.conv_size_op(x), inplace=True)
-        op["pred_class"] = comb
-        op["pred_class_un_norm"] = cls
-        if self.emb_dim > 0:
-            op["pred_emb"] = self.conv_emb(x)
-        if return_feats:
-            op["features"] = x
-
-        return op
+        return ModelOutput(
+            pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
+            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_class=comb,
+            pred_class_un_norm=cls,
+            pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
+            features=x if return_feats else None,
+        )
 
 
 class Net2DFastNoAttn(nn.Module):
@@ -147,7 +221,7 @@ class Net2DFastNoAttn(nn.Module):
         ip_height=128,
         resize_factor=0.5,
     ):
-        super(Net2DFastNoAttn, self).__init__()
+        super().__init__()
 
         self.num_classes = num_classes
         self.emb_dim = emb_dim
@@ -219,8 +293,7 @@ class Net2DFastNoAttn(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False):
-
+    def forward(self, ip, return_feats=False) -> ModelOutput:
         x1 = self.conv_dn_0(ip)
         x2 = self.conv_dn_1(x1)
         x3 = self.conv_dn_2(x2)
@@ -237,17 +310,14 @@ class Net2DFastNoAttn(nn.Module):
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
-        op = {}
-        op["pred_det"] = comb[:, :-1, :, :].sum(1).unsqueeze(1)
-        op["pred_size"] = F.relu(self.conv_size_op(x), inplace=True)
-        op["pred_class"] = comb
-        op["pred_class_un_norm"] = cls
-        if self.emb_dim > 0:
-            op["pred_emb"] = self.conv_emb(x)
-        if return_feats:
-            op["features"] = x
-
-        return op
+        return ModelOutput(
+            pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
+            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_class=comb,
+            pred_class_un_norm=cls,
+            pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
+            features=x if return_feats else None,
+        )
 
 
 class Net2DFastNoCoordConv(nn.Module):
@@ -259,7 +329,7 @@ class Net2DFastNoCoordConv(nn.Module):
         ip_height=128,
         resize_factor=0.5,
     ):
-        super(Net2DFastNoCoordConv, self).__init__()
+        super().__init__()
 
         self.num_classes = num_classes
         self.emb_dim = emb_dim
@@ -333,7 +403,7 @@ class Net2DFastNoCoordConv(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False):
+    def forward(self, ip, return_feats=False) -> ModelOutput:
 
         x1 = self.conv_dn_0(ip)
         x2 = self.conv_dn_1(x1)
@@ -352,14 +422,11 @@ class Net2DFastNoCoordConv(nn.Module):
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
-        op = {}
-        op["pred_det"] = comb[:, :-1, :, :].sum(1).unsqueeze(1)
-        op["pred_size"] = F.relu(self.conv_size_op(x), inplace=True)
-        op["pred_class"] = comb
-        op["pred_class_un_norm"] = cls
-        if self.emb_dim > 0:
-            op["pred_emb"] = self.conv_emb(x)
-        if return_feats:
-            op["features"] = x
-
-        return op
+        return ModelOutput(
+            pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
+            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_class=comb,
+            pred_class_un_norm=cls,
+            pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
+            features=x if return_feats else None,
+        )

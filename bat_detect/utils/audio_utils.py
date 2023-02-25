@@ -5,11 +5,85 @@ import librosa
 import numpy as np
 import torch
 
+from bat_detect.detector.parameters import (
+    DENOISE_SPEC_AVG,
+    DETECTION_THRESHOLD,
+    FFT_OVERLAP,
+    FFT_WIN_LENGTH_S,
+    MAX_FREQ_HZ,
+    MAX_SCALE_SPEC,
+    MIN_FREQ_HZ,
+    NMS_KERNEL_SIZE,
+    NMS_TOP_K_PER_SEC,
+    RESIZE_FACTOR,
+    SCALE_RAW_AUDIO,
+    SPEC_DIVIDE_FACTOR,
+    SPEC_HEIGHT,
+    SPEC_SCALE,
+)
+
 from . import wavfile
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
+
 __all__ = [
-    "load_audio_file",
+    "load_audio",
+    "generate_spectrogram",
+    "pad_audio",
+    "SpectrogramParameters",
+    "DEFAULT_SPECTROGRAM_PARAMETERS",
 ]
+
+
+class SpectrogramParameters(TypedDict):
+    """Parameters for generating spectrograms."""
+
+    fft_win_length: float
+    """Length of the FFT window in seconds."""
+
+    fft_overlap: float
+    """Percentage of overlap between FFT windows."""
+
+    spec_height: int
+    """Height of the spectrogram in pixels."""
+
+    resize_factor: float
+    """Factor to resize the spectrogram by."""
+
+    spec_divide_factor: int
+    """Factor to divide the spectrogram by."""
+
+    max_freq: int
+    """Maximum frequency to display in the spectrogram."""
+
+    min_freq: int
+    """Minimum frequency to display in the spectrogram."""
+
+    spec_scale: str
+    """Scale to use for the spectrogram."""
+
+    denoise_spec_avg: bool
+    """Whether to denoise the spectrogram by averaging."""
+
+    max_scale_spec: bool
+    """Whether to scale the spectrogram so that its max is 1."""
+
+
+DEFAULT_SPECTROGRAM_PARAMETERS: SpectrogramParameters = {
+    "fft_win_length": FFT_WIN_LENGTH_S,
+    "fft_overlap": FFT_OVERLAP,
+    "spec_height": SPEC_HEIGHT,
+    "resize_factor": RESIZE_FACTOR,
+    "spec_divide_factor": SPEC_DIVIDE_FACTOR,
+    "max_freq": MAX_FREQ_HZ,
+    "min_freq": MIN_FREQ_HZ,
+    "spec_scale": SPEC_SCALE,
+    "denoise_spec_avg": DENOISE_SPEC_AVG,
+    "max_scale_spec": MAX_SCALE_SPEC,
+}
 
 
 def time_to_x_coords(time_in_file, sampling_rate, fft_win_length, fft_overlap):
@@ -36,7 +110,10 @@ def generate_spectrogram(
 
     # generate spectrogram
     spec = gen_mag_spectrogram(
-        audio, sampling_rate, params["fft_win_length"], params["fft_overlap"]
+        audio,
+        sampling_rate,
+        params["fft_win_length"],
+        params["fft_overlap"],
     )
 
     # crop to min/max freq
@@ -70,6 +147,7 @@ def generate_spectrogram(
         spec = np.log1p(log_scaling * spec_cropped)
     elif params["spec_scale"] == "pcen":
         spec = pcen(spec_cropped, sampling_rate)
+
     elif params["spec_scale"] == "none":
         pass
 
@@ -109,13 +187,13 @@ def generate_spectrogram(
     return spec, spec_for_viz
 
 
-def load_audio_file(
+def load_audio(
     audio_file: str,
     time_exp_fact: float,
     target_samp_rate: int,
     scale: bool = False,
     max_duration: Optional[float] = None,
-):
+) -> Tuple[int, np.ndarray]:
     """Load an audio file and resample it to the target sampling rate.
 
     The audio is also scaled to [-1, 1] and clipped to the maximum duration.

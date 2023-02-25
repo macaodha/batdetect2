@@ -72,7 +72,7 @@ def load_data(
     sampling_rates = []
     file_names = []
     for cur_file in anns:
-        sampling_rate, audio_orig = au.load_audio_file(
+        sampling_rate, audio_orig = au.load_audio(
             cur_file["file_path"],
             cur_file["time_exp"],
             params["target_samp_rate"],

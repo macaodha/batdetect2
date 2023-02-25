@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from bat_detect.detector.models import ModelOutput
+
 try:
     from typing import TypedDict
 except ImportError:
@@ -106,24 +108,8 @@ class PredictionResults(TypedDict):
     """Class probabilities."""
 
 
-class ModelOutputs(TypedDict):
-    """Outputs of the model."""
-
-    pred_det: torch.Tensor
-    """Detection probabilities."""
-
-    pred_size: torch.Tensor
-    """Box sizes."""
-
-    pred_class: Optional[torch.Tensor]
-    """Class probabilities."""
-
-    features: Optional[torch.Tensor]
-    """Features extracted by the model."""
-
-
 def run_nms(
-    outputs: ModelOutputs,
+    outputs: ModelOutput,
     params: NonMaximumSuppressionConfig,
     sampling_rate: np.ndarray,
 ) -> Tuple[List[PredictionResults], List[np.ndarray]]:
@@ -135,16 +121,14 @@ def run_nms(
     the features. Each element of the lists corresponds to one
     element of the batch.
     """
-
-    pred_det = outputs["pred_det"]  # probability of box
-    pred_size = outputs["pred_size"]  # box size
+    pred_det, pred_size, pred_class, _, _, features = outputs
 
     pred_det_nms = non_max_suppression(pred_det, params["nms_kernel_size"])
     freq_rescale = (params["max_freq"] - params["min_freq"]) / pred_det.shape[
         -2
     ]
 
-    # NOTE there will be small differences depending on which sampling rate is chosen
+    # NOTE: there will be small differences depending on which sampling rate is chosen
     # as we are choosing the same sampling rate for the entire batch
     duration = x_coords_to_time(
         pred_det.shape[-1],
@@ -172,10 +156,16 @@ def run_nms(
         pred["x_pos"] = x_pos[num_detection, valid_inds]
         pred["y_pos"] = y_pos[num_detection, valid_inds]
         pred["bb_width"] = pred_size[
-            num_detection, 0, pred["y_pos"], pred["x_pos"]
+            num_detection,
+            0,
+            pred["y_pos"],
+            pred["x_pos"],
         ]
         pred["bb_height"] = pred_size[
-            num_detection, 1, pred["y_pos"], pred["x_pos"]
+            num_detection,
+            1,
+            pred["y_pos"],
+            pred["x_pos"],
         ]
         pred["start_times"] = x_coords_to_time(
             pred["x_pos"].float() / params["resize_factor"],
@@ -198,7 +188,6 @@ def run_nms(
         )
 
         # extract the per class votes
-        pred_class = outputs.get("pred_class")
         if pred_class is not None:
             pred["class_probs"] = pred_class[
                 num_detection,
@@ -208,7 +197,6 @@ def run_nms(
             ]
 
         # extract the model features
-        features = outputs.get("features")
         if features is not None:
             feat = features[
                 num_detection,
