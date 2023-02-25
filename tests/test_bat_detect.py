@@ -174,8 +174,7 @@ def test_process_spectrogram_with_model():
 
     assert features is not None
     assert isinstance(features, list)
-    # By default will not return cnn features
-    assert len(features) == 0
+    assert len(features) == 1
 
 
 def test_process_audio_with_model():
@@ -205,8 +204,7 @@ def test_process_audio_with_model():
 
     assert features is not None
     assert isinstance(features, list)
-    # By default will not return cnn features
-    assert len(features) == 0
+    assert len(features) == 1
 
     assert spec is not None
     assert isinstance(spec, torch.Tensor)

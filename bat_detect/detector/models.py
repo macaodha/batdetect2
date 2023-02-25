@@ -42,10 +42,7 @@ class ModelOutput(NamedTuple):
     pred_class_un_norm: torch.Tensor
     """Tensor with predicted class probabilities before softmax."""
 
-    pred_emb: Optional[torch.Tensor]
-    """Tensor with embeddings."""
-
-    features: Optional[torch.Tensor]
+    features: torch.Tensor
     """Tensor with intermediate features."""
 
 
@@ -207,8 +204,7 @@ class Net2DFast(nn.Module):
             pred_size=F.relu(self.conv_size_op(x), inplace=True),
             pred_class=comb,
             pred_class_un_norm=cls,
-            pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
-            features=x if return_feats else None,
+            features=x,
         )
 
 
@@ -315,8 +311,7 @@ class Net2DFastNoAttn(nn.Module):
             pred_size=F.relu(self.conv_size_op(x), inplace=True),
             pred_class=comb,
             pred_class_un_norm=cls,
-            pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
-            features=x if return_feats else None,
+            features=x,
         )
 
 
@@ -428,5 +423,5 @@ class Net2DFastNoCoordConv(nn.Module):
             pred_class=comb,
             pred_class_un_norm=cls,
             pred_emb=self.conv_emb(x) if self.emb_dim > 0 else None,
-            features=x if return_feats else None,
+            features=x,
         )

@@ -696,7 +696,7 @@ def _process_spectrogram(
 ) -> Tuple[List[Annotation], List[np.ndarray]]:
     # evaluate model
     with torch.no_grad():
-        outputs = model(spec, return_feats=config["cnn_features"])
+        outputs = model(spec)
 
     # run non-max suppression
     pred_nms_list, features = pp.run_nms(

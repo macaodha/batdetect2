@@ -121,7 +121,7 @@ def run_nms(
     the features. Each element of the lists corresponds to one
     element of the batch.
     """
-    pred_det, pred_size, pred_class, _, _, features = outputs
+    pred_det, pred_size, pred_class, _, features = outputs
 
     pred_det_nms = non_max_suppression(pred_det, params["nms_kernel_size"])
     freq_rescale = (params["max_freq"] - params["min_freq"]) / pred_det.shape[
