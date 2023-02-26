@@ -3,10 +3,19 @@ from typing import List, Optional, Tuple
 import numpy as np
 import torch
 
-import bat_detect.detector.models as md
 import bat_detect.utils.audio_utils as au
 import bat_detect.utils.detector_utils as du
-from bat_detect.detector.parameters import TARGET_SAMPLERATE_HZ
+from bat_detect.detector.parameters import (
+    DEFAULT_PROCESSING_CONFIGURATIONS,
+    DEFAULT_SPECTROGRAM_PARAMETERS,
+    TARGET_SAMPLERATE_HZ,
+)
+from bat_detect.types import (
+    Annotation,
+    DetectionModel,
+    ProcessingConfiguration,
+    SpectrogramParameters,
+)
 from bat_detect.utils.detector_utils import list_audio_files, load_model
 
 # Use GPU if available
@@ -24,12 +33,12 @@ __all__ = [
 ]
 
 
-def get_config(**kwargs) -> du.ProcessingConfiguration:
+def get_config(**kwargs) -> ProcessingConfiguration:
     """Get default processing configuration.
 
     Can be used to override default parameters by passing keyword arguments.
     """
-    return {**du.DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}
+    return {**DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}
 
 
 def load_audio(
@@ -73,7 +82,7 @@ def load_audio(
 def generate_spectrogram(
     audio: np.ndarray,
     samp_rate: int,
-    config: Optional[au.SpectrogramParameters] = None,
+    config: Optional[SpectrogramParameters] = None,
     device: torch.device = DEVICE,
 ) -> torch.Tensor:
     """Generate spectrogram from audio array.
@@ -93,7 +102,7 @@ def generate_spectrogram(
         Spectrogram.
     """
     if config is None:
-        config = au.DEFAULT_SPECTROGRAM_PARAMETERS
+        config = DEFAULT_SPECTROGRAM_PARAMETERS
 
     _, spec, _ = du.compute_spectrogram(
         audio,
@@ -108,8 +117,8 @@ def generate_spectrogram(
 
 def process_file(
     audio_file: str,
-    model: md.DetectionModel,
-    config: Optional[du.ProcessingConfiguration] = None,
+    model: DetectionModel,
+    config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
 ) -> du.RunResults:
     """Process audio file with model.
@@ -126,7 +135,7 @@ def process_file(
         Device to use, by default tries to use GPU if available.
     """
     if config is None:
-        config = du.DEFAULT_PROCESSING_CONFIGURATIONS
+        config = DEFAULT_PROCESSING_CONFIGURATIONS
 
     return du.process_file(
         audio_file,
@@ -139,9 +148,9 @@ def process_file(
 def process_spectrogram(
     spec: torch.Tensor,
     samp_rate: int,
-    model: md.DetectionModel,
-    config: Optional[du.ProcessingConfiguration] = None,
-) -> Tuple[List[du.Annotation], List[np.ndarray]]:
+    model: DetectionModel,
+    config: Optional[ProcessingConfiguration] = None,
+) -> Tuple[List[Annotation], List[np.ndarray]]:
     """Process spectrogram with model.
 
     Parameters
@@ -160,7 +169,7 @@ def process_spectrogram(
     DetectionResult
     """
     if config is None:
-        config = du.DEFAULT_PROCESSING_CONFIGURATIONS
+        config = DEFAULT_PROCESSING_CONFIGURATIONS
 
     return du.process_spectrogram(
         spec,
@@ -173,10 +182,10 @@ def process_spectrogram(
 def process_audio(
     audio: np.ndarray,
     samp_rate: int,
-    model: md.DetectionModel,
-    config: Optional[du.ProcessingConfiguration] = None,
+    model: DetectionModel,
+    config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
-) -> Tuple[List[du.Annotation], List[np.ndarray], torch.Tensor]:
+) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
     """Process audio array with model.
 
     Parameters
@@ -204,7 +213,7 @@ def process_audio(
         Spectrogram of the audio used for prediction.
     """
     if config is None:
-        config = du.DEFAULT_PROCESSING_CONFIGURATIONS
+        config = DEFAULT_PROCESSING_CONFIGURATIONS
 
     return du.process_audio_array(
         audio,

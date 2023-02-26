@@ -7,7 +7,7 @@ Example usage:
 import argparse
 import os
 
-import bat_detect.utils.detector_utils as du
+from bat_detect import api
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 

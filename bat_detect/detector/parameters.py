@@ -1,6 +1,11 @@
 import datetime
 import os
 
+from bat_detect.types import (
+    ProcessingConfiguration,
+    SpectrogramParameters,
+)
+
 TARGET_SAMPLERATE_HZ = 256000
 FFT_WIN_LENGTH_S = 512 / 256000.0
 FFT_OVERLAP = 0.75
@@ -16,6 +21,56 @@ NMS_TOP_K_PER_SEC = 200
 SPEC_SCALE = "pcen"
 DENOISE_SPEC_AVG = True
 MAX_SCALE_SPEC = False
+
+
+DEFAULT_MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "models",
+    "Net2DFast_UK_same.pth.tar",
+)
+
+
+DEFAULT_SPECTROGRAM_PARAMETERS: SpectrogramParameters = {
+    "fft_win_length": FFT_WIN_LENGTH_S,
+    "fft_overlap": FFT_OVERLAP,
+    "spec_height": SPEC_HEIGHT,
+    "resize_factor": RESIZE_FACTOR,
+    "spec_divide_factor": SPEC_DIVIDE_FACTOR,
+    "max_freq": MAX_FREQ_HZ,
+    "min_freq": MIN_FREQ_HZ,
+    "spec_scale": SPEC_SCALE,
+    "denoise_spec_avg": DENOISE_SPEC_AVG,
+    "max_scale_spec": MAX_SCALE_SPEC,
+}
+
+
+DEFAULT_PROCESSING_CONFIGURATIONS: ProcessingConfiguration = {
+    "detection_threshold": DETECTION_THRESHOLD,
+    "spec_slices": False,
+    "chunk_size": 3,
+    "spec_features": False,
+    "cnn_features": False,
+    "quiet": True,
+    "target_samp_rate": TARGET_SAMPLERATE_HZ,
+    "fft_win_length": FFT_WIN_LENGTH_S,
+    "fft_overlap": FFT_OVERLAP,
+    "resize_factor": RESIZE_FACTOR,
+    "spec_divide_factor": SPEC_DIVIDE_FACTOR,
+    "spec_height": SPEC_HEIGHT,
+    "scale_raw_audio": SCALE_RAW_AUDIO,
+    "class_names": [],
+    "time_expansion": 1,
+    "top_n": 3,
+    "return_raw_preds": False,
+    "max_duration": None,
+    "nms_kernel_size": NMS_KERNEL_SIZE,
+    "max_freq": MAX_FREQ_HZ,
+    "min_freq": MIN_FREQ_HZ,
+    "nms_top_k_per_sec": NMS_TOP_K_PER_SEC,
+    "spec_scale": SPEC_SCALE,
+    "denoise_spec_avg": DENOISE_SPEC_AVG,
+    "max_scale_spec": MAX_SCALE_SPEC,
+}
 
 
 def mk_dir(path):

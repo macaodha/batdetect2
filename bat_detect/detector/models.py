@@ -1,5 +1,3 @@
-from typing import NamedTuple, Optional
-
 import torch
 import torch.fft
 import torch.nn.functional as F
@@ -12,84 +10,13 @@ from bat_detect.detector.model_helpers import (
     ConvBlockUpStandard,
     SelfAttention,
 )
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol
+from bat_detect.types import ModelOutput
 
 __all__ = [
     "Net2DFast",
     "Net2DFastNoAttn",
     "Net2DFastNoCoordConv",
-    "ModelOutput",
-    "DetectionModel",
 ]
-
-
-class ModelOutput(NamedTuple):
-    """Output of the detection model."""
-
-    pred_det: torch.Tensor
-    """Tensor with predict detection probabilities."""
-
-    pred_size: torch.Tensor
-    """Tensor with predicted bounding box sizes."""
-
-    pred_class: torch.Tensor
-    """Tensor with predicted class probabilities."""
-
-    pred_class_un_norm: torch.Tensor
-    """Tensor with predicted class probabilities before softmax."""
-
-    features: torch.Tensor
-    """Tensor with intermediate features."""
-
-
-class DetectionModel(Protocol):
-    """Protocol for detection models.
-
-    This protocol is used to define the interface for the detection models.
-    This allows us to use the same code for training and inference, even
-    though the models are different.
-    """
-
-    num_classes: int
-    """Number of classes the model can classify."""
-
-    emb_dim: int
-    """Dimension of the embedding vector."""
-
-    num_filts: int
-    """Number of filters in the model."""
-
-    resize_factor: float
-    """Factor by which the input is resized."""
-
-    ip_height: int
-    """Height of the input image."""
-
-    def forward(
-        self,
-        ip: torch.Tensor,
-        return_feats: bool = False,
-    ) -> ModelOutput:
-        """Forward pass of the model.
-
-        When `return_feats` is `True`, the model should return the
-        intermediate features of the model.
-        """
-
-    def __call__(
-        self,
-        ip: torch.Tensor,
-        return_feats: bool = False,
-    ) -> ModelOutput:
-        """Forward pass of the model.
-
-        When `return_feats` is `True`, the model should return the
-        int
-        """
 
 
 class Net2DFast(nn.Module):

@@ -38,54 +38,6 @@ __all__ = [
 ]
 
 
-class SpectrogramParameters(TypedDict):
-    """Parameters for generating spectrograms."""
-
-    fft_win_length: float
-    """Length of the FFT window in seconds."""
-
-    fft_overlap: float
-    """Percentage of overlap between FFT windows."""
-
-    spec_height: int
-    """Height of the spectrogram in pixels."""
-
-    resize_factor: float
-    """Factor to resize the spectrogram by."""
-
-    spec_divide_factor: int
-    """Factor to divide the spectrogram by."""
-
-    max_freq: int
-    """Maximum frequency to display in the spectrogram."""
-
-    min_freq: int
-    """Minimum frequency to display in the spectrogram."""
-
-    spec_scale: str
-    """Scale to use for the spectrogram."""
-
-    denoise_spec_avg: bool
-    """Whether to denoise the spectrogram by averaging."""
-
-    max_scale_spec: bool
-    """Whether to scale the spectrogram so that its max is 1."""
-
-
-DEFAULT_SPECTROGRAM_PARAMETERS: SpectrogramParameters = {
-    "fft_win_length": FFT_WIN_LENGTH_S,
-    "fft_overlap": FFT_OVERLAP,
-    "spec_height": SPEC_HEIGHT,
-    "resize_factor": RESIZE_FACTOR,
-    "spec_divide_factor": SPEC_DIVIDE_FACTOR,
-    "max_freq": MAX_FREQ_HZ,
-    "min_freq": MIN_FREQ_HZ,
-    "spec_scale": SPEC_SCALE,
-    "denoise_spec_avg": DENOISE_SPEC_AVG,
-    "max_scale_spec": MAX_SCALE_SPEC,
-}
-
-
 def time_to_x_coords(time_in_file, sampling_rate, fft_win_length, fft_overlap):
     nfft = np.floor(fft_win_length * sampling_rate)  # int() uses floor
     noverlap = np.floor(fft_overlap * nfft)

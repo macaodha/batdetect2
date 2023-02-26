@@ -1,24 +1,18 @@
 import argparse
 import json
-import os
-import sys
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-sys.path.append(os.path.join("..", ".."))
-
-import warnings
-
-import bat_detect.detector.models as models
-import bat_detect.detector.parameters as parameters
+from bat_detect.detector import models
+from bat_detect.detector import parameters
+from bat_detect.train import losses
 import bat_detect.detector.post_process as pp
 import bat_detect.train.audio_dataloader as adl
 import bat_detect.train.evaluate as evl
-import bat_detect.train.losses as losses
 import bat_detect.train.train_split as ts
 import bat_detect.train.train_utils as tu
 import bat_detect.utils.plot_utils as pu
