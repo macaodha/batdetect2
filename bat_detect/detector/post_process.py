@@ -1,16 +1,12 @@
 """Post-processing of the output of the model."""
-from typing import List, Optional, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import torch
 from torch import nn
 
 from bat_detect.detector.models import ModelOutput
-
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
+from bat_detect.types import NonMaximumSuppressionConfig, PredictionResults
 
 np.seterr(divide="ignore", invalid="ignore")
 
@@ -42,72 +38,6 @@ def overall_class_pred(det_prob, class_prob):
     return weighted_pred / weighted_pred.sum()
 
 
-class NonMaximumSuppressionConfig(TypedDict):
-    """Configuration for non-maximum suppression."""
-
-    nms_kernel_size: int
-    """Size of the kernel for non-maximum suppression."""
-
-    max_freq: int
-    """Maximum frequency to consider in Hz."""
-
-    min_freq: int
-    """Minimum frequency to consider in Hz."""
-
-    fft_win_length: float
-    """Length of the FFT window in seconds."""
-
-    fft_overlap: float
-    """Overlap of the FFT windows in seconds."""
-
-    resize_factor: float
-    """Factor by which the input was resized."""
-
-    nms_top_k_per_sec: float
-    """Number of top detections to keep per second."""
-
-    detection_threshold: float
-    """Threshold for detection probability."""
-
-
-class PredictionResults(TypedDict):
-    """Results of the prediction.
-
-    Each key is a list of length `num_detections` containing the
-    corresponding values for each detection.
-    """
-
-    det_probs: np.ndarray
-    """Detection probabilities."""
-
-    x_pos: np.ndarray
-    """X position of the detection in pixels."""
-
-    y_pos: np.ndarray
-    """Y position of the detection in pixels."""
-
-    bb_width: np.ndarray
-    """Width of the detection in pixels."""
-
-    bb_height: np.ndarray
-    """Height of the detection in pixels."""
-
-    start_times: np.ndarray
-    """Start times of the detections in seconds."""
-
-    end_times: np.ndarray
-    """End times of the detections in seconds."""
-
-    low_freqs: np.ndarray
-    """Low frequencies of the detections in Hz."""
-
-    high_freqs: np.ndarray
-    """High frequencies of the detections in Hz."""
-
-    class_probs: Optional[np.ndarray]
-    """Class probabilities."""
-
-
 def run_nms(
     outputs: ModelOutput,
     params: NonMaximumSuppressionConfig,
@@ -128,8 +58,8 @@ def run_nms(
         -2
     ]
 
-    # NOTE: there will be small differences depending on which sampling rate is chosen
-    # as we are choosing the same sampling rate for the entire batch
+    # NOTE: there will be small differences depending on which sampling rate
+    # is chosen as we are choosing the same sampling rate for the entire batch
     duration = x_coords_to_time(
         pred_det.shape[-1],
         int(sampling_rate[0].item()),
@@ -211,16 +141,21 @@ def run_nms(
         for key, value in pred.items():
             pred[key] = value.cpu().numpy().astype(np.float32)
 
-        preds.append(pred)
+        preds.append(pred)  # type: ignore
 
     return preds, feats
 
 
-def non_max_suppression(heat, kernel_size):
+def non_max_suppression(
+    heat: torch.Tensor,
+    kernel_size: Union[int, Tuple[int, int]],
+):
     # kernel can be an int or list/tuple
     if isinstance(kernel_size, int):
         kernel_size_h = kernel_size
         kernel_size_w = kernel_size
+    else:
+        kernel_size_h, kernel_size_w = kernel_size
 
     pad_h = (kernel_size_h - 1) // 2
     pad_w = (kernel_size_w - 1) // 2

@@ -38,7 +38,7 @@ def get_config(**kwargs) -> ProcessingConfiguration:
 
     Can be used to override default parameters by passing keyword arguments.
     """
-    return {**DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}
+    return {**DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}  # type: ignore
 
 
 def load_audio(

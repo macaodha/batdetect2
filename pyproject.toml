@@ -15,6 +15,7 @@ dependencies = [
     "torch",
     "torchaudio",
     "torchvision",
+    "click",
 ]
 requires-python = ">=3.8"
 readme = "README.md"
@@ -56,3 +57,8 @@ module = [
     "pandas",
 ]
 ignore_missing_imports = true
+
+[tool.pylsp-mypy]
+enabled = false
+live_mode = true
+strict = true

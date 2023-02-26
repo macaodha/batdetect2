@@ -14,13 +14,14 @@ from bat_detect.detector import models
 from bat_detect.detector.parameters import DEFAULT_MODEL_PATH
 from bat_detect.types import (
     Annotation,
+    DetectionModel,
     FileAnnotations,
     ModelParameters,
+    PredictionResults,
     ProcessingConfiguration,
-    SpectrogramParameters,
     ResultParams,
     RunResults,
-    DetectionModel
+    SpectrogramParameters,
 )
 
 __all__ = [
@@ -73,10 +74,8 @@ def load_model(
 
     Raises:
         FileNotFoundError: Model file not found.
-        ValueError: Unknown model.
+        ValueError: Unknown model name.
     """
-
-    # load model
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -135,7 +134,8 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
                 [pp[key] for pp in predictions if pp["det_probs"].shape[0] > 0]
             )
     else:
-        # hack in case where no detected calls as we need some of the key names in dict
+        # hack in case where no detected calls as we need some of the key
+        # names in dict
         predictions_m = predictions[0]
 
     if len(spec_feats) > 0:
@@ -263,27 +263,22 @@ def convert_results(
     # combine into final results dictionary
     results: RunResults = {
         "pred_dict": pred_dict,
-        "spec_feats": None,
-        "spec_feat_names": None,
-        "cnn_feats": None,
-        "cnn_feat_names": None,
-        "spec_slices": None,
     }
 
     # add spectrogram features if they exist
-    if len(spec_feats) > 0:
+    if len(spec_feats) > 0 and params["spec_features"]:
         results["spec_feats"] = spec_feats
         results["spec_feat_names"] = feats.get_feature_names()
 
     # add CNN features if they exist
-    if len(cnn_feats) > 0:
+    if len(cnn_feats) > 0 and params["cnn_features"]:
         results["cnn_feats"] = cnn_feats
         results["cnn_feat_names"] = [
             str(ii) for ii in range(cnn_feats.shape[1])
         ]
 
     # add spectrogram slices if they exist
-    if len(spec_slices) > 0:
+    if len(spec_slices) > 0 and params["spec_slices"]:
         results["spec_slices"] = spec_slices
 
     return results
@@ -291,6 +286,8 @@ def convert_results(
 
 def save_results_to_file(results, op_path: str) -> None:
     """Save results to file.
+
+    Will create the output directory if it does not exist.
 
     Args:
         results (dict): Results.
@@ -476,7 +473,7 @@ def _process_spectrogram(
     samplerate: int,
     model: DetectionModel,
     config: ProcessingConfiguration,
-) -> Tuple[List[Annotation], List[np.ndarray]]:
+) -> Tuple[PredictionResults, List[np.ndarray]]:
     # evaluate model
     with torch.no_grad():
         outputs = model(spec)
@@ -493,7 +490,6 @@ def _process_spectrogram(
             "resize_factor": config["resize_factor"],
             "nms_top_k_per_sec": config["nms_top_k_per_sec"],
             "detection_threshold": config["detection_threshold"],
-            "max_scale_spec": config["max_scale_spec"],
         },
         np.array([float(samplerate)]),
     )
@@ -561,7 +557,7 @@ def _process_audio_array(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
+) -> Tuple[PredictionResults, List[np.ndarray], torch.Tensor]:
     # load audio file and compute spectrogram
     _, spec, _ = compute_spectrogram(
         audio,
@@ -712,17 +708,19 @@ def process_file(
         predictions.append(pred_nms)
 
         # extract features - if there are any calls detected
-        if pred_nms["det_probs"].shape[0] > 0:
-            if config["spec_features"]:
-                spec_feats.append(feats.get_feats(spec_np, pred_nms, config))
+        if pred_nms["det_probs"].shape[0] == 0:
+            continue
 
-            if config["cnn_features"]:
-                cnn_feats.append(features[0])
+        if config["spec_features"]:
+            spec_feats.append(feats.get_feats(spec_np, pred_nms, config))
 
-            if config["spec_slices"]:
-                spec_slices.extend(
-                    feats.extract_spec_slices(spec_np, pred_nms, config)
-                )
+        if config["cnn_features"]:
+            cnn_feats.append(features[0])
+
+        if config["spec_slices"]:
+            spec_slices.extend(
+                feats.extract_spec_slices(spec_np, pred_nms, config)
+            )
 
     # Merge results from chunks
     predictions, spec_feats, cnn_feats, spec_slices = _merge_results(

@@ -1,5 +1,5 @@
 """Types used in the code base."""
-from typing import List, Optional, NamedTuple
+from typing import List, NamedTuple, Optional
 
 import numpy as np
 import torch
@@ -14,6 +14,27 @@ try:
     from typing import Protocol
 except ImportError:
     from typing_extensions import Protocol
+
+
+try:
+    from typing import NotRequired
+except ImportError:
+    from typing_extensions import NotRequired
+
+
+__all__ = [
+    "Annotation",
+    "DetectionModel",
+    "FileAnnotations",
+    "ModelOutput",
+    "ModelParameters",
+    "NonMaximumSuppressionConfig",
+    "PredictionResults",
+    "ProcessingConfiguration",
+    "ResultParams",
+    "RunResults",
+    "SpectrogramParameters",
+]
 
 
 class SpectrogramParameters(TypedDict):
@@ -144,19 +165,19 @@ class RunResults(TypedDict):
     pred_dict: FileAnnotations
     """Predictions in the format expected by the annotation tool."""
 
-    spec_feats: Optional[List[np.ndarray]]
+    spec_feats: NotRequired[List[np.ndarray]]
     """Spectrogram features."""
 
-    spec_feat_names: Optional[List[str]]
+    spec_feat_names: NotRequired[List[str]]
     """Spectrogram feature names."""
 
-    cnn_feats: Optional[List[np.ndarray]]
+    cnn_feats: NotRequired[List[np.ndarray]]
     """CNN features."""
 
-    cnn_feat_names: Optional[List[str]]
+    cnn_feat_names: NotRequired[List[str]]
     """CNN feature names."""
 
-    spec_slices: Optional[List[np.ndarray]]
+    spec_slices: NotRequired[List[np.ndarray]]
     """Spectrogram slices."""
 
 
@@ -165,6 +186,15 @@ class ResultParams(TypedDict):
 
     class_names: List[str]
     """Class names."""
+
+    spec_features: bool
+    """Whether to return spectrogram features."""
+
+    cnn_features: bool
+    """Whether to return CNN features."""
+
+    spec_slices: bool
+    """Whether to return spectrogram slices."""
 
 
 class ProcessingConfiguration(TypedDict):
@@ -266,6 +296,44 @@ class ModelOutput(NamedTuple):
     """Tensor with intermediate features."""
 
 
+class PredictionResults(TypedDict):
+    """Results of the prediction.
+
+    Each key is a list of length `num_detections` containing the
+    corresponding values for each detection.
+    """
+
+    det_probs: np.ndarray
+    """Detection probabilities."""
+
+    x_pos: np.ndarray
+    """X position of the detection in pixels."""
+
+    y_pos: np.ndarray
+    """Y position of the detection in pixels."""
+
+    bb_width: np.ndarray
+    """Width of the detection in pixels."""
+
+    bb_height: np.ndarray
+    """Height of the detection in pixels."""
+
+    start_times: np.ndarray
+    """Start times of the detections in seconds."""
+
+    end_times: np.ndarray
+    """End times of the detections in seconds."""
+
+    low_freqs: np.ndarray
+    """Low frequencies of the detections in Hz."""
+
+    high_freqs: np.ndarray
+    """High frequencies of the detections in Hz."""
+
+    class_probs: Optional[np.ndarray]
+    """Class probabilities."""
+
+
 class DetectionModel(Protocol):
     """Protocol for detection models.
 
@@ -286,19 +354,49 @@ class DetectionModel(Protocol):
     resize_factor: float
     """Factor by which the input is resized."""
 
-    ip_height: int
+    ip_height_rs: int
     """Height of the input image."""
 
     def forward(
         self,
-        spec: torch.Tensor,
+        ip: torch.Tensor,
         return_feats: bool = False,
     ) -> ModelOutput:
         """Forward pass of the model."""
+        ...
 
     def __call__(
         self,
-        spec: torch.Tensor,
+        ip: torch.Tensor,
         return_feats: bool = False,
     ) -> ModelOutput:
         """Forward pass of the model."""
+        ...
+
+
+class NonMaximumSuppressionConfig(TypedDict):
+    """Configuration for non-maximum suppression."""
+
+    nms_kernel_size: int
+    """Size of the kernel for non-maximum suppression."""
+
+    max_freq: int
+    """Maximum frequency to consider in Hz."""
+
+    min_freq: int
+    """Minimum frequency to consider in Hz."""
+
+    fft_win_length: float
+    """Length of the FFT window in seconds."""
+
+    fft_overlap: float
+    """Overlap of the FFT windows in seconds."""
+
+    resize_factor: float
+    """Factor by which the input was resized."""
+
+    nms_top_k_per_sec: float
+    """Number of top detections to keep per second."""
+
+    detection_threshold: float
+    """Threshold for detection probability."""

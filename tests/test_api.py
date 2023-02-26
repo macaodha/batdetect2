@@ -120,18 +120,13 @@ def test_process_file_with_model():
     assert isinstance(predictions, dict)
 
     assert "pred_dict" in predictions
-    assert "spec_feats" in predictions
-    assert "spec_feat_names" in predictions
-    assert "cnn_feats" in predictions
-    assert "cnn_feat_names" in predictions
-    assert "spec_slices" in predictions
 
-    # By default will not return spectrogram features
-    assert predictions["spec_feats"] is None
-    assert predictions["spec_feat_names"] is None
-    assert predictions["cnn_feats"] is None
-    assert predictions["cnn_feat_names"] is None
-    assert predictions["spec_slices"] is None
+    # By default will not return other features
+    assert "spec_feats" not in predictions
+    assert "spec_feat_names" not in predictions
+    assert "cnn_feats" not in predictions
+    assert "cnn_feat_names" not in predictions
+    assert "spec_slices" not in predictions
 
     # Check that predictions are returned
     assert isinstance(predictions["pred_dict"], dict)
