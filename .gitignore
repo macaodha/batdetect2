@@ -55,9 +55,6 @@ docs/_build/
 .pybuilder/
 target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
 # IPython
 profile_default/
 ipython_config.py
@@ -104,3 +101,8 @@ plots/*
 # Model experiments
 experiments/*
 
+# Jupiter notebooks
+.virtual_documents
+.ipynb_checkpoints
+*.ipynb
+!batdetect2_notebook.ipynb
