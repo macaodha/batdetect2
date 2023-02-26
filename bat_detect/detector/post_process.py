@@ -134,12 +134,12 @@ def run_nms(
                 y_pos[num_detection, valid_inds],
                 x_pos[num_detection, valid_inds],
             ].transpose(0, 1)
-            feat = feat.cpu().numpy().astype(np.float32)
+            feat = feat.detach().numpy().astype(np.float32)
             feats.append(feat)
 
         # convert to numpy
         for key, value in pred.items():
-            pred[key] = value.cpu().numpy().astype(np.float32)
+            pred[key] = value.detach().numpy().astype(np.float32)
 
         preds.append(pred)  # type: ignore
 

@@ -16,6 +16,7 @@ from bat_detect.types import (
     Annotation,
     DetectionModel,
     FileAnnotations,
+    ModelOutput,
     ModelParameters,
     PredictionResults,
     ProcessingConfiguration,
@@ -148,7 +149,7 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
 
 
 def get_annotations_from_preds(
-    predictions,
+    predictions: PredictionResults,
     class_names: List[str],
 ) -> List[Annotation]:
     """Get list of annotations from predictions."""
@@ -194,7 +195,7 @@ def format_single_result(
     file_id: str,
     time_exp: float,
     duration: float,
-    predictions,
+    predictions: PredictionResults,
     class_names: List[str],
 ) -> FileAnnotations:
     """Format results into the format expected by the annotation tool.
@@ -504,6 +505,44 @@ def _process_spectrogram(
         pred_nms["class_probs"] = class_probs[:-1, :]
 
     return pred_nms, features
+
+
+def postprocess_model_outputs(
+    outputs: ModelOutput,
+    samp_rate: int,
+    config: ProcessingConfiguration,
+) -> Tuple[List[Annotation], np.ndarray]:
+    # run non-max suppression
+    pred_nms_list, features = pp.run_nms(
+        outputs,
+        {
+            "nms_kernel_size": config["nms_kernel_size"],
+            "max_freq": config["max_freq"],
+            "min_freq": config["min_freq"],
+            "fft_win_length": config["fft_win_length"],
+            "fft_overlap": config["fft_overlap"],
+            "resize_factor": config["resize_factor"],
+            "nms_top_k_per_sec": config["nms_top_k_per_sec"],
+            "detection_threshold": config["detection_threshold"],
+        },
+        np.array([float(samp_rate)]),
+    )
+
+    pred_nms = pred_nms_list[0]
+
+    # if we have a background class
+    class_probs = pred_nms.get("class_probs")
+    if (class_probs is not None) and (
+        class_probs.shape[0] > len(config["class_names"])
+    ):
+        pred_nms["class_probs"] = class_probs[:-1, :]
+
+    annotations = get_annotations_from_preds(
+        pred_nms,
+        config["class_names"],
+    )
+
+    return annotations, features[0]
 
 
 def process_spectrogram(

@@ -15,6 +15,7 @@ from bat_detect.detector.parameters import (
 from bat_detect.types import (
     Annotation,
     DetectionModel,
+    ModelOutput,
     ProcessingConfiguration,
     SpectrogramParameters,
 )
@@ -24,16 +25,17 @@ from bat_detect.utils.detector_utils import list_audio_files, load_model
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 
 __all__ = [
-    "load_model",
-    "load_audio",
-    "list_audio_files",
+    "config",
     "generate_spectrogram",
     "get_config",
+    "list_audio_files",
+    "load_audio",
+    "load_model",
+    "model",
+    "postprocess",
+    "process_audio",
     "process_file",
     "process_spectrogram",
-    "process_audio",
-    "model",
-    "config",
 ]
 
 
@@ -245,6 +247,48 @@ def process_audio(
         model,
         config,
         device,
+    )
+
+
+def postprocess(
+    outputs: ModelOutput,
+    samp_rate: int = TARGET_SAMPLERATE_HZ,
+    config: Optional[ProcessingConfiguration] = None,
+) -> Tuple[List[Annotation], np.ndarray]:
+    """Postprocess model outputs.
+
+    Convert model tensor outputs to predicted bounding boxes and
+    extracted features.
+
+    Will run non-maximum suppression and remove overlapping annotations.
+
+    Parameters
+    ----------
+    outputs : ModelOutput
+        Model raw outputs.
+    samp_rate : int, Optional
+        Sample rate of the audio from which the spectrogram was generated.
+        Defaults to 256000 which is the target sample rate of the default
+        model. Only change if you generated outputs from a spectrogram with
+        sample rate.
+    config : Optional[ProcessingConfiguration], Optional
+        Processing configuration, by default None (uses default parameters).
+
+    Returns
+    -------
+    annotations : List[Annotation]
+        List of predicted annotations.
+    features: np.ndarray
+        An array of extracted features for each annotation. The shape of the
+        array is (n_annotations, n_features).
+    """
+    if config is None:
+        config = CONFIG
+
+    return du.postprocess_model_outputs(
+        outputs,
+        samp_rate,
+        config,
     )
 
 

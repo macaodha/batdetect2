@@ -278,7 +278,23 @@ class ProcessingConfiguration(TypedDict):
 
 
 class ModelOutput(NamedTuple):
-    """Output of the detection model."""
+    """Output of the detection model.
+
+    Each of the tensors has a shape of
+
+        `(batch_size, num_channels,spec_height, spec_width)`.
+
+    Where `spec_height` and `spec_width` are the height and width of the
+    input spectrograms.
+
+    They contain localised information of:
+
+    1. The probability of a bounding box detection at the given location.
+    2. The predicted size of the bounding box at the given location.
+    3. The probabilities of each class at the given location.
+    4. Same as 3. but before softmax.
+    5. Features used to make the predictions at the given location.
+    """
 
     pred_det: torch.Tensor
     """Tensor with predict detection probabilities."""
@@ -330,7 +346,7 @@ class PredictionResults(TypedDict):
     high_freqs: np.ndarray
     """High frequencies of the detections in Hz."""
 
-    class_probs: Optional[np.ndarray]
+    class_probs: np.ndarray
     """Class probabilities."""
 
 

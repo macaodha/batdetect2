@@ -224,3 +224,32 @@ def test_process_audio_with_default_model():
     assert spec is not None
     assert isinstance(spec, torch.Tensor)
     assert spec.shape == (1, 1, 128, 512)
+
+
+def test_postprocess_model_outputs():
+    """Test postprocessing model outputs."""
+    # Load model outputs
+    audio = api.load_audio(TEST_DATA[1])
+    spec = api.generate_spectrogram(audio)
+    model_outputs = api.model(spec)
+
+    # Postprocess outputs
+    predictions, features = api.postprocess(model_outputs)
+
+    assert predictions is not None
+    assert isinstance(predictions, list)
+    assert len(predictions) > 0
+    sample_pred = predictions[0]
+    assert isinstance(sample_pred, dict)
+    assert "class" in sample_pred
+    assert "class_prob" in sample_pred
+    assert "det_prob" in sample_pred
+    assert "start_time" in sample_pred
+    assert "end_time" in sample_pred
+    assert "low_freq" in sample_pred
+    assert "high_freq" in sample_pred
+
+    assert features is not None
+    assert isinstance(features, np.ndarray)
+    assert features.shape[0] == len(predictions)
+    assert features.shape[1] == 32
