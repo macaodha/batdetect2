@@ -1,3 +1,4 @@
+import warnings
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -6,6 +7,7 @@ import torch
 import bat_detect.utils.audio_utils as au
 import bat_detect.utils.detector_utils as du
 from bat_detect.detector.parameters import (
+    DEFAULT_MODEL_PATH,
     DEFAULT_PROCESSING_CONFIGURATIONS,
     DEFAULT_SPECTROGRAM_PARAMETERS,
     TARGET_SAMPLERATE_HZ,
@@ -18,8 +20,8 @@ from bat_detect.types import (
 )
 from bat_detect.utils.detector_utils import list_audio_files, load_model
 
-# Use GPU if available
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Remove warnings from torch
+warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 
 __all__ = [
     "load_model",
@@ -30,7 +32,17 @@ __all__ = [
     "process_file",
     "process_spectrogram",
     "process_audio",
+    "model",
+    "config",
 ]
+
+
+# Use GPU if available
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+# Default model
+MODEL, PARAMS = load_model(DEFAULT_MODEL_PATH, device=DEVICE)
 
 
 def get_config(**kwargs) -> ProcessingConfiguration:
@@ -41,14 +53,21 @@ def get_config(**kwargs) -> ProcessingConfiguration:
     return {**DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}  # type: ignore
 
 
+# Default processing configuration
+CONFIG = get_config(**PARAMS)
+
+
 def load_audio(
     path: str,
     time_exp_fact: float = 1,
     target_samp_rate: int = TARGET_SAMPLERATE_HZ,
     scale: bool = False,
     max_duration: Optional[float] = None,
-) -> Tuple[int, np.ndarray]:
+) -> np.ndarray:
     """Load audio from file.
+
+    All audio will be resampled to the target sample rate. If the audio is
+    longer than max_duration, it will be truncated to max_duration.
 
     Parameters
     ----------
@@ -67,21 +86,20 @@ def load_audio(
     -------
     np.ndarray
         Audio data.
-    int
-        Sample rate.
     """
-    return au.load_audio(
+    _, audio = au.load_audio(
         path,
         time_exp_fact,
         target_samp_rate,
         scale,
         max_duration,
     )
+    return audio
 
 
 def generate_spectrogram(
     audio: np.ndarray,
-    samp_rate: int,
+    samp_rate: int = TARGET_SAMPLERATE_HZ,
     config: Optional[SpectrogramParameters] = None,
     device: torch.device = DEVICE,
 ) -> torch.Tensor:
@@ -91,8 +109,10 @@ def generate_spectrogram(
     ----------
     audio : np.ndarray
         Audio data.
-    samp_rate : int
-        Sample rate.
+    samp_rate : int, optional
+        Sample rate. Defaults to 256000 which is the target sample rate of
+        the default model. Only change if you loaded the audio with a
+        different sample rate.
     config : Optional[SpectrogramParameters], optional
         Spectrogram parameters, by default None (uses default parameters).
 
@@ -117,7 +137,7 @@ def generate_spectrogram(
 
 def process_file(
     audio_file: str,
-    model: DetectionModel,
+    model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
 ) -> du.RunResults:
@@ -127,15 +147,15 @@ def process_file(
     ----------
     audio_file : str
         Path to audio file.
-    model : DetectionModel
-        Detection model.
+    model : DetectionModel, optional
+        Detection model. Uses default model if not specified.
     config : Optional[ProcessingConfiguration], optional
         Processing configuration, by default None (uses default parameters).
     device : torch.device, optional
         Device to use, by default tries to use GPU if available.
     """
     if config is None:
-        config = DEFAULT_PROCESSING_CONFIGURATIONS
+        config = CONFIG
 
     return du.process_file(
         audio_file,
@@ -147,8 +167,8 @@ def process_file(
 
 def process_spectrogram(
     spec: torch.Tensor,
-    samp_rate: int,
-    model: DetectionModel,
+    samp_rate: int = TARGET_SAMPLERATE_HZ,
+    model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
 ) -> Tuple[List[Annotation], List[np.ndarray]]:
     """Process spectrogram with model.
@@ -157,10 +177,13 @@ def process_spectrogram(
     ----------
     spec : torch.Tensor
         Spectrogram.
-    samp_rate : int
+    samp_rate : int, optional
         Sample rate of the audio from which the spectrogram was generated.
-    model : DetectionModel
-        Detection model.
+        Defaults to 256000 which is the target sample rate of the default
+        model. Only change if you generated the spectrogram with a different
+        sample rate.
+    model : DetectionModel, optional
+        Detection model. Uses default model if not specified.
     config : Optional[ProcessingConfiguration], optional
         Processing configuration, by default None (uses default parameters).
 
@@ -169,7 +192,7 @@ def process_spectrogram(
     DetectionResult
     """
     if config is None:
-        config = DEFAULT_PROCESSING_CONFIGURATIONS
+        config = CONFIG
 
     return du.process_spectrogram(
         spec,
@@ -181,8 +204,8 @@ def process_spectrogram(
 
 def process_audio(
     audio: np.ndarray,
-    samp_rate: int,
-    model: DetectionModel,
+    samp_rate: int = TARGET_SAMPLERATE_HZ,
+    model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
 ) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
@@ -192,10 +215,11 @@ def process_audio(
     ----------
     audio : np.ndarray
         Audio data.
-    samp_rate : int
-        Sample rate.
-    model : DetectionModel
-        Detection model.
+    samp_rate : int, optional
+        Sample rate, by default 256000. Only change if you loaded the audio
+        with a different sample rate.
+    model : DetectionModel, optional
+        Detection model. Uses default model if not specified.
     config : Optional[ProcessingConfiguration], optional
         Processing configuration, by default None (uses default parameters).
     device : torch.device, optional
@@ -213,7 +237,7 @@ def process_audio(
         Spectrogram of the audio used for prediction.
     """
     if config is None:
-        config = DEFAULT_PROCESSING_CONFIGURATIONS
+        config = CONFIG
 
     return du.process_audio_array(
         audio,
@@ -222,3 +246,10 @@ def process_audio(
         config,
         device,
     )
+
+
+model: DetectionModel = MODEL
+"""Base detection model."""
+
+config: ProcessingConfiguration = CONFIG
+"""Default processing configuration."""

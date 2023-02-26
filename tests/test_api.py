@@ -7,16 +7,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from bat_detect.api import (
-    generate_spectrogram,
-    get_config,
-    list_audio_files,
-    load_audio,
-    load_model,
-    process_audio,
-    process_file,
-    process_spectrogram,
-)
+from bat_detect import api
 
 PKG_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_DATA_DIR = os.path.join(PKG_DIR, "example_data", "audio")
@@ -25,7 +16,7 @@ TEST_DATA = glob(os.path.join(TEST_DATA_DIR, "*.wav"))
 
 def test_load_model_with_default_params():
     """Test loading model with default parameters."""
-    model, params = load_model()
+    model, params = api.load_model()
 
     assert model is not None
     assert isinstance(model, nn.Module)
@@ -50,7 +41,7 @@ def test_load_model_with_default_params():
 
 def test_list_audio_files():
     """Test listing audio files."""
-    audio_files = list_audio_files(TEST_DATA_DIR)
+    audio_files = api.list_audio_files(TEST_DATA_DIR)
 
     assert len(audio_files) == 3
     assert all(path.endswith((".wav", ".WAV")) for path in audio_files)
@@ -58,18 +49,17 @@ def test_list_audio_files():
 
 def test_load_audio():
     """Test loading audio."""
-    samplerate, audio = load_audio(TEST_DATA[0])
+    audio = api.load_audio(TEST_DATA[0])
 
     assert audio is not None
-    assert samplerate == 256000
     assert isinstance(audio, np.ndarray)
     assert audio.shape == (128000,)
 
 
 def test_generate_spectrogram():
     """Test generating spectrogram."""
-    samplerate, audio = load_audio(TEST_DATA[0])
-    spectrogram = generate_spectrogram(audio, samplerate)
+    audio = api.load_audio(TEST_DATA[0])
+    spectrogram = api.generate_spectrogram(audio)
 
     assert spectrogram is not None
     assert isinstance(spectrogram, torch.Tensor)
@@ -78,7 +68,7 @@ def test_generate_spectrogram():
 
 def test_get_default_config():
     """Test getting default configuration."""
-    config = get_config()
+    config = api.get_config()
 
     assert config is not None
     assert isinstance(config, dict)
@@ -110,11 +100,55 @@ def test_get_default_config():
     assert config["spec_slices"] is False
 
 
-def test_process_file_with_model():
+def test_api_exposes_default_model():
+    """Test that API exposes default model."""
+    assert hasattr(api, "model")
+    assert isinstance(api.model, nn.Module)
+    assert type(api.model).__name__ == "Net2DFast"
+
+    # Check that model has expected attributes
+    assert api.model.num_classes == 17
+    assert api.model.num_filts == 128
+    assert api.model.emb_dim == 0
+    assert api.model.ip_height_rs == 128
+    assert api.model.resize_factor == 0.5
+
+
+def test_api_exposes_default_config():
+    """Test that API exposes default configuration."""
+    assert hasattr(api, "config")
+    assert isinstance(api.config, dict)
+
+    assert api.config["target_samp_rate"] == 256000
+    assert api.config["fft_win_length"] == 0.002
+    assert api.config["fft_overlap"] == 0.75
+    assert api.config["resize_factor"] == 0.5
+    assert api.config["spec_divide_factor"] == 32
+    assert api.config["spec_height"] == 256
+    assert api.config["spec_scale"] == "pcen"
+    assert api.config["denoise_spec_avg"] is True
+    assert api.config["max_scale_spec"] is False
+    assert api.config["scale_raw_audio"] is False
+    assert len(api.config["class_names"]) == 17
+    assert api.config["detection_threshold"] == 0.01
+    assert api.config["time_expansion"] == 1
+    assert api.config["top_n"] == 3
+    assert api.config["return_raw_preds"] is False
+    assert api.config["max_duration"] is None
+    assert api.config["nms_kernel_size"] == 9
+    assert api.config["max_freq"] == 120000
+    assert api.config["min_freq"] == 10000
+    assert api.config["nms_top_k_per_sec"] == 200
+    assert api.config["quiet"] is True
+    assert api.config["chunk_size"] == 3
+    assert api.config["cnn_features"] is False
+    assert api.config["spec_features"] is False
+    assert api.config["spec_slices"] is False
+
+
+def test_process_file_with_default_model():
     """Test processing file with model."""
-    model, params = load_model()
-    config = get_config(**params)
-    predictions = process_file(TEST_DATA[0], model, config=config)
+    predictions = api.process_file(TEST_DATA[0])
 
     assert predictions is not None
     assert isinstance(predictions, dict)
@@ -141,18 +175,11 @@ def test_process_file_with_model():
     assert len(pred_dict["annotation"]) > 0
 
 
-def test_process_spectrogram_with_model():
+def test_process_spectrogram_with_default_model():
     """Test processing spectrogram with model."""
-    model, params = load_model()
-    config = get_config(**params)
-    samplerate, audio = load_audio(TEST_DATA[0])
-    spectrogram = generate_spectrogram(audio, samplerate)
-    predictions, features = process_spectrogram(
-        spectrogram,
-        samplerate,
-        model,
-        config=config,
-    )
+    audio = api.load_audio(TEST_DATA[0])
+    spectrogram = api.generate_spectrogram(audio)
+    predictions, features = api.process_spectrogram(spectrogram)
 
     assert predictions is not None
     assert isinstance(predictions, list)
@@ -172,17 +199,10 @@ def test_process_spectrogram_with_model():
     assert len(features) == 1
 
 
-def test_process_audio_with_model():
+def test_process_audio_with_default_model():
     """Test processing audio with model."""
-    model, params = load_model()
-    config = get_config(**params)
-    samplerate, audio = load_audio(TEST_DATA[0])
-    predictions, features, spec = process_audio(
-        audio,
-        samplerate,
-        model,
-        config=config,
-    )
+    audio = api.load_audio(TEST_DATA[0])
+    predictions, features, spec = api.process_audio(audio)
 
     assert predictions is not None
     assert isinstance(predictions, list)

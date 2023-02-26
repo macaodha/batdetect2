@@ -1,14 +1,11 @@
 """BatDetect2 command line interface."""
 import os
-import warnings
 
-warnings.filterwarnings("ignore", category=UserWarning)
+import click
 
-import click  # noqa: E402
-
-from bat_detect import api  # noqa: E402
-from bat_detect.detector.parameters import DEFAULT_MODEL_PATH  # noqa: E402
-from bat_detect.utils.detector_utils import save_results_to_file  # noqa: E402
+from bat_detect import api
+from bat_detect.detector.parameters import DEFAULT_MODEL_PATH
+from bat_detect.utils.detector_utils import save_results_to_file
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -124,15 +121,14 @@ def detect(
                 results_path = audio_file.replace(audio_dir, ann_dir)
                 save_results_to_file(results, results_path)
         except (RuntimeError, ValueError, LookupError) as err:
-            # TODO: Check what other errors can be thrown
             error_files.append(audio_file)
-            click.echo(f"Error processing file!: {err}")
+            click.secho(f"Error processing file!: {err}", fg="red")
             raise err
 
     click.echo(f"\nResults saved to: {ann_dir}")
 
     if len(error_files) > 0:
-        click.echo("\nUnable to process the follow files:")
+        click.secho("\nUnable to process the follow files:", fg="red")
         for err in error_files:
             click.echo(f"  {err}")
 

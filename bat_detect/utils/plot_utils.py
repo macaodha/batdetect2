@@ -6,8 +6,6 @@ from matplotlib import patches
 from matplotlib.collections import PatchCollection
 from sklearn.metrics import confusion_matrix
 
-from . import audio_utils as au
-
 
 def create_box_image(
     spec,
