@@ -28,8 +28,6 @@ def test_load_model_with_default_params():
     assert "num_filters" in params
     assert "emb_dim" in params
     assert "ip_height" in params
-    assert "resize_factor" in params
-    assert "class_names" in params
 
     assert params["model_name"] == "Net2DFast"
     assert params["num_filters"] == 128

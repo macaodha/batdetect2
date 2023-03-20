@@ -416,3 +416,60 @@ class NonMaximumSuppressionConfig(TypedDict):
 
     detection_threshold: float
     """Threshold for detection probability."""
+
+
+class HeatmapParameters(TypedDict):
+    """Parameters that control the heatmap generation function."""
+
+    class_names: List[str]
+
+    fft_win_length: float
+    """Length of the FFT window in seconds."""
+
+    fft_overlap: float
+    """Percentage of the FFT windows overlap."""
+
+    resize_factor: float
+    """Factor by which the input was resized."""
+
+    min_freq: int
+    """Minimum frequency to consider in Hz."""
+
+    max_freq: int
+    """Maximum frequency to consider in Hz."""
+
+    target_sigma: float
+    """Sigma for the Gaussian kernel. Controls the width of the points in
+    the heatmap."""
+
+
+class AnnotationGroup(TypedDict):
+    """Group of annotations.
+
+    Each key is a numpy array of length `num_annotations` containing the
+    corresponding values for each annotation.
+    """
+
+    start_times: np.ndarray
+    """Start times of the annotations in seconds."""
+
+    end_times: np.ndarray
+    """End times of the annotations in seconds."""
+
+    low_freqs: np.ndarray
+    """Low frequencies of the annotations in Hz."""
+
+    high_freqs: np.ndarray
+    """High frequencies of the annotations in Hz."""
+
+    class_ids: np.ndarray
+    """Class IDs of the annotations."""
+
+    individual_ids: np.ndarray
+    """Individual IDs of the annotations."""
+
+    x_inds: NotRequired[np.ndarray]
+    """X coordinate of the annotations in the spectrogram."""
+
+    y_inds: NotRequired[np.ndarray]
+    """Y coordinate of the annotations in the spectrogram."""

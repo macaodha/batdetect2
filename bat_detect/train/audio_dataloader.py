@@ -1,4 +1,5 @@
 import copy
+from typing import Tuple
 
 import librosa
 import numpy as np
@@ -7,9 +8,47 @@ import torch.nn.functional as F
 import torchaudio
 
 import bat_detect.utils.audio_utils as au
+from bat_detect.types import AnnotationGroup, HeatmapParameters
 
 
-def generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, params):
+def generate_gt_heatmaps(
+    spec_op_shape: Tuple[int, int],
+    sampling_rate: int,
+    ann: AnnotationGroup,
+    params: HeatmapParameters,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, AnnotationGroup]:
+    """Generate ground truth heatmaps from annotations.
+
+    Parameters
+    ----------
+    spec_op_shape : Tuple[int, int]
+        Shape of the input spectrogram.
+    sampling_rate : int
+        Sampling rate of the input audio in Hz.
+    ann : AnnotationGroup
+        Dictionary containing the annotation information.
+    params : HeatmapParameters
+        Parameters controlling the generation of the heatmaps.
+
+    Returns
+    -------
+
+    y_2d_det : np.ndarray
+        2D heatmap of the presence of an event.
+
+    y_2d_size : np.ndarray
+        2D heatmap of the size of the bounding box associated to event.
+
+    y_2d_classes : np.ndarray
+        3D array containing the ground-truth class probabilities for each
+        pixel.
+
+    ann_aug : AnnotationGroup
+        A dictionary containing the annotation information of the
+        annotations that are within the input spectrogram, augmented with
+        the x and y indices of their pixel location in the input spectrogram.
+
+    """
     # spec may be resized on input into the network
     num_classes = len(params["class_names"])
     op_height = spec_op_shape[0]
@@ -40,6 +79,7 @@ def generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, params):
     bb_widths = x_pos_end - x_pos_start
     bb_heights = y_pos_low - y_pos_high
 
+    # Only include annotations that are within the input spectrogram
     valid_inds = np.where(
         (x_pos_start >= 0)
         & (x_pos_start < op_width)
@@ -47,19 +87,26 @@ def generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, params):
         & (y_pos_low < (op_height - 1))
     )[0]
 
-    ann_aug = {}
+    ann_aug: AnnotationGroup = {
+        "start_times": ann["start_times"][valid_inds],
+        "end_times": ann["end_times"][valid_inds],
+        "high_freqs": ann["high_freqs"][valid_inds],
+        "low_freqs": ann["low_freqs"][valid_inds],
+        "class_ids": ann["class_ids"][valid_inds],
+        "individual_ids": ann["individual_ids"][valid_inds],
+    }
     ann_aug["x_inds"] = x_pos_start[valid_inds]
     ann_aug["y_inds"] = y_pos_low[valid_inds]
-    keys = [
-        "start_times",
-        "end_times",
-        "high_freqs",
-        "low_freqs",
-        "class_ids",
-        "individual_ids",
-    ]
-    for kk in keys:
-        ann_aug[kk] = ann[kk][valid_inds]
+    # keys = [
+    #     "start_times",
+    #     "end_times",
+    #     "high_freqs",
+    #     "low_freqs",
+    #     "class_ids",
+    #     "individual_ids",
+    # ]
+    # for kk in keys:
+    #     ann_aug[kk] = ann[kk][valid_inds]
 
     # if the number of calls is only 1, then it is unique
     # TODO would be better if we found these unique calls at the merging stage
@@ -69,7 +116,7 @@ def generate_gt_heatmaps(spec_op_shape, sampling_rate, ann, params):
     y_2d_det = np.zeros((1, op_height, op_width), dtype=np.float32)
     y_2d_size = np.zeros((2, op_height, op_width), dtype=np.float32)
     # num classes and "background" class
-    y_2d_classes = np.zeros(
+    y_2d_classes: np.ndarray = np.zeros(
         (num_classes + 1, op_height, op_width), dtype=np.float32
     )
 
