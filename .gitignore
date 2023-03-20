@@ -87,9 +87,6 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Batdetect Models [Include]
-!bat_detect/models/*.pth.tar
-
 # Model artifacts
 *.png
 *.jpg
@@ -97,6 +94,9 @@ dmypy.json
 *.tar
 *.json
 plots/*
+
+# Batdetect Models [Include]
+!bat_detect/models/*.pth.tar
 
 # Model experiments
 experiments/*
