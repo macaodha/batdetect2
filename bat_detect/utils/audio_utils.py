@@ -2,6 +2,7 @@ import warnings
 from typing import Optional, Tuple
 
 import librosa
+import librosa.core.spectrum
 import numpy as np
 import torch
 
