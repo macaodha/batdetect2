@@ -1,10 +1,17 @@
 [tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest>=7.2.2",
+]
 
 [project]
 name = "batdetect2"
 version = "0.2.0"
 description = "Deep learning model for detecting and classifying bat echolocation calls in high frequency audio recordings."
-authors = [{ "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" }]
+authors = [
+    { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
+    { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" }
+]
 dependencies = [
     "librosa",
     "matplotlib",
@@ -17,7 +24,7 @@ dependencies = [
     "torchvision",
     "click",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.8,<3.11"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
