@@ -75,3 +75,5 @@ include = [
     "bat_detect",
     "tests",
 ]
+venvPath = "."
+venv = ".venv"
