@@ -2,7 +2,6 @@
 <img style="display: block-inline;" width="64" height="64" src="ims/bat_icon.png"> Code for detecting and classifying bat echolocation calls in high frequency audio recordings.
 
 ## Getting started
-
 ### Python Environment
 
 We recommend using an isolated Python environment to avoid dependency issues. Choose one
@@ -23,7 +22,6 @@ source .venv/bin/activate
 ```
 
 ### Installing BatDetect2
-
 You can use pip to install `batdetect2`:
 
 ```bash
@@ -39,6 +37,7 @@ pip install .
 
 Make sure you have the environment activated before installing `batdetect2`.
 
+
 ## Try the model
 1) You can try a demo of the model (for UK species) on [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
 
@@ -47,8 +46,8 @@ Make sure you have the environment activated before installing `batdetect2`.
 
 ## Running the model on your own data
 
-
 After following the above steps to install the code you can run the model on your own data.
+
 
 ### Using the command line
 
@@ -66,10 +65,10 @@ batdetect2 detect example_data/audio/ example_data/anns/ 0.3
 `DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off threshold applied to the calls. A smaller number will result in more calls detected, but with the chance of introducing more mistakes.
 
 There are also optional arguments, e.g. you can request that the model outputs features (i.e. estimated call parameters) such as duration, max_frequency, etc. by setting the flag `--spec_features`. These will be saved as `*_spec_features.csv` files:
-`python run_batdetect.py example_data/audio/ example_data/anns/ 0.3 --spec_features`
+`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --spec_features`
 
 You can also specify which model to use by setting the `--model_path` argument. If not specified, it will default to using a model trained on UK data e.g.
-`python run_batdetect.py example_data/audio/ example_data/anns/ 0.3 --model_path models/Net2DFast_UK_same.pth.tar`
+`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --model_path models/Net2DFast_UK_same.pth.tar`
 
 
 ### Using the Python API
@@ -84,18 +83,19 @@ AUDIO_FILE = "example_data/audio/20170701_213954-MYOMYS-LR_0_0.5.wav"
 # Process a whole file
 results = api.process_file(AUDIO_FILE)
 
-# Load audio and compute spectrograms
+# Or, load audio and compute spectrograms
 audio = api.load_audio(AUDIO_FILE)
 spec = api.generate_spectrogram(audio)
 
-# Process the audio or the spectrogram with the model
+# And process the audio or the spectrogram with the model
 detections, features, spec = api.process_audio(audio)
 detections, features = api.process_spectrogram(spec)
 
-# You can integrate the detections or the extracted features
-# to your custom analysis pipeline
-# ...
+# Do something else ...
 ```
+
+You can integrate the detections or the extracted features to your custom analysis pipeline.
+
 
 ## Training the model on your own data
 Take a look at the steps outlined in fintuning readme [here](bat_detect/finetune/readme.md) for a description of how to train your own model.
