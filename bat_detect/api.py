@@ -1,3 +1,101 @@
+"""Python API for bat_detect.
+
+This module provides a Python API for bat_detect. It can be used to
+process audio files or spectrograms with the default model or a custom
+model.
+
+Example
+-------
+You can use the default model to process audio files. To process a single
+file, use the `process_file` function.
+>>> import bat_detect.api as api
+>>> # Process audio file
+>>> results = api.process_file("audio_file.wav")
+
+To process multiple files, use the `list_audio_files` function to get a list
+of audio files in a directory. Then use the `process_file` function to
+process each file.
+
+>>> import bat_detect.api as api
+>>> # Get list of audio files
+>>> audio_files = api.list_audio_files("audio_directory")
+>>> # Process audio files
+>>> results = [api.process_file(f) for f in audio_files]
+
+The `process_file` function will slice the recording into 3 second chunks
+and process each chunk separately, in case the recording is longer. The
+results will be combined into a dictionary with the following keys:
+
+    - `pred_dict`: All the predictions from the model in the format
+    expected by the annotation tool.
+    - `cnn_feats`: Optional. A list of `numpy` arrays containing the CNN features
+    for each detection. The CNN features are the output of the CNN before
+    the final classification layer. You can use these features to train
+    your own classifier, or to do other processing on the detections.
+    They are in the same order as the detections in 
+    `results['pred_dict']['annotation']`. Will only be returned if the
+    `cnn_feats` parameter in the config is set to `True`.
+    - `spec_slices`: Optional. A list of `numpy` arrays containing the spectrogram
+    for each of the processed chunks. Will only be returned if the
+    `spec_slices` parameter in the config is set to `True`.
+
+Alternatively, you can use the `process_audio` function to process an audio
+array directly, or `process_spectrogram` to process spectrograms. This
+allows you to do other preprocessing steps before running the model for
+predictions.
+
+>>> import bat_detect.api as api
+>>> # Load audio
+>>> audio = api.load_audio("audio_file.wav")
+>>> # Process the audio array
+>>> detections, features, spec = api.process_audio(audio)
+>>> # Or compute and process the spectrogram
+>>> spec = api.generate_spectrogram(audio)
+>>> detections, features = api.process_spectrogram(spec)
+
+Here `detections` is the list of detected calls, `features` is the list of
+CNN features for each detection, and `spec` is the spectrogram of the
+processed audio. Each detection is a dictionary similary to the
+following:
+
+    {
+        'start_time': 0.0,
+        'end_time': 0.1,
+        'low_freq': 10000,
+        'high_freq': 20000,
+        'class': 'Myotis myotis',
+        'class_prob': 0.9,
+        'det_prob': 0.9,
+        'individual': 0,
+        'event': 'Echolocation'
+    }
+
+If you wish to interact directly with the model, you can use the `model`
+attribute to get the default model.
+
+>>> import bat_detect.api as api
+>>> # Get the default model
+>>> model = api.model
+>>> # Process the spectrogram
+>>> outputs = model(spec)
+
+However, you will need to do the postprocessing yourself. The
+model outputs are a collection of raw tensors. The `postprocess`
+function can be used to convert the model outputs into a list of
+detections and a list of CNN features.
+
+>>> import bat_detect.api as api
+>>> # Get the default model
+>>> model = api.model
+>>> # Process the spectrogram
+>>> outputs = model(spec)
+>>> # Postprocess the outputs
+>>> detections, features = api.postprocess(outputs)
+
+If you wish to use a custom model or change the default parameters, please
+consult the API documentation in the code.
+
+"""
 import warnings
 from typing import List, Optional, Tuple
 
@@ -81,7 +179,7 @@ def load_audio(
         Target sample rate, by default 256000
     scale : bool, optional
         Scale audio to [-1, 1], by default False
-    max_duration : Optional[float], optional
+    max_duration : float, optional
         Maximum duration of audio in seconds, by default None
 
     Returns
@@ -115,7 +213,7 @@ def generate_spectrogram(
         Sample rate. Defaults to 256000 which is the target sample rate of
         the default model. Only change if you loaded the audio with a
         different sample rate.
-    config : Optional[SpectrogramParameters], optional
+    config : SpectrogramParameters, optional
         Spectrogram parameters, by default None (uses default parameters).
 
     Returns
