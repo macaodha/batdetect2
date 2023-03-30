@@ -10,9 +10,9 @@ of the following options:
 * Install the Anaconda Python 3.10 distribution for your operating system from [here](https://www.continuum.io/downloads). Create a new environment and activate it:
 
 ```bash
-conda create -y --name batdetect2 python==3.10`
+conda create -y --name batdetect2 python==3.10
 conda activate batdetect2
-``````
+```
 
 * If you already have Python installed (version >= 3.8,< 3.11) and prefer using virtual environments then:
 
