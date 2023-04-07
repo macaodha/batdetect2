@@ -251,3 +251,14 @@ def test_postprocess_model_outputs():
     assert isinstance(features, np.ndarray)
     assert features.shape[0] == len(predictions)
     assert features.shape[1] == 32
+
+
+def test_process_file_with_spec_slices():
+    """Test process file returns spec slices."""
+    config = api.get_config(spec_slices=True)
+    results = api.process_file(TEST_DATA[0], config=config)
+    detections = results["pred_dict"]["annotation"]
+
+    assert "spec_slices" in results
+    assert isinstance(results["spec_slices"], list)
+    assert len(results["spec_slices"]) == len(detections)

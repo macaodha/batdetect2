@@ -731,13 +731,16 @@ def process_file(
         config["chunk_size"],
     ):
         # Run detection model on chunk
-        pred_nms, features, spec_np = _process_audio_array(
+        pred_nms, features, spec = _process_audio_array(
             audio,
             sampling_rate,
             model,
             config,
             device,
         )
+
+        # convert to numpy
+        spec_np = spec.detach().cpu().numpy()
 
         # add chunk time to start and end times
         pred_nms["start_times"] += chunk_time
@@ -756,6 +759,7 @@ def process_file(
             cnn_feats.append(features[0])
 
         if config["spec_slices"]:
+            # FIX: This is not currently working. Returns empty slices
             spec_slices.extend(
                 feats.extract_spec_slices(spec_np, pred_nms, config)
             )
