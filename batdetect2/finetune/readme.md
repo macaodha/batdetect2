@@ -1,8 +1,7 @@
 # Finetuning the BatDetet2 model on your own data  
 
-| :warning: WARNING          |
-|:---------------------------|
-| This is not currently working, but we are working on fixing this code |
+> **Warning**
+> This code in currently broken. Will fix soon, stay tuned.
 
 Main steps:  
 1. Annotate your data using the annotation GUI.
