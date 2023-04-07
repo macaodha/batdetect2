@@ -1,0 +1,79 @@
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest>=7.2.2",
+]
+
+[project]
+name = "batdetect2"
+version = "0.2.0"
+description = "Deep learning model for detecting and classifying bat echolocation calls in high frequency audio recordings."
+authors = [
+    { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
+    { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" }
+]
+dependencies = [
+    "librosa",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "torch<2",
+    "torchaudio",
+    "torchvision",
+    "click",
+]
+requires-python = ">=3.8,<3.11"
+readme = "README.md"
+license = { text = "CC-by-nc-4" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+]
+keywords = [
+    "bat",
+    "echolocation",
+    "deep learning",
+    "audio",
+    "machine learning",
+    "classification",
+    "detection",
+]
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[project.scripts]
+batdetect2 = "bat_detect.cli:cli"
+
+[tool.black]
+line-length = 80
+
+[[tool.mypy.overrides]]
+module = [
+    "librosa",
+    "pandas",
+]
+ignore_missing_imports = true
+
+[tool.pylsp-mypy]
+enabled = false
+live_mode = true
+strict = true
+
+[tool.pyright]
+include = [
+    "bat_detect",
+    "tests",
+]
+venvPath = "."
+venv = ".venv"
