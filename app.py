@@ -1,4 +1,8 @@
 import gradio as gr
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -8,13 +12,6 @@ from batdetect2 import api, plot
 MAX_DURATION = 2
 DETECTION_THRESHOLD = 0.3
 
-df = gr.Dataframe(
-    headers=["species", "time", "detection_prob", "species_prob"],
-    datatype=["str", "str", "str", "str"],
-    row_count=1,
-    col_count=(4, "fixed"),
-    label="Predictions",
-)
 
 examples = [
     [
@@ -59,7 +56,7 @@ def make_prediction(file_name, detection_threshold=DETECTION_THRESHOLD):
     )
     im = generate_results_image(file_name, detections, run_config)
 
-    return [df, im]
+    return im, df
 
 
 def generate_results_image(file_name, detections, config):
@@ -102,10 +99,35 @@ descr_txt = (
 gr.Interface(
     fn=make_prediction,
     inputs=[
-        gr.Audio(source="upload", type="filepath"),
-        gr.Dropdown([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]),
+        gr.Audio(
+            source="upload",
+            type="filepath",
+            label="Audio File",
+            info="Upload an audio file to be processed.",
+        ),
+        gr.Slider(
+            minimum=0,
+            maximum=1,
+            value=DETECTION_THRESHOLD,
+            label="Detection Threshold",
+            step=0.1,
+            info=(
+                "All detections with a detection probability below this "
+                "threshold will be ignored."
+            ),
+        ),
     ],
-    outputs=[df, gr.Image(label="Visualisation")],
+    live=True,
+    outputs=[
+        gr.Image(label="Visualisation"),
+        gr.Dataframe(
+            headers=["species", "time", "detection_prob", "species_prob"],
+            datatype=["str", "number", "number", "number"],
+            row_count=1,
+            col_count=(4, "fixed"),
+            label="Predictions",
+        ),
+    ],
     theme="huggingface",
     title="BatDetect2 Demo",
     description=descr_txt,
