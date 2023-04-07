@@ -95,7 +95,7 @@ def spectrogram(
     ax.set_ylabel("Frequency (kHz)")
 
     def y_fmt(x, _):
-        return f"{x / 1000:d}"
+        return f"{x / 1000:.0f}"
 
     ax.yaxis.set_major_formatter(tick.FuncFormatter(y_fmt))
 
