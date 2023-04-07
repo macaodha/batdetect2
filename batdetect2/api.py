@@ -115,6 +115,7 @@ from batdetect2.types import (
     DetectionModel,
     ModelOutput,
     ProcessingConfiguration,
+    RunResults,
     SpectrogramParameters,
 )
 from batdetect2.utils.detector_utils import list_audio_files, load_model
@@ -134,6 +135,7 @@ __all__ = [
     "process_audio",
     "process_file",
     "process_spectrogram",
+    "print_summary",
 ]
 
 
@@ -150,11 +152,11 @@ def get_config(**kwargs) -> ProcessingConfiguration:
 
     Can be used to override default parameters by passing keyword arguments.
     """
-    return {**DEFAULT_PROCESSING_CONFIGURATIONS, **kwargs}  # type: ignore
+    return {**DEFAULT_PROCESSING_CONFIGURATIONS, **PARAMS, **kwargs}  # type: ignore
 
 
 # Default processing configuration
-CONFIG = get_config(**PARAMS)
+CONFIG = get_config()
 
 
 def load_audio(
@@ -270,7 +272,7 @@ def process_spectrogram(
     samp_rate: int = TARGET_SAMPLERATE_HZ,
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
-) -> Tuple[List[Annotation], List[np.ndarray]]:
+) -> Tuple[List[Annotation], np.ndarray]:
     """Process spectrogram with model.
 
     Parameters
@@ -289,7 +291,11 @@ def process_spectrogram(
 
     Returns
     -------
-    DetectionResult
+    detections : List[Annotation]
+        List of detections.
+    features: np.ndarray
+        An array of features. The array has shape (n_detections, n_features)
+        where each row is a feature vector for a detection.
     """
     if config is None:
         config = CONFIG
@@ -308,7 +314,7 @@ def process_audio(
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
-) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
+) -> Tuple[List[Annotation], np.ndarray, torch.Tensor]:
     """Process audio array with model.
 
     Parameters
@@ -329,10 +335,9 @@ def process_audio(
     -------
     annotations : List[Annotation]
         List of predicted annotations.
-
-    features: List[np.ndarray]
-        List of extracted features for each annotation.
-
+    features: np.ndarray
+        An array of features. The array has shape (n_detections, n_features)
+        where each row is a feature vector for a detection.
     spec : torch.Tensor
         Spectrogram of the audio used for prediction.
     """
@@ -395,3 +400,26 @@ model: DetectionModel = MODEL
 
 config: ProcessingConfiguration = CONFIG
 """Default processing configuration."""
+
+
+def print_summary(results: RunResults) -> None:
+    """Print summary of results.
+
+    Parameters
+    ----------
+    results : DetectionResult
+        Detection result.
+    """
+    print("Results for " + results["pred_dict"]["id"])
+    print("{} calls detected\n".format(len(results["pred_dict"]["annotation"])))
+
+    print("time\tprob\tlfreq\tspecies_name")
+    for ann in results["pred_dict"]["annotation"]:
+        print(
+            "{}\t{}\t{}\t{}".format(
+                ann["start_time"],
+                ann["class_prob"],
+                ann["low_freq"],
+                ann["class"],
+            )
+        )

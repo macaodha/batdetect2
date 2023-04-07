@@ -81,7 +81,7 @@ def test_get_default_config():
     assert config["denoise_spec_avg"] is True
     assert config["max_scale_spec"] is False
     assert config["scale_raw_audio"] is False
-    assert len(config["class_names"]) == 0
+    assert len(config["class_names"]) == 17
     assert config["detection_threshold"] == 0.01
     assert config["time_expansion"] == 1
     assert config["top_n"] == 3
@@ -193,8 +193,8 @@ def test_process_spectrogram_with_default_model():
     assert "high_freq" in sample_pred
 
     assert features is not None
-    assert isinstance(features, list)
-    assert len(features) == 1
+    assert isinstance(features, np.ndarray)
+    assert len(features) == len(predictions)
 
 
 def test_process_audio_with_default_model():
@@ -216,8 +216,8 @@ def test_process_audio_with_default_model():
     assert "high_freq" in sample_pred
 
     assert features is not None
-    assert isinstance(features, list)
-    assert len(features) == 1
+    assert isinstance(features, np.ndarray)
+    assert len(features) == len(predictions)
 
     assert spec is not None
     assert isinstance(spec, torch.Tensor)

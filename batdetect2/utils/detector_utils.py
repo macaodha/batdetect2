@@ -295,7 +295,6 @@ def save_results_to_file(results, op_path: str) -> None:
         op_path (str): Output path.
 
     """
-
     # make directory if it does not exist
     if not os.path.isdir(os.path.dirname(op_path)):
         os.makedirs(os.path.dirname(op_path))
@@ -474,7 +473,7 @@ def _process_spectrogram(
     samplerate: int,
     model: DetectionModel,
     config: ProcessingConfiguration,
-) -> Tuple[PredictionResults, List[np.ndarray]]:
+) -> Tuple[PredictionResults, np.ndarray]:
     # evaluate model
     with torch.no_grad():
         outputs = model(spec)
@@ -504,7 +503,7 @@ def _process_spectrogram(
     ):
         pred_nms["class_probs"] = class_probs[:-1, :]
 
-    return pred_nms, features
+    return pred_nms, np.concatenate(features, axis=0)
 
 
 def postprocess_model_outputs(
@@ -550,7 +549,7 @@ def process_spectrogram(
     samplerate: int,
     model: DetectionModel,
     config: ProcessingConfiguration,
-) -> Tuple[List[Annotation], List[np.ndarray]]:
+) -> Tuple[List[Annotation], np.ndarray]:
     """Process a spectrogram with detection model.
 
     Will run non-maximum suppression on the output of the model.
@@ -569,10 +568,11 @@ def process_spectrogram(
 
     Returns
     -------
-    annotations : List[Annotation]
-        List of annotations predicted by the model.
-    features : List[np.ndarray]
-        List of CNN features associated with each annotation.
+    detections: List[Annotation]
+        List of detections predicted by the model.
+    features : np.ndarray
+        An array of CNN features associated with each annotation.
+        The array is of shape (num_detections, num_features).
         Is empty if `config["cnn_features"]` is False.
     """
     pred_nms, features = _process_spectrogram(
@@ -582,12 +582,12 @@ def process_spectrogram(
         config,
     )
 
-    annotations = get_annotations_from_preds(
+    detections = get_annotations_from_preds(
         pred_nms,
         config["class_names"],
     )
 
-    return annotations, features
+    return detections, features
 
 
 def _process_audio_array(
@@ -596,7 +596,7 @@ def _process_audio_array(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Tuple[PredictionResults, List[np.ndarray], torch.Tensor]:
+) -> Tuple[PredictionResults, np.ndarray, torch.Tensor]:
     # load audio file and compute spectrogram
     _, spec, _ = compute_spectrogram(
         audio,
@@ -634,7 +634,7 @@ def process_audio_array(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Tuple[List[Annotation], List[np.ndarray], torch.Tensor]:
+) -> Tuple[List[Annotation], np.ndarray, torch.Tensor]:
     """Process a single audio array with detection model.
 
     Parameters
@@ -656,10 +656,9 @@ def process_audio_array(
     -------
     annotations : List[Annotation]
         List of annotations predicted by the model.
-
-    features : List[np.ndarray]
-        List of CNN features associated with each annotation.
-
+    features : np.ndarray
+        Array of CNN features associated with each annotation.
+        The array is of shape (num_detections, num_features).
     spec : torch.Tensor
         Spectrogram of the audio used as input.
 
