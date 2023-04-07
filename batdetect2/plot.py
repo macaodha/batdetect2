@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple, Union, cast
 import numpy as np
 import torch
 from matplotlib import axes, patches
+import matplotlib.ticker as tick
 from matplotlib import pyplot as plt
 
 from batdetect2.detector.parameters import DEFAULT_PROCESSING_CONFIGURATIONS
@@ -91,7 +92,12 @@ def spectrogram(
     ax.imshow(spec, aspect="auto", origin="lower", cmap=cmap, extent=extent)
 
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
+    ax.set_ylabel("Frequency (kHz)")
+
+    def y_fmt(x, _):
+        return f"{x / 1000:d}"
+
+    ax.yaxis.set_major_formatter(tick.FuncFormatter(y_fmt))
 
     return ax
 
