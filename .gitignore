@@ -95,9 +95,6 @@ dmypy.json
 *.json
 plots/*
 
-# Batdetect Models [Include]
-!bat_detect/models/*.pth.tar
-
 # Model experiments
 experiments/*
 
@@ -106,3 +103,6 @@ experiments/*
 .ipynb_checkpoints
 *.ipynb
 !batdetect2_notebook.ipynb
+
+# Batdetect Models [Include]
+!batdetect2/models/*.pth.tar
