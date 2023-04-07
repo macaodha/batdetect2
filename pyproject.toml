@@ -6,7 +6,7 @@ dev = [
 
 [project]
 name = "batdetect2"
-version = "0.2.0"
+version = "1.0.0"
 description = "Deep learning model for detecting and classifying bat echolocation calls in high frequency audio recordings."
 authors = [
     { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
@@ -69,6 +69,9 @@ ignore_missing_imports = true
 enabled = false
 live_mode = true
 strict = true
+
+[tool.pydocstyle]
+convention = "numpy"
 
 [tool.pyright]
 include = [
