@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from bat_detect import api
+from batdetect2 import api
 
 PKG_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_DATA_DIR = os.path.join(PKG_DIR, "example_data", "audio")

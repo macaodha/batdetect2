@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import bat_detect.utils.audio_utils as au
-import bat_detect.utils.detector_utils as du
-import bat_detect.utils.plot_utils as viz
+import batdetect2.utils.audio_utils as au
+import batdetect2.utils.detector_utils as du
+import batdetect2.utils.plot_utils as viz
 
 # setup the arguments
 args = {}

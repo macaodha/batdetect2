@@ -1,10 +1,11 @@
 """Test the command line interface."""
 from click.testing import CliRunner
 
-from bat_detect.cli import cli
+from batdetect2.cli import cli
 
 
 def test_cli_base_command():
+    """Test the base command."""
     runner = CliRunner()
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
@@ -12,6 +13,7 @@ def test_cli_base_command():
 
 
 def test_cli_detect_command_help():
+    """Test the detect command help."""
     runner = CliRunner()
     result = runner.invoke(cli, ["detect", "--help"])
     assert result.exit_code == 0
@@ -19,6 +21,7 @@ def test_cli_detect_command_help():
 
 
 def test_cli_detect_command_on_test_audio(tmp_path):
+    """Test the detect command on test audio."""
     results_dir = tmp_path / "results"
 
     # Remove results dir if it exists

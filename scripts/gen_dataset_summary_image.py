@@ -5,17 +5,15 @@ is the mean spectrogram for each class.
 
 import argparse
 import os
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 import viz_helpers as vz
 
-sys.path.append(os.path.join(".."))
-import bat_detect.detector.parameters as parameters
-import bat_detect.train.train_split as ts
-import bat_detect.train.train_utils as tu
-import bat_detect.utils.audio_utils as au
+import batdetect2.detector.parameters as parameters
+import batdetect2.train.train_split as ts
+import batdetect2.train.train_utils as tu
+import batdetect2.utils.audio_utils as au
 
 if __name__ == "__main__":
 

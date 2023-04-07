@@ -17,11 +17,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io import wavfile
 
-sys.path.append(os.path.join(".."))
-import bat_detect.detector.parameters as parameters
-import bat_detect.utils.audio_utils as au
-import bat_detect.utils.detector_utils as du
-import bat_detect.utils.plot_utils as viz
+import batdetect2.detector.parameters as parameters
+import batdetect2.utils.audio_utils as au
+import batdetect2.utils.detector_utils as du
+import batdetect2.utils.plot_utils as viz
 
 if __name__ == "__main__":
 

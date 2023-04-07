@@ -15,11 +15,10 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.append(os.path.join(".."))
-import bat_detect.evaluate.evaluate_models as evlm
-import bat_detect.utils.audio_utils as au
-import bat_detect.utils.detector_utils as du
-import bat_detect.utils.plot_utils as viz
+import batdetect2.evaluate.evaluate_models as evlm
+import batdetect2.utils.audio_utils as au
+import batdetect2.utils.detector_utils as du
+import batdetect2.utils.plot_utils as viz
 
 
 def filter_anns(anns, start_time, stop_time):

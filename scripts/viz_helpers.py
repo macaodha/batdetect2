@@ -7,7 +7,7 @@ from scipy import ndimage
 
 sys.path.append(os.path.join(".."))
 
-import bat_detect.utils.audio_utils as au
+import batdetect2.utils.audio_utils as au
 
 
 def generate_spectrogram_data(
