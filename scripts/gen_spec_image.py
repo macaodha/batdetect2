@@ -12,6 +12,7 @@ import json
 import os
 import sys
 
+import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     args_cmd = vars(parser.parse_args())
 
     # load the model
-    bd_args = du.get_default_run_config()
+    bd_args = du.get_default_bd_args()
     model, params_bd = du.load_model(args_cmd["model_path"])
     bd_args["detection_threshold"] = args_cmd["detection_threshold"]
     bd_args["time_expansion_factor"] = args_cmd["time_expansion_factor"]
@@ -141,7 +142,8 @@ if __name__ == "__main__":
     }
 
     # run model and filter detections so only keep ones in relevant time range
-    results = du.process_file(args_cmd["audio_file"], model, run_config)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    results = du.process_file(args_cmd["audio_file"], model, run_config, device)
     pred_anns = filter_anns(
         results["pred_dict"]["annotation"],
         args_cmd["start_time"],

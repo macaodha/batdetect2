@@ -7,6 +7,7 @@ import copy
 import json
 import os
 
+import torch
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -739,7 +740,7 @@ if __name__ == "__main__":
     #
     if args["bd_model_path"] != "":
         # load model
-        bd_args = du.get_default_run_config()
+        bd_args = du.get_default_bd_args()
         model, params_bd = du.load_model(args["bd_model_path"])
 
         # check if the class names are the same
@@ -754,11 +755,13 @@ if __name__ == "__main__":
         }
 
         preds_bd = []
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         for ii, gg in enumerate(gt_test):
             pred = du.process_file(
                 gg["file_path"],
                 model,
                 run_config,
+                device,
             )
             preds_bd.append(pred)
 

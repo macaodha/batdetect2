@@ -15,6 +15,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from scipy.io import wavfile
 
 import batdetect2.detector.parameters as parameters
@@ -23,7 +24,6 @@ import batdetect2.utils.detector_utils as du
 import batdetect2.utils.plot_utils as viz
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_file", type=str, help="Path to input audio file")
     parser.add_argument(
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         sys.exit()
 
     if not os.path.isfile(args_cmd["model_path"]):
-        print("Model not found: ", model_path)
+        print("Model not found: ", args_cmd["model_path"])
         sys.exit()
 
     start_time = 0.0
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         os.makedirs(op_dir)
 
     params = parameters.get_params(False)
-    args = du.get_default_run_config()
+    args = du.get_default_bd_args()
     args["time_expansion_factor"] = args_cmd["time_expansion_factor"]
     args["detection_threshold"] = args_cmd["detection_threshold"]
 
@@ -118,6 +118,8 @@ if __name__ == "__main__":
     max_val = spec.max() * 1.1
 
     if not args_cmd["no_detector"]:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         print("  Loading model and running detector on entire file ...")
         model, det_params = du.load_model(args_cmd["model_path"])
         det_params["detection_threshold"] = args["detection_threshold"]
@@ -126,7 +128,12 @@ if __name__ == "__main__":
             **det_params,
             **args,
         }
-        results = du.process_file(audio_file, model, run_config)
+        results = du.process_file(
+            audio_file,
+            model,
+            run_config,
+            device,
+        )
 
         print("  Processing detections and plotting ...")
         detections = []

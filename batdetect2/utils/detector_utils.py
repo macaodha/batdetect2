@@ -34,7 +34,24 @@ __all__ = [
     "process_spectrogram",
     "process_audio_array",
     "process_file",
+    "get_default_bd_args",
 ]
+
+
+def get_default_bd_args():
+    args = {}
+    args["detection_threshold"] = 0.001
+    args["time_expansion_factor"] = 1
+    args["audio_dir"] = ""
+    args["ann_dir"] = ""
+    args["spec_slices"] = False
+    args["chunk_size"] = 3
+    args["spec_features"] = False
+    args["cnn_features"] = False
+    args["quiet"] = True
+    args["save_preds_if_empty"] = True
+    args["ann_dir"] = os.path.join(args["ann_dir"], "")
+    return args
 
 
 def list_audio_files(ip_dir: str) -> List[str]:
