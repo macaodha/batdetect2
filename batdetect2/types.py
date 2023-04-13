@@ -34,6 +34,7 @@ __all__ = [
     "ResultParams",
     "RunResults",
     "SpectrogramParameters",
+    "AudioLoaderAnnotationGroup",
 ]
 
 
@@ -99,7 +100,7 @@ DictWithClass = TypedDict("DictWithClass", {"class": str})
 class Annotation(DictWithClass):
     """Format of annotations.
 
-    This is the format of a single annotation as  expected by the annotation
+    This is the format of a single annotation as expected by the annotation
     tool.
     """
 
@@ -126,6 +127,9 @@ class Annotation(DictWithClass):
 
     event: str
     """Type of detected event."""
+
+    class_id: NotRequired[int]
+    """Numeric ID for the class of the annotation."""
 
 
 class FileAnnotations(TypedDict):
@@ -468,8 +472,28 @@ class AnnotationGroup(TypedDict):
     individual_ids: np.ndarray
     """Individual IDs of the annotations."""
 
+    annotated: NotRequired[bool]
+    """Wether the annotation group is complete or not.
+
+    Usually annotation groups are associated to a single
+    audio clip. If the annotation group is complete, it means that all
+    relevant sound events have been annotated. If it is not complete, it
+    means that some sound events might not have been annotated.
+    """
+
     x_inds: NotRequired[np.ndarray]
     """X coordinate of the annotations in the spectrogram."""
 
     y_inds: NotRequired[np.ndarray]
     """Y coordinate of the annotations in the spectrogram."""
+
+
+class AudioLoaderAnnotationGroup(AnnotationGroup, FileAnnotations):
+    """Group of annotation items for the training audio loader.
+
+    This class is used to store the annotations for the training audio
+    loader. It inherits from `AnnotationGroup` and `FileAnnotations`.
+    """
+
+    class_id_file: int
+    """ID of the class of the file."""

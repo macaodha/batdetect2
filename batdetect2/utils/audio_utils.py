@@ -127,18 +127,28 @@ def load_audio(
     The audio is also scaled to [-1, 1] and clipped to the maximum duration.
     Only mono files are supported.
 
-    Args:
-        audio_file (str): Path to the audio file.
-        target_samp_rate (int): Target sampling rate.
-        scale (bool): Whether to scale the audio to [-1, 1].
-        max_duration (float): Maximum duration of the audio in seconds.
+    Parameters
+    ----------
+    audio_file: str
+        Path to the audio file.
+    target_samp_rate: int
+        Target sampling rate.
+    scale: bool, optional
+        Whether to scale the audio to [-1, 1]. Default: False.
+    max_duration: float, optional
+        Maximum duration of the audio in seconds. Defaults to None.
+        If provided, the audio is clipped to this duration.
 
-    Returns:
-        sampling_rate: The sampling rate of the audio.
-        audio_raw: The audio signal in a numpy array.
+    Returns
+    -------
+    sampling_rate: int
+        The sampling rate of the audio.
+    audio_raw: np.ndarray
+        The audio signal in a numpy array.
 
-    Raises:
-        ValueError: If the audio file is stereo.
+    Raises
+    ------
+    ValueError: If the audio file is stereo.
 
     """
     with warnings.catch_warnings():

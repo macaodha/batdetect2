@@ -306,6 +306,9 @@ def _compute_spec_extent(
 
     # If the spectrogram is not resized, the duration is correct
     # but if it is resized, the duration needs to be adjusted
+    # NOTE: For now we can only detect if the spectrogram is resized
+    # by checking if the height is equal to the specified height,
+    # but this could fail.
     resize_factor = params["resize_factor"]
     spec_height = params["spec_height"]
     if spec_height * resize_factor == shape[0]:
