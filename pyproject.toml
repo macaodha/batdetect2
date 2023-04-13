@@ -53,7 +53,7 @@ requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [project.scripts]
-batdetect2 = "bat_detect.cli:cli"
+batdetect2 = "batdetect2.cli:cli"
 
 [tool.black]
 line-length = 80
