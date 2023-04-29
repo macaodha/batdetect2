@@ -265,7 +265,7 @@ def detection(
         # Add class label
         txt = " ".join([sp[:3] for sp in det["class"].split(" ")])
         font_info = {
-            "color": "white",
+            "color": edgecolor,
             "size": 10,
             "weight": "bold",
             "alpha": rect.get_alpha(),
