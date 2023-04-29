@@ -19,7 +19,7 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "scipy",
-    "torch<2",
+    "torch>=1.13.1,<2",
     "torchaudio",
     "torchvision",
     "click",
