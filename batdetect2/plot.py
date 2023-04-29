@@ -61,7 +61,7 @@ def spectrogram(
     """
     # Convert to numpy array if needed
     if isinstance(spec, torch.Tensor):
-        spec = spec.numpy()
+        spec = spec.detach().cpu().numpy()
 
     # Remove batch and channel dimensions if present
     spec = spec.squeeze()
