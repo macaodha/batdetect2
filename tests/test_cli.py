@@ -66,4 +66,4 @@ def test_cli_detect_command_with_non_trivial_time_expansion(tmp_path):
     )
 
     assert result.exit_code == 0
-    assert 'time_exp_fact 10' in result.stdout
+    assert 'Time Expansion Factor: 10' in result.stdout
