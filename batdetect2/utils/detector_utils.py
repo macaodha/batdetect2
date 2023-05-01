@@ -731,7 +731,6 @@ def process_file(
     spec_slices = []
 
     # load audio file
-    print("time_exp_fact", config.get("time_expansion", 1) or 1)
     sampling_rate, audio_full = au.load_audio(
         audio_file,
         time_exp_fact=config.get("time_expansion", 1) or 1,

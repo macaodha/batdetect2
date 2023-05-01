@@ -5,6 +5,7 @@ import click
 
 from batdetect2 import api
 from batdetect2.detector.parameters import DEFAULT_MODEL_PATH
+from batdetect2.types import ProcessingConfiguration
 from batdetect2.utils.detector_utils import save_results_to_file
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -104,17 +105,23 @@ def detect(
         **{
             **params,
             **args,
-            'time_expansion': time_expansion_factor,
+            "time_expansion": time_expansion_factor,
             "spec_slices": False,
             "chunk_size": 2,
             "detection_threshold": detection_threshold,
         }
     )
 
+    if not args["quiet"]:
+        print_config(config)
+
     # process files
     error_files = []
-    for audio_file in files:
+    for index, audio_file in enumerate(files):
         try:
+            if not args["quiet"]:
+                click.echo(f"\n{index} {audio_file}")
+
             results = api.process_file(audio_file, model, config=config)
 
             if args["save_preds_if_empty"] or (
@@ -133,6 +140,13 @@ def detect(
         click.secho("\nUnable to process the follow files:", fg="red")
         for err in error_files:
             click.echo(f"  {err}")
+
+
+def print_config(config: ProcessingConfiguration):
+    """Print the processing configuration."""
+    click.echo("\nProcessing Configuration:")
+    click.echo(f"Time Expansion Factor: {config.get('time_expansion')}")
+    click.echo(f"Detection Threshold: {config.get('detection_threshold')}")
 
 
 if __name__ == "__main__":
