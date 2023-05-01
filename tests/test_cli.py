@@ -42,3 +42,28 @@ def test_cli_detect_command_on_test_audio(tmp_path):
     assert results_dir.exists()
     assert len(list(results_dir.glob("*.csv"))) == 3
     assert len(list(results_dir.glob("*.json"))) == 3
+
+
+def test_cli_detect_command_with_non_trivial_time_expansion(tmp_path):
+    """Test the detect command with a non-trivial time expansion factor."""
+    results_dir = tmp_path / "results"
+
+    # Remove results dir if it exists
+    if results_dir.exists():
+        results_dir.rmdir()
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "detect",
+            "example_data/audio",
+            str(results_dir),
+            "0.3",
+            "--time_expansion_factor",
+            "10",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert 'time_exp_fact 10' in result.stdout

@@ -77,6 +77,7 @@ def detect(
     audio_dir: str,
     ann_dir: str,
     detection_threshold: float,
+    time_expansion_factor: int,
     **args,
 ):
     """Detect bat calls in files in AUDIO_DIR and save predictions to ANN_DIR.
@@ -103,6 +104,7 @@ def detect(
         **{
             **params,
             **args,
+            'time_expansion': time_expansion_factor,
             "spec_slices": False,
             "chunk_size": 2,
             "detection_threshold": detection_threshold,
