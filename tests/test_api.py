@@ -1,11 +1,14 @@
 """Test bat detect module API."""
 
+from pathlib import Path
+
 import os
 from glob import glob
 
 import numpy as np
 import torch
 from torch import nn
+import soundfile as sf
 
 from batdetect2 import api
 
@@ -262,3 +265,20 @@ def test_process_file_with_spec_slices():
     assert "spec_slices" in results
     assert isinstance(results["spec_slices"], list)
     assert len(results["spec_slices"]) == len(detections)
+
+
+
+def test_process_file_with_empty_predictions_does_not_fail(
+    tmp_path: Path,
+):
+    """Test process file with empty predictions does not fail."""
+    # Create empty file
+    empty_file = tmp_path / "empty.wav"
+    empty_wav = np.zeros((0, 1), dtype=np.float32)
+    sf.write(empty_file, empty_wav, 256000)
+
+    # Process file
+    results = api.process_file(str(empty_file))
+
+    assert results is not None
+    assert len(results["pred_dict"]["annotation"]) == 0
