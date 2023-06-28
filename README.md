@@ -29,7 +29,7 @@ pip install batdetect2
 ```
 
 Alternatively, download this code from the repository (by clicking on the green button on top right) and unzip it.
-Once unziped, run this from extracted folder.
+Once unzipped, run this from extracted folder.
 
 ```bash
 pip install .
@@ -98,7 +98,7 @@ You can integrate the detections or the extracted features to your custom analys
 
 
 ## Training the model on your own data
-Take a look at the steps outlined in fintuning readme [here](bat_detect/finetune/readme.md) for a description of how to train your own model.
+Take a look at the steps outlined in fine tuning readme [here](bat_detect/finetune/readme.md) for a description of how to train your own model.
 
 
 ## Data and annotations
