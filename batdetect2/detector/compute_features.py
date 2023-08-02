@@ -100,7 +100,7 @@ def compute_max_power_bb(
     max_power_ind = np.argmax(power_per_freq_band)
     return int(
         convert_int_to_freq(
-            max_power_ind,
+            y_low - max_power_ind,
             spec.shape[0],
             min_freq,
             max_freq,
@@ -190,13 +190,13 @@ def compute_max_power_second(
 
 def compute_call_interval(
     prediction: types.Prediction,
-    previous_prediction: Optional[types.Prediction] = None,
+    previous: Optional[types.Prediction] = None,
     **_,
 ) -> float:
     """Compute time between this call and the previous call in seconds."""
-    if previous_prediction is None:
+    if previous is None:
         return np.nan
-    return round(prediction["start_time"] - previous_prediction["end_time"], 5)
+    return round(prediction["start_time"] - previous["end_time"], 5)
 
 
 # NOTE: The order of the features in this dictionary is important. The
