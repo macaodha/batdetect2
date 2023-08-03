@@ -56,7 +56,7 @@ build-backend = "pdm.pep517.api"
 batdetect2 = "batdetect2.cli:cli"
 
 [tool.black]
-line-length = 80
+line-length = 79
 
 [[tool.mypy.overrides]]
 module = [

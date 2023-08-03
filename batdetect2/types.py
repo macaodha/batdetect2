@@ -1,5 +1,5 @@
 """Types used in the code base."""
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, Union
 
 import numpy as np
 import torch
@@ -25,10 +25,13 @@ except ImportError:
 __all__ = [
     "Annotation",
     "DetectionModel",
+    "FeatureExtractionParameters",
+    "FeatureExtractor",
     "FileAnnotations",
     "ModelOutput",
     "ModelParameters",
     "NonMaximumSuppressionConfig",
+    "Prediction",
     "PredictionResults",
     "ProcessingConfiguration",
     "ResultParams",
@@ -312,6 +315,40 @@ class ModelOutput(NamedTuple):
     """Tensor with intermediate features."""
 
 
+class Prediction(TypedDict):
+    """Singe prediction."""
+
+    det_prob: float
+    """Detection probability."""
+
+    x_pos: int
+    """X position of the detection in pixels."""
+
+    y_pos: int
+    """Y position of the detection in pixels."""
+
+    bb_width: int
+    """Width of the detection in pixels."""
+
+    bb_height: int
+    """Height of the detection in pixels."""
+
+    start_time: float
+    """Start time of the detection in seconds."""
+
+    end_time: float
+    """End time of the detection in seconds."""
+
+    low_freq: float
+    """Low frequency of the detection in Hz."""
+
+    high_freq: float
+    """High frequency of the detection in Hz."""
+
+    class_prob: np.ndarray
+    """Vector holding the probability of each class."""
+
+
 class PredictionResults(TypedDict):
     """Results of the prediction.
 
@@ -418,6 +455,16 @@ class NonMaximumSuppressionConfig(TypedDict):
     """Threshold for detection probability."""
 
 
+class FeatureExtractionParameters(TypedDict):
+    """Parameters that control the feature extraction function."""
+
+    min_freq: int
+    """Minimum frequency to consider in Hz."""
+
+    max_freq: int
+    """Maximum frequency to consider in Hz."""
+
+
 class HeatmapParameters(TypedDict):
     """Parameters that control the heatmap generation function."""
 
@@ -473,3 +520,11 @@ class AnnotationGroup(TypedDict):
 
     y_inds: NotRequired[np.ndarray]
     """Y coordinate of the annotations in the spectrogram."""
+
+
+class FeatureExtractor(Protocol):
+    """Protocol for feature extractors."""
+
+    def __call__(self, prediction: Prediction, **kwargs) -> Union[float, int]:
+        """Extract features from a prediction."""
+        ...

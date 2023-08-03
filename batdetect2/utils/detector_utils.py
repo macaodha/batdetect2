@@ -773,7 +773,7 @@ def process_file(
         )
 
         # convert to numpy
-        spec_np = spec.detach().cpu().numpy()
+        spec_np = spec.detach().cpu().numpy().squeeze()
 
         # add chunk time to start and end times
         pred_nms["start_times"] += chunk_time
@@ -794,7 +794,7 @@ def process_file(
         if config["spec_slices"]:
             # FIX: This is not currently working. Returns empty slices
             spec_slices.extend(
-                feats.extract_spec_slices(spec_np, pred_nms, config)
+                feats.extract_spec_slices(spec_np, pred_nms)
             )
 
     # Merge results from chunks
