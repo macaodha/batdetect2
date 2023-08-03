@@ -88,19 +88,28 @@ def compute_max_power_bb(
         return np.nan
 
     x_start = max(0, prediction["x_pos"])
-    x_end = min(spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"])
-
-    y_low = max(0, prediction["y_pos"])
-    y_high = min(
-        spec.shape[0] - 1, prediction["y_pos"] + prediction["bb_height"]
+    x_end = min(
+        spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"]
     )
 
-    spec_bb = spec[y_low:y_high, x_start:x_end]
+    # y low is the lowest freq but it will have a higher value due to array
+    # starting at 0 at top
+    y_low = min(spec.shape[0] - 1, prediction["y_pos"])
+    y_high = max(0, prediction["y_pos"] - prediction["bb_height"])
+
+    spec_bb = spec[y_high:y_low, x_start:x_end]
     power_per_freq_band = np.sum(spec_bb, axis=1)
-    max_power_ind = np.argmax(power_per_freq_band)
+
+    try:
+        max_power_ind = np.argmax(power_per_freq_band)
+    except ValueError:
+        # If the call is too short, the bounding box might be empty.
+        # In this case, return NaN.
+        return np.nan
+
     return int(
         convert_int_to_freq(
-            y_low - max_power_ind,
+            y_high + max_power_ind,
             spec.shape[0],
             min_freq,
             max_freq,
@@ -120,7 +129,9 @@ def compute_max_power(
         return np.nan
 
     x_start = max(0, prediction["x_pos"])
-    x_end = min(spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"])
+    x_end = min(
+        spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"]
+    )
     spec_call = spec[:, x_start:x_end]
     power_per_freq_band = np.sum(spec_call, axis=1)
     max_power_ind = np.argmax(power_per_freq_band)
@@ -146,7 +157,9 @@ def compute_max_power_first(
         return np.nan
 
     x_start = max(0, prediction["x_pos"])
-    x_end = min(spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"])
+    x_end = min(
+        spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"]
+    )
     spec_call = spec[:, x_start:x_end]
     first_half = spec_call[:, : int(spec_call.shape[1] / 2)]
     power_per_freq_band = np.sum(first_half, axis=1)
@@ -173,7 +186,9 @@ def compute_max_power_second(
         return np.nan
 
     x_start = max(0, prediction["x_pos"])
-    x_end = min(spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"])
+    x_end = min(
+        spec.shape[1] - 1, prediction["x_pos"] + prediction["bb_width"]
+    )
     spec_call = spec[:, x_start:x_end]
     second_half = spec_call[:, int(spec_call.shape[1] / 2) :]
     power_per_freq_band = np.sum(second_half, axis=1)
