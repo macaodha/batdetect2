@@ -98,7 +98,7 @@ You can integrate the detections or the extracted features to your custom analys
 
 
 ## Training the model on your own data
-Take a look at the steps outlined in finetuning readme [here](bat_detect2/finetune/readme.md) for a description of how to train your own model.
+Take a look at the steps outlined in finetuning readme [here](batdetect2/finetune/readme.md) for a description of how to train your own model.
 
 
 ## Data and annotations
