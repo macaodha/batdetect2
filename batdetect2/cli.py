@@ -119,6 +119,9 @@ def detect(
     error_files = []
     for index, audio_file in enumerate(files):
         try:
+            if not os.path.getsize(audio_file):
+                click.echo(f"\n{index} {audio_file} is empty! Skipping.")
+                continue
             if not args["quiet"]:
                 click.echo(f"\n{index} {audio_file}")
 
