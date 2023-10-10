@@ -44,7 +44,7 @@ def test_list_audio_files():
     """Test listing audio files."""
     audio_files = api.list_audio_files(TEST_DATA_DIR)
 
-    assert len(audio_files) == 3
+    assert len(audio_files) == 4
     assert all(path.endswith((".wav", ".WAV")) for path in audio_files)
 
 
