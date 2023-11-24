@@ -102,10 +102,11 @@ experiments/*
 .virtual_documents
 .ipynb_checkpoints
 *.ipynb
-!batdetect2_notebook.ipynb
-
-# Batdetect Models [Include]
-!batdetect2/models/*.pth.tar
 
 # Bump2version
 .bumpversion.cfg
+
+# DO Include
+!batdetect2_notebook.ipynb
+!batdetect2/models/*.pth.tar
+!tests/data/*.wav
