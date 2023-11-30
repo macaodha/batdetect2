@@ -19,13 +19,15 @@ def x_coords_to_time(
 ) -> float:
     """Convert x coordinates of spectrogram to time in seconds.
 
-    Args:
+    Parameters
+    ----------
         x_pos: X position of the detection in pixels.
         sampling_rate: Sampling rate of the audio in Hz.
         fft_win_length: Length of the FFT window in seconds.
         fft_overlap: Overlap of the FFT windows in seconds.
 
-    Returns:
+    Returns
+    -------
         Time in seconds.
     """
     nfft = int(fft_win_length * sampling_rate)
@@ -134,12 +136,12 @@ def run_nms(
                 y_pos[num_detection, valid_inds],
                 x_pos[num_detection, valid_inds],
             ].transpose(0, 1)
-            feat = feat.detach().numpy().astype(np.float32)
+            feat = feat.detach().cpu().numpy().astype(np.float32)
             feats.append(feat)
 
         # convert to numpy
         for key, value in pred.items():
-            pred[key] = value.detach().numpy().astype(np.float32)
+            pred[key] = value.detach().cpu().numpy().astype(np.float32)
 
         preds.append(pred)  # type: ignore
 

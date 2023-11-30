@@ -2,6 +2,7 @@ import json
 import os
 from typing import Any, Iterator, List, Optional, Tuple, Union
 
+import librosa
 import numpy as np
 import pandas as pd
 import torch
@@ -66,7 +67,6 @@ def list_audio_files(ip_dir: str) -> List[str]:
 
     Raises:
         FileNotFoundError: Input directory not found.
-
     """
     matches = []
     for root, _, filenames in os.walk(ip_dir):
@@ -143,7 +143,19 @@ def load_model(
 
 
 def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
-    predictions_m = {}
+    predictions_m = {
+        "det_probs": np.array([]),
+        "x_pos": np.array([]),
+        "y_pos": np.array([]),
+        "bb_widths": np.array([]),
+        "bb_heights": np.array([]),
+        "start_times": np.array([]),
+        "end_times": np.array([]),
+        "low_freqs": np.array([]),
+        "high_freqs": np.array([]),
+        "class_probs": np.array([]),
+    }
+
     num_preds = np.sum([len(pp["det_probs"]) for pp in predictions])
 
     if num_preds > 0:
@@ -151,10 +163,6 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
             predictions_m[key] = np.hstack(
                 [pp[key] for pp in predictions if pp["det_probs"].shape[0] > 0]
             )
-    else:
-        # hack in case where no detected calls as we need some of the key
-        # names in dict
-        predictions_m = predictions[0]
 
     if len(spec_feats) > 0:
         spec_feats = np.vstack(spec_feats)
@@ -226,11 +234,19 @@ def format_single_result(
     Returns:
         dict: Results in the format expected by the annotation tool.
     """
-    # Get a single class prediction for the file
-    class_overall = pp.overall_class_pred(
-        predictions["det_probs"],
-        predictions["class_probs"],
-    )
+    try:
+        # Get a single class prediction for the file
+        class_overall = pp.overall_class_pred(
+            predictions["det_probs"],
+            predictions["class_probs"],
+        )
+        class_name = class_names[np.argmax(class_overall)]
+        annotations = get_annotations_from_preds(predictions, class_names)
+    except (np.AxisError, ValueError):
+        # No detections
+        class_overall = np.zeros(len(class_names))
+        class_name = "None"
+        annotations = []
 
     return {
         "id": file_id,
@@ -239,8 +255,8 @@ def format_single_result(
         "notes": "Automatically generated.",
         "time_exp": time_exp,
         "duration": round(float(duration), 4),
-        "annotation": get_annotations_from_preds(predictions, class_names),
-        "class_name": class_names[np.argmax(class_overall)],
+        "annotation": annotations,
+        "class_name": class_name,
     }
 
 
@@ -253,6 +269,7 @@ def convert_results(
     spec_feats,
     cnn_feats,
     spec_slices,
+    nyquist_freq: Optional[float] = None,
 ) -> RunResults:
     """Convert results to dictionary as expected by the annotation tool.
 
@@ -268,8 +285,8 @@ def convert_results(
 
     Returns:
         dict: Dictionary with results.
-
     """
+
     pred_dict = format_single_result(
         file_id,
         time_exp,
@@ -277,6 +294,14 @@ def convert_results(
         predictions,
         params["class_names"],
     )
+
+    # Remove high frequency detections
+    if nyquist_freq is not None:
+        pred_dict["annotation"] = [
+            pred
+            for pred in pred_dict["annotation"]
+            if pred["high_freq"] <= nyquist_freq
+        ]
 
     # combine into final results dictionary
     results: RunResults = {
@@ -310,7 +335,6 @@ def save_results_to_file(results, op_path: str) -> None:
     Args:
         results (dict): Results.
         op_path (str): Output path.
-
     """
     # make directory if it does not exist
     if not os.path.isdir(os.path.dirname(op_path)):
@@ -472,7 +496,6 @@ def iterate_over_chunks(
     chunk_start : float
         Start time of chunk in seconds.
     chunk : np.ndarray
-
     """
     nsamples = audio.shape[0]
     duration_full = nsamples / samplerate
@@ -678,7 +701,6 @@ def process_audio_array(
         The array is of shape (num_detections, num_features).
     spec : torch.Tensor
         Spectrogram of the audio used as input.
-
     """
     pred_nms, features, spec = _process_audio_array(
         audio,
@@ -730,6 +752,10 @@ def process_file(
     cnn_feats = []
     spec_slices = []
 
+    # Get original sampling rate
+    file_samp_rate = librosa.get_samplerate(audio_file)
+    orig_samp_rate = file_samp_rate * config.get("time_expansion", 1) or 1
+
     # load audio file
     sampling_rate, audio_full = au.load_audio(
         audio_file,
@@ -757,7 +783,7 @@ def process_file(
         )
 
         # convert to numpy
-        spec_np = spec.detach().cpu().numpy()
+        spec_np = spec.detach().cpu().numpy().squeeze()
 
         # add chunk time to start and end times
         pred_nms["start_times"] += chunk_time
@@ -777,9 +803,7 @@ def process_file(
 
         if config["spec_slices"]:
             # FIX: This is not currently working. Returns empty slices
-            spec_slices.extend(
-                feats.extract_spec_slices(spec_np, pred_nms, config)
-            )
+            spec_slices.extend(feats.extract_spec_slices(spec_np, pred_nms))
 
     # Merge results from chunks
     predictions, spec_feats, cnn_feats, spec_slices = _merge_results(
@@ -799,6 +823,7 @@ def process_file(
         spec_feats=spec_feats,
         cnn_feats=cnn_feats,
         spec_slices=spec_slices,
+        nyquist_freq=orig_samp_rate / 2,
     )
 
     # summarize results

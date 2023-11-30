@@ -61,7 +61,7 @@ def spectrogram(
     """
     # Convert to numpy array if needed
     if isinstance(spec, torch.Tensor):
-        spec = spec.numpy()
+        spec = spec.detach().cpu().numpy()
 
     # Remove batch and channel dimensions if present
     spec = spec.squeeze()
@@ -265,7 +265,7 @@ def detection(
         # Add class label
         txt = " ".join([sp[:3] for sp in det["class"].split(" ")])
         font_info = {
-            "color": "white",
+            "color": edgecolor,
             "size": 10,
             "weight": "bold",
             "alpha": rect.get_alpha(),

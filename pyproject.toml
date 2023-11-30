@@ -6,7 +6,7 @@ dev = [
 
 [project]
 name = "batdetect2"
-version = "1.0.0"
+version = "1.0.7"
 description = "Deep learning model for detecting and classifying bat echolocation calls in high frequency audio recordings."
 authors = [
     { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
@@ -19,7 +19,7 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "scipy",
-    "torch<2",
+    "torch>=1.13.1,<2",
     "torchaudio",
     "torchvision",
     "click",
@@ -53,10 +53,10 @@ requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [project.scripts]
-batdetect2 = "bat_detect.cli:cli"
+batdetect2 = "batdetect2.cli:cli"
 
 [tool.black]
-line-length = 80
+line-length = 79
 
 [[tool.mypy.overrides]]
 module = [
