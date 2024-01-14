@@ -16,7 +16,7 @@ from batdetect2.detector.parameters import DEFAULT_MODEL_PATH
 from batdetect2.types import (
     Annotation,
     DetectionModel,
-    FileAnnotations,
+    FileAnnotation,
     ModelOutput,
     ModelParameters,
     PredictionResults,
@@ -79,7 +79,7 @@ def list_audio_files(ip_dir: str) -> List[str]:
 def load_model(
     model_path: str = DEFAULT_MODEL_PATH,
     load_weights: bool = True,
-    device: Optional[torch.device] = None,
+    device: Union[torch.device, str, None] = None,
 ) -> Tuple[DetectionModel, ModelParameters]:
     """Load model from file.
 
@@ -222,7 +222,7 @@ def format_single_result(
     duration: float,
     predictions: PredictionResults,
     class_names: List[str],
-) -> FileAnnotations:
+) -> FileAnnotation:
     """Format results into the format expected by the annotation tool.
 
     Args:
@@ -399,11 +399,10 @@ def save_results_to_file(results, op_path: str) -> None:
 
 def compute_spectrogram(
     audio: np.ndarray,
-    sampling_rate: int,
+    sampling_rate: float,
     params: SpectrogramParameters,
     device: torch.device,
-    return_np: bool = False,
-) -> Tuple[float, torch.Tensor, Optional[np.ndarray]]:
+) -> Tuple[float, torch.Tensor]:
     """Compute a spectrogram from an audio array.
 
     Will pad the audio array so that it is evenly divisible by the
@@ -412,24 +411,16 @@ def compute_spectrogram(
     Parameters
     ----------
     audio : np.ndarray
-
     sampling_rate : int
-
     params : SpectrogramParameters
         The parameters to use for generating the spectrogram.
-
-    return_np : bool, optional
-        Whether to return the spectrogram as a numpy array as well as a
-        torch tensor. The default is False.
 
     Returns
     -------
     duration : float
         The duration of the spectrgram in seconds.
-
     spec : torch.Tensor
         The spectrogram as a torch tensor.
-
     spec_np : np.ndarray, optional
         The spectrogram as a numpy array. Only returned if `return_np` is
         True, otherwise None.
@@ -446,7 +437,7 @@ def compute_spectrogram(
     )
 
     # generate spectrogram
-    spec, _ = au.generate_spectrogram(audio, sampling_rate, params)
+    spec = au.generate_spectrogram(audio, sampling_rate, params)
 
     # convert to pytorch
     spec = torch.from_numpy(spec).to(device)
@@ -466,18 +457,12 @@ def compute_spectrogram(
         mode="bilinear",
         align_corners=False,
     )
-
-    if return_np:
-        spec_np = spec[0, 0, :].cpu().data.numpy()
-    else:
-        spec_np = None
-
-    return duration, spec, spec_np
+    return duration, spec
 
 
 def iterate_over_chunks(
     audio: np.ndarray,
-    samplerate: int,
+    samplerate: float,
     chunk_size: float,
 ) -> Iterator[Tuple[float, np.ndarray]]:
     """Iterate over audio in chunks of size chunk_size.
@@ -510,7 +495,7 @@ def iterate_over_chunks(
 
 def _process_spectrogram(
     spec: torch.Tensor,
-    samplerate: int,
+    samplerate: float,
     model: DetectionModel,
     config: ProcessingConfiguration,
 ) -> Tuple[PredictionResults, np.ndarray]:
@@ -632,13 +617,13 @@ def process_spectrogram(
 
 def _process_audio_array(
     audio: np.ndarray,
-    sampling_rate: int,
+    sampling_rate: float,
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
 ) -> Tuple[PredictionResults, np.ndarray, torch.Tensor]:
     # load audio file and compute spectrogram
-    _, spec, _ = compute_spectrogram(
+    _, spec = compute_spectrogram(
         audio,
         sampling_rate,
         {
@@ -654,7 +639,6 @@ def _process_audio_array(
             "max_scale_spec": config["max_scale_spec"],
         },
         device,
-        return_np=False,
     )
 
     # process spectrogram with model
@@ -754,13 +738,15 @@ def process_file(
 
     # Get original sampling rate
     file_samp_rate = librosa.get_samplerate(audio_file)
-    orig_samp_rate = file_samp_rate * config.get("time_expansion", 1) or 1
+    orig_samp_rate = file_samp_rate * float(
+        config.get("time_expansion", 1.0) or 1.0
+    )
 
     # load audio file
     sampling_rate, audio_full = au.load_audio(
         audio_file,
         time_exp_fact=config.get("time_expansion", 1) or 1,
-        target_samp_rate=config["target_samp_rate"],
+        target_sampling_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
         max_duration=config.get("max_duration"),
     )
@@ -802,7 +788,6 @@ def process_file(
             cnn_feats.append(features[0])
 
         if config["spec_slices"]:
-            # FIX: This is not currently working. Returns empty slices
             spec_slices.extend(feats.extract_spec_slices(spec_np, pred_nms))
 
     # Merge results from chunks

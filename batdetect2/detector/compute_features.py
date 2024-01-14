@@ -1,5 +1,5 @@
 """Functions to compute features from predictions."""
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -7,15 +7,26 @@ from batdetect2 import types
 from batdetect2.detector.parameters import MAX_FREQ_HZ, MIN_FREQ_HZ
 
 
-def convert_int_to_freq(spec_ind, spec_height, min_freq, max_freq):
+def convert_int_to_freq(
+    spec_ind: int,
+    spec_height: int,
+    min_freq: float,
+    max_freq: float,
+) -> int:
     """Convert spectrogram index to frequency in Hz.""" ""
     spec_ind = spec_height - spec_ind
-    return round(
-        (spec_ind / float(spec_height)) * (max_freq - min_freq) + min_freq, 2
+    return int(
+        round(
+            (spec_ind / float(spec_height)) * (max_freq - min_freq) + min_freq,
+            2,
+        )
     )
 
 
-def extract_spec_slices(spec, pred_nms):
+def extract_spec_slices(
+    spec: np.ndarray,
+    pred_nms: types.PredictionResults,
+) -> List[np.ndarray]:
     """Extract spectrogram slices from spectrogram.
 
     The slices are extracted based on detected call locations.
@@ -109,7 +120,7 @@ def compute_max_power_bb(
 
     return int(
         convert_int_to_freq(
-            y_high + max_power_ind,
+            int(y_high + max_power_ind),
             spec.shape[0],
             min_freq,
             max_freq,
@@ -135,13 +146,11 @@ def compute_max_power(
     spec_call = spec[:, x_start:x_end]
     power_per_freq_band = np.sum(spec_call, axis=1)
     max_power_ind = np.argmax(power_per_freq_band)
-    return int(
-        convert_int_to_freq(
-            max_power_ind,
-            spec.shape[0],
-            min_freq,
-            max_freq,
-        )
+    return convert_int_to_freq(
+        int(max_power_ind),
+        spec.shape[0],
+        min_freq,
+        max_freq,
     )
 
 
@@ -164,13 +173,11 @@ def compute_max_power_first(
     first_half = spec_call[:, : int(spec_call.shape[1] / 2)]
     power_per_freq_band = np.sum(first_half, axis=1)
     max_power_ind = np.argmax(power_per_freq_band)
-    return int(
-        convert_int_to_freq(
-            max_power_ind,
-            spec.shape[0],
-            min_freq,
-            max_freq,
-        )
+    return convert_int_to_freq(
+        int(max_power_ind),
+        spec.shape[0],
+        min_freq,
+        max_freq,
     )
 
 
@@ -193,13 +200,11 @@ def compute_max_power_second(
     second_half = spec_call[:, int(spec_call.shape[1] / 2) :]
     power_per_freq_band = np.sum(second_half, axis=1)
     max_power_ind = np.argmax(power_per_freq_band)
-    return int(
-        convert_int_to_freq(
-            max_power_ind,
-            spec.shape[0],
-            min_freq,
-            max_freq,
-        )
+    return convert_int_to_freq(
+        int(max_power_ind),
+        spec.shape[0],
+        min_freq,
+        max_freq,
     )
 
 
@@ -212,6 +217,7 @@ def compute_call_interval(
     if previous is None:
         return np.nan
     return round(prediction["start_time"] - previous["end_time"], 5)
+
 
 
 # NOTE: The order of the features in this dictionary is important. The
@@ -236,7 +242,7 @@ def get_feats(
     spec: np.ndarray,
     pred_nms: types.PredictionResults,
     params: types.FeatureExtractionParameters,
-):
+) -> np.ndarray:
     """Extract features from spectrogram based on detected call locations.
 
     The features extracted are:

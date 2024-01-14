@@ -1,5 +1,5 @@
 """Types used in the code base."""
-from typing import List, NamedTuple, Optional, Union
+from typing import Any, List, NamedTuple, Optional
 
 import numpy as np
 import torch
@@ -26,8 +26,7 @@ __all__ = [
     "Annotation",
     "DetectionModel",
     "FeatureExtractionParameters",
-    "FeatureExtractor",
-    "FileAnnotations",
+    "FileAnnotation",
     "ModelOutput",
     "ModelParameters",
     "NonMaximumSuppressionConfig",
@@ -94,7 +93,10 @@ class ModelParameters(TypedDict):
     """Resize factor."""
 
     class_names: List[str]
-    """Class names. The model is trained to detect these classes."""
+    """Class names.
+
+    The model is trained to detect these classes.
+    """
 
 
 DictWithClass = TypedDict("DictWithClass", {"class": str})
@@ -103,8 +105,8 @@ DictWithClass = TypedDict("DictWithClass", {"class": str})
 class Annotation(DictWithClass):
     """Format of annotations.
 
-    This is the format of a single annotation as expected by the annotation
-    tool.
+    This is the format of a single annotation as expected by the
+    annotation tool.
     """
 
     start_time: float
@@ -113,10 +115,10 @@ class Annotation(DictWithClass):
     end_time: float
     """End time in seconds."""
 
-    low_freq: int
+    low_freq: float
     """Low frequency in Hz."""
 
-    high_freq: int
+    high_freq: float
     """High frequency in Hz."""
 
     class_prob: float
@@ -135,7 +137,7 @@ class Annotation(DictWithClass):
     """Numeric ID for the class of the annotation."""
 
 
-class FileAnnotations(TypedDict):
+class FileAnnotation(TypedDict):
     """Format of results.
 
     This is the format of the results expected by the annotation tool.
@@ -157,7 +159,7 @@ class FileAnnotations(TypedDict):
     """Time expansion factor."""
 
     class_name: str
-    """Class predicted at file level"""
+    """Class predicted at file level."""
 
     notes: str
     """Notes of file."""
@@ -169,7 +171,7 @@ class FileAnnotations(TypedDict):
 class RunResults(TypedDict):
     """Run results."""
 
-    pred_dict: FileAnnotations
+    pred_dict: FileAnnotation
     """Predictions in the format expected by the annotation tool."""
 
     spec_feats: NotRequired[List[np.ndarray]]
@@ -394,9 +396,9 @@ class PredictionResults(TypedDict):
 class DetectionModel(Protocol):
     """Protocol for detection models.
 
-    This protocol is used to define the interface for the detection models.
-    This allows us to use the same code for training and inference, even
-    though the models are different.
+    This protocol is used to define the interface for the detection
+    models. This allows us to use the same code for training and
+    inference, even though the models are different.
     """
 
     num_classes: int
@@ -416,16 +418,14 @@ class DetectionModel(Protocol):
 
     def forward(
         self,
-        ip: torch.Tensor,
-        return_feats: bool = False,
+        spec: torch.Tensor,
     ) -> ModelOutput:
         """Forward pass of the model."""
         ...
 
     def __call__(
         self,
-        ip: torch.Tensor,
-        return_feats: bool = False,
+        spec: torch.Tensor,
     ) -> ModelOutput:
         """Forward pass of the model."""
         ...
@@ -490,8 +490,10 @@ class HeatmapParameters(TypedDict):
     """Maximum frequency to consider in Hz."""
 
     target_sigma: float
-    """Sigma for the Gaussian kernel. Controls the width of the points in
-    the heatmap."""
+    """Sigma for the Gaussian kernel.
+
+    Controls the width of the points in the heatmap.
+    """
 
 
 class AnnotationGroup(TypedDict):
@@ -522,10 +524,10 @@ class AnnotationGroup(TypedDict):
     annotated: NotRequired[bool]
     """Wether the annotation group is complete or not.
 
-    Usually annotation groups are associated to a single
-    audio clip. If the annotation group is complete, it means that all
-    relevant sound events have been annotated. If it is not complete, it
-    means that some sound events might not have been annotated.
+    Usually annotation groups are associated to a single audio clip. If
+    the annotation group is complete, it means that all relevant sound
+    events have been annotated. If it is not complete, it means that
+    some sound events might not have been annotated.
     """
 
     x_inds: NotRequired[np.ndarray]
@@ -535,12 +537,88 @@ class AnnotationGroup(TypedDict):
     """Y coordinate of the annotations in the spectrogram."""
 
 
-class AudioLoaderAnnotationGroup(AnnotationGroup, FileAnnotations):
+class AudioLoaderAnnotationGroup(TypedDict):
     """Group of annotation items for the training audio loader.
 
     This class is used to store the annotations for the training audio
     loader. It inherits from `AnnotationGroup` and `FileAnnotations`.
     """
 
+    id: str
+    duration: float
+    issues: bool
+    file_path: str
+    time_exp: float
+    class_name: str
+    notes: str
+    start_times: np.ndarray
+    end_times: np.ndarray
+    low_freqs: np.ndarray
+    high_freqs: np.ndarray
+    class_ids: np.ndarray
+    individual_ids: np.ndarray
+    x_inds: np.ndarray
+    y_inds: np.ndarray
+    annotation: List[Annotation]
+    annotated: bool
     class_id_file: int
     """ID of the class of the file."""
+
+
+class AudioLoaderParameters(TypedDict):
+    class_names: List[str]
+    classes_to_ignore: List[str]
+    target_samp_rate: int
+    scale_raw_audio: bool
+    fft_win_length: float
+    fft_overlap: float
+    spec_train_width: int
+    resize_factor: float
+    spec_divide_factor: int
+    augment_at_train: bool
+    augment_at_train_combine: bool
+    aug_prob: float
+    spec_height: int
+    echo_max_delay: float
+    spec_amp_scaling: float
+    stretch_squeeze_delta: float
+    mask_max_time_perc: float
+    mask_max_freq_perc: float
+    max_freq: float
+    min_freq: float
+    spec_scale: str
+    denoise_spec_avg: bool
+    max_scale_spec: bool
+    target_sigma: float
+
+
+class FeatureExtractor(Protocol):
+    def __call__(
+        self,
+        prediction: Prediction,
+        **kwargs: Any,
+    ) -> float:
+        ...
+
+
+class DatasetDict(TypedDict):
+    """Dataset dictionary.
+
+    This is the format of the dictionary that contains the dataset
+    information.
+    """
+
+    dataset_name: str
+    """Name of the dataset."""
+
+    is_test: bool
+    """Whether the dataset is a test set."""
+
+    is_binary: bool
+    """Whether the dataset is binary."""
+
+    ann_path: str
+    """Path to the annotations."""
+
+    wav_path: str
+    """Path to the audio files."""

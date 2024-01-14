@@ -1,12 +1,10 @@
 import warnings
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, overload
 
 import librosa
 import librosa.core.spectrum
 import numpy as np
 import torch
-
-from . import wavfile
 
 __all__ = [
     "load_audio",
@@ -15,113 +13,171 @@ __all__ = [
 ]
 
 
-def time_to_x_coords(time_in_file, sampling_rate, fft_win_length, fft_overlap):
-    nfft = np.floor(fft_win_length * sampling_rate)  # int() uses floor
+@overload
+def time_to_x_coords(
+    time_in_file: np.ndarray,
+    sampling_rate: float,
+    fft_win_length: float,
+    fft_overlap: float,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def time_to_x_coords(
+    time_in_file: float,
+    sampling_rate: float,
+    fft_win_length: float,
+    fft_overlap: float,
+) -> float:
+    ...
+
+
+def time_to_x_coords(
+    time_in_file: Union[float, np.ndarray],
+    sampling_rate: float,
+    fft_win_length: float,
+    fft_overlap: float,
+) -> Union[float, np.ndarray]:
+    nfft = np.floor(fft_win_length * sampling_rate)
     noverlap = np.floor(fft_overlap * nfft)
     return (time_in_file * sampling_rate - noverlap) / (nfft - noverlap)
 
 
 # NOTE this is also defined in post_process
-def x_coords_to_time(x_pos, sampling_rate, fft_win_length, fft_overlap):
+def x_coords_to_time(
+    x_pos: float,
+    sampling_rate: int,
+    fft_win_length: float,
+    fft_overlap: float,
+) -> float:
     nfft = np.floor(fft_win_length * sampling_rate)
     noverlap = np.floor(fft_overlap * nfft)
     return ((x_pos * (nfft - noverlap)) + noverlap) / sampling_rate
-    # return (1.0 - fft_overlap) * fft_win_length * (x_pos + 0.5)  # 0.5 is for center of temporal window
+
+    # return (1.0 - fft_overlap) * fft_win_length * (x_pos + 0.5)  # 0.5 is for
+    # center of temporal window
 
 
 def generate_spectrogram(
-    audio,
-    sampling_rate,
-    params,
-    return_spec_for_viz=False,
-    check_spec_size=True,
-):
+    audio: np.ndarray,
+    sampling_rate: float,
+    fft_win_length: float,
+    fft_overlap: float,
+    max_freq: float,
+    min_freq: float,
+    spec_scale: str,
+    denoise_spec_avg: bool = False,
+    max_scale_spec: bool = False,
+) -> np.ndarray:
     # generate spectrogram
     spec = gen_mag_spectrogram(
         audio,
         sampling_rate,
-        params["fft_win_length"],
-        params["fft_overlap"],
+        window_len=fft_win_length,
+        overlap_perc=fft_overlap,
+    )
+    spec = crop_spectrogram(
+        spec,
+        fft_win_length=fft_win_length,
+        max_freq=max_freq,
+        min_freq=min_freq,
+    )
+    spec = scale_spectrogram(
+        spec,
+        sampling_rate,
+        spec_scale=spec_scale,
+        fft_win_length=fft_win_length,
     )
 
+    if denoise_spec_avg:
+        spec = denoise_spectrogram(spec)
+
+    if max_scale_spec:
+        spec = max_scale_spectrogram(spec)
+
+    return spec
+
+
+def crop_spectrogram(
+    spec: np.ndarray,
+    fft_win_length: float,
+    max_freq: float,
+    min_freq: float,
+) -> np.ndarray:
     # crop to min/max freq
-    max_freq = round(params["max_freq"] * params["fft_win_length"])
-    min_freq = round(params["min_freq"] * params["fft_win_length"])
+    max_freq = round(max_freq * fft_win_length)
+    min_freq = round(min_freq * fft_win_length)
     if spec.shape[0] < max_freq:
         freq_pad = max_freq - spec.shape[0]
         spec = np.vstack(
             (np.zeros((freq_pad, spec.shape[1]), dtype=spec.dtype), spec)
         )
-    spec_cropped = spec[-max_freq : spec.shape[0] - min_freq, :]
+    return spec[-max_freq : spec.shape[0] - min_freq, :]
 
-    if params["spec_scale"] == "log":
-        log_scaling = (
-            2.0
-            * (1.0 / sampling_rate)
-            * (
-                1.0
-                / (
-                    np.abs(
-                        np.hanning(
-                            int(params["fft_win_length"] * sampling_rate)
-                        )
-                    )
-                    ** 2
-                ).sum()
-            )
+
+def denoise_spectrogram(spec: np.ndarray) -> np.ndarray:
+    spec = spec - np.mean(spec, 1)[:, np.newaxis]
+    return spec.clip(min=0)
+
+
+def max_scale_spectrogram(spec: np.ndarray) -> np.ndarray:
+    return spec / (spec.max() + 10e-6)
+
+
+def log_scale(
+    spec: np.ndarray,
+    sampling_rate: float,
+    fft_win_length: float,
+) -> np.ndarray:
+    log_scaling = (
+        2.0
+        * (1.0 / sampling_rate)
+        * (
+            1.0
+            / (
+                np.abs(np.hanning(int(fft_win_length * sampling_rate))) ** 2
+            ).sum()
         )
-        # log_scaling = (1.0 / sampling_rate)*0.1
-        # log_scaling = (1.0 / sampling_rate)*10e4
-        spec = np.log1p(log_scaling * spec_cropped)
-    elif params["spec_scale"] == "pcen":
-        spec = pcen(spec_cropped, sampling_rate)
+    )
+    return np.log1p(log_scaling * spec)
 
-    elif params["spec_scale"] == "none":
-        pass
 
-    if params["denoise_spec_avg"]:
-        spec = spec - np.mean(spec, 1)[:, np.newaxis]
-        spec.clip(min=0, out=spec)
+def scale_spectrogram(
+    spec: np.ndarray,
+    sampling_rate: float,
+    spec_scale: str,
+    fft_win_length: float,
+) -> np.ndarray:
+    if spec_scale == "log":
+        return log_scale(spec, sampling_rate, fft_win_length)
 
-    if params["max_scale_spec"]:
-        spec = spec / (spec.max() + 10e-6)
+    if spec_scale == "pcen":
+        return pcen(spec, sampling_rate)
 
-    # needs to be divisible by specific factor - if not it should have been padded
-    # if check_spec_size:
-    # assert((int(spec.shape[0]*params['resize_factor']) % params['spec_divide_factor']) == 0)
-    # assert((int(spec.shape[1]*params['resize_factor']) % params['spec_divide_factor']) == 0)
+    return spec
 
+
+def prepare_spec_for_viz(
+    spec: np.ndarray,
+    sampling_rate: int,
+    fft_win_length: float,
+) -> np.ndarray:
     # for visualization purposes - use log scaled spectrogram
-    if return_spec_for_viz:
-        log_scaling = (
-            2.0
-            * (1.0 / sampling_rate)
-            * (
-                1.0
-                / (
-                    np.abs(
-                        np.hanning(
-                            int(params["fft_win_length"] * sampling_rate)
-                        )
-                    )
-                    ** 2
-                ).sum()
-            )
-        )
-        spec_for_viz = np.log1p(log_scaling * spec_cropped).astype(np.float32)
-    else:
-        spec_for_viz = None
-
-    return spec, spec_for_viz
+    return log_scale(
+        spec,
+        sampling_rate,
+        fft_win_length=fft_win_length,
+    ).astype(np.float32)
 
 
 def load_audio(
     audio_file: str,
     time_exp_fact: float,
-    target_samp_rate: int,
+    target_sampling_rate: int,
     scale: bool = False,
     max_duration: Optional[float] = None,
-) -> Tuple[int, np.ndarray]:
+) -> Tuple[float, np.ndarray]:
     """Load an audio file and resample it to the target sampling rate.
 
     The audio is also scaled to [-1, 1] and clipped to the maximum duration.
@@ -152,63 +208,82 @@ def load_audio(
 
     """
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=wavfile.WavFileWarning)
-        # sampling_rate, audio_raw = wavfile.read(audio_file)
-        audio_raw, sampling_rate = librosa.load(
+        audio, sampling_rate = librosa.load(
             audio_file,
             sr=None,
             dtype=np.float32,
         )
 
-    if len(audio_raw.shape) > 1:
+    if len(audio.shape) > 1:
         raise ValueError("Currently does not handle stereo files")
 
     sampling_rate = sampling_rate * time_exp_fact
 
     # resample - need to do this after correcting for time expansion
-    sampling_rate_old = sampling_rate
-    sampling_rate = target_samp_rate
-    if sampling_rate_old != sampling_rate:
-        audio_raw = librosa.resample(
-            audio_raw,
-            orig_sr=sampling_rate_old,
-            target_sr=sampling_rate,
-            res_type="polyphase",
-        )
+    audio = resample_audio(audio, sampling_rate, target_sampling_rate)
 
-    # clipping maximum duration
     if max_duration is not None:
-        max_duration = int(
-            np.minimum(
-                int(sampling_rate * max_duration),
-                audio_raw.shape[0],
-            )
-        )
-        audio_raw = audio_raw[:max_duration]
+        audio = clip_audio(audio, target_sampling_rate, max_duration)
 
     # scale to [-1, 1]
     if scale:
-        audio_raw = audio_raw - audio_raw.mean()
-        audio_raw = audio_raw / (np.abs(audio_raw).max() + 10e-6)
+        audio = scale_audio(audio)
 
-    return sampling_rate, audio_raw
+    return target_sampling_rate, audio
+
+
+def resample_audio(
+    audio: np.ndarray,
+    sr_orig: float,
+    sr_target: float,
+) -> np.ndarray:
+    if sr_orig != sr_target:
+        return librosa.resample(
+            audio,
+            orig_sr=sr_orig,
+            target_sr=sr_target,
+            res_type="polyphase",
+        )
+
+    return audio
+
+
+def clip_audio(
+    audio: np.ndarray,
+    sampling_rate: float,
+    max_duration: float,
+) -> np.ndarray:
+    max_duration = int(
+        np.minimum(
+            int(sampling_rate * max_duration),
+            audio.shape[0],
+        )
+    )
+    return audio[:max_duration]
+
+
+def scale_audio(
+    audio: np.ndarray,
+    eps: float = 10e-6,
+) -> np.ndarray:
+    return (audio - audio.mean()) / (np.abs(audio).max() + eps)
 
 
 def pad_audio(
-    audio_raw,
-    fs,
-    ms,
-    overlap_perc,
-    resize_factor,
-    divide_factor,
-    fixed_width=None,
-):
+    audio_raw: np.ndarray,
+    sampling_rate: float,
+    window_len: float,
+    overlap_perc: float,
+    resize_factor: float,
+    divide_factor: float,
+    fixed_width: Optional[int] = None,
+) -> np.ndarray:
     # Adds zeros to the end of the raw data so that the generated sepctrogram
     # will be evenly divisible by `divide_factor`
     # Also deals with very short audio clips and fixed_width during training
 
     # This code could be clearer, clean up
-    nfft = int(ms * fs)
+    nfft = int(window_len * sampling_rate)
     noverlap = int(overlap_perc * nfft)
     step = nfft - noverlap
     min_size = int(divide_factor * (1.0 / resize_factor))
@@ -245,19 +320,24 @@ def pad_audio(
     return audio_raw
 
 
-def gen_mag_spectrogram(x, fs, ms, overlap_perc):
+def gen_mag_spectrogram(
+    audio: np.ndarray,
+    sampling_rate: float,
+    window_len: float,
+    overlap_perc: float,
+) -> np.ndarray:
     # Computes magnitude spectrogram by specifying time.
-
-    x = x.astype(np.float32)
-    nfft = int(ms * fs)
+    audio = audio.astype(np.float32)
+    nfft = int(window_len * sampling_rate)
     noverlap = int(overlap_perc * nfft)
-
-    # window data
-    step = nfft - noverlap
 
     # compute spec
     spec, _ = librosa.core.spectrum._spectrogram(
-        y=x, power=1, n_fft=nfft, hop_length=step, center=False
+        y=audio,
+        power=1,
+        n_fft=nfft,
+        hop_length=nfft - noverlap,
+        center=False,
     )
 
     # remove DC component and flip vertical orientation
@@ -266,24 +346,25 @@ def gen_mag_spectrogram(x, fs, ms, overlap_perc):
     return spec.astype(np.float32)
 
 
-def gen_mag_spectrogram_pt(x, fs, ms, overlap_perc):
-    nfft = int(ms * fs)
+def gen_mag_spectrogram_pt(
+    audio: torch.Tensor,
+    sampling_rate: float,
+    window_len: float,
+    overlap_perc: float,
+) -> torch.Tensor:
+    nfft = int(window_len * sampling_rate)
     nstep = round((1.0 - overlap_perc) * nfft)
+    han_win = torch.hann_window(nfft, periodic=False).to(audio.device)
 
-    han_win = torch.hann_window(nfft, periodic=False).to(x.device)
-
-    complex_spec = torch.stft(x, nfft, nstep, window=han_win, center=False)
+    complex_spec = torch.stft(audio, nfft, nstep, window=han_win, center=False)
     spec = complex_spec.pow(2.0).sum(-1)
 
     # remove DC component and flip vertically
-    spec = torch.flipud(spec[0, 1:, :])
-
-    return spec
+    return torch.flipud(spec[0, 1:, :])
 
 
-def pcen(spec_cropped, sampling_rate):
+def pcen(spec: np.ndarray, sampling_rate: float) -> np.ndarray:
     # TODO should be passing hop_length too i.e. step
-    spec = librosa.pcen(spec_cropped * (2**31), sr=sampling_rate / 10).astype(
+    return librosa.pcen(spec * (2**31), sr=sampling_rate / 10).astype(
         np.float32
     )
-    return spec

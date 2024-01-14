@@ -12,19 +12,24 @@ import torchaudio
 import batdetect2.utils.audio_utils as au
 from batdetect2.types import (
     Annotation,
-    AnnotationGroup,
     AudioLoaderAnnotationGroup,
-    FileAnnotations,
-    HeatmapParameters,
+    AudioLoaderParameters,
+    FileAnnotation,
 )
 
 
 def generate_gt_heatmaps(
     spec_op_shape: Tuple[int, int],
-    sampling_rate: int,
-    ann: AnnotationGroup,
-    params: HeatmapParameters,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, AnnotationGroup]:
+    sampling_rate: float,
+    ann: AudioLoaderAnnotationGroup,
+    class_names: List[str],
+    fft_win_length: float,
+    fft_overlap: float,
+    max_freq: float,
+    min_freq: float,
+    resize_factor: float,
+    target_sigma: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, AudioLoaderAnnotationGroup]:
     """Generate ground truth heatmaps from annotations.
 
     Parameters
@@ -53,31 +58,31 @@ def generate_gt_heatmaps(
         the x and y indices of their pixel location in the input spectrogram.
     """
     # spec may be resized on input into the network
-    num_classes = len(params["class_names"])
+    num_classes = len(class_names)
     op_height = spec_op_shape[0]
     op_width = spec_op_shape[1]
-    freq_per_bin = (params["max_freq"] - params["min_freq"]) / op_height
+    freq_per_bin = (max_freq - min_freq) / op_height
 
     # start and end times
     x_pos_start = au.time_to_x_coords(
         ann["start_times"],
         sampling_rate,
-        params["fft_win_length"],
-        params["fft_overlap"],
+        fft_win_length,
+        fft_overlap,
     )
-    x_pos_start = (params["resize_factor"] * x_pos_start).astype(np.int32)
+    x_pos_start = (resize_factor * x_pos_start).astype(np.int32)
     x_pos_end = au.time_to_x_coords(
         ann["end_times"],
         sampling_rate,
-        params["fft_win_length"],
-        params["fft_overlap"],
+        fft_win_length,
+        fft_overlap,
     )
-    x_pos_end = (params["resize_factor"] * x_pos_end).astype(np.int32)
+    x_pos_end = (resize_factor * x_pos_end).astype(np.int32)
 
     # location on y axis i.e. frequency
-    y_pos_low = (ann["low_freqs"] - params["min_freq"]) / freq_per_bin
+    y_pos_low = (ann["low_freqs"] - min_freq) / freq_per_bin
     y_pos_low = (op_height - y_pos_low).astype(np.int32)
-    y_pos_high = (ann["high_freqs"] - params["min_freq"]) / freq_per_bin
+    y_pos_high = (ann["high_freqs"] - min_freq) / freq_per_bin
     y_pos_high = (op_height - y_pos_high).astype(np.int32)
     bb_widths = x_pos_end - x_pos_start
     bb_heights = y_pos_low - y_pos_high
@@ -90,26 +95,17 @@ def generate_gt_heatmaps(
         & (y_pos_low < (op_height - 1))
     )[0]
 
-    ann_aug: AnnotationGroup = {
+    ann_aug: AudioLoaderAnnotationGroup = {
+        **ann,
         "start_times": ann["start_times"][valid_inds],
         "end_times": ann["end_times"][valid_inds],
         "high_freqs": ann["high_freqs"][valid_inds],
         "low_freqs": ann["low_freqs"][valid_inds],
         "class_ids": ann["class_ids"][valid_inds],
         "individual_ids": ann["individual_ids"][valid_inds],
+        "x_inds": x_pos_start[valid_inds],
+        "y_inds": y_pos_low[valid_inds],
     }
-    ann_aug["x_inds"] = x_pos_start[valid_inds]
-    ann_aug["y_inds"] = y_pos_low[valid_inds]
-    # keys = [
-    #     "start_times",
-    #     "end_times",
-    #     "high_freqs",
-    #     "low_freqs",
-    #     "class_ids",
-    #     "individual_ids",
-    # ]
-    # for kk in keys:
-    #     ann_aug[kk] = ann[kk][valid_inds]
 
     # if the number of calls is only 1, then it is unique
     # TODO would be better if we found these unique calls at the merging stage
@@ -118,6 +114,7 @@ def generate_gt_heatmaps(
 
     y_2d_det = np.zeros((1, op_height, op_width), dtype=np.float32)
     y_2d_size = np.zeros((2, op_height, op_width), dtype=np.float32)
+
     # num classes and "background" class
     y_2d_classes: np.ndarray = np.zeros(
         (num_classes + 1, op_height, op_width), dtype=np.float32
@@ -128,14 +125,8 @@ def generate_gt_heatmaps(
         draw_gaussian(
             y_2d_det[0, :],
             (x_pos_start[ii], y_pos_low[ii]),
-            params["target_sigma"],
+            target_sigma,
         )
-        # draw_gaussian(
-        #     y_2d_det[0, :],
-        #     (x_pos_start[ii], y_pos_low[ii]),
-        #     params["target_sigma"],
-        #     params["target_sigma"] * 2,
-        # )
         y_2d_size[0, y_pos_low[ii], x_pos_start[ii]] = bb_widths[ii]
         y_2d_size[1, y_pos_low[ii], x_pos_start[ii]] = bb_heights[ii]
 
@@ -144,14 +135,8 @@ def generate_gt_heatmaps(
             draw_gaussian(
                 y_2d_classes[cls_id, :],
                 (x_pos_start[ii], y_pos_low[ii]),
-                params["target_sigma"],
+                target_sigma,
             )
-            # draw_gaussian(
-            #     y_2d_classes[cls_id, :],
-            #     (x_pos_start[ii], y_pos_low[ii]),
-            #     params["target_sigma"],
-            #     params["target_sigma"] * 2,
-            # )
 
     # be careful as this will have a 1.0 places where we have event but
     # dont know gt class this will be masked in training anyway
@@ -235,8 +220,8 @@ def pad_aray(ip_array: np.ndarray, pad_size: int) -> np.ndarray:
 
 def warp_spec_aug(
     spec: torch.Tensor,
-    ann: AnnotationGroup,
-    params: dict,
+    ann: AudioLoaderAnnotationGroup,
+    stretch_squeeze_delta: float,
 ) -> torch.Tensor:
     """Warp spectrogram by randomly stretching and squeezing.
 
@@ -247,8 +232,8 @@ def warp_spec_aug(
     ann: AnnotationGroup
         Annotation group for the spectrogram. Must be provided to sync
         the start and stop times with the spectrogram after warping.
-    params: dict
-        Parameters for the augmentation.
+    stretch_squeeze_delta: float
+        Maximum amount to stretch or squeeze the spectrogram.
 
     Returns
     -------
@@ -259,11 +244,10 @@ def warp_spec_aug(
     -----
     This function modifies the annotation group in place.
     """
-    # This is messy
     # Augment spectrogram by randomly stretch and squeezing
     # NOTE this also changes the start and stop time in place
 
-    delta = params["stretch_squeeze_delta"]
+    delta = stretch_squeeze_delta
     op_size = (spec.shape[1], spec.shape[2])
     resize_fract_r = np.random.rand() * delta * 2 - delta + 1.0
     resize_amt = int(spec.shape[2] * resize_fract_r)
@@ -277,7 +261,7 @@ def warp_spec_aug(
                     dtype=spec.dtype,
                 ),
             ),
-            2,
+            dim=2,
         )
     else:
         spec_r = spec[:, :, :resize_amt]
@@ -297,7 +281,10 @@ def warp_spec_aug(
     return spec
 
 
-def mask_time_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
+def mask_time_aug(
+    spec: torch.Tensor,
+    mask_max_time_perc: float,
+) -> torch.Tensor:
     """Mask out random blocks of time.
 
     Will randomly mask out a block of time in the spectrogram. The block
@@ -308,8 +295,8 @@ def mask_time_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
     ----------
     spec: torch.Tensor
         Spectrogram to mask.
-    params: dict
-        Parameters for the augmentation.
+    mask_max_time_perc: float
+        Maximum percentage of time to mask out.
 
     Returns
     -------
@@ -324,14 +311,17 @@ def mask_time_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
         Recognition
     """
     fm = torchaudio.transforms.TimeMasking(
-        int(spec.shape[1] * params["mask_max_time_perc"])
+        int(spec.shape[1] * mask_max_time_perc)
     )
     for _ in range(np.random.randint(1, 4)):
         spec = fm(spec)
     return spec
 
 
-def mask_freq_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
+def mask_freq_aug(
+    spec: torch.Tensor,
+    mask_max_freq_perc: float,
+) -> torch.Tensor:
     """Mask out random blocks of frequency.
 
     Will randomly mask out a block of frequency in the spectrogram. The block
@@ -342,8 +332,8 @@ def mask_freq_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
     ----------
     spec: torch.Tensor
         Spectrogram to mask.
-    params: dict
-        Parameters for the augmentation.
+    mask_max_freq_perc: float
+        Maximum percentage of frequency to mask out.
 
     Returns
     -------
@@ -358,41 +348,48 @@ def mask_freq_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
         Recognition
     """
     fm = torchaudio.transforms.FrequencyMasking(
-        int(spec.shape[1] * params["mask_max_freq_perc"])
+        int(spec.shape[1] * mask_max_freq_perc)
     )
     for _ in range(np.random.randint(1, 4)):
         spec = fm(spec)
     return spec
 
 
-def scale_vol_aug(spec: torch.Tensor, params: dict) -> torch.Tensor:
+def scale_vol_aug(
+    spec: torch.Tensor,
+    spec_amp_scaling: float,
+) -> torch.Tensor:
     """Scale the volume of the spectrogram.
 
     Parameters
     ----------
     spec: torch.Tensor
         Spectrogram to scale.
-    params: dict
-        Parameters for the augmentation.
+    spec_amp_scaling: float
+        Maximum scaling factor.
 
     Returns
     -------
     torch.Tensor
     """
-    return spec * np.random.random() * params["spec_amp_scaling"]
+    return spec * np.random.random() * spec_amp_scaling
 
 
-def echo_aug(audio: np.ndarray, sampling_rate: int, params: dict) -> np.ndarray:
+def echo_aug(
+    audio: np.ndarray,
+    sampling_rate: float,
+    echo_max_delay: float,
+) -> np.ndarray:
     """Add echo to audio.
 
     Parameters
     ----------
     audio: np.ndarray
         Audio to add echo to.
-    sampling_rate: int
+    sampling_rate: float
         Sampling rate of the audio.
-    params: dict
-        Parameters for the augmentation.
+    echo_max_delay: float
+        Maximum delay of the echo in seconds.
 
     Returns
     -------
@@ -400,7 +397,7 @@ def echo_aug(audio: np.ndarray, sampling_rate: int, params: dict) -> np.ndarray:
         Audio with echo added.
     """
     sample_offset = (
-        int(params["echo_max_delay"] * np.random.random() * sampling_rate) + 1
+        int(echo_max_delay * np.random.random() * sampling_rate) + 1
     )
     audio[:-sample_offset] += np.random.random() * audio[sample_offset:]
     return audio
@@ -408,9 +405,14 @@ def echo_aug(audio: np.ndarray, sampling_rate: int, params: dict) -> np.ndarray:
 
 def resample_aug(
     audio: np.ndarray,
-    sampling_rate: int,
-    params: dict,
-) -> Tuple[np.ndarray, int, float]:
+    sampling_rate: float,
+    fft_win_length: float,
+    fft_overlap: float,
+    resize_factor: float,
+    spec_divide_factor: float,
+    spec_train_width: int,
+    aug_sampling_rates: List[int],
+) -> Tuple[np.ndarray, float, float]:
     """Resample audio augmentation.
 
     Will resample the audio to a random sampling rate from the list of
@@ -420,23 +422,32 @@ def resample_aug(
     ----------
     audio: np.ndarray
         Audio to resample.
-    sampling_rate: int
+    sampling_rate: float
         Original sampling rate of the audio.
-    params: dict
-        Parameters for the augmentation. Includes the list of sampling rates
-        to choose from for resampling in `aug_sampling_rates`.
+    fft_win_length: float
+        Length of the FFT window in seconds.
+    fft_overlap: float
+        Amount of overlap between FFT windows.
+    resize_factor: float
+        Factor to resize the spectrogram by.
+    spec_divide_factor: float
+        Factor to divide the spectrogram by.
+    spec_train_width: int
+        Width of the spectrogram.
+    aug_sampling_rates: List[int]
+        List of sampling rates to resample to.
 
     Returns
     -------
     audio : np.ndarray
         Resampled audio.
-    sampling_rate : int
+    sampling_rate : float
         New sampling rate.
     duration : float
         Duration of the audio in seconds.
     """
     sampling_rate_old = sampling_rate
-    sampling_rate = np.random.choice(params["aug_sampling_rates"])
+    sampling_rate = np.random.choice(aug_sampling_rates)
     audio = librosa.resample(
         audio,
         orig_sr=sampling_rate_old,
@@ -447,11 +458,11 @@ def resample_aug(
     audio = au.pad_audio(
         audio,
         sampling_rate,
-        params["fft_win_length"],
-        params["fft_overlap"],
-        params["resize_factor"],
-        params["spec_divide_factor"],
-        params["spec_train_width"],
+        fft_win_length,
+        fft_overlap,
+        resize_factor,
+        spec_divide_factor,
+        spec_train_width,
     )
     duration = audio.shape[0] / float(sampling_rate)
     return audio, sampling_rate, duration
@@ -459,28 +470,28 @@ def resample_aug(
 
 def resample_audio(
     num_samples: int,
-    sampling_rate: int,
+    sampling_rate: float,
     audio2: np.ndarray,
-    sampling_rate2: int,
-) -> Tuple[np.ndarray, int]:
+    sampling_rate2: float,
+) -> Tuple[np.ndarray, float]:
     """Resample audio.
 
     Parameters
     ----------
     num_samples: int
         Expected number of samples for the output audio.
-    sampling_rate: int
+    sampling_rate: float
         Original sampling rate of the audio.
     audio2: np.ndarray
         Audio to resample.
-    sampling_rate2: int
+    sampling_rate2: float
         Target sampling rate of the audio.
 
     Returns
     -------
     audio2 : np.ndarray
         Resampled audio.
-    sampling_rate2 : int
+    sampling_rate2 : float
         New sampling rate.
     """
     # resample to target sampling rate
@@ -509,12 +520,12 @@ def resample_audio(
 
 def combine_audio_aug(
     audio: np.ndarray,
-    sampling_rate: int,
-    ann: AnnotationGroup,
+    sampling_rate: float,
+    ann: AudioLoaderAnnotationGroup,
     audio2: np.ndarray,
-    sampling_rate2: int,
-    ann2: AnnotationGroup,
-) -> Tuple[np.ndarray, AnnotationGroup]:
+    sampling_rate2: float,
+    ann2: AudioLoaderAnnotationGroup,
+) -> Tuple[np.ndarray, AudioLoaderAnnotationGroup]:
     """Combine two audio files.
 
     Will combine two audio files by resampling them to the same sampling rate
@@ -570,7 +581,9 @@ def combine_audio_aug(
             # from different individuals
             if kk == "individual_ids":
                 if (ann[kk] > -1).sum() > 0:
-                    ann2[kk][ann2[kk] > -1] += np.max(ann[kk][ann[kk] > -1]) + 1
+                    ann2[kk][ann2[kk] > -1] += (
+                        np.max(ann[kk][ann[kk] > -1]) + 1
+                    )
 
             if (kk != "class_id_file") and (kk != "annotated"):
                 ann[kk] = np.hstack((ann[kk], ann2[kk]))[inds]
@@ -579,7 +592,8 @@ def combine_audio_aug(
 
 
 def _prepare_annotation(
-    annotation: Annotation, class_names: List[str]
+    annotation: Annotation,
+    class_names: List[str],
 ) -> Annotation:
     try:
         class_id = class_names.index(annotation["class"])
@@ -598,7 +612,7 @@ def _prepare_annotation(
 
 
 def _prepare_file_annotation(
-    annotation: FileAnnotations,
+    annotation: FileAnnotation,
     class_names: List[str],
     classes_to_ignore: List[str],
 ) -> AudioLoaderAnnotationGroup:
@@ -626,7 +640,9 @@ def _prepare_file_annotation(
         "end_times": np.array([ann["end_time"] for ann in annotations]),
         "high_freqs": np.array([ann["high_freq"] for ann in annotations]),
         "low_freqs": np.array([ann["low_freq"] for ann in annotations]),
-        "class_ids": np.array([ann.get("class_id", -1) for ann in annotations]),
+        "class_ids": np.array(
+            [ann.get("class_id", -1) for ann in annotations]
+        ),
         "individual_ids": np.array([ann["individual"] for ann in annotations]),
         "class_id_file": class_id_file,
     }
@@ -639,15 +655,15 @@ class AudioLoader(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        data_anns_ip: List[FileAnnotations],
-        params,
+        data_anns_ip: List[FileAnnotation],
+        params: AudioLoaderParameters,
         dataset_name: Optional[str] = None,
         is_train: bool = False,
+        return_spec_for_viz: bool = False,
     ):
-        self.is_train: bool = is_train
-        self.params: dict = params
-        self.return_spec_for_viz: bool = False
-
+        self.is_train = is_train
+        self.params = params
+        self.return_spec_for_viz = return_spec_for_viz
         self.data_anns: List[AudioLoaderAnnotationGroup] = [
             _prepare_file_annotation(
                 ann,
@@ -656,61 +672,6 @@ class AudioLoader(torch.utils.data.Dataset):
             )
             for ann in data_anns_ip
         ]
-
-        # for ii in range(len(data_anns_ip)):
-        #     dd = copy.deepcopy(data_anns_ip[ii])
-        #
-        #     # filter out unused annotation here
-        #     filtered_annotations = []
-        #     for ii, aa in enumerate(dd["annotation"]):
-        #         if "individual" in aa.keys():
-        #             aa["individual"] = int(aa["individual"])
-        #
-        #             # if only one call labeled it has to be from the same
-        #             # individual
-        #             if len(dd["annotation"]) == 1:
-        #                 aa["individual"] = 0
-        #
-        #         # convert class name into class label
-        #         if aa["class"] in self.params["class_names"]:
-        #             aa["class_id"] = self.params["class_names"].index(
-        #                 aa["class"]
-        #             )
-        #         else:
-        #             aa["class_id"] = -1
-        #
-        #         if aa["class"] not in self.params["classes_to_ignore"]:
-        #             filtered_annotations.append(aa)
-        #
-        #     dd["annotation"] = filtered_annotations
-        #     dd["start_times"] = np.array(
-        #         [aa["start_time"] for aa in dd["annotation"]]
-        #     )
-        #     dd["end_times"] = np.array(
-        #         [aa["end_time"] for aa in dd["annotation"]]
-        #     )
-        #     dd["high_freqs"] = np.array(
-        #         [float(aa["high_freq"]) for aa in dd["annotation"]]
-        #     )
-        #     dd["low_freqs"] = np.array(
-        #         [float(aa["low_freq"]) for aa in dd["annotation"]]
-        #     )
-        #     dd["class_ids"] = np.array(
-        #         [aa["class_id"] for aa in dd["annotation"]]
-        #     ).astype(np.int32)
-        #     dd["individual_ids"] = np.array(
-        #         [aa["individual"] for aa in dd["annotation"]]
-        #     ).astype(np.int32)
-        #
-        #     # file level class name
-        #     dd["class_id_file"] = -1
-        #     if "class_name" in dd.keys():
-        #         if dd["class_name"] in self.params["class_names"]:
-        #             dd["class_id_file"] = self.params["class_names"].index(
-        #                 dd["class_name"]
-        #             )
-        #
-        #     self.data_anns.append(dd)
 
         ann_cnt = [len(aa["annotation"]) for aa in self.data_anns]
         self.max_num_anns = 2 * np.max(
@@ -730,7 +691,7 @@ class AudioLoader(torch.utils.data.Dataset):
     def get_file_and_anns(
         self,
         index: Optional[int] = None,
-    ) -> Tuple[np.ndarray, int, float, AudioLoaderAnnotationGroup]:
+    ) -> Tuple[np.ndarray, float, float, AudioLoaderAnnotationGroup]:
         """Get an audio file and its annotations.
 
         Parameters
@@ -742,7 +703,7 @@ class AudioLoader(torch.utils.data.Dataset):
         -------
         audio_raw : np.ndarray
             Loaded audio file.
-        sampling_rate : int
+        sampling_rate : float
             Sampling rate of the audio file.
         duration : float
             Duration of the audio file in seconds.
@@ -837,7 +798,7 @@ class AudioLoader(torch.utils.data.Dataset):
                 (
                     audio2,
                     sampling_rate2,
-                    duration2,
+                    _,
                     ann2,
                 ) = self.get_file_and_anns()
                 audio, ann = combine_audio_aug(
@@ -846,7 +807,11 @@ class AudioLoader(torch.utils.data.Dataset):
 
             # simulate echo by adding delayed copy of the file
             if np.random.random() < self.params["aug_prob"]:
-                audio = echo_aug(audio, sampling_rate, self.params)
+                audio = echo_aug(
+                    audio,
+                    sampling_rate,
+                    echo_max_delay=self.params["echo_max_delay"],
+                )
 
             # resample the audio
             # if np.random.random() < self.params["aug_prob"]:
@@ -855,11 +820,16 @@ class AudioLoader(torch.utils.data.Dataset):
             #     )
 
         # create spectrogram
-        spec, spec_for_viz = au.generate_spectrogram(
+        spec = au.generate_spectrogram(
             audio,
             sampling_rate,
-            self.params,
-            self.return_spec_for_viz,
+            fft_win_length=self.params["fft_win_length"],
+            fft_overlap=self.params["fft_overlap"],
+            max_freq=self.params["max_freq"],
+            min_freq=self.params["min_freq"],
+            spec_scale=self.params["spec_scale"],
+            denoise_spec_avg=self.params["denoise_spec_avg"],
+            max_scale_spec=self.params["max_scale_spec"],
         )
         rsf = self.params["resize_factor"]
         spec_op_shape = (
@@ -879,20 +849,29 @@ class AudioLoader(torch.utils.data.Dataset):
         # augment spectrogram
         if self.is_train and self.params["augment_at_train"]:
             if np.random.random() < self.params["aug_prob"]:
-                spec = scale_vol_aug(spec, self.params)
+                spec = scale_vol_aug(
+                    spec,
+                    spec_amp_scaling=self.params["spec_amp_scaling"],
+                )
 
             if np.random.random() < self.params["aug_prob"]:
                 spec = warp_spec_aug(
                     spec,
                     ann,
-                    self.params,
+                    stretch_squeeze_delta=self.params["stretch_squeeze_delta"],
                 )
 
             if np.random.random() < self.params["aug_prob"]:
-                spec = mask_time_aug(spec, self.params)
+                spec = mask_time_aug(
+                    spec,
+                    mask_max_time_perc=self.params["mask_max_time_perc"],
+                )
 
             if np.random.random() < self.params["aug_prob"]:
-                spec = mask_freq_aug(spec, self.params)
+                spec = mask_freq_aug(
+                    spec,
+                    mask_max_freq_perc=self.params["mask_max_freq_perc"],
+                )
 
         outputs = {}
         outputs["spec"] = spec
@@ -911,7 +890,13 @@ class AudioLoader(torch.utils.data.Dataset):
             spec_op_shape,
             sampling_rate,
             ann,
-            self.params,
+            class_names=self.params["class_names"],
+            fft_win_length=self.params["fft_win_length"],
+            fft_overlap=self.params["fft_overlap"],
+            max_freq=self.params["max_freq"],
+            min_freq=self.params["min_freq"],
+            resize_factor=self.params["resize_factor"],
+            target_sigma=self.params["target_sigma"],
         )
 
         # hack to get around requirement that all vectors are the same length

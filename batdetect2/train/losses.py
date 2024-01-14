@@ -1,8 +1,13 @@
+from typing import Optional
+
 import torch
 import torch.nn.functional as F
 
 
-def bbox_size_loss(pred_size, gt_size):
+def bbox_size_loss(
+    pred_size: torch.Tensor,
+    gt_size: torch.Tensor,
+) -> torch.Tensor:
     """
     Bounding box size loss. Only compute loss where there is a bounding box.
     """
@@ -12,7 +17,12 @@ def bbox_size_loss(pred_size, gt_size):
     )
 
 
-def focal_loss(pred, gt, weights=None, valid_mask=None):
+def focal_loss(
+    pred: torch.Tensor,
+    gt: torch.Tensor,
+    weights: Optional[torch.Tensor] = None,
+    valid_mask: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
     """
     Focal loss adapted from CornerNet: Detecting Objects as Paired Keypoints
     pred  (batch x c x h x w)
@@ -52,7 +62,11 @@ def focal_loss(pred, gt, weights=None, valid_mask=None):
     return loss
 
 
-def mse_loss(pred, gt, weights=None, valid_mask=None):
+def mse_loss(
+    pred: torch.Tensor,
+    gt: torch.Tensor,
+    valid_mask: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
     """
     Mean squared error loss.
     """

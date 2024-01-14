@@ -79,7 +79,13 @@ class ConvBlockDownCoordF(nn.Module):
 
 class ConvBlockDownStandard(nn.Module):
     def __init__(
-        self, in_chn, out_chn, ip_height=None, k_size=3, pad_size=1, stride=1
+        self,
+        in_chn,
+        out_chn,
+        ip_height=None,
+        k_size=3,
+        pad_size=1,
+        stride=1,
     ):
         super(ConvBlockDownStandard, self).__init__()
         self.conv = nn.Conv2d(

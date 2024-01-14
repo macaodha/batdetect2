@@ -103,15 +103,15 @@ class Net2DFast(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False) -> ModelOutput:
+    def forward(self, spec: torch.Tensor) -> ModelOutput:
         # encoder
-        x1 = self.conv_dn_0(ip)
+        x1 = self.conv_dn_0(spec)
         x2 = self.conv_dn_1(x1)
         x3 = self.conv_dn_2(x2)
-        x3 = F.relu(self.conv_dn_3_bn(self.conv_dn_3(x3)), inplace=True)
+        x3 = F.relu_(self.conv_dn_3_bn(self.conv_dn_3(x3)))
 
         # bottleneck
-        x = F.relu(self.conv_1d_bn(self.conv_1d(x3)), inplace=True)
+        x = F.relu_(self.conv_1d_bn(self.conv_1d(x3)))
         x = self.att(x)
         x = x.repeat([1, 1, self.bneck_height * 4, 1])
 
@@ -121,13 +121,13 @@ class Net2DFast(nn.Module):
         x = self.conv_up_4(x + x1)
 
         # output
-        x = F.relu(self.conv_op_bn(self.conv_op(x)), inplace=True)
+        x = F.relu_(self.conv_op_bn(self.conv_op(x)))
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
         return ModelOutput(
             pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
-            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_size=F.relu(self.conv_size_op(x)),
             pred_class=comb,
             pred_class_un_norm=cls,
             features=x,
@@ -215,26 +215,26 @@ class Net2DFastNoAttn(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False) -> ModelOutput:
-        x1 = self.conv_dn_0(ip)
+    def forward(self, spec: torch.Tensor) -> ModelOutput:
+        x1 = self.conv_dn_0(spec)
         x2 = self.conv_dn_1(x1)
         x3 = self.conv_dn_2(x2)
-        x3 = F.relu(self.conv_dn_3_bn(self.conv_dn_3(x3)), inplace=True)
+        x3 = F.relu_(self.conv_dn_3_bn(self.conv_dn_3(x3)))
 
-        x = F.relu(self.conv_1d_bn(self.conv_1d(x3)), inplace=True)
+        x = F.relu_(self.conv_1d_bn(self.conv_1d(x3)))
         x = x.repeat([1, 1, self.bneck_height * 4, 1])
 
         x = self.conv_up_2(x + x3)
         x = self.conv_up_3(x + x2)
         x = self.conv_up_4(x + x1)
 
-        x = F.relu(self.conv_op_bn(self.conv_op(x)), inplace=True)
+        x = F.relu_(self.conv_op_bn(self.conv_op(x)))
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
         return ModelOutput(
             pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
-            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_size=F.relu_(self.conv_size_op(x)),
             pred_class=comb,
             pred_class_un_norm=cls,
             features=x,
@@ -324,13 +324,13 @@ class Net2DFastNoCoordConv(nn.Module):
                 num_filts, self.emb_dim, kernel_size=1, padding=0
             )
 
-    def forward(self, ip, return_feats=False) -> ModelOutput:
-        x1 = self.conv_dn_0(ip)
+    def forward(self, spec: torch.Tensor) -> ModelOutput:
+        x1 = self.conv_dn_0(spec)
         x2 = self.conv_dn_1(x1)
         x3 = self.conv_dn_2(x2)
-        x3 = F.relu(self.conv_dn_3_bn(self.conv_dn_3(x3)), inplace=True)
+        x3 = F.relu_(self.conv_dn_3_bn(self.conv_dn_3(x3)))
 
-        x = F.relu(self.conv_1d_bn(self.conv_1d(x3)), inplace=True)
+        x = F.relu_(self.conv_1d_bn(self.conv_1d(x3)))
         x = self.att(x)
         x = x.repeat([1, 1, self.bneck_height * 4, 1])
 
@@ -338,15 +338,13 @@ class Net2DFastNoCoordConv(nn.Module):
         x = self.conv_up_3(x + x2)
         x = self.conv_up_4(x + x1)
 
-        x = F.relu(self.conv_op_bn(self.conv_op(x)), inplace=True)
+        x = F.relu_(self.conv_op_bn(self.conv_op(x)))
         cls = self.conv_classes_op(x)
         comb = torch.softmax(cls, 1)
 
-        pred_emb = (self.conv_emb(x) if self.emb_dim > 0 else None,)
-
         return ModelOutput(
             pred_det=comb[:, :-1, :, :].sum(1).unsqueeze(1),
-            pred_size=F.relu(self.conv_size_op(x), inplace=True),
+            pred_size=F.relu_(self.conv_size_op(x)),
             pred_class=comb,
             pred_class_un_norm=cls,
             features=x,

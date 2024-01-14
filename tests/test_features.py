@@ -152,7 +152,7 @@ def test_compute_max_power_bb(max_power: int):
         target_samp_rate=samplerate,
     )
 
-    spec, _ = au.generate_spectrogram(
+    spec = au.generate_spectrogram(
         audio,
         samplerate,
         params,
@@ -240,7 +240,7 @@ def test_compute_max_power():
         target_samp_rate=samplerate,
     )
 
-    spec, _ = au.generate_spectrogram(
+    spec = au.generate_spectrogram(
         audio,
         samplerate,
         params,

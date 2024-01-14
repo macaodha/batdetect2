@@ -226,11 +226,10 @@ def generate_spectrogram(
     if config is None:
         config = DEFAULT_SPECTROGRAM_PARAMETERS
 
-    _, spec, _ = du.compute_spectrogram(
+    _, spec = du.compute_spectrogram(
         audio,
         samp_rate,
         config,
-        return_np=False,
         device=device,
     )
 

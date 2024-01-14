@@ -5,6 +5,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.utils.data
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 import batdetect2.detector.post_process as pp
@@ -29,7 +30,7 @@ def save_images_batch(model, data_loader, params):
 
     ind = 0  # first image in each batch
     with torch.no_grad():
-        for batch_idx, inputs in enumerate(data_loader):
+        for inputs in data_loader:
             data = inputs["spec"].to(params["device"])
             outputs = model(data)
 
@@ -81,7 +82,12 @@ def save_image(
 
 
 def loss_fun(
-    outputs, gt_det, gt_size, gt_class, det_criterion, params, class_inv_freq
+    outputs,
+    gt_det,
+    gt_size,
+    gt_class,
+    det_criterion,
+    params,
 ):
     # detection loss
     loss = params["det_loss_weight"] * det_criterion(
@@ -104,7 +110,13 @@ def loss_fun(
 
 
 def train(
-    model, epoch, data_loader, det_criterion, optimizer, scheduler, params
+    model,
+    epoch,
+    data_loader,
+    det_criterion,
+    optimizer,
+    scheduler,
+    params,
 ):
     model.train()
 
@@ -309,7 +321,7 @@ def select_model(params):
             resize_factor=params["resize_factor"],
         )
     else:
-        print("No valid network specified")
+        raise ValueError("No valid network specified")
     return model
 
 
@@ -319,9 +331,9 @@ def main():
     params = parameters.get_params(True)
 
     if torch.cuda.is_available():
-        params["device"] = "cuda"
+        params.device = "cuda"
     else:
-        params["device"] = "cpu"
+        params.device = "cpu"
 
     # setup arg parser and populate it with exiting parameters - will not work with lists
     parser = argparse.ArgumentParser()
@@ -349,13 +361,16 @@ def main():
         default="Rhinolophus ferrumequinum;Rhinolophus hipposideros",
         help='Will set low and high frequency the same for these classes. Separate names with ";"',
     )
+
     for key, val in params.items():
         parser.add_argument("--" + key, type=type(val), default=val)
     params = vars(parser.parse_args())
 
     # save notes file
     if params["notes"] != "":
-        tu.write_notes_file(params["experiment"] + "notes.txt", params["notes"])
+        tu.write_notes_file(
+            params["experiment"] + "notes.txt", params["notes"]
+        )
 
     # load the training and test meta data - there are different splits defined
     train_sets, test_sets = ts.get_train_test_data(
@@ -374,15 +389,11 @@ def main():
     for tt in train_sets:
         print(tt["ann_path"])
     classes_to_ignore = params["classes_to_ignore"] + params["generic_class"]
-    (
-        data_train,
-        params["class_names"],
-        params["class_inv_freq"],
-    ) = tu.load_set_of_anns(
+    data_train = tu.load_set_of_anns(
         train_sets,
-        classes_to_ignore,
-        params["events_of_interest"],
-        params["convert_to_genus"],
+        classes_to_ignore=classes_to_ignore,
+        events_of_interest=params["events_of_interest"],
+        convert_to_genus=params["convert_to_genus"],
     )
     params["genus_names"], params["genus_mapping"] = tu.get_genus_mapping(
         params["class_names"]
@@ -415,11 +426,12 @@ def main():
     print("\nTesting on:")
     for tt in test_sets:
         print(tt["ann_path"])
-    data_test, _, _ = tu.load_set_of_anns(
+
+    data_test = tu.load_set_of_anns(
         test_sets,
-        classes_to_ignore,
-        params["events_of_interest"],
-        params["convert_to_genus"],
+        classes_to_ignore=classes_to_ignore,
+        events_of_interest=params["events_of_interest"],
+        convert_to_genus=params["convert_to_genus"],
     )
     data_train = tu.remove_dupes(data_train, data_test)
     test_dataset = adl.AudioLoader(data_test, params, is_train=False)
@@ -447,10 +459,13 @@ def main():
     scheduler = CosineAnnealingLR(
         optimizer, params["num_epochs"] * len(train_loader)
     )
+
     if params["train_loss"] == "mse":
         det_criterion = losses.mse_loss
     elif params["train_loss"] == "focal":
         det_criterion = losses.focal_loss
+    else:
+        raise ValueError("No valid loss specified")
 
     # save parameters to file
     with open(params["experiment"] + "params.json", "w") as da:

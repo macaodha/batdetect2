@@ -1,6 +1,11 @@
 import datetime
 import os
+from pathlib import Path
+from typing import List, Optional, Union
 
+from pydantic import BaseModel, Field, computed_field
+
+from batdetect2.train.train_utils import get_genus_mapping, get_short_class_names
 from batdetect2.types import ProcessingConfiguration, SpectrogramParameters
 
 TARGET_SAMPLERATE_HZ = 256000
@@ -75,158 +80,154 @@ def mk_dir(path):
         os.makedirs(path)
 
 
-def get_params(make_dirs=False, exps_dir="../../experiments/"):
-    params = {}
+AUG_SAMPLING_RATES = [
+    220500,
+    256000,
+    300000,
+    312500,
+    384000,
+    441000,
+    500000,
+]
+CLASSES_TO_IGNORE = ["", " ", "Unknown", "Not Bat"]
+GENERIC_CLASSES = ["Bat"]
+EVENTS_OF_INTEREST = ["Echolocation"]
 
-    params[
-        "model_name"
-    ] = "Net2DFast"  # Net2DFast, Net2DSkip, Net2DSimple, Net2DSkipDS, Net2DRN
-    params["num_filters"] = 128
+
+class TrainingParameters(BaseModel):
+    # Net2DFast, Net2DSkip, Net2DSimple, Net2DSkipDS, Net2DRN
+    model_name: str = "Net2DFast"
+    num_filters: int = 128
+
+    experiment: Path
+    model_file_name: Path
+
+    op_im_dir: Path
+    op_im_dir_test: Path
+
+    notes: str = ""
+
+    target_samp_rate: int = TARGET_SAMPLERATE_HZ
+    fft_win_length: float = FFT_WIN_LENGTH_S
+    fft_overlap: float = FFT_OVERLAP
+
+    max_freq: int = MAX_FREQ_HZ
+    min_freq: int = MIN_FREQ_HZ
+
+    resize_factor: float = RESIZE_FACTOR
+    spec_height: int = SPEC_HEIGHT
+    spec_train_width: int = 512
+    spec_divide_factor: int = SPEC_DIVIDE_FACTOR
+
+    denoise_spec_avg: bool = DENOISE_SPEC_AVG
+    scale_raw_audio: bool = SCALE_RAW_AUDIO
+    max_scale_spec: bool = MAX_SCALE_SPEC
+    spec_scale: str = SPEC_SCALE
+
+    detection_overlap: float = 0.01
+    ignore_start_end: float = 0.01
+    detection_threshold: float = DETECTION_THRESHOLD
+    nms_kernel_size: int = NMS_KERNEL_SIZE
+    nms_top_k_per_sec: int = NMS_TOP_K_PER_SEC
+
+    aug_prob: float = 0.20
+    augment_at_train: bool = True
+    augment_at_train_combine: bool = True
+    echo_max_delay: float = 0.005
+    stretch_squeeze_delta: float = 0.04
+    mask_max_time_perc: float = 0.05
+    mask_max_freq_perc: float = 0.10
+    spec_amp_scaling: float = 2.0
+    aug_sampling_rates: List[int] = AUG_SAMPLING_RATES
+
+    train_loss: str = "focal"
+    det_loss_weight: float = 1.0
+    size_loss_weight: float = 0.1
+    class_loss_weight: float = 2.0
+    individual_loss_weight: float = 0.0
+
+    lr: float = 0.001
+    batch_size: int = 8
+    num_workers: int = 4
+    num_epochs: int = 200
+    num_eval_epochs: int = 5
+    device: str = "cuda"
+    save_test_image_during_train: bool = False
+    save_test_image_after_train: bool = True
+
+    convert_to_genus: bool = False
+    class_names: List[str] = Field(default_factory=list)
+    classes_to_ignore: List[str] = Field(
+        default_factory=lambda: CLASSES_TO_IGNORE
+    )
+    generic_class: List[str] = Field(default_factory=lambda: GENERIC_CLASSES)
+    events_of_interest: List[str] = Field(
+        default_factory=lambda: EVENTS_OF_INTEREST
+    )
+    standardize_classs_names: List[str] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def emb_dim(self) -> int:
+        if self.individual_loss_weight == 0.0:
+            return 0
+        return 3
+
+    @computed_field
+    @property
+    def genus_mapping(self) -> List[int]:
+        _, mapping = get_genus_mapping(self.class_names)
+        return mapping
+
+    @computed_field
+    @property
+    def genus_classes(self) -> List[str]:
+        names, _ = get_genus_mapping(self.class_names)
+        return names
+
+    @computed_field
+    @property
+    def class_names_short(self) -> List[str]:
+        return get_short_class_names(self.class_names)
+
+
+def get_params(
+    make_dirs: bool = False,
+    exps_dir: str = "../../experiments/",
+    model_name: Optional[str] = None,
+    experiment: Union[Path, str, None] = None,
+    **kwargs,
+) -> TrainingParameters:
+    experiments_dir = Path(exps_dir)
 
     now_str = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    model_name = now_str + ".pth.tar"
-    params["experiment"] = os.path.join(exps_dir, now_str, "")
-    params["model_file_name"] = os.path.join(params["experiment"], model_name)
-    params["op_im_dir"] = os.path.join(params["experiment"], "op_ims", "")
-    params["op_im_dir_test"] = os.path.join(
-        params["experiment"], "op_ims_test", ""
+
+    if model_name is None:
+        model_name = f"{now_str}.pth.tar"
+
+    if experiment is None:
+        experiment = experiments_dir / now_str
+    experiment = Path(experiment)
+
+    model_file_name = experiment / model_name
+    op_ims_dir = experiment / "op_ims"
+    op_ims_test_dir = experiment / "op_ims_test"
+
+    params = TrainingParameters(
+        model_name=model_name,
+        experiment=experiment,
+        model_file_name=model_file_name,
+        op_im_dir=op_ims_dir,
+        op_im_dir_test=op_ims_test_dir,
+        **kwargs,
     )
-    # params['notes']           = ''  # can save notes about an experiment here
 
-    # spec parameters
-    params[
-        "target_samp_rate"
-    ] = TARGET_SAMPLERATE_HZ  # resamples all audio so that it is at this rate
-    params[
-        "fft_win_length"
-    ] = FFT_WIN_LENGTH_S  # in milliseconds, amount of time per stft time step
-    params["fft_overlap"] = FFT_OVERLAP  # stft window overlap
-
-    params[
-        "max_freq"
-    ] = MAX_FREQ_HZ  # in Hz, everything above this will be discarded
-    params[
-        "min_freq"
-    ] = MIN_FREQ_HZ  # in Hz, everything below this will be discarded
-
-    params[
-        "resize_factor"
-    ] = RESIZE_FACTOR  # resize so the spectrogram at the input of the network
-    params[
-        "spec_height"
-    ] = SPEC_HEIGHT  # units are number of frequency bins (before resizing is performed)
-    params[
-        "spec_train_width"
-    ] = 512  # units are number of time steps (before resizing is performed)
-    params[
-        "spec_divide_factor"
-    ] = SPEC_DIVIDE_FACTOR  # spectrogram should be divisible by this amount in width and height
-
-    # spec processing params
-    params[
-        "denoise_spec_avg"
-    ] = DENOISE_SPEC_AVG  # removes the mean for each frequency band
-    params[
-        "scale_raw_audio"
-    ] = SCALE_RAW_AUDIO  # scales the raw audio to [-1, 1]
-    params[
-        "max_scale_spec"
-    ] = MAX_SCALE_SPEC  # scales the spectrogram so that it is max 1
-    params["spec_scale"] = SPEC_SCALE  # 'log', 'pcen', 'none'
-
-    # detection params
-    params[
-        "detection_overlap"
-    ] = 0.01  # has to be within this number of ms to count as detection
-    params[
-        "ignore_start_end"
-    ] = 0.01  # if start of GT calls are within this time from the start/end of file ignore
-    params[
-        "detection_threshold"
-    ] = DETECTION_THRESHOLD  # the smaller this is the better the recall will be
-    params[
-        "nms_kernel_size"
-    ] = NMS_KERNEL_SIZE  # size of the kernel for non-max suppression
-    params[
-        "nms_top_k_per_sec"
-    ] = NMS_TOP_K_PER_SEC  # keep top K highest predictions per second of audio
-    params["target_sigma"] = 2.0
-
-    # augmentation params
-    params[
-        "aug_prob"
-    ] = 0.20  # augmentations will be performed with this probability
-    params["augment_at_train"] = True
-    params["augment_at_train_combine"] = True
-    params[
-        "echo_max_delay"
-    ] = 0.005  # simulate echo by adding copy of raw audio
-    params["stretch_squeeze_delta"] = 0.04  # stretch or squeeze spec
-    params[
-        "mask_max_time_perc"
-    ] = 0.05  # max mask size - here percentage, not ideal
-    params[
-        "mask_max_freq_perc"
-    ] = 0.10  # max mask size - here percentage, not ideal
-    params[
-        "spec_amp_scaling"
-    ] = 2.0  # multiply the "volume" by 0:X times current amount
-    params["aug_sampling_rates"] = [
-        220500,
-        256000,
-        300000,
-        312500,
-        384000,
-        441000,
-        500000,
-    ]
-
-    # loss params
-    params["train_loss"] = "focal"  # mse or focal
-    params["det_loss_weight"] = 1.0  # weight for the detection part of the loss
-    params["size_loss_weight"] = 0.1  # weight for the bbox size loss
-    params["class_loss_weight"] = 2.0  # weight for the classification loss
-    params["individual_loss_weight"] = 0.0  # not used
-    if params["individual_loss_weight"] == 0.0:
-        params[
-            "emb_dim"
-        ] = 0  # number of dimensions used for individual id embedding
-    else:
-        params["emb_dim"] = 3
-
-    # train params
-    params["lr"] = 0.001
-    params["batch_size"] = 8
-    params["num_workers"] = 4
-    params["num_epochs"] = 200
-    params["num_eval_epochs"] = 5  # run evaluation every X epochs
-    params["device"] = "cuda"
-    params["save_test_image_during_train"] = False
-    params["save_test_image_after_train"] = True
-
-    params["convert_to_genus"] = False
-    params["genus_mapping"] = []
-    params["class_names"] = []
-    params["classes_to_ignore"] = ["", " ", "Unknown", "Not Bat"]
-    params["generic_class"] = ["Bat"]
-    params["events_of_interest"] = [
-        "Echolocation"
-    ]  # will ignore all other types of events e.g. social calls
-
-    # the classes in this list are standardized during training so that the same low and high freq are used
-    params["standardize_classs_names"] = []
-
-    # create directories
     if make_dirs:
-        print("Model name : " + params["model_name"])
-        print("Model file : " + params["model_file_name"])
-        print("Experiment : " + params["experiment"])
-
-        mk_dir(params["experiment"])
-        if params["save_test_image_during_train"]:
-            mk_dir(params["op_im_dir"])
-        if params["save_test_image_after_train"]:
-            mk_dir(params["op_im_dir_test"])
-        mk_dir(os.path.dirname(params["model_file_name"]))
+        mk_dir(experiment)
+        mk_dir(params.model_file_name.parent)
+        if params.save_test_image_during_train:
+            mk_dir(params.op_im_dir)
+        if params.save_test_image_after_train:
+            mk_dir(params.op_im_dir_test)
 
     return params
