@@ -13,18 +13,18 @@ authors = [
     { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" }
 ]
 dependencies = [
-    "librosa",
-    "matplotlib",
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "scipy",
-    "torch>=1.13.1,<2",
+    "librosa>=0.10.1",
+    "matplotlib>=3.7.1",
+    "numpy>=1.23.5",
+    "pandas>=1.5.3",
+    "scikit-learn>=1.2.2",
+    "scipy>=1.10.1",
+    "torch>=1.13.1",
     "torchaudio",
     "torchvision",
-    "click",
+    "click>=8.1.7",
 ]
-requires-python = ">=3.8,<3.11"
+requires-python = ">=3.8,<3.12"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
