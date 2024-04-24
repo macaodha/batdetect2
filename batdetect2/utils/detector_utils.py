@@ -437,7 +437,7 @@ def compute_spectrogram(
     )
 
     # generate spectrogram
-    spec = au.generate_spectrogram(audio, sampling_rate, params)
+    spec, _ = au.generate_spectrogram(audio, sampling_rate, params)
 
     # convert to pytorch
     spec = torch.from_numpy(spec).to(device)
@@ -746,7 +746,7 @@ def process_file(
     sampling_rate, audio_full = au.load_audio(
         audio_file,
         time_exp_fact=config.get("time_expansion", 1) or 1,
-        target_sampling_rate=config["target_samp_rate"],
+        target_samp_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
         max_duration=config.get("max_duration"),
     )

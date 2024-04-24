@@ -22,15 +22,15 @@ def focal_loss(
     gt: torch.Tensor,
     weights: Optional[torch.Tensor] = None,
     valid_mask: Optional[torch.Tensor] = None,
+    eps: float = 1e-5,
+    beta: float = 4,
+    alpha: float = 2,
 ) -> torch.Tensor:
     """
     Focal loss adapted from CornerNet: Detecting Objects as Paired Keypoints
     pred  (batch x c x h x w)
     gt    (batch x c x h x w)
     """
-    eps = 1e-5
-    beta = 4
-    alpha = 2
 
     pos_inds = gt.eq(1).float()
     neg_inds = gt.lt(1).float()

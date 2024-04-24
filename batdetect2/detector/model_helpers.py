@@ -53,7 +53,13 @@ class SelfAttention(nn.Module):
 
 class ConvBlockDownCoordF(nn.Module):
     def __init__(
-        self, in_chn, out_chn, ip_height, k_size=3, pad_size=1, stride=1
+        self,
+        in_chn,
+        out_chn,
+        ip_height,
+        k_size=3,
+        pad_size=1,
+        stride=1,
     ):
         super(ConvBlockDownCoordF, self).__init__()
         self.coords = nn.Parameter(

@@ -1,3 +1,4 @@
+import sys
 import json
 from collections import Counter
 from pathlib import Path
@@ -6,6 +7,11 @@ from typing import Dict, Generator, List, Optional, Tuple
 import numpy as np
 
 from batdetect2 import types
+
+if sys.version_info >= (3, 9):
+    StringCounter = Counter[str]
+else:
+    from typing import Counter as StringCounter
 
 
 def write_notes_file(file_name: str, text: str):
@@ -148,7 +154,7 @@ def format_annotation(
 def get_class_names(
     data: List[types.FileAnnotation],
     classes_to_ignore: Optional[List[str]] = None,
-) -> Tuple[Counter[str], List[float]]:
+) -> Tuple[StringCounter, List[float]]:
     """Extracts class names and their inverse frequencies.
 
     Parameters
@@ -182,7 +188,7 @@ def get_class_names(
     return counts, [mean_counts / counts[cc] for cc in class_names_list]
 
 
-def report_class_counts(class_names: Counter[str]):
+def report_class_counts(class_names: StringCounter):
     print("Class count:")
     str_len = np.max([len(cc) for cc in class_names]) + 5
     for index, (class_name, count) in enumerate(class_names.most_common()):

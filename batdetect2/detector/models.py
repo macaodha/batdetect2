@@ -1,5 +1,4 @@
 import torch
-import torch.fft
 import torch.nn.functional as F
 from torch import nn
 
@@ -207,7 +206,7 @@ class Net2DFastNoAttn(nn.Module):
             num_filts // 4, 2, kernel_size=1, padding=0
         )
         self.conv_classes_op = nn.Conv2d(
-            num_filts // 4, self.num_classes + 1, kernel_size=1, padding=0
+            num_filts // 4, self.num_classes + 1, kernel_size=1, padding=0,
         )
 
         if self.emb_dim > 0:

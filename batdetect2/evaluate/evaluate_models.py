@@ -7,16 +7,16 @@ import copy
 import json
 import os
 
-import torch
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.ensemble import RandomForestClassifier
 
-from batdetect2.detector import parameters
 import batdetect2.train.evaluate as evl
 import batdetect2.train.train_utils as tu
 import batdetect2.utils.detector_utils as du
 import batdetect2.utils.plot_utils as pu
+from batdetect2.detector import parameters
 
 
 def get_blank_annotation(ip_str):
@@ -330,7 +330,8 @@ def load_gt_data(datasets, events_of_interest, class_names, classes_to_ignore):
     for dd in datasets:
         print("\n" + dd["dataset_name"])
         gt_dataset = tu.load_set_of_anns(
-            [dd], events_of_interest=events_of_interest, verbose=True
+            [dd],
+            events_of_interest=events_of_interest,
         )
         gt_dataset = [
             parse_data(gg, class_names, classes_to_ignore, False)
@@ -553,7 +554,9 @@ if __name__ == "__main__":
         test_dict["dataset_name"] = args["test_file"].replace(".json", "")
         test_dict["is_test"] = True
         test_dict["is_binary"] = True
-        test_dict["ann_path"] = os.path.join(args["ann_dir"], args["test_file"])
+        test_dict["ann_path"] = os.path.join(
+            args["ann_dir"], args["test_file"]
+        )
         test_dict["wav_path"] = args["data_dir"]
         test_sets = [test_dict]
 

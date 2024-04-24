@@ -68,6 +68,7 @@ def run_nms(
         params["fft_win_length"],
         params["fft_overlap"],
     )
+    print("duration", duration)
     top_k = int(duration * params["nms_top_k_per_sec"])
     scores, y_pos, x_pos = get_topk_scores(pred_det_nms, top_k)
 

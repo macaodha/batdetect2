@@ -102,6 +102,7 @@ def spectrogram(
     return ax
 
 
+
 def spectrogram_with_detections(
     spec: Union[torch.Tensor, np.ndarray],
     dets: List[Annotation],

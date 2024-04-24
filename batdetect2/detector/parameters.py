@@ -28,6 +28,7 @@ MAX_SCALE_SPEC = False
 DEFAULT_MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
     "models",
+    "checkpoints",
     "Net2DFast_UK_same.pth.tar",
 )
 

@@ -1,4 +1,5 @@
 """Functions and dataloaders for training and testing the model."""
+
 import copy
 from typing import List, Optional, Tuple
 
@@ -199,8 +200,7 @@ def draw_gaussian(
     x0 = y0 = size // 2
     # g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
     g = np.exp(
-        -((x - x0) ** 2) / (2 * sigmax**2)
-        - ((y - y0) ** 2) / (2 * sigmay**2)
+        -((x - x0) ** 2) / (2 * sigmax**2) - ((y - y0) ** 2) / (2 * sigmay**2)
     )
     g_x = max(0, -ul[0]), min(br[0], h) - ul[0]
     g_y = max(0, -ul[1]), min(br[1], w) - ul[1]
@@ -399,6 +399,8 @@ def echo_aug(
     sample_offset = (
         int(echo_max_delay * np.random.random() * sampling_rate) + 1
     )
+    # NOTE: This seems to be wrong, as the echo should be added to the
+    # end of the audio, not the beginning.
     audio[:-sample_offset] += np.random.random() * audio[sample_offset:]
     return audio
 
@@ -820,16 +822,18 @@ class AudioLoader(torch.utils.data.Dataset):
             #     )
 
         # create spectrogram
-        spec = au.generate_spectrogram(
+        spec, _ = au.generate_spectrogram(
             audio,
             sampling_rate,
-            fft_win_length=self.params["fft_win_length"],
-            fft_overlap=self.params["fft_overlap"],
-            max_freq=self.params["max_freq"],
-            min_freq=self.params["min_freq"],
-            spec_scale=self.params["spec_scale"],
-            denoise_spec_avg=self.params["denoise_spec_avg"],
-            max_scale_spec=self.params["max_scale_spec"],
+            params=dict(
+                fft_win_length=self.params["fft_win_length"],
+                fft_overlap=self.params["fft_overlap"],
+                max_freq=self.params["max_freq"],
+                min_freq=self.params["min_freq"],
+                spec_scale=self.params["spec_scale"],
+                denoise_spec_avg=self.params["denoise_spec_avg"],
+                max_scale_spec=self.params["max_scale_spec"],
+            ),
         )
         rsf = self.params["resize_factor"]
         spec_op_shape = (
