@@ -28,7 +28,7 @@ dependencies = [
     "torch>=1.13.1",
     "torchaudio",
     "torchvision",
-    "soundevent[audio,geometry,plot]>=1.3.5",
+    "soundevent[audio,geometry,plot]>=2.0",
     "click>=8.1.7",
     "netcdf4>=1.6.5",
     "tqdm>=4.66.2",

@@ -11,7 +11,7 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2 import types
-from batdetect2.data.labels import LabelFn
+from batdetect2.data.labels import ClassMapper
 
 PathLike = Union[Path, str, os.PathLike]
 
@@ -54,7 +54,7 @@ def get_annotation_notes(annotation: data.ClipAnnotation) -> str:
 
 def convert_to_annotation_group(
     annotation: data.ClipAnnotation,
-    label_fn: LabelFn = lambda _: None,
+    class_mapper: ClassMapper,
     event_fn: EventFn = lambda _: ECHOLOCATION_EVENT,
     class_fn: ClassFn = lambda _: 0,
     individual_fn: IndividualFn = lambda _: 0,
@@ -80,8 +80,8 @@ def convert_to_annotation_group(
             continue
 
         start_time, low_freq, end_time, high_freq = compute_bounds(geometry)
-        class_id = label_fn(sound_event) or -1
-        event = event_fn(sound_event)
+        class_id = class_mapper.transform(sound_event) or -1
+        event = event_fn(sound_event) or ""
         individual_id = individual_fn(sound_event) or -1
 
         start_times.append(start_time)

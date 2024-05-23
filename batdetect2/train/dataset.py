@@ -1,15 +1,13 @@
 import os
-from typing import NamedTuple
 from pathlib import Path
-from typing import Sequence, Union, Dict
-from soundevent import data
+from typing import Callable, Dict, NamedTuple, Optional, Sequence, Union
 
-from torch.utils.data import Dataset
 import torch
 import xarray as xr
+from soundevent import data
+from torch.utils.data import Dataset
 
 from batdetect2.train.preprocess import PreprocessingConfig
-
 
 __all__ = [
     "TrainExample",
@@ -33,8 +31,13 @@ def get_files(directory: PathLike, extension: str = ".nc") -> Sequence[Path]:
 
 
 class LabeledDataset(Dataset):
-    def __init__(self, filenames: Sequence[PathLike]):
+    def __init__(
+        self,
+        filenames: Sequence[PathLike],
+        transform: Optional[Callable[[xr.Dataset], xr.Dataset]] = None,
+    ):
         self.filenames = filenames
+        self.transform = transform
 
     def __len__(self):
         return len(self.filenames)
@@ -54,7 +57,7 @@ class LabeledDataset(Dataset):
         return cls(get_files(directory, extension))
 
     def load(self, filename: PathLike) -> Dict[str, torch.Tensor]:
-        dataset = xr.open_dataset(filename)
+        dataset = self.get_dataset(filename)
         spectrogram = torch.tensor(dataset["spectrogram"].values).unsqueeze(0)
         return {
             "spectrogram": spectrogram,
@@ -62,6 +65,15 @@ class LabeledDataset(Dataset):
             "class": torch.tensor(dataset["class"].values),
             "size": torch.tensor(dataset["size"].values),
         }
+
+    def apply_augmentation(self, dataset: xr.Dataset) -> xr.Dataset:
+        if self.transform is not None:
+            return self.transform(dataset)
+
+        return dataset
+
+    def get_dataset(self, idx):
+        return xr.open_dataset(self.filenames[idx])
 
     def get_spectrogram(self, idx):
         return xr.open_dataset(self.filenames[idx])["spectrogram"]

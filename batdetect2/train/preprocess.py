@@ -9,21 +9,12 @@ from tqdm.auto import tqdm
 from multiprocessing import Pool
 
 import xarray as xr
-from pydantic import BaseModel, Field
 from soundevent import data
 
-from batdetect2.data.labels import TARGET_SIGMA, LabelFn, generate_heatmaps
+from batdetect2.data.labels import TARGET_SIGMA, ClassMapper, generate_heatmaps
 from batdetect2.data.preprocessing import (
-    DENOISE_SPEC_AVG,
-    FFT_OVERLAP,
-    FFT_WIN_LENGTH_S,
-    MAX_FREQ_HZ,
-    MAX_SCALE_SPEC,
-    MIN_FREQ_HZ,
-    SCALE_RAW_AUDIO,
-    SPEC_SCALE,
-    TARGET_SAMPLERATE_HZ,
     preprocess_audio_clip,
+    PreprocessingConfig,
 )
 
 PathLike = Union[Path, str, os.PathLike]
@@ -34,61 +25,24 @@ __all__ = [
 ]
 
 
-class PreprocessingConfig(BaseModel):
-    """Configuration for preprocessing data."""
-
-    target_samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
-
-    scale_audio: bool = Field(default=SCALE_RAW_AUDIO)
-
-    fft_win_length: float = Field(default=FFT_WIN_LENGTH_S, gt=0)
-
-    fft_overlap: float = Field(default=FFT_OVERLAP, ge=0, lt=1)
-
-    max_freq: int = Field(default=MAX_FREQ_HZ, gt=0)
-
-    min_freq: int = Field(default=MIN_FREQ_HZ, gt=0)
-
-    spec_scale: str = Field(default=SPEC_SCALE)
-
-    denoise_spec_avg: bool = DENOISE_SPEC_AVG
-
-    max_scale_spec: bool = MAX_SCALE_SPEC
-
-    target_sigma: float = Field(default=TARGET_SIGMA, gt=0)
-
-    class_labels: Sequence[str] = ["bat"]
-
 
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
-    label_fn: LabelFn = lambda _: None,
-    config: Optional[PreprocessingConfig] = None,
+    class_mapper: ClassMapper,
+    preprocessing_config: PreprocessingConfig = PreprocessingConfig(),
+    target_sigma: float = TARGET_SIGMA,
 ) -> xr.Dataset:
     """Generate a training example."""
-    if config is None:
-        config = PreprocessingConfig()
-
     spectrogram = preprocess_audio_clip(
         clip_annotation.clip,
-        target_sampling_rate=config.target_samplerate,
-        scale_audio=config.scale_audio,
-        fft_win_length=config.fft_win_length,
-        fft_overlap=config.fft_overlap,
-        max_freq=config.max_freq,
-        min_freq=config.min_freq,
-        spec_scale=config.spec_scale,
-        denoise_spec_avg=config.denoise_spec_avg,
-        max_scale_spec=config.max_scale_spec,
+        config=preprocessing_config,
     )
 
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         clip_annotation,
         spectrogram,
-        target_sigma=config.target_sigma,
-        num_classes=len(config.class_labels),
-        class_labels=list(config.class_labels),
-        label_fn=label_fn,
+        class_mapper,
+        target_sigma=target_sigma,
     )
 
     dataset = xr.Dataset(
@@ -102,7 +56,8 @@ def generate_train_example(
 
     return dataset.assign_attrs(
         title=f"Training example for {clip_annotation.uuid}",
-        configuration=config.model_dump_json(),
+        preprocessing_configuration=preprocessing_config.model_dump_json(),
+        target_sigma=target_sigma,
         clip_annotation=clip_annotation.model_dump_json(),
     )
 
@@ -148,9 +103,10 @@ def preprocess_single_annotation(
     clip_annotation: data.ClipAnnotation,
     output_dir: PathLike,
     config: PreprocessingConfig,
+    class_mapper: ClassMapper,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
-    label_fn: LabelFn = lambda _: None,
+    target_sigma: float = TARGET_SIGMA,
 ) -> None:
     output_dir = Path(output_dir)
 
@@ -162,8 +118,9 @@ def preprocess_single_annotation(
 
     sample = generate_train_example(
         clip_annotation,
-        label_fn=label_fn,
-        config=config,
+        class_mapper,
+        preprocessing_config=config,
+        target_sigma=target_sigma,
     )
 
     save_to_file(sample, path)
@@ -172,10 +129,11 @@ def preprocess_single_annotation(
 def preprocess_annotations(
     clip_annotations: Sequence[data.ClipAnnotation],
     output_dir: PathLike,
+    class_mapper: ClassMapper,
+    target_sigma: float = TARGET_SIGMA,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
     config_file: Optional[PathLike] = None,
-    label_fn: LabelFn = lambda _: None,
     max_workers: Optional[int] = None,
     **kwargs,
 ) -> None:
@@ -198,9 +156,10 @@ def preprocess_annotations(
                         preprocess_single_annotation,
                         output_dir=output_dir,
                         config=config,
+                        class_mapper=class_mapper,
                         filename_fn=filename_fn,
                         replace=replace,
-                        label_fn=label_fn,
+                        target_sigma=target_sigma,
                     ),
                     clip_annotations,
                 ),

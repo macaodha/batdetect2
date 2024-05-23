@@ -8,6 +8,7 @@ import torch
 from soundevent import data
 from torch import nn
 
+from batdetect2.data.labels import ClassMapper
 from batdetect2.models.typing import ModelOutput
 
 __all__ = [
@@ -36,11 +37,8 @@ TagFunction = Callable[[int], List[data.Tag]]
 def postprocess_model_outputs(
     outputs: ModelOutput,
     clips: List[data.Clip],
-    nms_kernel_size: int = NMS_KERNEL_SIZE,
-    detection_threshold: float = DETECTION_THRESHOLD,
-    min_freq: int = 10000,
-    max_freq: int = 120000,
-    top_k_per_sec: int = TOP_K_PER_SEC,
+    class_mapper: ClassMapper,
+    config: PostprocessConfig,
 ) -> List[data.ClipPrediction]:
     """Postprocesses model outputs to generate clip predictions.
 
@@ -57,16 +55,8 @@ def postprocess_model_outputs(
     clips
         List of clips for which predictions are made. The number of clips
         must match the batch dimension of the model outputs.
-    nms_kernel_size
-        Size of the non-maximum suppression kernel. Default is 9.
-    detection_threshold
-        Detection threshold. Default is 0.01.
-    min_freq
-        Minimum frequency. Default is 10000.
-    max_freq
-        Maximum frequency. Default is 120000.
-    top_k_per_sec
-        Top k per second. Default is 200.
+    config
+        Configuration for postprocessing model outputs.
 
     Returns
     -------
@@ -90,14 +80,14 @@ def postprocess_model_outputs(
 
     detection_probs = non_max_suppression(
         outputs.detection_probs,
-        kernel_size=nms_kernel_size,
+        kernel_size=config.nms_kernel_size,
     )
 
     duration = clips[0].end_time - clips[0].start_time
 
     scores_batch, y_pos_batch, x_pos_batch = get_topk_scores(
         detection_probs,
-        int(top_k_per_sec * duration / 2),
+        int(config.top_k_per_sec * duration / 2),
     )
 
     predictions: List[data.ClipPrediction] = []
@@ -118,9 +108,10 @@ def postprocess_model_outputs(
             size_preds,
             class_probs,
             features,
-            min_freq=min_freq,
-            max_freq=max_freq,
-            detection_threshold=detection_threshold,
+            class_mapper=class_mapper,
+            min_freq=config.min_freq,
+            max_freq=config.max_freq,
+            detection_threshold=config.detection_threshold,
         )
 
         predictions.append(
@@ -141,7 +132,7 @@ def compute_sound_events_from_outputs(
     size_preds: torch.Tensor,
     class_probs: torch.Tensor,
     features: torch.Tensor,
-    tag_fn: TagFunction = lambda _: [],
+    class_mapper: ClassMapper,
     min_freq: int = 10000,
     max_freq: int = 120000,
     detection_threshold: float = DETECTION_THRESHOLD,
@@ -160,7 +151,6 @@ def compute_sound_events_from_outputs(
     predictions: List[data.SoundEventPrediction] = []
     for score, x, y in zip(scores, x_pos, y_pos):
         width, height = size_preds[:, y, x]
-        print(width, height)
         class_prob = class_probs[:, y, x]
         feature = features[:, y, x]
 
@@ -191,7 +181,7 @@ def compute_sound_events_from_outputs(
         predicted_tags: List[data.PredictedTag] = []
 
         for label_id, class_score in enumerate(class_prob):
-            corresponding_tags = tag_fn(label_id)
+            corresponding_tags = class_mapper.inverse_transform(label_id)
             predicted_tags.extend(
                 [
                     data.PredictedTag(

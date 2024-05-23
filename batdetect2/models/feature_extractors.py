@@ -5,7 +5,6 @@ import torch.fft
 import torch.nn.functional as F
 from torch import nn
 
-from batdetect2.models.typing import EncoderModel
 from batdetect2.models.blocks import (
     ConvBlockDownCoordF,
     ConvBlockDownStandard,
@@ -13,6 +12,7 @@ from batdetect2.models.blocks import (
     ConvBlockUpStandard,
     SelfAttention,
 )
+from batdetect2.models.typing import FeatureExtractorModel
 
 __all__ = [
     "Net2DFast",
@@ -21,84 +21,84 @@ __all__ = [
 ]
 
 
-class Net2DFast(EncoderModel):
+class Net2DFast(FeatureExtractorModel):
     def __init__(
         self,
-        num_filts: int,
+        num_features: int,
         input_height: int = 128,
     ):
         super().__init__()
-        self.num_filts = num_filts
+        self.num_features = num_features
         self.input_height = input_height
         self.bottleneck_height = self.input_height // 32
 
         # encoder
         self.conv_dn_0 = ConvBlockDownCoordF(
             1,
-            self.num_filts // 4,
+            self.num_features // 4,
             self.input_height,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_1 = ConvBlockDownCoordF(
-            self.num_filts // 4,
-            self.num_filts // 2,
+            self.num_features // 4,
+            self.num_features // 2,
             self.input_height // 2,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_2 = ConvBlockDownCoordF(
-            self.num_filts // 2,
-            self.num_filts,
+            self.num_features // 2,
+            self.num_features,
             self.input_height // 4,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_3 = nn.Conv2d(
-            self.num_filts,
-            self.num_filts * 2,
+            self.num_features,
+            self.num_features * 2,
             3,
             padding=1,
         )
-        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_filts * 2)
+        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_features * 2)
 
         # bottleneck
         self.conv_1d = nn.Conv2d(
-            self.num_filts * 2,
-            self.num_filts * 2,
+            self.num_features * 2,
+            self.num_features * 2,
             (self.input_height // 8, 1),
             padding=0,
         )
-        self.conv_1d_bn = nn.BatchNorm2d(self.num_filts * 2)
-        self.att = SelfAttention(self.num_filts * 2, self.num_filts * 2)
+        self.conv_1d_bn = nn.BatchNorm2d(self.num_features * 2)
+        self.att = SelfAttention(self.num_features * 2, self.num_features * 2)
 
         # decoder
         self.conv_up_2 = ConvBlockUpF(
-            self.num_filts * 2,
-            self.num_filts // 2,
+            self.num_features * 2,
+            self.num_features // 2,
             self.input_height // 8,
         )
         self.conv_up_3 = ConvBlockUpF(
-            self.num_filts // 2,
-            self.num_filts // 4,
+            self.num_features // 2,
+            self.num_features // 4,
             self.input_height // 4,
         )
         self.conv_up_4 = ConvBlockUpF(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             self.input_height // 2,
         )
 
         self.conv_op = nn.Conv2d(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             kernel_size=3,
             padding=1,
         )
-        self.conv_op_bn = nn.BatchNorm2d(self.num_filts // 4)
+        self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
 
     def pad_adjust(self, spec: torch.Tensor) -> Tuple[torch.Tensor, int, int]:
         h, w = spec.shape[2:]
@@ -135,81 +135,81 @@ class Net2DFast(EncoderModel):
         return F.relu_(self.conv_op_bn(self.conv_op(x)))
 
 
-class Net2DFastNoAttn(EncoderModel):
+class Net2DFastNoAttn(FeatureExtractorModel):
     def __init__(
         self,
-        num_filts: int,
+        num_features: int,
         input_height: int = 128,
     ):
         super().__init__()
 
-        self.num_filts = num_filts
+        self.num_features = num_features
         self.input_height = input_height
         self.bottleneck_height = self.input_height // 32
 
         self.conv_dn_0 = ConvBlockDownCoordF(
             1,
-            self.num_filts // 4,
+            self.num_features // 4,
             self.input_height,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_1 = ConvBlockDownCoordF(
-            self.num_filts // 4,
-            self.num_filts // 2,
+            self.num_features // 4,
+            self.num_features // 2,
             self.input_height // 2,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_2 = ConvBlockDownCoordF(
-            self.num_filts // 2,
-            self.num_filts,
+            self.num_features // 2,
+            self.num_features,
             self.input_height // 4,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_3 = nn.Conv2d(
-            self.num_filts,
-            self.num_filts * 2,
+            self.num_features,
+            self.num_features * 2,
             3,
             padding=1,
         )
-        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_filts * 2)
+        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_features * 2)
 
         self.conv_1d = nn.Conv2d(
-            self.num_filts * 2,
-            self.num_filts * 2,
+            self.num_features * 2,
+            self.num_features * 2,
             (self.input_height // 8, 1),
             padding=0,
         )
-        self.conv_1d_bn = nn.BatchNorm2d(self.num_filts * 2)
+        self.conv_1d_bn = nn.BatchNorm2d(self.num_features * 2)
 
         self.conv_up_2 = ConvBlockUpF(
-            self.num_filts * 2,
-            self.num_filts // 2,
+            self.num_features * 2,
+            self.num_features // 2,
             self.input_height // 8,
         )
         self.conv_up_3 = ConvBlockUpF(
-            self.num_filts // 2,
-            self.num_filts // 4,
+            self.num_features // 2,
+            self.num_features // 4,
             self.input_height // 4,
         )
         self.conv_up_4 = ConvBlockUpF(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             self.input_height // 2,
         )
 
         self.conv_op = nn.Conv2d(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             kernel_size=3,
             padding=1,
         )
-        self.conv_op_bn = nn.BatchNorm2d(self.num_filts // 4)
+        self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         x1 = self.conv_dn_0(spec)
@@ -227,80 +227,80 @@ class Net2DFastNoAttn(EncoderModel):
         return F.relu_(self.conv_op_bn(self.conv_op(x)))
 
 
-class Net2DFastNoCoordConv(EncoderModel):
+class Net2DFastNoCoordConv(FeatureExtractorModel):
     def __init__(
         self,
-        num_filts: int,
+        num_features: int,
         input_height: int = 128,
     ):
         super().__init__()
 
-        self.num_filts = num_filts
+        self.num_features = num_features
         self.input_height = input_height
         self.bottleneck_height = self.input_height // 32
 
         self.conv_dn_0 = ConvBlockDownStandard(
             1,
-            self.num_filts // 4,
+            self.num_features // 4,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_1 = ConvBlockDownStandard(
-            self.num_filts // 4,
-            self.num_filts // 2,
+            self.num_features // 4,
+            self.num_features // 2,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_2 = ConvBlockDownStandard(
-            self.num_filts // 2,
-            self.num_filts,
+            self.num_features // 2,
+            self.num_features,
             k_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_3 = nn.Conv2d(
-            self.num_filts,
-            self.num_filts * 2,
+            self.num_features,
+            self.num_features * 2,
             3,
             padding=1,
         )
-        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_filts * 2)
+        self.conv_dn_3_bn = nn.BatchNorm2d(self.num_features * 2)
 
         self.conv_1d = nn.Conv2d(
-            self.num_filts * 2,
-            self.num_filts * 2,
+            self.num_features * 2,
+            self.num_features * 2,
             (self.input_height // 8, 1),
             padding=0,
         )
-        self.conv_1d_bn = nn.BatchNorm2d(self.num_filts * 2)
+        self.conv_1d_bn = nn.BatchNorm2d(self.num_features * 2)
 
-        self.att = SelfAttention(self.num_filts * 2, self.num_filts * 2)
+        self.att = SelfAttention(self.num_features * 2, self.num_features * 2)
 
         self.conv_up_2 = ConvBlockUpStandard(
-            self.num_filts * 2,
-            self.num_filts // 2,
+            self.num_features * 2,
+            self.num_features // 2,
             self.input_height // 8,
         )
         self.conv_up_3 = ConvBlockUpStandard(
-            self.num_filts // 2,
-            self.num_filts // 4,
+            self.num_features // 2,
+            self.num_features // 4,
             self.input_height // 4,
         )
         self.conv_up_4 = ConvBlockUpStandard(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             self.input_height // 2,
         )
 
         self.conv_op = nn.Conv2d(
-            self.num_filts // 4,
-            self.num_filts // 4,
+            self.num_features // 4,
+            self.num_features // 4,
             kernel_size=3,
             padding=1,
         )
-        self.conv_op_bn = nn.BatchNorm2d(self.num_filts // 4)
+        self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         x1 = self.conv_dn_0(spec)

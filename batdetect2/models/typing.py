@@ -4,6 +4,11 @@ from typing import NamedTuple
 import torch
 import torch.nn as nn
 
+__all__ = [
+    "ModelOutput",
+    "FeatureExtractorModel",
+]
+
 
 class ModelOutput(NamedTuple):
     """Output of the detection model.
@@ -36,12 +41,11 @@ class ModelOutput(NamedTuple):
     """Tensor with intermediate features."""
 
 
-class EncoderModel(ABC, nn.Module):
-
+class FeatureExtractorModel(ABC, nn.Module):
     input_height: int
     """Height of the input spectrogram."""
 
-    num_filts: int
+    num_features: int
     """Dimension of the feature tensor."""
 
     @abstractmethod

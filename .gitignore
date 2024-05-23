@@ -110,3 +110,4 @@ experiments/*
 !batdetect2_notebook.ipynb
 !batdetect2/models/*.pth.tar
 !tests/data/*.wav
+notebooks/lightning_logs

@@ -1,100 +1,104 @@
+from typing import Type
+
 import pytorch_lightning as L
 import torch
 import xarray as xr
 from soundevent import data
 from torch import nn, optim
 
-from batdetect2.data.preprocessing import preprocess_audio_clip
-from batdetect2.models.typing import EncoderModel, ModelOutput
-from batdetect2.train import losses
-from batdetect2.train.dataset import TrainExample
+from batdetect2.data.preprocessing import (
+    preprocess_audio_clip,
+    PreprocessingConfig,
+)
+from batdetect2.data.labels import ClassMapper
+from batdetect2.models.feature_extractors import Net2DFast
 from batdetect2.models.post_process import (
     PostprocessConfig,
     postprocess_model_outputs,
 )
-from batdetect2.train.preprocess import PreprocessingConfig
+from batdetect2.models.typing import FeatureExtractorModel, ModelOutput
+from batdetect2.train import losses
+from batdetect2.train.dataset import TrainExample
 
 
 class DetectorModel(L.LightningModule):
     def __init__(
         self,
-        encoder: EncoderModel,
-        num_classes: int,
+        class_mapper: ClassMapper,
+        feature_extractor_class: Type[FeatureExtractorModel] = Net2DFast,
         learning_rate: float = 1e-3,
+        input_height: int = 128,
+        num_features: int = 32,
         preprocessing_config: PreprocessingConfig = PreprocessingConfig(),
         postprocessing_config: PostprocessConfig = PostprocessConfig(),
     ):
         super().__init__()
 
+        self.save_hyperparameters()
+
         self.preprocessing_config = preprocessing_config
         self.postprocessing_config = postprocessing_config
-        self.num_classes = num_classes
+        self.class_mapper = class_mapper
         self.learning_rate = learning_rate
+        self.input_height = input_height
+        self.num_features = num_features
+        self.num_classes = class_mapper.num_classes
 
-        self.encoder = encoder
+        self.feature_extractor = feature_extractor_class(
+            input_height=input_height,
+            num_features=num_features,
+        )
 
         self.classifier = nn.Conv2d(
-            self.encoder.num_filts // 4,
+            self.feature_extractor.num_features // 4,
             self.num_classes + 1,
             kernel_size=1,
             padding=0,
         )
 
         self.bbox = nn.Conv2d(
-            self.encoder.num_filts // 4,
+            self.feature_extractor.num_features // 4,
             2,
             kernel_size=1,
             padding=0,
         )
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:  # type: ignore
-        features = self.encoder(spec)
-
+        features = self.feature_extractor(spec)
         classification_logits = self.classifier(features)
         classification_probs = torch.softmax(classification_logits, dim=1)
         detection_probs = classification_probs[:, :-1].sum(dim=1, keepdim=True)
-
         return ModelOutput(
             detection_probs=detection_probs,
             size_preds=self.bbox(features),
-            class_probs=classification_probs,
+            class_probs=classification_probs[:, :-1],
             features=features,
         )
 
     def compute_spectrogram(self, clip: data.Clip) -> xr.DataArray:
-        config = self.preprocessing_config
-
         return preprocess_audio_clip(
             clip,
-            target_sampling_rate=config.target_samplerate,
-            scale_audio=config.scale_audio,
-            fft_win_length=config.fft_win_length,
-            fft_overlap=config.fft_overlap,
-            max_freq=config.max_freq,
-            min_freq=config.min_freq,
-            spec_scale=config.spec_scale,
-            denoise_spec_avg=config.denoise_spec_avg,
-            max_scale_spec=config.max_scale_spec,
+            config=self.preprocessing_config,
         )
 
-    def process_clip(self, clip: data.Clip):
+    def compute_clip_features(self, clip: data.Clip) -> torch.Tensor:
+        spectrogram = self.compute_spectrogram(clip)
+        return self.feature_extractor(
+            torch.tensor(spectrogram.values).unsqueeze(0).unsqueeze(0)
+        )
+
+    def compute_clip_predictions(self, clip: data.Clip) -> data.ClipPrediction:
         spectrogram = self.compute_spectrogram(clip)
         spec_tensor = (
             torch.tensor(spectrogram.values).unsqueeze(0).unsqueeze(0)
         )
-
         outputs = self(spec_tensor)
-
-        config = self.postprocessing_config
         return postprocess_model_outputs(
             outputs,
             [clip],
-            nms_kernel_size=config.nms_kernel_size,
-            detection_threshold=config.detection_threshold,
-            min_freq=config.min_freq,
-            max_freq=config.max_freq,
-            top_k_per_sec=config.top_k_per_sec,
-        )
+            class_mapper=self.class_mapper,
+            config=self.postprocessing_config,
+        )[0]
 
     def compute_loss(
         self,
@@ -124,21 +128,8 @@ class DetectorModel(L.LightningModule):
         self,
         batch: TrainExample,
     ):
-        features = self.encoder(batch.spec)
-
-        classification_logits = self.classifier(features)
-        classification_probs = torch.softmax(classification_logits, dim=1)
-        detection_probs = classification_probs[:, :-1].sum(dim=1, keepdim=True)
-
-        loss = self.compute_loss(
-            ModelOutput(
-                detection_probs=detection_probs,
-                size_preds=self.bbox(features),
-                class_probs=classification_probs,
-                features=features,
-            ),
-            batch,
-        )
+        outputs = self.forward(batch.spec)
+        loss = self.compute_loss(outputs, batch)
         self.log("train_loss", loss)
         return loss
 

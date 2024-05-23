@@ -10,6 +10,8 @@
 -e file:.
 absl-py==2.1.0
     # via tensorboard
+affine==2.4.0
+    # via rasterio
 aiobotocore==2.12.3
     # via s3fs
 aiohttp==3.9.5
@@ -35,6 +37,7 @@ async-timeout==4.0.3
     # via redis
 attrs==23.2.0
     # via aiohttp
+    # via rasterio
 audioread==3.0.1
     # via librosa
 backoff==2.2.1
@@ -53,6 +56,7 @@ botocore==1.34.69
     # via s3transfer
 certifi==2024.2.2
     # via netcdf4
+    # via rasterio
     # via requests
 cf-xarray==0.9.0
     # via batdetect2
@@ -64,9 +68,16 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via batdetect2
+    # via click-plugins
+    # via cligj
     # via lightning
     # via lightning-cloud
+    # via rasterio
     # via uvicorn
+click-plugins==1.1.1
+    # via rasterio
+cligj==0.7.2
+    # via rasterio
 contourpy==1.1.1
     # via matplotlib
 croniter==1.4.1
@@ -123,6 +134,7 @@ idna==3.7
     # via yarl
 importlib-metadata==7.1.0
     # via markdown
+    # via rasterio
 importlib-resources==6.4.0
     # via matplotlib
     # via typeshed-client
@@ -199,9 +211,11 @@ numpy==1.24.4
     # via onnx
     # via pandas
     # via pytorch-lightning
+    # via rasterio
     # via scikit-learn
     # via scipy
     # via shapely
+    # via snuggs
     # via soxr
     # via tensorboard
     # via tensorboardx
@@ -286,6 +300,7 @@ pyjwt==2.8.0
     # via lightning-cloud
 pyparsing==3.1.2
     # via matplotlib
+    # via snuggs
 python-dateutil==2.9.0.post0
     # via arrow
     # via botocore
@@ -307,6 +322,8 @@ pyyaml==6.0.1
     # via lightning
     # via omegaconf
     # via pytorch-lightning
+rasterio==1.3.10
+    # via soundevent
 readchar==4.0.6
     # via inquirer
 redis==5.0.4
@@ -336,6 +353,7 @@ scipy==1.10.1
     # via soundevent
 setuptools==69.5.1
     # via lightning-utilities
+    # via rasterio
     # via readchar
     # via tensorboard
 shapely==2.0.3
@@ -347,7 +365,9 @@ six==1.16.0
     # via tensorboard
 sniffio==1.3.1
     # via anyio
-soundevent==1.3.5
+snuggs==1.4.7
+    # via rasterio
+soundevent==2.0.0
     # via batdetect2
 soundfile==0.12.1
     # via librosa
