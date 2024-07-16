@@ -32,7 +32,7 @@ results will be combined into a dictionary with the following keys:
     for each detection. The CNN features are the output of the CNN before
     the final classification layer. You can use these features to train
     your own classifier, or to do other processing on the detections.
-    They are in the same order as the detections in 
+    They are in the same order as the detections in
     `results['pred_dict']['annotation']`. Will only be returned if the
     `cnn_feats` parameter in the config is set to `True`.
     - `spec_slices`: Optional. A list of `numpy` arrays containing the spectrogram
@@ -96,6 +96,7 @@ If you wish to use a custom model or change the default parameters, please
 consult the API documentation in the code.
 
 """
+
 import warnings
 from typing import List, Optional, Tuple
 
@@ -410,7 +411,9 @@ def print_summary(results: RunResults) -> None:
         Detection result.
     """
     print("Results for " + results["pred_dict"]["id"])
-    print("{} calls detected\n".format(len(results["pred_dict"]["annotation"])))
+    print(
+        "{} calls detected\n".format(len(results["pred_dict"]["annotation"]))
+    )
 
     print("time\tprob\tlfreq\tspecies_name")
     for ann in results["pred_dict"]["annotation"]:

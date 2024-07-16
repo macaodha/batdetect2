@@ -116,6 +116,9 @@ def preprocess_single_annotation(
     if path.is_file() and not replace:
         return
 
+    if path.is_file() and replace:
+        path.unlink()
+
     sample = generate_train_example(
         clip_annotation,
         class_mapper,
@@ -133,20 +136,17 @@ def preprocess_annotations(
     target_sigma: float = TARGET_SIGMA,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
-    config_file: Optional[PathLike] = None,
+    config: Optional[PreprocessingConfig] = None,
     max_workers: Optional[int] = None,
-    **kwargs,
 ) -> None:
     """Preprocess annotations and save to disk."""
     output_dir = Path(output_dir)
 
+    if config is None:
+        config = PreprocessingConfig()
+
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True)
-
-    if config_file is not None:
-        config = load_config(config_file, **kwargs)
-    else:
-        config = PreprocessingConfig(**kwargs)
 
     with Pool(max_workers) as pool:
         list(

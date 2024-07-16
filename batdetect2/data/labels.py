@@ -65,7 +65,6 @@ def generate_heatmaps(
 
         # Get the position of the sound event
         time, frequency = geometry.get_geometry_point(geom, position=position)
-        print(time, frequency)
 
         # Set 1.0 at the position of the sound event in the detection heatmap
         detection_heatmap = arrays.set_value_at_pos(
