@@ -108,7 +108,7 @@ experiments/*
 
 # DO Include
 !batdetect2_notebook.ipynb
-!batdetect2/models/*.pth.tar
+!batdetect2/models/checkpoints/*.pth.tar
 !tests/data/*.wav
 !notebooks/*.ipynb
 notebooks/lightning_logs
