@@ -1,5 +1,5 @@
 [tool]
-rye = { dev-dependencies = [
+uv = { dev-dependencies = [
     "ipykernel>=6.29.4",
     "setuptools>=69.5.1",
     "pytest>=8.1.1",
