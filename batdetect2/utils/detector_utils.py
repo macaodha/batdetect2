@@ -242,7 +242,7 @@ def format_single_result(
         )
         class_name = class_names[np.argmax(class_overall)]
         annotations = get_annotations_from_preds(predictions, class_names)
-    except (np.exceptions.AxisError, ValueError):
+    except (np.AxisError, ValueError):
         # No detections
         class_overall = np.zeros(len(class_names))
         class_name = "None"
