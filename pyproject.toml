@@ -1,82 +1,76 @@
-[tool.pdm]
-[tool.pdm.dev-dependencies]
-dev = [
-    "pytest>=7.2.2",
-]
 
 [project]
 name = "batdetect2"
 version = "1.0.8"
 description = "Deep learning model for detecting and classifying bat echolocation calls in high frequency audio recordings."
 authors = [
-    { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
-    { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" }
+  { "name" = "Oisin Mac Aodha", "email" = "oisin.macaodha@ed.ac.uk" },
+  { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" },
 ]
 dependencies = [
-    "librosa>=0.10.1",
-    "matplotlib>=3.7.1",
-    "numpy>=1.23.5",
-    "pandas>=1.5.3",
-    "scikit-learn>=1.2.2",
-    "scipy>=1.10.1",
-    "torch>=1.13.1",
-    "torchaudio",
-    "torchvision",
-    "click>=8.1.7",
+  "librosa>=0.10.1",
+  "matplotlib>=3.7.1",
+  "numpy>=1.23.5",
+  "pandas>=1.5.3",
+  "scikit-learn>=1.2.2",
+  "scipy>=1.10.1",
+  "torch>=1.13.1",
+  "torchaudio",
+  "torchvision",
+  "click>=8.1.7",
 ]
 requires-python = ">=3.8,<3.12"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Multimedia :: Sound/Audio :: Analysis",
 ]
 keywords = [
-    "bat",
-    "echolocation",
-    "deep learning",
-    "audio",
-    "machine learning",
-    "classification",
-    "detection",
+  "bat",
+  "echolocation",
+  "deep learning",
+  "audio",
+  "machine learning",
+  "classification",
+  "detection",
 ]
 
 [build-system]
-requires = ["pdm-pep517>=1.0.0"]
-build-backend = "pdm.pep517.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project.scripts]
 batdetect2 = "batdetect2.cli:cli"
 
-[tool.black]
+[tool.uv]
+dev-dependencies = ["pytest>=7.2.2"]
+
+[tool.ruff]
 line-length = 79
+target-version = "py39"
 
-[[tool.mypy.overrides]]
-module = [
-    "librosa",
-    "pandas",
-]
-ignore_missing_imports = true
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 79
 
-[tool.pylsp-mypy]
-enabled = false
-live_mode = true
-strict = true
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "Q", "I", "D"]
+ignore = ["D1"]
 
-[tool.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.pyright]
-include = [
-    "bat_detect",
-    "tests",
-]
+include = ["bat_detect", "tests"]
 venvPath = "."
 venv = ".venv"
+pythonVersion = "3.9"
+pythonPlatform = "All"
