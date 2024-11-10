@@ -18,7 +18,7 @@ dependencies = [
     "torchaudio>=1.13.1,<2.5.0",
     "torchvision>=0.14.0",
 ]
-requires-python = ">=3.8,<3.12"
+requires-python = ">=3.9,<3.13"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
@@ -26,8 +26,10 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Natural Language :: English",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Multimedia :: Sound/Audio :: Analysis",
@@ -58,7 +60,7 @@ dev-dependencies = [
 
 [tool.ruff]
 line-length = 79
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -74,5 +76,5 @@ convention = "numpy"
 include = ["batdetect2", "tests"]
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.8"
+pythonVersion = "3.9"
 pythonPlatform = "All"
