@@ -1,4 +1,5 @@
 """Types used in the code base."""
+
 from typing import List, NamedTuple, Optional, Union
 
 import numpy as np
@@ -17,7 +18,7 @@ except ImportError:
 
 
 try:
-    from typing import NotRequired
+    from typing import NotRequired  # type: ignore
 except ImportError:
     from typing_extensions import NotRequired
 

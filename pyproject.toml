@@ -53,6 +53,8 @@ batdetect2 = "batdetect2.cli:cli"
 
 [tool.uv]
 dev-dependencies = [
+    "debugpy>=1.8.8",
+    "hypothesis>=6.118.7",
     "pyright>=1.1.388",
     "pytest>=7.2.2",
     "ruff>=0.7.3",

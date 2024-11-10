@@ -11,7 +11,7 @@ import torch.nn.functional as F
 try:
     from numpy.exceptions import AxisError
 except ImportError:
-    from numpy import AxisError
+    from numpy import AxisError  # type: ignore
 
 import batdetect2.detector.compute_features as feats
 import batdetect2.detector.post_process as pp
@@ -759,7 +759,7 @@ def process_file(
 
     # Get original sampling rate
     file_samp_rate = librosa.get_samplerate(audio_file)
-    orig_samp_rate = file_samp_rate * config.get("time_expansion", 1) or 1
+    orig_samp_rate = file_samp_rate * (config.get("time_expansion") or 1)
 
     # load audio file
     sampling_rate, audio_full = au.load_audio(
