@@ -8,6 +8,11 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
+try:
+    from numpy.exceptions import AxisError
+except ImportError:
+    from numpy import AxisError
+
 import batdetect2.detector.compute_features as feats
 import batdetect2.detector.post_process as pp
 import batdetect2.utils.audio_utils as au
@@ -242,7 +247,7 @@ def format_single_result(
         )
         class_name = class_names[np.argmax(class_overall)]
         annotations = get_annotations_from_preds(predictions, class_names)
-    except (np.AxisError, ValueError):
+    except (AxisError, ValueError):
         # No detections
         class_overall = np.zeros(len(class_names))
         class_name = "None"

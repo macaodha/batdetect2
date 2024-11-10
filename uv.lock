@@ -45,7 +45,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "librosa", specifier = ">=0.10.1" },
     { name = "matplotlib", specifier = ">=3.7.1" },
-    { name = "numpy", specifier = ">=1.23.5,<2" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "pandas", specifier = ">=1.5.3" },
     { name = "scikit-learn", specifier = ">=1.2.2" },
     { name = "scipy", specifier = ">=1.10.1" },
