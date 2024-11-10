@@ -10,7 +10,7 @@ authors = [
 dependencies = [
   "librosa>=0.10.1",
   "matplotlib>=3.7.1",
-  "numpy>=1.23.5",
+  "numpy>=1.23.5,<2",
   "pandas>=1.5.3",
   "scikit-learn>=1.2.2",
   "scipy>=1.10.1",
@@ -51,7 +51,11 @@ build-backend = "hatchling.build"
 batdetect2 = "batdetect2.cli:cli"
 
 [tool.uv]
-dev-dependencies = ["pytest>=7.2.2"]
+dev-dependencies = [
+    "pyright>=1.1.388",
+    "pytest>=7.2.2",
+    "ruff>=0.7.3",
+]
 
 [tool.ruff]
 line-length = 79
@@ -69,7 +73,7 @@ ignore = ["D1"]
 convention = "numpy"
 
 [tool.pyright]
-include = ["bat_detect", "tests"]
+include = ["batdetect2", "tests"]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.9"
