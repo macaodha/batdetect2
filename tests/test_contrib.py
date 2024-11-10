@@ -38,5 +38,5 @@ def test_files_negative_dimensions_are_not_allowed(
     )
     assert result.exit_code == 0
     assert results_dir.exists()
-    assert len(list(results_dir.glob("*.csv"))) == 3
-    assert len(list(results_dir.glob("*.json"))) == 3
+    assert len(list(results_dir.glob("*.csv"))) == 5
+    assert len(list(results_dir.glob("*.json"))) == 5
