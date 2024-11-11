@@ -9,7 +9,7 @@ from batdetect2.cli import cli
 runner = CliRunner()
 
 
-def test_files_negative_dimensions_are_not_allowed(
+def test_can_process_jeff37_files(
     contrib_dir: Path,
     tmp_path: Path,
 ):
@@ -40,3 +40,34 @@ def test_files_negative_dimensions_are_not_allowed(
     assert results_dir.exists()
     assert len(list(results_dir.glob("*.csv"))) == 5
     assert len(list(results_dir.glob("*.json"))) == 5
+
+
+def test_can_process_padpadpadpad_files(
+    contrib_dir: Path,
+    tmp_path: Path,
+):
+    """This test stems from issue #29.
+
+    Batdetect2 cli failed on the files provided by the user @padpadpadpad
+    with the following error message:
+
+        AttributeError: module 'numpy' has no attribute 'AxisError'
+
+    This test ensures that the files are processed without any error.
+    """
+    path = contrib_dir / "padpadpadpad"
+    assert path.exists()
+    results_dir = tmp_path / "results"
+    result = runner.invoke(
+        cli,
+        [
+            "detect",
+            str(path),
+            str(results_dir),
+            "0.3",
+        ],
+    )
+    assert result.exit_code == 0
+    assert results_dir.exists()
+    assert len(list(results_dir.glob("*.csv"))) == 2
+    assert len(list(results_dir.glob("*.json"))) == 2
