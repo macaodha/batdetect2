@@ -7,10 +7,11 @@ from click.testing import CliRunner
 
 from batdetect2.cli import cli
 
+runner = CliRunner()
+
 
 def test_cli_base_command():
     """Test the base command."""
-    runner = CliRunner()
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     assert (
@@ -20,7 +21,6 @@ def test_cli_base_command():
 
 def test_cli_detect_command_help():
     """Test the detect command help."""
-    runner = CliRunner()
     result = runner.invoke(cli, ["detect", "--help"])
     assert result.exit_code == 0
     assert "Detect bat calls in files in AUDIO_DIR" in result.output
@@ -34,7 +34,6 @@ def test_cli_detect_command_on_test_audio(tmp_path):
     if results_dir.exists():
         results_dir.rmdir()
 
-    runner = CliRunner()
     result = runner.invoke(
         cli,
         [
@@ -58,7 +57,6 @@ def test_cli_detect_command_with_non_trivial_time_expansion(tmp_path):
     if results_dir.exists():
         results_dir.rmdir()
 
-    runner = CliRunner()
     result = runner.invoke(
         cli,
         [
@@ -83,7 +81,6 @@ def test_cli_detect_command_with_the_spec_feature_flag(tmp_path: Path):
     if results_dir.exists():
         results_dir.rmdir()
 
-    runner = CliRunner()
     result = runner.invoke(
         cli,
         [
@@ -110,3 +107,26 @@ def test_cli_detect_command_with_the_spec_feature_flag(tmp_path: Path):
 
         df = pd.read_csv(results_dir / expected_file)
         assert not (df.duration == -1).any()
+
+
+def test_cli_detect_fails_gracefully_on_empty_file(tmp_path: Path):
+    results_dir = tmp_path / "results"
+    target = tmp_path / "audio"
+    target.mkdir()
+
+    # Create an empty file with the .wav extension
+    empty_file = target / "empty.wav"
+    empty_file.touch()
+
+    result = runner.invoke(
+        cli,
+        args=[
+            "detect",
+            str(target),
+            str(results_dir),
+            "0.3",
+            "--spec_features",
+        ],
+    )
+    assert result.exit_code == 0
+    assert f"Error processing file {empty_file}" in result.output
