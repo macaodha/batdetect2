@@ -1,14 +1,13 @@
 """Test bat detect module API."""
 
-from pathlib import Path
-
 import os
 from glob import glob
+from pathlib import Path
 
 import numpy as np
+import soundfile as sf
 import torch
 from torch import nn
-import soundfile as sf
 
 from batdetect2 import api
 
@@ -265,7 +264,6 @@ def test_process_file_with_spec_slices():
     assert "spec_slices" in results
     assert isinstance(results["spec_slices"], list)
     assert len(results["spec_slices"]) == len(detections)
-
 
 
 def test_process_file_with_empty_predictions_does_not_fail(
