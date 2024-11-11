@@ -103,9 +103,6 @@ experiments/*
 .ipynb_checkpoints
 *.ipynb
 
-# Bump2version
-.bumpversion.cfg
-
 # DO Include
 !batdetect2_notebook.ipynb
 !batdetect2/models/*.pth.tar
