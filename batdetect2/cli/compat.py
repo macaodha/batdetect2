@@ -1,5 +1,3 @@
-"""BatDetect2 command line interface."""
-
 import click
 
 from batdetect2 import api
@@ -114,10 +112,9 @@ def detect(
             ):
                 results_path = audio_file.replace(audio_dir, ann_dir)
                 save_results_to_file(results, results_path)
-        except (RuntimeError, ValueError, LookupError) as err:
+        except (RuntimeError, ValueError, LookupError, EOFError) as err:
             error_files.append(audio_file)
-            click.secho(f"Error processing file!: {err}", fg="red")
-            raise err
+            click.secho(f"Error processing file {audio_file}: {err}", fg="red")
 
     click.echo(f"\nResults saved to: {ann_dir}")
 

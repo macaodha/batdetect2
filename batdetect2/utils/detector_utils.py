@@ -8,6 +8,11 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
+try:
+    from numpy.exceptions import AxisError
+except ImportError:
+    from numpy import AxisError  # type: ignore
+
 import batdetect2.detector.compute_features as feats
 import batdetect2.detector.post_process as pp
 import batdetect2.utils.audio_utils as au
@@ -80,6 +85,7 @@ def load_model(
     model_path: str = DEFAULT_MODEL_PATH,
     load_weights: bool = True,
     device: Union[torch.device, str, None] = None,
+    weights_only: bool = True,
 ) -> Tuple[DetectionModel, ModelParameters]:
     """Load model from file.
 
@@ -100,7 +106,11 @@ def load_model(
     if not os.path.isfile(model_path):
         raise FileNotFoundError("Model file not found.")
 
-    net_params = torch.load(model_path, map_location=device)
+    net_params = torch.load(
+        model_path,
+        map_location=device,
+        weights_only=weights_only,
+    )
 
     params = net_params["params"]
 
@@ -242,7 +252,7 @@ def format_single_result(
         )
         class_name = class_names[np.argmax(class_overall)]
         annotations = get_annotations_from_preds(predictions, class_names)
-    except (np.AxisError, ValueError):
+    except (AxisError, ValueError):
         # No detections
         class_overall = np.zeros(len(class_names))
         class_name = "None"
@@ -738,9 +748,7 @@ def process_file(
 
     # Get original sampling rate
     file_samp_rate = librosa.get_samplerate(audio_file)
-    orig_samp_rate = file_samp_rate * float(
-        config.get("time_expansion", 1.0) or 1.0
-    )
+    orig_samp_rate = file_samp_rate * (config.get("time_expansion") or 1)
 
     # load audio file
     sampling_rate, audio_full = au.load_audio(

@@ -1,13 +1,11 @@
 """Types used in the code base."""
 from typing import Any, List, NamedTuple, Optional
 
+
 import numpy as np
 import torch
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
+from typing import TypedDict
 
 
 try:
@@ -15,9 +13,8 @@ try:
 except ImportError:
     from typing_extensions import Protocol
 
-
 try:
-    from typing import NotRequired
+    from typing import NotRequired  # type: ignore
 except ImportError:
     from typing_extensions import NotRequired
 

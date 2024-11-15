@@ -103,13 +103,11 @@ experiments/*
 .ipynb_checkpoints
 *.ipynb
 
-# Bump2version
-.bumpversion.cfg
-
 # DO Include
 !batdetect2_notebook.ipynb
 !batdetect2/models/checkpoints/*.pth.tar
 !tests/data/*.wav
 !notebooks/*.ipynb
+!tests/data/**/*.wav
 notebooks/lightning_logs
 example_data/preprocessed
