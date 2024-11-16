@@ -1,11 +1,8 @@
 from functools import wraps
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 
 import numpy as np
 import xarray as xr
-from soundevent import data
-from soundevent.geometry import compute_bounds
-
 
 Augmentation = Callable[[xr.Dataset], xr.Dataset]
 
@@ -223,8 +220,8 @@ def mask_frequency(
     num_masks = np.random.randint(1, max_num_masks + 1)
 
     freq_coord = train_example.coords["frequency"]
-    min_freq = freq_coord.min()
-    max_freq = freq_coord.max()
+    min_freq = float(freq_coord.min())
+    max_freq = float(freq_coord.max())
 
     for _ in range(num_masks):
         mask_size = np.random.uniform(0, max_freq_mask)

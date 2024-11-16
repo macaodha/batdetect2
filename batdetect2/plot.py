@@ -2,10 +2,10 @@
 
 from typing import List, Optional, Tuple, Union, cast
 
+import matplotlib.ticker as tick
 import numpy as np
 import torch
 from matplotlib import axes, patches
-import matplotlib.ticker as tick
 from matplotlib import pyplot as plt
 
 from batdetect2.detector.parameters import DEFAULT_PROCESSING_CONFIGURATIONS
@@ -100,7 +100,6 @@ def spectrogram(
     ax.yaxis.set_major_formatter(tick.FuncFormatter(y_fmt))
 
     return ax
-
 
 
 def spectrogram_with_detections(
@@ -231,11 +230,11 @@ def detection(
     figsize (Optional[Tuple[int, int]], optional): Figure size. Defaults
         to None. If `ax` is None, this will be used to create a new figure
         of the given size.
-    linewidth (float, optional): Line width of the detection. 
+    linewidth (float, optional): Line width of the detection.
         Defaults to 1.
-    edgecolor (str, optional): Edge color of the detection. 
+    edgecolor (str, optional): Edge color of the detection.
         Defaults to "w", i.e. white.
-    facecolor (str, optional): Face color of the detection. 
+    facecolor (str, optional): Face color of the detection.
         Defaults to "none", i.e. transparent.
     with_name (bool, optional): Whether to plot the name of the
         predicted class next to the detection. Defaults to True.

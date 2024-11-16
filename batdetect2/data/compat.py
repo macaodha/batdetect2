@@ -9,9 +9,9 @@ import numpy as np
 from pydantic import BaseModel, Field
 from soundevent import data
 from soundevent.geometry import compute_bounds
+from soundevent.types import ClassMapper
 
 from batdetect2 import types
-from batdetect2.data.labels import ClassMapper
 
 PathLike = Union[Path, str, os.PathLike]
 

@@ -1,20 +1,29 @@
 """Module for preprocessing data for training."""
 
 import os
-import warnings
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Callable, Optional, Sequence, Union
 
 import xarray as xr
+from pydantic import Field
 from soundevent import data
 from tqdm.auto import tqdm
 
-from batdetect2.data.labels import TARGET_SIGMA, ClassMapper, generate_heatmaps
-from batdetect2.data.preprocessing import (
+from batdetect2.configs import BaseConfig
+from batdetect2.preprocess import (
     PreprocessingConfig,
     preprocess_audio_clip,
+)
+from batdetect2.train.labels import (
+    TARGET_SIGMA,
+    generate_heatmaps,
+)
+from batdetect2.train.targets import (
+    TargetConfig,
+    build_class_mapper,
+    build_sound_event_filter,
 )
 
 PathLike = Union[Path, str, os.PathLike]
@@ -25,25 +34,44 @@ __all__ = [
 ]
 
 
+class MasksConfig(BaseConfig):
+    sigma: float = TARGET_SIGMA
+
+
+class TrainPreprocessingConfig(BaseConfig):
+    preprocessing: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+    target: TargetConfig = Field(default_factory=TargetConfig)
+    masks: MasksConfig = Field(default_factory=MasksConfig)
+
+
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
-    class_mapper: ClassMapper,
-    preprocessing_config: Optional[PreprocessingConfig] = None,
-    target_sigma: float = TARGET_SIGMA,
+    config: Optional[TrainPreprocessingConfig] = None,
 ) -> xr.Dataset:
     """Generate a training example."""
-    preprocessing_config = preprocessing_config or PreprocessingConfig()
+    config = config or TrainPreprocessingConfig()
 
     spectrogram = preprocess_audio_clip(
         clip_annotation.clip,
-        config=preprocessing_config,
+        config=config.preprocessing,
     )
 
+    filter_fn = build_sound_event_filter(
+        include=config.target.include,
+        exclude=config.target.exclude,
+    )
+    selected_events = [
+        event for event in clip_annotation.sound_events if filter_fn(event)
+    ]
+
+    class_mapper = build_class_mapper(config.target.classes)
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
-        clip_annotation,
+        selected_events,
         spectrogram,
         class_mapper,
-        target_sigma=target_sigma,
+        target_sigma=config.masks.sigma,
     )
 
     dataset = xr.Dataset(
@@ -57,8 +85,7 @@ def generate_train_example(
 
     return dataset.assign_attrs(
         title=f"Training example for {clip_annotation.uuid}",
-        preprocessing_configuration=preprocessing_config.model_dump_json(),
-        target_sigma=target_sigma,
+        config=config.model_dump_json(),
         clip_annotation=clip_annotation.model_dump_json(),
     )
 
@@ -78,77 +105,22 @@ def save_to_file(
     )
 
 
-def load_config(path: PathLike, **kwargs) -> PreprocessingConfig:
-    """Load configuration from file."""
-
-    path = Path(path)
-
-    if not path.is_file():
-        warnings.warn(
-            f"Config file not found: {path}. Using default config.",
-            stacklevel=1,
-        )
-        return PreprocessingConfig(**kwargs)
-
-    try:
-        return PreprocessingConfig.model_validate_json(path.read_text())
-    except ValueError as e:
-        warnings.warn(
-            f"Failed to load config file: {e}. Using default config.",
-            stacklevel=1,
-        )
-        return PreprocessingConfig(**kwargs)
-
-
 def _get_filename(clip_annotation: data.ClipAnnotation) -> str:
     return f"{clip_annotation.uuid}.nc"
-
-
-def preprocess_single_annotation(
-    clip_annotation: data.ClipAnnotation,
-    output_dir: PathLike,
-    config: PreprocessingConfig,
-    class_mapper: ClassMapper,
-    filename_fn: FilenameFn = _get_filename,
-    replace: bool = False,
-    target_sigma: float = TARGET_SIGMA,
-) -> None:
-    output_dir = Path(output_dir)
-
-    filename = filename_fn(clip_annotation)
-    path = output_dir / filename
-
-    if path.is_file() and not replace:
-        return
-
-    if path.is_file() and replace:
-        path.unlink()
-
-    sample = generate_train_example(
-        clip_annotation,
-        class_mapper,
-        preprocessing_config=config,
-        target_sigma=target_sigma,
-    )
-
-    save_to_file(sample, path)
 
 
 def preprocess_annotations(
     clip_annotations: Sequence[data.ClipAnnotation],
     output_dir: PathLike,
-    class_mapper: ClassMapper,
-    target_sigma: float = TARGET_SIGMA,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
-    config: Optional[PreprocessingConfig] = None,
+    config: Optional[TrainPreprocessingConfig] = None,
     max_workers: Optional[int] = None,
 ) -> None:
     """Preprocess annotations and save to disk."""
     output_dir = Path(output_dir)
 
-    if config is None:
-        config = PreprocessingConfig()
+    config = config or TrainPreprocessingConfig()
 
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True)
@@ -161,13 +133,33 @@ def preprocess_annotations(
                         preprocess_single_annotation,
                         output_dir=output_dir,
                         config=config,
-                        class_mapper=class_mapper,
                         filename_fn=filename_fn,
                         replace=replace,
-                        target_sigma=target_sigma,
                     ),
                     clip_annotations,
                 ),
                 total=len(clip_annotations),
             )
         )
+
+
+def preprocess_single_annotation(
+    clip_annotation: data.ClipAnnotation,
+    output_dir: PathLike,
+    config: TrainPreprocessingConfig,
+    filename_fn: FilenameFn = _get_filename,
+    replace: bool = False,
+) -> None:
+    output_dir = Path(output_dir)
+
+    filename = filename_fn(clip_annotation)
+    path = output_dir / filename
+
+    if path.is_file() and not replace:
+        return
+
+    if path.is_file() and replace:
+        path.unlink()
+
+    sample = generate_train_example(clip_annotation, config=config)
+    save_to_file(sample, path)

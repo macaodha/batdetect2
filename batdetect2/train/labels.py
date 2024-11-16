@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Sequence, Tuple
 
 import numpy as np
 import xarray as xr
@@ -17,7 +17,7 @@ TARGET_SIGMA = 3.0
 
 
 def generate_heatmaps(
-    clip_annotation: data.ClipAnnotation,
+    sound_events: Sequence[data.SoundEventAnnotation],
     spec: xr.DataArray,
     class_mapper: ClassMapper,
     target_sigma: float = TARGET_SIGMA,
@@ -52,9 +52,8 @@ def generate_heatmaps(
         },
     )
 
-    for sound_event_annotation in clip_annotation.sound_events:
+    for sound_event_annotation in sound_events:
         geom = sound_event_annotation.sound_event.geometry
-
         if geom is None:
             continue
 

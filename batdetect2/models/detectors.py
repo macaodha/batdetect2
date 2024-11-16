@@ -9,7 +9,7 @@ from torch import nn, optim
 from batdetect2.data.labels import ClassMapper
 from batdetect2.data.preprocessing import (
     PreprocessingConfig,
-    preprocess_audio_clip,
+    preprocess,
 )
 from batdetect2.models.feature_extractors import Net2DFast
 from batdetect2.models.post_process import (
@@ -79,7 +79,7 @@ class DetectorModel(L.LightningModule):
         )
 
     def compute_spectrogram(self, clip: data.Clip) -> xr.DataArray:
-        return preprocess_audio_clip(
+        return preprocess(
             clip,
             config=self.preprocessing_config,
         )

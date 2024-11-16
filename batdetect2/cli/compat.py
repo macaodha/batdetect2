@@ -1,11 +1,10 @@
 import click
 
 from batdetect2 import api
+from batdetect2.cli.base import cli
 from batdetect2.detector.parameters import DEFAULT_MODEL_PATH
 from batdetect2.types import ProcessingConfiguration
 from batdetect2.utils.detector_utils import save_results_to_file
-
-from batdetect2.cli.base import cli
 
 
 @cli.command()
