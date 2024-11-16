@@ -195,18 +195,29 @@ def annotation_to_sound_event(
         uuid=uuid.uuid5(NAMESPACE, f"{sound_event.uuid}_annotation"),
         sound_event=sound_event,
         tags=[
-            data.Tag(key=label_key, value=annotation.label),
-            data.Tag(key=event_key, value=annotation.event),
-            data.Tag(key=individual_key, value=str(annotation.individual)),
+            data.Tag(
+                term=data.term_from_key(label_key),
+                value=annotation.label,
+            ),
+            data.Tag(
+                term=data.term_from_key(event_key),
+                value=annotation.event,
+            ),
+            data.Tag(
+                term=data.term_from_key(individual_key),
+                value=str(annotation.individual),
+            ),
         ],
     )
 
 
 def file_annotation_to_clip(
     file_annotation: FileAnnotation,
-    audio_dir: PathLike = Path.cwd(),
+    audio_dir: Optional[PathLike] = None,
 ) -> data.Clip:
     """Convert file annotation to recording."""
+    audio_dir = audio_dir or Path.cwd()
+
     full_path = Path(audio_dir) / file_annotation.id
 
     if not full_path.exists():
@@ -241,7 +252,11 @@ def file_annotation_to_clip_annotation(
         uuid=uuid.uuid5(NAMESPACE, f"{file_annotation.id}_clip_annotation"),
         clip=clip,
         notes=notes,
-        tags=[data.Tag(key=label_key, value=file_annotation.label)],
+        tags=[
+            data.Tag(
+                term=data.term_from_key(label_key), value=file_annotation.label
+            )
+        ],
         sound_events=[
             annotation_to_sound_event(
                 annotation,
@@ -286,9 +301,11 @@ def list_file_annotations(path: PathLike) -> List[Path]:
 def load_annotation_project(
     path: PathLike,
     name: Optional[str] = None,
-    audio_dir: PathLike = Path.cwd(),
+    audio_dir: Optional[PathLike] = None,
 ) -> data.AnnotationProject:
     """Convert annotations to annotation project."""
+    audio_dir = audio_dir or Path.cwd()
+
     paths = list_file_annotations(path)
 
     if name is None:

@@ -94,7 +94,7 @@ def test_computed_spectrograms_are_actually_divisible_by_the_spec_divide_factor(
     params = parameters.DEFAULT_SPECTROGRAM_PARAMETERS
     length = int(duration * samplerate)
     audio = np.random.rand(length)
-    _, spectrogram, _ = detector_utils.compute_spectrogram(
+    _, spectrogram = detector_utils.compute_spectrogram(
         audio,
         samplerate,
         params,

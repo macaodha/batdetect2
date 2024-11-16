@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 import xarray as xr
 from scipy.ndimage import gaussian_filter
-from soundevent import data, geometry, arrays
+from soundevent import arrays, data, geometry
 from soundevent.geometry.operations import Positions
 from soundevent.types import ClassMapper
 
@@ -22,6 +22,8 @@ def generate_heatmaps(
     class_mapper: ClassMapper,
     target_sigma: float = TARGET_SIGMA,
     position: Positions = "bottom-left",
+    time_scale: float = 1.0,
+    frequency_scale: float = 1.0,
     dtype=np.float32,
 ) -> Tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
     shape = dict(zip(spec.dims, spec.shape))
@@ -30,13 +32,6 @@ def generate_heatmaps(
         raise ValueError(
             "Spectrogram must have time and frequency dimensions."
         )
-
-    time_duration = arrays.get_dim_width(spec, dim="time")
-    freq_bandwidth = arrays.get_dim_width(spec, dim="frequency")
-
-    # Compute the size factors
-    time_scale = 1 / time_duration
-    frequency_scale = 1 / freq_bandwidth
 
     # Initialize heatmaps
     detection_heatmap = xr.zeros_like(spec, dtype=dtype)
@@ -92,7 +87,7 @@ def generate_heatmaps(
         )
 
         # Get the class name of the sound event
-        class_name = class_mapper.transform(sound_event_annotation)
+        class_name = class_mapper.encode(sound_event_annotation)
 
         if class_name is None:
             # If the label is None skip the sound event

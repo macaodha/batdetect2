@@ -3,18 +3,18 @@
 import os
 import warnings
 from functools import partial
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Callable, Optional, Sequence, Union
-from tqdm.auto import tqdm
-from multiprocessing import Pool
 
 import xarray as xr
 from soundevent import data
+from tqdm.auto import tqdm
 
 from batdetect2.data.labels import TARGET_SIGMA, ClassMapper, generate_heatmaps
 from batdetect2.data.preprocessing import (
-    preprocess_audio_clip,
     PreprocessingConfig,
+    preprocess_audio_clip,
 )
 
 PathLike = Union[Path, str, os.PathLike]
@@ -25,14 +25,15 @@ __all__ = [
 ]
 
 
-
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
     class_mapper: ClassMapper,
-    preprocessing_config: PreprocessingConfig = PreprocessingConfig(),
+    preprocessing_config: Optional[PreprocessingConfig] = None,
     target_sigma: float = TARGET_SIGMA,
 ) -> xr.Dataset:
     """Generate a training example."""
+    preprocessing_config = preprocessing_config or PreprocessingConfig()
+
     spectrogram = preprocess_audio_clip(
         clip_annotation.clip,
         config=preprocessing_config,
@@ -83,14 +84,18 @@ def load_config(path: PathLike, **kwargs) -> PreprocessingConfig:
     path = Path(path)
 
     if not path.is_file():
-        warnings.warn(f"Config file not found: {path}. Using default config.")
+        warnings.warn(
+            f"Config file not found: {path}. Using default config.",
+            stacklevel=1,
+        )
         return PreprocessingConfig(**kwargs)
 
     try:
         return PreprocessingConfig.model_validate_json(path.read_text())
     except ValueError as e:
         warnings.warn(
-            f"Failed to load config file: {e}. Using default config."
+            f"Failed to load config file: {e}. Using default config.",
+            stacklevel=1,
         )
         return PreprocessingConfig(**kwargs)
 

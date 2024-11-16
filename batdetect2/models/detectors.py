@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Optional, Type
 
 import pytorch_lightning as L
 import torch
@@ -6,11 +6,11 @@ import xarray as xr
 from soundevent import data
 from torch import nn, optim
 
-from batdetect2.data.preprocessing import (
-    preprocess_audio_clip,
-    PreprocessingConfig,
-)
 from batdetect2.data.labels import ClassMapper
+from batdetect2.data.preprocessing import (
+    PreprocessingConfig,
+    preprocess_audio_clip,
+)
 from batdetect2.models.feature_extractors import Net2DFast
 from batdetect2.models.post_process import (
     PostprocessConfig,
@@ -29,10 +29,13 @@ class DetectorModel(L.LightningModule):
         learning_rate: float = 1e-3,
         input_height: int = 128,
         num_features: int = 32,
-        preprocessing_config: PreprocessingConfig = PreprocessingConfig(),
-        postprocessing_config: PostprocessConfig = PostprocessConfig(),
+        preprocessing_config: Optional[PreprocessingConfig] = None,
+        postprocessing_config: Optional[PostprocessConfig] = None,
     ):
         super().__init__()
+
+        preprocessing_config = preprocessing_config or PreprocessingConfig()
+        postprocessing_config = postprocessing_config or PostprocessConfig()
 
         self.save_hyperparameters()
 

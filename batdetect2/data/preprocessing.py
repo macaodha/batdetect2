@@ -1,7 +1,7 @@
 """Module containing functions for preprocessing audio clips."""
 
-from typing import Optional, Union
 from pathlib import Path
+from typing import Literal, Optional, Union
 
 import librosa
 import librosa.core.spectrum
@@ -10,7 +10,7 @@ import xarray as xr
 from numpy.typing import DTypeLike
 from pydantic import BaseModel, Field
 from scipy.signal import resample_poly
-from soundevent import audio, data, arrays
+from soundevent import arrays, audio, data
 from soundevent.arrays import operations as ops
 
 __all__ = [
@@ -34,32 +34,56 @@ DENOISE_SPEC_AVG = True
 MAX_SCALE_SPEC = False
 
 
+class ResampleConfig(BaseModel):
+    samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
+    mode: str = "poly"
+
+
+class AudioConfig(BaseModel):
+    resample: Optional[ResampleConfig] = Field(default_factory=ResampleConfig)
+    scale: bool = Field(default=SCALE_RAW_AUDIO)
+    center: bool = True
+    duration: Optional[float] = DEFAULT_DURATION
+
+
+class FFTConfig(BaseModel):
+    window_duration: float = Field(default=FFT_WIN_LENGTH_S, gt=0)
+    window_overlap: float = Field(default=FFT_OVERLAP, ge=0, lt=1)
+    window_fn: str = "hann"
+
+
+class FrequencyConfig(BaseModel):
+    max_freq: int = Field(default=MAX_FREQ_HZ, gt=0)
+    min_freq: int = Field(default=MIN_FREQ_HZ, gt=0)
+
+
+class PcenConfig(BaseModel):
+    time_constant: float = 0.4
+    hop_length: int = 512
+    gain: float = 0.98
+    bias: float = 2
+    power: float = 0.5
+
+
+class SpecSizeConfig(BaseModel):
+    height: int = SPEC_HEIGHT
+    time_period: float = SPEC_TIME_PERIOD
+
+
+class SpectrogramConfig(BaseModel):
+    fft: FFTConfig = Field(default_factory=FFTConfig)
+    frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
+    scale: Union[Literal["log"], None, PcenConfig] = "log"
+    denoise: bool = True
+    resize: Optional[SpecSizeConfig] = Field(default_factory=SpecSizeConfig)
+    max_scale: bool = MAX_SCALE_SPEC
+
+
 class PreprocessingConfig(BaseModel):
     """Configuration for preprocessing data."""
 
-    target_samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
-
-    scale_audio: bool = Field(default=SCALE_RAW_AUDIO)
-
-    fft_win_length: float = Field(default=FFT_WIN_LENGTH_S, gt=0)
-
-    fft_overlap: float = Field(default=FFT_OVERLAP, ge=0, lt=1)
-
-    max_freq: int = Field(default=MAX_FREQ_HZ, gt=0)
-
-    min_freq: int = Field(default=MIN_FREQ_HZ, gt=0)
-
-    spec_scale: str = Field(default=SPEC_SCALE)
-
-    denoise_spec_avg: bool = DENOISE_SPEC_AVG
-
-    max_scale_spec: bool = MAX_SCALE_SPEC
-
-    duration: Optional[float] = DEFAULT_DURATION
-
-    spec_height: int = SPEC_HEIGHT
-
-    spec_time_period: float = SPEC_TIME_PERIOD
+    audio: AudioConfig = Field(default_factory=AudioConfig)
+    spectrogram: SpectrogramConfig = Field(default_factory=SpectrogramConfig)
 
     @classmethod
     def from_file(
@@ -104,7 +128,7 @@ class PreprocessingConfig(BaseModel):
 
 def preprocess_audio_clip(
     clip: data.Clip,
-    config: PreprocessingConfig = PreprocessingConfig(),
+    config: Optional[PreprocessingConfig] = None,
 ) -> xr.DataArray:
     """Preprocesses audio clip to generate spectrogram.
 
@@ -121,81 +145,117 @@ def preprocess_audio_clip(
         Preprocessed spectrogram.
 
     """
-    wav = load_clip_audio(
-        clip,
-        target_sampling_rate=config.target_samplerate,
-        scale=config.scale_audio,
-    )
-
-    spec = compute_spectrogram(
-        wav,
-        fft_win_length=config.fft_win_length,
-        fft_overlap=config.fft_overlap,
-        max_freq=config.max_freq,
-        min_freq=config.min_freq,
-        spec_scale=config.spec_scale,
-        denoise_spec_avg=config.denoise_spec_avg,
-        max_scale_spec=config.max_scale_spec,
-    )
-
-    if config.duration is not None:
-        spec = adjust_spec_duration(clip, spec, config.duration)
-
-    duration = arrays.get_dim_width(spec, dim="time")
-    return ops.resize(
-        spec,
-        time=int(np.ceil(duration / config.spec_time_period)),
-        frequency=config.spec_height,
-        dtype=np.float32,
-    )
-
-
-def adjust_spec_duration(
-    clip: data.Clip,
-    spec: xr.DataArray,
-    duration: float,
-) -> xr.DataArray:
-    current_duration = clip.end_time - clip.start_time
-
-    if current_duration == duration:
-        return spec
-
-    if current_duration > duration:
-        return arrays.crop_dim(
-            spec,
-            dim="time",
-            start=clip.start_time,
-            stop=clip.start_time + duration,
-        )
-
-    return arrays.extend_dim(
-        spec,
-        dim="time",
-        start=clip.start_time,
-        stop=clip.start_time + duration,
-    )
+    config = config or PreprocessingConfig()
+    wav = load_clip_audio(clip, config=config.audio)
+    spec = compute_spectrogram(wav, config=config.spectrogram)
+    return spec
 
 
 def load_clip_audio(
     clip: data.Clip,
-    target_sampling_rate: int = TARGET_SAMPLERATE_HZ,
-    scale: bool = SCALE_RAW_AUDIO,
+    config: Optional[AudioConfig] = None,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
+    config = config or AudioConfig()
+
     wav = audio.load_clip(clip).sel(channel=0).astype(dtype)
 
-    wav = resample_audio(wav, target_sampling_rate, dtype=dtype)
+    if config.duration is not None:
+        wav = adjust_audio_duration(wav, duration=config.duration)
 
-    if scale:
+    if config.resample:
+        wav = resample_audio(
+            wav,
+            samplerate=config.resample.samplerate,
+            dtype=dtype,
+        )
+
+    if config.center:
         wav = ops.center(wav)
+
+    if config.scale:
         wav = ops.scale(wav, 1 / (10e-6 + np.max(np.abs(wav))))
 
     return wav.astype(dtype)
 
 
+def compute_spectrogram(
+    wav: xr.DataArray,
+    config: Optional[SpectrogramConfig] = None,
+    dtype: DTypeLike = np.float32,
+) -> xr.DataArray:
+    config = config or SpectrogramConfig()
+
+    spec = stft(
+        wav,
+        window_duration=config.fft.window_duration,
+        window_overlap=config.fft.window_overlap,
+        window_fn=config.fft.window_fn,
+        dtype=dtype,
+    )
+
+    spec = crop_spectrogram_frequencies(
+        spec,
+        min_freq=config.frequencies.min_freq,
+        max_freq=config.frequencies.max_freq,
+    )
+
+    spec = scale_spectrogram(spec, scale=config.scale)
+
+    if config.denoise:
+        spec = denoise_spectrogram(spec)
+
+    if config.resize:
+        spec = resize_spectrogram(spec, config=config.resize)
+
+    if config.max_scale:
+        spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
+
+    return spec.astype(dtype)
+
+
+def crop_spectrogram_frequencies(
+    spec: xr.DataArray,
+    min_freq: int = MIN_FREQ_HZ,
+    max_freq: int = MAX_FREQ_HZ,
+) -> xr.DataArray:
+    return arrays.crop_dim(
+        spec,
+        dim="frequency",
+        start=min_freq,
+        stop=max_freq,
+    ).astype(spec.dtype)
+
+
+def adjust_audio_duration(
+    wave: xr.DataArray,
+    duration: float,
+) -> xr.DataArray:
+    start_time, end_time = arrays.get_dim_range(wave, dim="time")
+    current_duration = end_time - start_time
+
+    if current_duration == duration:
+        return wave
+
+    if current_duration > duration:
+        return arrays.crop_dim(
+            wave,
+            dim="time",
+            start=start_time,
+            stop=start_time + duration,
+        )
+
+    return arrays.extend_dim(
+        wave,
+        dim="time",
+        start=start_time,
+        stop=start_time + duration,
+    )
+
+
 def resample_audio(
     wav: xr.DataArray,
-    target_samplerate: int = TARGET_SAMPLERATE_HZ,
+    samplerate: int = TARGET_SAMPLERATE_HZ,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     if "time" not in wav.dims:
@@ -207,13 +267,13 @@ def resample_audio(
     step = arrays.get_dim_step(wav, dim="time")
     original_samplerate = int(1 / step)
 
-    if original_samplerate == target_samplerate:
+    if original_samplerate == samplerate:
         return wav.astype(dtype)
 
-    gcd = np.gcd(original_samplerate, target_samplerate)
+    gcd = np.gcd(original_samplerate, samplerate)
     resampled = resample_poly(
         wav.values,
-        target_samplerate // gcd,
+        samplerate // gcd,
         original_samplerate // gcd,
         axis=time_axis,
     )
@@ -225,7 +285,6 @@ def resample_audio(
         endpoint=False,
         dtype=dtype,
     )
-
     return xr.DataArray(
         data=resampled.astype(dtype),
         dims=wav.dims,
@@ -233,70 +292,35 @@ def resample_audio(
             **wav.coords,
             "time": arrays.create_time_dim_from_array(
                 resampled_times,
-                samplerate=target_samplerate,
+                samplerate=samplerate,
             ),
         },
         attrs=wav.attrs,
     )
 
 
-def compute_spectrogram(
-    wav: xr.DataArray,
-    fft_win_length: float = FFT_WIN_LENGTH_S,
-    fft_overlap: float = FFT_OVERLAP,
-    max_freq: int = MAX_FREQ_HZ,
-    min_freq: int = MIN_FREQ_HZ,
-    spec_scale: str = SPEC_SCALE,
-    denoise_spec_avg: bool = True,
-    max_scale_spec: bool = False,
-    dtype: DTypeLike = np.float32,
-) -> xr.DataArray:
-    spec = gen_mag_spectrogram(
-        wav,
-        window_len=fft_win_length,
-        overlap_perc=fft_overlap,
-        dtype=dtype,
-    )
-
-    spec = arrays.crop_dim(
-        spec,
-        dim="frequency",
-        start=min_freq,
-        stop=max_freq,
-    ).astype(dtype)
-
-    spec = scale_spectrogram(spec, scale=spec_scale)
-
-    if denoise_spec_avg:
-        spec = denoise_spectrogram(spec)
-
-    if max_scale_spec:
-        spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
-
-    return spec.astype(dtype)
-
-
-def gen_mag_spectrogram(
+def stft(
     wave: xr.DataArray,
-    window_len: float,
-    overlap_perc: float,
+    window_duration: float,
+    window_overlap: float,
+    window_fn: str = "hann",
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     start_time, end_time = arrays.get_dim_range(wave, dim="time")
     step = arrays.get_dim_step(wave, dim="time")
     sampling_rate = 1 / step
 
-    hop_len = window_len * (1 - overlap_perc)
-    nfft = int(window_len * sampling_rate)
-    noverlap = int(overlap_perc * nfft)
+    hop_len = window_duration * (1 - window_overlap)
+    nfft = int(window_duration * sampling_rate)
+    noverlap = int(window_overlap * nfft)
 
-    # compute spec
     spec, _ = librosa.core.spectrum._spectrogram(
-        y=wave.data,
+        y=wave.data.astype(dtype),
         power=1,
         n_fft=nfft,
         hop_length=nfft - noverlap,
         center=False,
+        window=window_fn,
     )
 
     return xr.DataArray(
@@ -316,7 +340,7 @@ def gen_mag_spectrogram(
             "time": arrays.create_time_dim_from_array(
                 np.linspace(
                     start_time,
-                    end_time - (window_len - hop_len),
+                    end_time - (window_duration - hop_len),
                     spec.shape[1],
                     endpoint=False,
                     dtype=dtype,
@@ -333,9 +357,7 @@ def gen_mag_spectrogram(
     )
 
 
-def denoise_spectrogram(
-    spec: xr.DataArray,
-) -> xr.DataArray:
+def denoise_spectrogram(spec: xr.DataArray) -> xr.DataArray:
     return xr.DataArray(
         data=(spec - spec.mean("time")).clip(0),
         dims=spec.dims,
@@ -346,35 +368,53 @@ def denoise_spectrogram(
 
 def scale_spectrogram(
     spec: xr.DataArray,
-    scale: str = SPEC_SCALE,
+    scale: Union[Literal["log"], None, PcenConfig],
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
-    samplerate = spec.attrs["original_samplerate"]
-
-    if scale == "pcen":
-        smoothing_constant = get_pcen_smoothing_constant(samplerate / 10)
-        return audio.pcen(
-            spec * (2**31),
-            smooth=smoothing_constant,
-        ).astype(dtype)
-
     if scale == "log":
-        return log_scale(spec, dtype=dtype)
+        return scale_log(spec, dtype=dtype)
+
+    if isinstance(scale, PcenConfig):
+        return scale_pcen(
+            spec,
+            time_constant=scale.time_constant,
+            hop_length=scale.hop_length,
+            gain=scale.gain,
+            power=scale.power,
+            bias=scale.bias,
+        )
 
     return spec
 
 
-def log_scale(
+def scale_pcen(
+    spec: xr.DataArray,
+    time_constant: float = 0.4,
+    hop_length: int = 512,
+    gain: float = 0.98,
+    bias: float = 2,
+    power: float = 0.5,
+) -> xr.DataArray:
+    samplerate = spec.attrs["original_samplerate"]
+    # NOTE: Not sure why the 10 is there
+    t_frames = time_constant * samplerate / (float(hop_length) * 10)
+    smoothing_constant = (np.sqrt(1 + 4 * t_frames**2) - 1) / (2 * t_frames**2)
+    return audio.pcen(
+        spec * (2**31),
+        smooth=smoothing_constant,
+        gain=gain,
+        bias=bias,
+        power=power,
+    ).astype(spec.dtype)
+
+
+def scale_log(
     spec: xr.DataArray,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     samplerate = spec.attrs["original_samplerate"]
     nfft = spec.attrs["nfft"]
-    log_scaling = (
-        2.0
-        * (1.0 / samplerate)
-        * (1.0 / (np.abs(np.hanning(nfft)) ** 2).sum())
-    )
+    log_scaling = 2 / (samplerate * (np.abs(np.hanning(nfft)) ** 2).sum())
     return xr.DataArray(
         data=np.log1p(log_scaling * spec).astype(dtype),
         dims=spec.dims,
@@ -383,10 +423,14 @@ def log_scale(
     )
 
 
-def get_pcen_smoothing_constant(
-    sr: int,
-    time_constant: float = 0.4,
-    hop_length: int = 512,
-) -> float:
-    t_frames = time_constant * sr / float(hop_length)
-    return (np.sqrt(1 + 4 * t_frames**2) - 1) / (2 * t_frames**2)
+def resize_spectrogram(
+    spec: xr.DataArray,
+    config: SpecSizeConfig,
+) -> xr.DataArray:
+    duration = arrays.get_dim_width(spec, dim="time")
+    return ops.resize(
+        spec,
+        time=int(np.ceil(duration / config.time_period)),
+        frequency=config.height,
+        dtype=np.float32,
+    )

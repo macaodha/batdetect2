@@ -1,10 +1,10 @@
 """Module for postprocessing model outputs."""
 
 from typing import Callable, List, Tuple, Union
-from pydantic import BaseModel, Field
 
 import numpy as np
 import torch
+from pydantic import BaseModel, Field
 from soundevent import data
 from torch import nn
 
@@ -207,7 +207,7 @@ def compute_sound_events_from_outputs(
             ),
             features=[
                 data.Feature(
-                    name=f"batdetect2_{i}",
+                    term=data.term_from_key(f"batdetect2_{i}"),
                     value=value.item(),
                 )
                 for i, value in enumerate(feature)

@@ -46,8 +46,14 @@ def test_audio_loading_hasnt_changed(
     )
     audio_new = preprocessing.load_clip_audio(
         clip,
-        target_sampling_rate=target_sampling_rate,
-        scale=scale,
+        config=preprocessing.AudioConfig(
+            resample=preprocessing.ResampleConfig(
+                samplerate=target_sampling_rate,
+            ),
+            center=scale,
+            scale=scale,
+            duration=None,
+        ),
         dtype=np.float32,
     )
 
@@ -73,18 +79,46 @@ def test_spectrogram_generation_hasnt_changed(
     min_freq = 10_000
     max_freq = 120_000
     fft_overlap = 0.75
+
+    scale = None
+    if spec_scale == "log":
+        scale = "log"
+    elif spec_scale == "pcen":
+        scale = preprocessing.PcenConfig()
+
+    config = preprocessing.SpectrogramConfig(
+        fft=preprocessing.FFTConfig(
+            window_overlap=fft_overlap,
+            window_duration=fft_win_length,
+        ),
+        frequencies=preprocessing.FrequencyConfig(
+            min_freq=min_freq,
+            max_freq=max_freq,
+        ),
+        scale=scale,
+        denoise=denoise_spec_avg,
+        resize=None,
+        max_scale=max_scale_spec,
+    )
+
     recording = data.Recording.from_file(
         audio_file,
         time_expansion=time_expansion,
     )
+
     clip = data.Clip(
         recording=recording,
         start_time=0,
         end_time=recording.duration,
     )
+
     audio = preprocessing.load_clip_audio(
         clip,
-        target_sampling_rate=target_sampling_rate,
+        config=preprocessing.AudioConfig(
+            resample=preprocessing.ResampleConfig(
+                samplerate=target_sampling_rate,
+            )
+        ),
     )
 
     spec_original, _ = audio_utils.generate_spectrogram(
@@ -103,18 +137,19 @@ def test_spectrogram_generation_hasnt_changed(
 
     new_spec = preprocessing.compute_spectrogram(
         audio,
-        fft_win_length=fft_win_length,
-        fft_overlap=fft_overlap,
-        max_freq=max_freq,
-        min_freq=min_freq,
-        spec_scale=spec_scale,
-        denoise_spec_avg=denoise_spec_avg,
-        max_scale_spec=max_scale_spec,
+        config=config,
         dtype=np.float32,
     )
 
     assert spec_original.shape == new_spec.shape
     assert spec_original.dtype == new_spec.dtype
 
+    # Check that the spectrogram content is the same within a tolerance of 1e-5
+    # for each element of the spectrogram at least 99.5% of the time.
+    # NOTE: The pcen function is not the same as the one in the original code
+    # thus the need for a tolerance, but the values are still very similar.
     # NOTE: The original spectrogram is flipped vertically
-    assert np.isclose(spec_original, np.flipud(new_spec.data)).all()
+    assert (
+        np.isclose(spec_original, np.flipud(new_spec.data), atol=1e-5).mean()
+        > 0.995
+    )

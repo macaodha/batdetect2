@@ -236,7 +236,7 @@ requires-dist = [
     { name = "pytorch-lightning", specifier = ">=2.2.2" },
     { name = "scikit-learn", specifier = ">=1.2.2" },
     { name = "scipy", specifier = ">=1.10.1" },
-    { name = "soundevent", extras = ["audio", "geometry", "plot"], specifier = ">=2.0.1" },
+    { name = "soundevent", extras = ["audio", "geometry", "plot"], specifier = ">=2.2" },
     { name = "tensorboard", specifier = ">=2.16.2" },
     { name = "torch", specifier = ">=1.13.1,<2.5.0" },
     { name = "torchaudio", specifier = ">=1.13.1,<2.5.0" },

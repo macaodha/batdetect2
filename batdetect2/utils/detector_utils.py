@@ -409,7 +409,7 @@ def save_results_to_file(results, op_path: str) -> None:
 
 def compute_spectrogram(
     audio: np.ndarray,
-    sampling_rate: float,
+    sampling_rate: int,
     params: SpectrogramParameters,
     device: torch.device,
 ) -> Tuple[float, torch.Tensor]:
@@ -627,7 +627,7 @@ def process_spectrogram(
 
 def _process_audio_array(
     audio: np.ndarray,
-    sampling_rate: float,
+    sampling_rate: int,
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,

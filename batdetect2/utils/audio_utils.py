@@ -90,7 +90,7 @@ def generate_spectrogram(
                     np.abs(
                         np.hanning(
                             int(params["fft_win_length"] * sampling_rate)
-                        )
+                        ).astype(np.float32)
                     )
                     ** 2
                 ).sum()
