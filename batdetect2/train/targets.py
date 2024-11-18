@@ -13,9 +13,9 @@ class TargetConfig(BaseConfig):
     """Configuration for target generation."""
 
     classes: List[TagInfo] = Field(default_factory=list)
+    generic_class: Optional[TagInfo] = None
 
     include: Optional[List[TagInfo]] = None
-
     exclude: Optional[List[TagInfo]] = None
 
 
@@ -73,7 +73,7 @@ class GenericMapper(ClassMapper):
             raise ValueError("Number of targets and class labels must match.")
 
         self.targets = set(classes)
-        self.class_labels = labels
+        self.class_labels = list(dict.fromkeys(labels))
 
         self._mapping = {tag: label for tag, label in zip(classes, labels)}
         self._inverse_mapping = {

@@ -27,6 +27,28 @@ class AudioConfig(BaseConfig):
     duration: Optional[float] = DEFAULT_DURATION
 
 
+def load_file_audio(
+    path: data.PathLike,
+    config: Optional[AudioConfig] = None,
+    dtype: DTypeLike = np.float32,
+) -> xr.DataArray:
+    recording = data.Recording.from_file(path)
+    return load_recording_audio(recording, config=config, dtype=dtype)
+
+
+def load_recording_audio(
+    recording: data.Recording,
+    config: Optional[AudioConfig] = None,
+    dtype: DTypeLike = np.float32,
+) -> xr.DataArray:
+    clip = data.Clip(
+        recording=recording,
+        start_time=0,
+        end_time=recording.duration,
+    )
+    return load_clip_audio(clip, config=config, dtype=dtype)
+
+
 def load_clip_audio(
     clip: data.Clip,
     config: Optional[AudioConfig] = None,

@@ -236,7 +236,7 @@ requires-dist = [
     { name = "pytorch-lightning", specifier = ">=2.2.2" },
     { name = "scikit-learn", specifier = ">=1.2.2" },
     { name = "scipy", specifier = ">=1.10.1" },
-    { name = "soundevent", extras = ["audio", "geometry", "plot"], specifier = ">=2.2" },
+    { name = "soundevent", extras = ["audio", "geometry", "plot"], specifier = ">=2.3" },
     { name = "tensorboard", specifier = ">=2.16.2" },
     { name = "torch", specifier = ">=1.13.1,<2.5.0" },
     { name = "torchaudio", specifier = ">=1.13.1,<2.5.0" },
@@ -2679,15 +2679,15 @@ wheels = [
 
 [[package]]
 name = "soundevent"
-version = "2.2.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "email-validator" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/f9/77d723df4d8d3a390d32c07325a08bfc669d5fb55e88b98181b5793e7333/soundevent-2.2.0.tar.gz", hash = "sha256:a87a97c8e4bfdadec4b6edc128470919ef9240a344cf924d2ac21f8c6b50acf1", size = 8715229 }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/51/83093cabe9ada781a0f7a78f82cc04162d005755b2f0ca3fdcb4ecd47a01/soundevent-2.3.0.tar.gz", hash = "sha256:b75d7674578a52bf196619f8b4b3d9170f2ca321d165ceb45916579a549c3e76", size = 8716539 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/09/d8/ce6e2830d47fc3d24db264b94384fa7cdcb8069fd7547d55b7a83857e730/soundevent-2.2.0-py3-none-any.whl", hash = "sha256:c40913c15fc697a82a02df5f62d18ad3b77bfae80a9a5d54c47bc1377d3b4d7c", size = 144188 },
+    { url = "https://files.pythonhosted.org/packages/ee/67/4c2d881f9b4a0b453dbee91e119e1e48df0fc92de2cc3062fcd8ad0a7e6b/soundevent-2.3.0-py3-none-any.whl", hash = "sha256:f7c74b1d73a347ebe843187c93130dc8af3214add95e6bc485f64944bea0d690", size = 145513 },
 ]
 
 [package.optional-dependencies]

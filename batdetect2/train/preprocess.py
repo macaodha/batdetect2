@@ -14,12 +14,10 @@ from tqdm.auto import tqdm
 from batdetect2.configs import BaseConfig
 from batdetect2.preprocess import (
     PreprocessingConfig,
-    preprocess_audio_clip,
+    compute_spectrogram,
+    load_clip_audio,
 )
-from batdetect2.train.labels import (
-    TARGET_SIGMA,
-    generate_heatmaps,
-)
+from batdetect2.train.labels import HeatmapsConfig, generate_heatmaps
 from batdetect2.train.targets import (
     TargetConfig,
     build_class_mapper,
@@ -34,16 +32,12 @@ __all__ = [
 ]
 
 
-class MasksConfig(BaseConfig):
-    sigma: float = TARGET_SIGMA
-
-
 class TrainPreprocessingConfig(BaseConfig):
     preprocessing: PreprocessingConfig = Field(
         default_factory=PreprocessingConfig
     )
     target: TargetConfig = Field(default_factory=TargetConfig)
-    masks: MasksConfig = Field(default_factory=MasksConfig)
+    heatmaps: HeatmapsConfig = Field(default_factory=HeatmapsConfig)
 
 
 def generate_train_example(
@@ -53,9 +47,14 @@ def generate_train_example(
     """Generate a training example."""
     config = config or TrainPreprocessingConfig()
 
-    spectrogram = preprocess_audio_clip(
+    wave = load_clip_audio(
         clip_annotation.clip,
-        config=config.preprocessing,
+        config=config.preprocessing.audio,
+    )
+
+    spectrogram = compute_spectrogram(
+        wave,
+        config=config.preprocessing.spectrogram,
     )
 
     filter_fn = build_sound_event_filter(
@@ -65,17 +64,24 @@ def generate_train_example(
     selected_events = [
         event for event in clip_annotation.sound_events if filter_fn(event)
     ]
-
     class_mapper = build_class_mapper(config.target.classes)
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         selected_events,
         spectrogram,
         class_mapper,
-        target_sigma=config.masks.sigma,
+        target_sigma=config.heatmaps.sigma,
+        position=config.heatmaps.position,
+        time_scale=config.heatmaps.time_scale,
+        frequency_scale=config.heatmaps.frequency_scale,
     )
 
     dataset = xr.Dataset(
         {
+            # NOTE: Need to rename the time dimension to avoid conflicts with
+            # the spectrogram time dimension, otherwise xarray will interpolate
+            # the spectrogram and the heatmaps to the same temporal resolution
+            # as the waveform.
+            "audio": wave.rename({"time": "audio_time"}),
             "spectrogram": spectrogram,
             "detection": detection_heatmap,
             "class": class_heatmap,

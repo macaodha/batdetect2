@@ -22,9 +22,9 @@ class TermInfo(BaseModel):
 
 class TagInfo(BaseModel):
     value: str
-    label: Optional[str] = None
     term: Optional[TermInfo] = None
     key: Optional[str] = None
+    label: Optional[str] = None
 
 
 call_type = data.Term(

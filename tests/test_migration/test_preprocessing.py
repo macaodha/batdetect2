@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from soundevent import data
 
-from batdetect2.data import preprocessing
+from batdetect2 import preprocess
 from batdetect2.utils import audio_utils
 
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -44,10 +44,10 @@ def test_audio_loading_hasnt_changed(
         target_samp_rate=target_sampling_rate,
         scale=scale,
     )
-    audio_new = preprocessing.load_clip_audio(
+    audio_new = preprocess.load_clip_audio(
         clip,
-        config=preprocessing.AudioConfig(
-            resample=preprocessing.ResampleConfig(
+        config=preprocess.AudioConfig(
+            resample=preprocess.ResampleConfig(
                 samplerate=target_sampling_rate,
             ),
             center=scale,
@@ -84,20 +84,20 @@ def test_spectrogram_generation_hasnt_changed(
     if spec_scale == "log":
         scale = "log"
     elif spec_scale == "pcen":
-        scale = preprocessing.PcenConfig()
+        scale = preprocess.PcenConfig()
 
-    config = preprocessing.SpectrogramConfig(
-        fft=preprocessing.FFTConfig(
+    config = preprocess.SpectrogramConfig(
+        fft=preprocess.FFTConfig(
             window_overlap=fft_overlap,
             window_duration=fft_win_length,
         ),
-        frequencies=preprocessing.FrequencyConfig(
+        frequencies=preprocess.FrequencyConfig(
             min_freq=min_freq,
             max_freq=max_freq,
         ),
         scale=scale,
         denoise=denoise_spec_avg,
-        resize=None,
+        size=None,
         max_scale=max_scale_spec,
     )
 
@@ -112,10 +112,10 @@ def test_spectrogram_generation_hasnt_changed(
         end_time=recording.duration,
     )
 
-    audio = preprocessing.load_clip_audio(
+    audio = preprocess.load_clip_audio(
         clip,
-        config=preprocessing.AudioConfig(
-            resample=preprocessing.ResampleConfig(
+        config=preprocess.AudioConfig(
+            resample=preprocess.ResampleConfig(
                 samplerate=target_sampling_rate,
             )
         ),
@@ -135,7 +135,7 @@ def test_spectrogram_generation_hasnt_changed(
         ),
     )
 
-    new_spec = preprocessing.compute_spectrogram(
+    new_spec = preprocess.compute_spectrogram(
         audio,
         config=config,
         dtype=np.float32,

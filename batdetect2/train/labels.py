@@ -7,23 +7,29 @@ from soundevent import arrays, data, geometry
 from soundevent.geometry.operations import Positions
 from soundevent.types import ClassMapper
 
+from batdetect2.configs import BaseConfig
+
 __all__ = [
     "ClassMapper",
     "generate_heatmaps",
 ]
 
 
-TARGET_SIGMA = 3.0
+class HeatmapsConfig(BaseConfig):
+    position: Positions = "bottom-left"
+    sigma: float = 3.0
+    time_scale: float = 1000.0
+    frequency_scale: float = 1 / 859.375
 
 
 def generate_heatmaps(
     sound_events: Sequence[data.SoundEventAnnotation],
     spec: xr.DataArray,
     class_mapper: ClassMapper,
-    target_sigma: float = TARGET_SIGMA,
+    target_sigma: float = 3.0,
     position: Positions = "bottom-left",
-    time_scale: float = 1.0,
-    frequency_scale: float = 1.0,
+    time_scale: float = 1000.0,
+    frequency_scale: float = 1 / 859.375,
     dtype=np.float32,
 ) -> Tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
     shape = dict(zip(spec.dims, spec.shape))
@@ -39,7 +45,7 @@ def generate_heatmaps(
         data=np.zeros((class_mapper.num_classes, *spec.shape), dtype=dtype),
         dims=["category", *spec.dims],
         coords={
-            "category": class_mapper.class_labels,
+            "category": [*class_mapper.class_labels],
             **spec.coords,
         },
     )
