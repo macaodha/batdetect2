@@ -12,7 +12,7 @@ from batdetect2.models.blocks import (
     ConvBlockUpStandard,
     SelfAttention,
 )
-from batdetect2.models.typing import FeatureExtractorModel
+from batdetect2.models.typing import BackboneModel
 
 __all__ = [
     "Net2DFast",
@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-class Net2DFast(FeatureExtractorModel):
+class Net2DFast(BackboneModel):
     def __init__(
         self,
         num_features: int,
@@ -37,7 +37,7 @@ class Net2DFast(FeatureExtractorModel):
             1,
             self.num_features // 4,
             self.input_height,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -45,7 +45,7 @@ class Net2DFast(FeatureExtractorModel):
             self.num_features // 4,
             self.num_features // 2,
             self.input_height // 2,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -53,7 +53,7 @@ class Net2DFast(FeatureExtractorModel):
             self.num_features // 2,
             self.num_features,
             self.input_height // 4,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -100,6 +100,8 @@ class Net2DFast(FeatureExtractorModel):
         )
         self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
 
+        self.out_channels = self.num_features // 4
+
     def pad_adjust(self, spec: torch.Tensor) -> Tuple[torch.Tensor, int, int]:
         h, w = spec.shape[2:]
         h_pad = (32 - h % 32) % 32
@@ -135,7 +137,7 @@ class Net2DFast(FeatureExtractorModel):
         return F.relu_(self.conv_op_bn(self.conv_op(x)))
 
 
-class Net2DFastNoAttn(FeatureExtractorModel):
+class Net2DFastNoAttn(BackboneModel):
     def __init__(
         self,
         num_features: int,
@@ -151,7 +153,7 @@ class Net2DFastNoAttn(FeatureExtractorModel):
             1,
             self.num_features // 4,
             self.input_height,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -159,7 +161,7 @@ class Net2DFastNoAttn(FeatureExtractorModel):
             self.num_features // 4,
             self.num_features // 2,
             self.input_height // 2,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -167,7 +169,7 @@ class Net2DFastNoAttn(FeatureExtractorModel):
             self.num_features // 2,
             self.num_features,
             self.input_height // 4,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -210,6 +212,7 @@ class Net2DFastNoAttn(FeatureExtractorModel):
             padding=1,
         )
         self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
+        self.out_channels = self.num_features // 4
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         x1 = self.conv_dn_0(spec)
@@ -227,7 +230,7 @@ class Net2DFastNoAttn(FeatureExtractorModel):
         return F.relu_(self.conv_op_bn(self.conv_op(x)))
 
 
-class Net2DFastNoCoordConv(FeatureExtractorModel):
+class Net2DFastNoCoordConv(BackboneModel):
     def __init__(
         self,
         num_features: int,
@@ -242,21 +245,21 @@ class Net2DFastNoCoordConv(FeatureExtractorModel):
         self.conv_dn_0 = ConvBlockDownStandard(
             1,
             self.num_features // 4,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_1 = ConvBlockDownStandard(
             self.num_features // 4,
             self.num_features // 2,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
         self.conv_dn_2 = ConvBlockDownStandard(
             self.num_features // 2,
             self.num_features,
-            k_size=3,
+            kernel_size=3,
             pad_size=1,
             stride=1,
         )
@@ -301,6 +304,7 @@ class Net2DFastNoCoordConv(FeatureExtractorModel):
             padding=1,
         )
         self.conv_op_bn = nn.BatchNorm2d(self.num_features // 4)
+        self.out_channels = self.num_features // 4
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         x1 = self.conv_dn_0(spec)

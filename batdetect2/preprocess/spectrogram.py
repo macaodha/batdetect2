@@ -23,7 +23,18 @@ class FrequencyConfig(BaseConfig):
     min_freq: int = Field(default=10_000, gt=0)
 
 
-class PcenConfig(BaseConfig):
+class SpecSizeConfig(BaseConfig):
+    height: int = 256
+    resize_factor: Optional[float] = 0.5
+    divide_factor: Optional[int] = 32
+
+
+class LogScaleConfig(BaseConfig):
+    name: Literal["log"] = "log"
+
+
+class PcenScaleConfig(BaseConfig):
+    name: Literal["pcen"] = "pcen"
     time_constant: float = 0.4
     hop_length: int = 512
     gain: float = 0.98
@@ -31,19 +42,21 @@ class PcenConfig(BaseConfig):
     power: float = 0.5
 
 
-class SpecSizeConfig(BaseConfig):
-    height: int = 256
-    resize_factor: Optional[float] = 0.5
-    divide_factor: Optional[int] = 32
+class AmplitudeScaleConfig(BaseConfig):
+    name: Literal["amplitude"] = "amplitude"
+
+
+Scales = Union[LogScaleConfig, PcenScaleConfig, AmplitudeScaleConfig]
 
 
 class SpectrogramConfig(BaseConfig):
     fft: FFTConfig = Field(default_factory=FFTConfig)
     frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
-    scale: Union[Literal["log"], None, PcenConfig] = Field(
-        default_factory=PcenConfig
+    scale: Scales = Field(
+        default_factory=PcenScaleConfig,
+        discriminator="name",
     )
-    size: Optional[SpecSizeConfig] = Field(default_factory=SpecSizeConfig)
+    size: SpecSizeConfig = Field(default_factory=SpecSizeConfig)
     denoise: bool = True
     max_scale: bool = False
 
@@ -55,7 +68,7 @@ def compute_spectrogram(
 ) -> xr.DataArray:
     config = config or SpectrogramConfig()
 
-    if config.size and config.size.divide_factor:
+    if config.size.divide_factor:
         # Need to pad the audio to make sure the spectrogram has a
         # width compatible with the divide factor
         wav = pad_audio(
@@ -84,12 +97,11 @@ def compute_spectrogram(
     if config.denoise:
         spec = denoise_spectrogram(spec)
 
-    if config.size:
-        spec = resize_spectrogram(
-            spec,
-            height=config.size.height,
-            resize_factor=config.size.resize_factor,
-        )
+    spec = resize_spectrogram(
+        spec,
+        height=config.size.height,
+        resize_factor=config.size.resize_factor,
+    )
 
     if config.max_scale:
         spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
@@ -180,13 +192,13 @@ def denoise_spectrogram(spec: xr.DataArray) -> xr.DataArray:
 
 def scale_spectrogram(
     spec: xr.DataArray,
-    scale: Union[Literal["log"], None, PcenConfig],
+    scale: Scales,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
-    if scale == "log":
+    if scale.name == "log":
         return scale_log(spec, dtype=dtype)
 
-    if isinstance(scale, PcenConfig):
+    if scale.name == "pcen":
         return scale_pcen(
             spec,
             time_constant=scale.time_constant,

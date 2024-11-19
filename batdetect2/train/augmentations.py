@@ -1,133 +1,161 @@
-from functools import wraps
-from typing import Callable, List, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
 import xarray as xr
+from pydantic import Field
+from soundevent import arrays
+from soundevent.arrays import operations as ops
+
+from batdetect2.configs import BaseConfig
+from batdetect2.preprocess import PreprocessingConfig, compute_spectrogram
 
 Augmentation = Callable[[xr.Dataset], xr.Dataset]
 
 
-AUGMENTATION_PROBABILITY = 0.2
-MAX_DELAY = 0.005
-STRETCH_SQUEEZE_DELTA = 0.04
-MASK_MAX_TIME_PERC: float = 0.05
-MASK_MAX_FREQ_PERC: float = 0.10
+class AugmentationConfig(BaseConfig):
+    enable: bool = True
+    probability: float = 0.2
 
 
-def maybe_apply(
-    augmentation: Callable,
-    prob: float = AUGMENTATION_PROBABILITY,
-) -> Callable:
-    """Apply an augmentation with a given probability."""
-
-    @wraps(augmentation)
-    def _augmentation(x):
-        if np.random.rand() > prob:
-            return x
-        return augmentation(x)
-
-    return _augmentation
+class SubclipConfig(BaseConfig):
+    enable: bool = True
+    duration: Optional[float] = None
 
 
 def select_random_subclip(
-    train_example: xr.Dataset,
+    example: xr.Dataset,
+    start_time: Optional[float] = None,
     duration: Optional[float] = None,
-    proportion: float = 0.9,
+    width: Optional[int] = None,
 ) -> xr.Dataset:
     """Select a random subclip from a clip."""
+    step = arrays.get_dim_step(example, "time")  # type: ignore
 
-    time_coords = train_example.coords["time"]
+    if width is None:
+        if duration is None:
+            raise ValueError("Either duration or width must be provided")
 
-    start_time = time_coords.attrs.get("min", time_coords.min())
-    end_time = time_coords.attrs.get("max", time_coords.max())
+        width = int(np.floor(duration / step))
 
     if duration is None:
-        duration = (end_time - start_time) * proportion
+        duration = width * step
 
-    start_time = np.random.uniform(start_time, end_time - duration)
-    return train_example.sel(time=slice(start_time, start_time + duration))
+    if start_time is None:
+        start, stop = arrays.get_dim_range(example, "time")  # type: ignore
+        start_time = np.random.uniform(start, stop - duration)
+
+    start_index = arrays.get_coord_index(
+        example,  # type: ignore
+        "time",
+        start_time,
+    )
+    end_index = start_index + width - 1
+    start_time = example.time.values[start_index]
+    end_time = example.time.values[end_index]
+
+    return example.sel(
+        time=slice(start_time, end_time),
+        audio_time=slice(start_time, end_time),
+    )
 
 
-def combine_audio(
-    audio1: xr.DataArray,
-    audio2: xr.DataArray,
-    alpha: Optional[float] = None,
-    min_alpha: float = 0.3,
-    max_alpha: float = 0.7,
-) -> xr.DataArray:
+class MixAugmentationConfig(AugmentationConfig):
+    min_weight: float = 0.3
+    max_weight: float = 0.7
+
+
+def mix_examples(
+    example: xr.Dataset,
+    other: xr.Dataset,
+    weight: Optional[float] = None,
+    min_weight: float = 0.3,
+    max_weight: float = 0.7,
+    config: Optional[PreprocessingConfig] = None,
+) -> xr.Dataset:
     """Combine two audio clips."""
+    config = config or PreprocessingConfig()
 
-    if alpha is None:
-        alpha = np.random.uniform(min_alpha, max_alpha)
+    if weight is None:
+        weight = np.random.uniform(min_weight, max_weight)
 
-    return alpha * audio1 + (1 - alpha) * audio2.data
+    audio2 = other["audio"].values
+    audio1 = ops.adjust_dim_width(example["audio"], "audio_time", len(audio2))
+    combined = weight * audio1 + (1 - weight) * audio2
+
+    spec = compute_spectrogram(
+        combined.rename({"audio_time": "time"}),
+        config=config.spectrogram,
+    )
+
+    detection_heatmap = xr.apply_ufunc(
+        np.maximum,
+        example["detection"],
+        other["detection"].values,
+    )
+
+    class_heatmap = xr.apply_ufunc(
+        np.maximum,
+        example["class"],
+        other["class"].values,
+    )
+
+    size_heatmap = example["size"] + other["size"].values
+
+    return xr.Dataset(
+        {
+            "audio": combined,
+            "spectrogram": spec,
+            "detection": detection_heatmap,
+            "class": class_heatmap,
+            "size": size_heatmap,
+        }
+    )
 
 
-# def random_mix(
-#     audio: xr.DataArray,
-#     clip: data.ClipAnnotation,
-#     provider: Optional[ClipProvider] = None,
-#     alpha: Optional[float] = None,
-#     min_alpha: float = 0.3,
-#     max_alpha: float = 0.7,
-#     join_annotations: bool = True,
-# ) -> Tuple[xr.DataArray, data.ClipAnnotation]:
-#     """Mix two audio clips."""
-#     if provider is None:
-#         raise ValueError("No audio provider given.")
-#
-#     try:
-#         other_audio, other_clip = provider(clip)
-#     except (StopIteration, ValueError):
-#         raise ValueError("No more audio sources available.")
-#
-#     new_audio = combine_audio(
-#         audio,
-#         other_audio,
-#         alpha=alpha,
-#         min_alpha=min_alpha,
-#         max_alpha=max_alpha,
-#     )
-#
-#     if join_annotations:
-#         clip = clip.model_copy(
-#             update=dict(
-#                 sound_events=clip.sound_events + other_clip.sound_events,
-#             )
-#         )
-#
-#     return new_audio, clip
+class EchoAugmentationConfig(AugmentationConfig):
+    max_delay: float = 0.005
+    min_weight: float = 0.0
+    max_weight: float = 1.0
 
 
 def add_echo(
-    train_example: xr.Dataset,
+    example: xr.Dataset,
     delay: Optional[float] = None,
-    alpha: Optional[float] = None,
-    min_alpha: float = 0.0,
-    max_alpha: float = 1.0,
-    max_delay: float = MAX_DELAY,
+    weight: Optional[float] = None,
+    min_weight: float = 0.1,
+    max_weight: float = 1.0,
+    max_delay: float = 0.005,
+    config: Optional[PreprocessingConfig] = None,
 ) -> xr.Dataset:
     """Add a delay to the audio."""
+    config = config or PreprocessingConfig()
+
     if delay is None:
         delay = np.random.uniform(0, max_delay)
 
-    if alpha is None:
-        alpha = np.random.uniform(min_alpha, max_alpha)
+    if weight is None:
+        weight = np.random.uniform(min_weight, max_weight)
 
-    spec = train_example["spectrogram"]
+    audio = example["audio"]
+    step = arrays.get_dim_step(audio, "audio_time")
+    audio_delay = audio.shift(audio_time=int(delay / step), fill_value=0)
+    audio = audio + weight * audio_delay
 
-    time_coords = spec.coords["time"]
-    start_time = time_coords.attrs["min"]
-    end_time = time_coords.attrs["max"]
-    step = (end_time - start_time) / time_coords.size
+    spectrogram = compute_spectrogram(
+        audio.rename({"audio_time": "time"}),
+        config=config.spectrogram,
+    )
 
-    spec_delay = spec.shift(time=int(delay / step), fill_value=0)
+    return example.assign(audio=audio, spectrogram=spectrogram)
 
-    return train_example.assign(spectrogram=spec + alpha * spec_delay)
+
+class VolumeAugmentationConfig(AugmentationConfig):
+    min_scaling: float = 0.0
+    max_scaling: float = 2.0
 
 
 def scale_volume(
-    train_example: xr.Dataset,
+    example: xr.Dataset,
     factor: Optional[float] = None,
     max_scaling: float = 2,
     min_scaling: float = 0,
@@ -136,106 +164,235 @@ def scale_volume(
     if factor is None:
         factor = np.random.uniform(min_scaling, max_scaling)
 
-    return train_example.assign(
-        spectrogram=train_example["spectrogram"] * factor
-    )
+    return example.assign(spectrogram=example["spectrogram"] * factor)
+
+
+class WarpAugmentationConfig(AugmentationConfig):
+    delta: float = 0.04
 
 
 def warp_spectrogram(
-    train_example: xr.Dataset,
+    example: xr.Dataset,
     factor: Optional[float] = None,
-    delta: float = STRETCH_SQUEEZE_DELTA,
+    delta: float = 0.04,
 ) -> xr.Dataset:
     """Warp a spectrogram."""
     if factor is None:
         factor = np.random.uniform(1 - delta, 1 + delta)
 
-    time_coords = train_example.coords["time"]
-    start_time = time_coords.attrs["min"]
-    end_time = time_coords.attrs["max"]
+    start_time, end_time = arrays.get_dim_range(example, "time")  # type: ignore
     duration = end_time - start_time
 
     new_time = np.linspace(
         start_time,
         start_time + duration * factor,
-        train_example.time.size,
+        example.time.size,
     )
 
-    return train_example.interp(time=new_time)
+    spectrogram = (
+        example["spectrogram"]
+        .interp(
+            coords={"time": new_time},
+            method="linear",
+            kwargs=dict(
+                fill_value=0,
+            ),
+        )
+        .clip(min=0)
+    )
+
+    detection = example["detection"].interp(
+        time=new_time,
+        method="nearest",
+        kwargs=dict(
+            fill_value=0,
+        ),
+    )
+
+    classification = example["class"].interp(
+        time=new_time,
+        method="nearest",
+        kwargs=dict(
+            fill_value=0,
+        ),
+    )
+
+    size = example["size"].interp(
+        time=new_time,
+        method="nearest",
+        kwargs=dict(
+            fill_value=0,
+        ),
+    )
+
+    return example.assign(
+        {
+            "time": new_time,
+            "spectrogram": spectrogram,
+            "detection": detection,
+            "class": classification,
+            "size": size,
+        }
+    )
 
 
 def mask_axis(
-    train_example: xr.Dataset,
+    array: xr.DataArray,
     dim: str,
     start: float,
     end: float,
-    mask_all: bool = False,
-    mask_value: float = 0,
-) -> xr.Dataset:
-    if dim not in train_example.dims:
+    mask_value: Union[float, Callable[[xr.DataArray], float]] = np.mean,
+) -> xr.DataArray:
+    if dim not in array.dims:
         raise ValueError(f"Axis {dim} not found in array")
 
-    coord = train_example.coords[dim]
+    coord = array.coords[dim]
     condition = (coord < start) | (coord > end)
 
-    if mask_all:
-        return train_example.where(condition, other=mask_value)
+    if callable(mask_value):
+        mask_value = mask_value(array)
 
-    return train_example.assign(
-        spectrogram=train_example.spectrogram.where(
-            condition, other=mask_value
-        )
-    )
+    return array.where(condition, other=mask_value)
+
+
+class TimeMaskAugmentationConfig(AugmentationConfig):
+    max_perc: float = 0.05
+    max_masks: int = 3
 
 
 def mask_time(
-    train_example: xr.Dataset,
-    max_time_mask: float = MASK_MAX_TIME_PERC,
-    max_num_masks: int = 3,
+    example: xr.Dataset,
+    max_perc: float = 0.05,
+    max_mask: int = 3,
 ) -> xr.Dataset:
     """Mask a random section of the time axis."""
+    num_masks = np.random.randint(1, max_mask + 1)
+    start_time, end_time = arrays.get_dim_range(example, "time")  # type: ignore
 
-    num_masks = np.random.randint(1, max_num_masks + 1)
-
-    time_coord = train_example.coords["time"]
-    start_time = time_coord.attrs.get("min", time_coord.min())
-    end_time = time_coord.attrs.get("max", time_coord.max())
-
+    spectrogram = example["spectrogram"]
     for _ in range(num_masks):
-        mask_size = np.random.uniform(0, max_time_mask)
+        mask_size = np.random.uniform(0, max_perc) * (end_time - start_time)
         start = np.random.uniform(start_time, end_time - mask_size)
         end = start + mask_size
-        train_example = mask_axis(train_example, "time", start, end)
+        spectrogram = mask_axis(spectrogram, "time", start, end)
 
-    return train_example
+    return example.assign(spectrogram=spectrogram)
+
+
+class FrequencyMaskAugmentationConfig(AugmentationConfig):
+    max_perc: float = 0.10
+    max_masks: int = 3
 
 
 def mask_frequency(
-    train_example: xr.Dataset,
-    max_freq_mask: float = MASK_MAX_FREQ_PERC,
-    max_num_masks: int = 3,
+    example: xr.Dataset,
+    max_perc: float = 0.10,
+    max_masks: int = 3,
 ) -> xr.Dataset:
     """Mask a random section of the frequency axis."""
+    num_masks = np.random.randint(1, max_masks + 1)
+    min_freq, max_freq = arrays.get_dim_range(example, "frequency")  # type: ignore
 
-    num_masks = np.random.randint(1, max_num_masks + 1)
-
-    freq_coord = train_example.coords["frequency"]
-    min_freq = float(freq_coord.min())
-    max_freq = float(freq_coord.max())
-
+    spectrogram = example["spectrogram"]
     for _ in range(num_masks):
-        mask_size = np.random.uniform(0, max_freq_mask)
+        mask_size = np.random.uniform(0, max_perc) * (max_freq - min_freq)
         start = np.random.uniform(min_freq, max_freq - mask_size)
         end = start + mask_size
-        train_example = mask_axis(train_example, "frequency", start, end)
+        spectrogram = mask_axis(spectrogram, "frequency", start, end)
 
-    return train_example
+    return example.assign(spectrogram=spectrogram)
 
 
-AUGMENTATIONS: List[Augmentation] = [
-    select_random_subclip,
-    add_echo,
-    scale_volume,
-    mask_time,
-    mask_frequency,
-]
+class AugmentationsConfig(BaseConfig):
+    subclip: SubclipConfig = Field(default_factory=SubclipConfig)
+    mix: MixAugmentationConfig = Field(default_factory=MixAugmentationConfig)
+    echo: EchoAugmentationConfig = Field(
+        default_factory=EchoAugmentationConfig
+    )
+    volume: VolumeAugmentationConfig = Field(
+        default_factory=VolumeAugmentationConfig
+    )
+    warp: WarpAugmentationConfig = Field(
+        default_factory=WarpAugmentationConfig
+    )
+    time_mask: TimeMaskAugmentationConfig = Field(
+        default_factory=TimeMaskAugmentationConfig
+    )
+    frequency_mask: FrequencyMaskAugmentationConfig = Field(
+        default_factory=FrequencyMaskAugmentationConfig
+    )
+
+
+def should_apply(config: AugmentationConfig) -> bool:
+    if not config.enable:
+        return False
+
+    return np.random.uniform() < config.probability
+
+
+def augment_example(
+    example: xr.Dataset,
+    config: AugmentationsConfig,
+    preprocessing_config: Optional[PreprocessingConfig] = None,
+    others: Optional[Callable[[], xr.Dataset]] = None,
+) -> xr.Dataset:
+    if config.subclip.enable:
+        example = select_random_subclip(
+            example,
+            duration=config.subclip.duration,
+        )
+
+    if should_apply(config.mix) and others is not None:
+        other = others()
+
+        if config.subclip.enable:
+            other = select_random_subclip(
+                other,
+                duration=config.subclip.duration,
+            )
+
+        example = mix_examples(
+            example,
+            other,
+            min_weight=config.mix.min_weight,
+            max_weight=config.mix.max_weight,
+            config=preprocessing_config,
+        )
+
+    if should_apply(config.echo):
+        example = add_echo(
+            example,
+            max_delay=config.echo.max_delay,
+            min_weight=config.echo.min_weight,
+            max_weight=config.echo.max_weight,
+            config=preprocessing_config,
+        )
+
+    if should_apply(config.volume):
+        example = scale_volume(
+            example,
+            max_scaling=config.volume.max_scaling,
+            min_scaling=config.volume.min_scaling,
+        )
+
+    if should_apply(config.warp):
+        example = warp_spectrogram(
+            example,
+            delta=config.warp.delta,
+        )
+
+    if should_apply(config.time_mask):
+        example = mask_time(
+            example,
+            max_perc=config.time_mask.max_perc,
+            max_mask=config.time_mask.max_masks,
+        )
+
+    if should_apply(config.frequency_mask):
+        example = mask_frequency(
+            example,
+            max_perc=config.frequency_mask.max_perc,
+            max_masks=config.frequency_mask.max_masks,
+        )
+
+    return example

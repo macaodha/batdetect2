@@ -5,7 +5,7 @@ import xarray as xr
 from soundevent import data
 from soundevent.types import ClassMapper
 
-from batdetect2.data.labels import generate_heatmaps
+from batdetect2.train.labels import generate_heatmaps
 
 recording = data.Recording(
     samplerate=256_000,
@@ -60,7 +60,7 @@ def test_generated_heatmaps_have_correct_dimensions():
     class_mapper = Mapper()
 
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
-        clip_annotation,
+        clip_annotation.sound_events,
         spec,
         class_mapper,
     )
@@ -109,7 +109,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions():
 
     class_mapper = Mapper()
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
-        clip_annotation,
+        clip_annotation.sound_events,
         spec,
         class_mapper,
     )

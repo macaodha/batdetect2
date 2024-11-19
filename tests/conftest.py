@@ -91,7 +91,7 @@ def recording_factory(wav_factory: Callable[..., Path]):
         recording_id: Optional[uuid.UUID] = None,
         duration: float = 1,
         channels: int = 1,
-        samplerate: int = 44100,
+        samplerate: int = 256_000,
         time_expansion: float = 1,
     ) -> data.Recording:
         path = path or wav_factory(

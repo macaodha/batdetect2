@@ -6,7 +6,7 @@ import torch.nn as nn
 
 __all__ = [
     "ModelOutput",
-    "FeatureExtractorModel",
+    "BackboneModel",
 ]
 
 
@@ -41,12 +41,15 @@ class ModelOutput(NamedTuple):
     """Tensor with intermediate features."""
 
 
-class FeatureExtractorModel(ABC, nn.Module):
+class BackboneModel(ABC, nn.Module):
     input_height: int
     """Height of the input spectrogram."""
 
     num_features: int
     """Dimension of the feature tensor."""
+
+    out_channels: int
+    """Number of output channels of the feature extractor."""
 
     @abstractmethod
     def forward(self, spec: torch.Tensor) -> torch.Tensor:

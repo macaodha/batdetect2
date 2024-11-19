@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from soundevent import data
 from torch import nn
 
-from batdetect2.data.labels import ClassMapper
 from batdetect2.models.typing import ModelOutput
 
 __all__ = [
@@ -37,7 +36,8 @@ TagFunction = Callable[[int], List[data.Tag]]
 def postprocess_model_outputs(
     outputs: ModelOutput,
     clips: List[data.Clip],
-    class_mapper: ClassMapper,
+    classes: List[str],
+    decoder: Callable[[str], List[data.Tag]],
     config: PostprocessConfig,
 ) -> List[data.ClipPrediction]:
     """Postprocesses model outputs to generate clip predictions.
@@ -108,7 +108,8 @@ def postprocess_model_outputs(
             size_preds,
             class_probs,
             features,
-            class_mapper=class_mapper,
+            classes=classes,
+            decoder=decoder,
             min_freq=config.min_freq,
             max_freq=config.max_freq,
             detection_threshold=config.detection_threshold,
@@ -132,7 +133,8 @@ def compute_sound_events_from_outputs(
     size_preds: torch.Tensor,
     class_probs: torch.Tensor,
     features: torch.Tensor,
-    class_mapper: ClassMapper,
+    classes: List[str],
+    decoder: Callable[[str], List[data.Tag]],
     min_freq: int = 10000,
     max_freq: int = 120000,
     detection_threshold: float = DETECTION_THRESHOLD,
@@ -181,7 +183,8 @@ def compute_sound_events_from_outputs(
         predicted_tags: List[data.PredictedTag] = []
 
         for label_id, class_score in enumerate(class_prob):
-            corresponding_tags = class_mapper.inverse_transform(label_id)
+            class_name = classes[label_id]
+            corresponding_tags = decoder(class_name)
             predicted_tags.extend(
                 [
                     data.PredictedTag(

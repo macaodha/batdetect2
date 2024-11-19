@@ -20,8 +20,9 @@ from batdetect2.preprocess import (
 from batdetect2.train.labels import HeatmapsConfig, generate_heatmaps
 from batdetect2.train.targets import (
     TargetConfig,
-    build_class_mapper,
+    build_encoder,
     build_sound_event_filter,
+    get_class_names,
 )
 
 PathLike = Union[Path, str, os.PathLike]
@@ -64,11 +65,15 @@ def generate_train_example(
     selected_events = [
         event for event in clip_annotation.sound_events if filter_fn(event)
     ]
-    class_mapper = build_class_mapper(config.target.classes)
+
+    class_names = get_class_names(config.target.classes)
+    encoder = build_encoder(config.target.classes)
+
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         selected_events,
         spectrogram,
-        class_mapper,
+        class_names,
+        encoder,
         target_sigma=config.heatmaps.sigma,
         position=config.heatmaps.position,
         time_scale=config.heatmaps.time_scale,

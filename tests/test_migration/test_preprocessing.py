@@ -80,11 +80,12 @@ def test_spectrogram_generation_hasnt_changed(
     max_freq = 120_000
     fft_overlap = 0.75
 
-    scale = None
     if spec_scale == "log":
-        scale = "log"
+        scale = preprocess.LogScaleConfig()
     elif spec_scale == "pcen":
-        scale = preprocess.PcenConfig()
+        scale = preprocess.PcenScaleConfig()
+    else:
+        scale = preprocess.AmplitudeScaleConfig()
 
     config = preprocess.SpectrogramConfig(
         fft=preprocess.FFTConfig(

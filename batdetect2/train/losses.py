@@ -1,7 +1,16 @@
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import torch
 import torch.nn.functional as F
+from pydantic import Field
+
+from batdetect2.configs import BaseConfig
+from batdetect2.models.typing import ModelOutput
+from batdetect2.train.dataset import TrainExample
+
+
+class SizeLossConfig(BaseConfig):
+    weight: float = 0.1
 
 
 def bbox_size_loss(
@@ -15,6 +24,11 @@ def bbox_size_loss(
     return F.l1_loss(pred_size * gt_size_mask, gt_size, reduction="sum") / (
         gt_size_mask.sum() + 1e-5
     )
+
+
+class FocalLossConfig(BaseConfig):
+    beta: float = 4
+    alpha: float = 2
 
 
 def focal_loss(
@@ -44,7 +58,7 @@ def focal_loss(
     )
 
     if weights is not None:
-        pos_loss = pos_loss * weights
+        pos_loss = pos_loss * torch.tensor(weights)
         # neg_loss = neg_loss*weights
 
     if valid_mask is not None:
@@ -75,3 +89,71 @@ def mse_loss(
     else:
         op = (valid_mask * ((gt - pred) ** 2)).sum() / valid_mask.sum()
     return op
+
+
+class DetectionLossConfig(BaseConfig):
+    weight: float = 1.0
+    focal: FocalLossConfig = Field(default_factory=FocalLossConfig)
+
+
+class ClassificationLossConfig(BaseConfig):
+    weight: float = 2.0
+    focal: FocalLossConfig = Field(default_factory=FocalLossConfig)
+    class_weights: Optional[list[float]] = None
+
+
+class LossConfig(BaseConfig):
+    detection: DetectionLossConfig = Field(default_factory=DetectionLossConfig)
+    size: SizeLossConfig = Field(default_factory=SizeLossConfig)
+    classification: ClassificationLossConfig = Field(
+        default_factory=ClassificationLossConfig
+    )
+
+
+class Losses(NamedTuple):
+    detection: torch.Tensor
+    size: torch.Tensor
+    classification: torch.Tensor
+    total: torch.Tensor
+
+
+def compute_loss(
+    batch: TrainExample,
+    outputs: ModelOutput,
+    conf: LossConfig,
+    class_weights: Optional[torch.Tensor] = None,
+) -> Losses:
+    detection_loss = focal_loss(
+        outputs.detection_probs,
+        batch.detection_heatmap,
+        beta=conf.detection.focal.beta,
+        alpha=conf.detection.focal.alpha,
+    )
+
+    size_loss = bbox_size_loss(
+        outputs.size_preds,
+        batch.size_heatmap,
+    )
+
+    valid_mask = batch.class_heatmap.any(dim=1, keepdim=True).float()
+    classification_loss = focal_loss(
+        outputs.class_probs,
+        batch.class_heatmap,
+        weights=class_weights,
+        valid_mask=valid_mask,
+        beta=conf.classification.focal.beta,
+        alpha=conf.classification.focal.alpha,
+    )
+
+    total = (
+        detection_loss * conf.detection.weight
+        + size_loss * conf.size.weight
+        + classification_loss * conf.classification.weight
+    )
+
+    return Losses(
+        detection=detection_loss,
+        size=size_loss,
+        classification=classification_loss,
+        total=total,
+    )

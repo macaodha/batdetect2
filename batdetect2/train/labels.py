@@ -1,18 +1,14 @@
-from typing import Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import xarray as xr
 from scipy.ndimage import gaussian_filter
 from soundevent import arrays, data, geometry
 from soundevent.geometry.operations import Positions
-from soundevent.types import ClassMapper
 
 from batdetect2.configs import BaseConfig
 
-__all__ = [
-    "ClassMapper",
-    "generate_heatmaps",
-]
+__all__ = ["generate_heatmaps"]
 
 
 class HeatmapsConfig(BaseConfig):
@@ -25,7 +21,8 @@ class HeatmapsConfig(BaseConfig):
 def generate_heatmaps(
     sound_events: Sequence[data.SoundEventAnnotation],
     spec: xr.DataArray,
-    class_mapper: ClassMapper,
+    class_names: List[str],
+    encoder: Callable[[data.SoundEventAnnotation], Optional[str]],
     target_sigma: float = 3.0,
     position: Positions = "bottom-left",
     time_scale: float = 1000.0,
@@ -42,10 +39,10 @@ def generate_heatmaps(
     # Initialize heatmaps
     detection_heatmap = xr.zeros_like(spec, dtype=dtype)
     class_heatmap = xr.DataArray(
-        data=np.zeros((class_mapper.num_classes, *spec.shape), dtype=dtype),
+        data=np.zeros((len(class_names), *spec.shape), dtype=dtype),
         dims=["category", *spec.dims],
         coords={
-            "category": [*class_mapper.class_labels],
+            "category": [*class_names],
             **spec.coords,
         },
     )
@@ -92,7 +89,7 @@ def generate_heatmaps(
         )
 
         # Get the class name of the sound event
-        class_name = class_mapper.encode(sound_event_annotation)
+        class_name = encoder(sound_event_annotation)
 
         if class_name is None:
             # If the label is None skip the sound event

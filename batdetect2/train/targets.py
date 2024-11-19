@@ -3,7 +3,6 @@ from typing import Callable, List, Optional, Set
 
 from pydantic import Field
 from soundevent import data
-from soundevent.types import ClassMapper
 
 from batdetect2.configs import BaseConfig
 from batdetect2.terms import TagInfo, get_tag_from_info
@@ -12,11 +11,25 @@ from batdetect2.terms import TagInfo, get_tag_from_info
 class TargetConfig(BaseConfig):
     """Configuration for target generation."""
 
-    classes: List[TagInfo] = Field(default_factory=list)
-    generic_class: Optional[TagInfo] = None
+    classes: List[TagInfo] = Field(
+        default_factory=lambda: [
+            TagInfo(key="class", value=value) for value in DEFAULT_SPECIES_LIST
+        ]
+    )
+    generic_class: Optional[TagInfo] = Field(
+        default_factory=lambda: TagInfo(key="class", value="Bat")
+    )
 
-    include: Optional[List[TagInfo]] = None
-    exclude: Optional[List[TagInfo]] = None
+    include: Optional[List[TagInfo]] = Field(
+        default_factory=lambda: [TagInfo(key="event", value="Echolocation")]
+    )
+    exclude: Optional[List[TagInfo]] = Field(
+        default_factory=lambda: [
+            TagInfo(key="class", value=""),
+            TagInfo(key="class", value=" "),
+            TagInfo(key="class", value="Unknown"),
+        ]
+    )
 
 
 def build_sound_event_filter(
@@ -36,13 +49,54 @@ def build_sound_event_filter(
     )
 
 
-def build_class_mapper(classes: List[TagInfo]) -> ClassMapper:
-    target_tags = [get_tag_from_info(tag) for tag in classes]
-    labels = [tag.label if tag.label else tag.value for tag in classes]
-    return GenericMapper(
-        classes=target_tags,
-        labels=labels,
-    )
+def get_tag_label(tag_info: TagInfo) -> str:
+    return tag_info.label if tag_info.label else tag_info.value
+
+
+def get_class_names(classes: List[TagInfo]) -> List[str]:
+    return sorted({get_tag_label(tag) for tag in classes})
+
+
+def build_encoder(
+    classes: List[TagInfo],
+) -> Callable[[data.SoundEventAnnotation], Optional[str]]:
+    target_tags = set([get_tag_from_info(tag) for tag in classes])
+
+    tag_mapping = {
+        tag: get_tag_label(tag_info)
+        for tag, tag_info in zip(target_tags, classes)
+    }
+
+    def encoder(
+        sound_event_annotation: data.SoundEventAnnotation,
+    ) -> Optional[str]:
+        tags = set(sound_event_annotation.tags)
+
+        intersection = tags & target_tags
+
+        if not intersection:
+            return None
+
+        first = intersection.pop()
+        return tag_mapping[first]
+
+    return encoder
+
+
+def build_decoder(
+    classes: List[TagInfo],
+) -> Callable[[str], List[data.Tag]]:
+    target_tags = set([get_tag_from_info(tag) for tag in classes])
+    tag_mapping = {
+        get_tag_label(tag_info): tag
+        for tag, tag_info in zip(target_tags, classes)
+    }
+
+    def decoder(label: str) -> List[data.Tag]:
+        tag = tag_mapping.get(label)
+        return [tag] if tag else []
+
+    return decoder
 
 
 def filter_sound_event(
@@ -61,39 +115,22 @@ def filter_sound_event(
     return True
 
 
-class GenericMapper(ClassMapper):
-    """Generic class mapper configuration."""
-
-    def __init__(
-        self,
-        classes: List[data.Tag],
-        labels: List[str],
-    ):
-        if not len(classes) == len(labels):
-            raise ValueError("Number of targets and class labels must match.")
-
-        self.targets = set(classes)
-        self.class_labels = list(dict.fromkeys(labels))
-
-        self._mapping = {tag: label for tag, label in zip(classes, labels)}
-        self._inverse_mapping = {
-            label: tag for tag, label in zip(classes, labels)
-        }
-
-    def encode(
-        self,
-        sound_event_annotation: data.SoundEventAnnotation,
-    ) -> Optional[str]:
-        tags = set(sound_event_annotation.tags)
-
-        intersection = tags & self.targets
-        if not intersection:
-            return None
-
-        tag = intersection.pop()
-        return self._mapping[tag]
-
-    def decode(self, label: str) -> List[data.Tag]:
-        if label not in self._inverse_mapping:
-            return []
-        return [self._inverse_mapping[label]]
+DEFAULT_SPECIES_LIST = [
+    "Barbastellus barbastellus",
+    "Eptesicus serotinus",
+    "Myotis alcathoe",
+    "Myotis bechsteinii",
+    "Myotis brandtii",
+    "Myotis daubentonii",
+    "Myotis mystacinus",
+    "Myotis nattereri",
+    "Nyctalus leisleri",
+    "Nyctalus noctula",
+    "Pipistrellus nathusii",
+    "Pipistrellus pipistrellus",
+    "Pipistrellus pygmaeus",
+    "Plecotus auritus",
+    "Plecotus austriacus",
+    "Rhinolophus ferrumequinum",
+    "Rhinolophus hipposideros",
+]
