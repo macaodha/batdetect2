@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 import pytest
 
-from batdetect2.compat.data import load_annotation_project
+from batdetect2.compat.data import load_annotation_project_from_dir
 from batdetect2.compat.params import get_training_preprocessing_config
 from batdetect2.train.preprocess import generate_train_example
 
@@ -36,7 +36,7 @@ def test_can_generate_similar_training_inputs(
         size_mask = dataset["size_mask"]
         class_mask = dataset["class_mask"]
 
-        project = load_annotation_project(
+        project = load_annotation_project_from_dir(
             example_anns_dir,
             audio_dir=example_audio_dir,
         )

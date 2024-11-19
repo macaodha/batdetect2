@@ -28,10 +28,6 @@ class TrainExample(NamedTuple):
     idx: torch.Tensor
 
 
-def get_files(directory: PathLike, extension: str = ".nc") -> Sequence[Path]:
-    return list(Path(directory).glob(f"*{extension}"))
-
-
 class LabeledDataset(Dataset):
     def __init__(
         self,
@@ -92,3 +88,7 @@ class LabeledDataset(Dataset):
         return data.ClipAnnotation.model_validate_json(
             self.get_dataset(idx).attrs["clip_annotation"]
         )
+
+
+def get_files(directory: PathLike, extension: str = ".nc") -> Sequence[Path]:
+    return list(Path(directory).glob(f"*{extension}"))

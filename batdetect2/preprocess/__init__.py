@@ -49,6 +49,7 @@ class PreprocessingConfig(BaseModel):
 def preprocess_audio_clip(
     clip: data.Clip,
     config: Optional[PreprocessingConfig] = None,
+    audio_dir: Optional[data.PathLike] = None,
 ) -> xr.DataArray:
     """Preprocesses audio clip to generate spectrogram.
 
@@ -66,5 +67,5 @@ def preprocess_audio_clip(
 
     """
     config = config or PreprocessingConfig()
-    wav = load_clip_audio(clip, config=config.audio)
+    wav = load_clip_audio(clip, config=config.audio, audio_dir=audio_dir)
     return compute_spectrogram(wav, config=config.spectrogram)

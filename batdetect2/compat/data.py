@@ -1,5 +1,6 @@
 """Compatibility functions between old and new data structures."""
 
+import json
 import os
 import uuid
 from pathlib import Path
@@ -17,7 +18,7 @@ PathLike = Union[Path, str, os.PathLike]
 
 __all__ = [
     "convert_to_annotation_group",
-    "load_annotation_project",
+    "load_annotation_project_from_dir",
 ]
 
 SPECIES_TAG_KEY = "species"
@@ -298,7 +299,38 @@ def list_file_annotations(path: PathLike) -> List[Path]:
     return [file for file in path.glob("*.json")]
 
 
-def load_annotation_project(
+def load_annotation_project_from_file(
+    path: PathLike,
+    name: Optional[str] = None,
+    audio_dir: Optional[PathLike] = None,
+) -> data.AnnotationProject:
+    old_annotations = json.loads(Path(path).read_text())
+
+    annotations = []
+    tasks = []
+
+    for ann in old_annotations:
+        try:
+            ann = FileAnnotation.model_validate(ann)
+        except ValueError:
+            continue
+
+        try:
+            clip = file_annotation_to_clip(ann, audio_dir=audio_dir)
+        except FileNotFoundError:
+            continue
+
+        annotations.append(file_annotation_to_clip_annotation(ann, clip))
+        tasks.append(file_annotation_to_annotation_task(ann, clip))
+
+    return data.AnnotationProject(
+        name=name or str(path),
+        clip_annotations=annotations,
+        tasks=tasks,
+    )
+
+
+def load_annotation_project_from_dir(
     path: PathLike,
     name: Optional[str] = None,
     audio_dir: Optional[PathLike] = None,

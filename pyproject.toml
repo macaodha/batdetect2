@@ -26,6 +26,8 @@ dependencies = [
   "onnx>=1.16.0",
   "lightning[extra]>=2.2.2",
   "tensorboard>=2.16.2",
+  "omegaconf>=2.3.0",
+  "pyyaml>=6.0.2",
 ]
 requires-python = ">=3.9,<3.13"
 readme = "README.md"

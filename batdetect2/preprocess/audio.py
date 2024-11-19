@@ -30,15 +30,22 @@ class AudioConfig(BaseConfig):
 def load_file_audio(
     path: data.PathLike,
     config: Optional[AudioConfig] = None,
+    audio_dir: Optional[data.PathLike] = None,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     recording = data.Recording.from_file(path)
-    return load_recording_audio(recording, config=config, dtype=dtype)
+    return load_recording_audio(
+        recording,
+        config=config,
+        dtype=dtype,
+        audio_dir=audio_dir,
+    )
 
 
 def load_recording_audio(
     recording: data.Recording,
     config: Optional[AudioConfig] = None,
+    audio_dir: Optional[data.PathLike] = None,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     clip = data.Clip(
@@ -46,17 +53,25 @@ def load_recording_audio(
         start_time=0,
         end_time=recording.duration,
     )
-    return load_clip_audio(clip, config=config, dtype=dtype)
+    return load_clip_audio(
+        clip,
+        config=config,
+        dtype=dtype,
+        audio_dir=audio_dir,
+    )
 
 
 def load_clip_audio(
     clip: data.Clip,
     config: Optional[AudioConfig] = None,
+    audio_dir: Optional[data.PathLike] = None,
     dtype: DTypeLike = np.float32,
 ) -> xr.DataArray:
     config = config or AudioConfig()
 
-    wav = audio.load_clip(clip).sel(channel=0).astype(dtype)
+    wav = (
+        audio.load_clip(clip, audio_dir=audio_dir).sel(channel=0).astype(dtype)
+    )
 
     if config.duration is not None:
         wav = adjust_audio_duration(wav, duration=config.duration)
