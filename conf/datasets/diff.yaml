@@ -1,0 +1,64 @@
+datasets:
+  train:
+    - name: Bat Detective
+      audio_dir: data/datasets/bat_detective_batdetect2/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_detective_batdetect2/annotation_sets/train_set_bulgaria_batdetective_with_bbs.json
+    - name: QEOP Empty
+      audio_dir: data/datasets/bat_logger_qeop_empty/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_logger_qeop_empty/annotation_sets/bat_logger_qeop_empty.json
+    - name: Bat Logger 2016
+      audio_dir: data/datasets/bat_logger_2016/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_logger_2016/annotation_sets/train_set_bat_logger_2016_empty.json
+    - name: EchoBank
+      audio_dir: data/datasets/echobank_batdetect2/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/echobank_batdetect2/annotation_sets/Echobank_train_expert.json
+    - name: SN Scotland Nor
+      audio_dir: data/datasets/sn_scot_nor/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/sn_scot_nor/annotation_sets/sn_scot_nor_0.5_expert.json
+    - name: BCT
+      audio_dir: data/datasets/bct_1_sec/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bct_1_sec/annotation_sets/BCT_1_sec_train_expert.json
+    - name: BCIreland
+      audio_dir: data/datasets/bcireland/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bcireland/annotation_sets/bcireland_expert.json
+    - name: Rhinolophus BCT
+      audio_dir: data/datasets/rhinolophus_bct/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/rhinolophus_bct/annotation_sets/rhinolophus_BCT_expert.json
+  test:
+    - name: British Bat Calls 2018
+      audio_dir: data/datasets/bat_data_2018/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_data_2018/annotation_sets/BritishBatCalls_2018_1_sec_train_expert.json
+    - name: British Bat Calls 2018 Test
+      audio_dir: data/datasets/bat_data_2018_test/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_data_2018_test/annotation_sets/BritishBatCalls_2018_1_sec_test_expert.json
+
+    - name: British Bat Calls 2019
+      audio_dir: data/datasets/bat_data_2019/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_data_2019/annotation_sets/BritishBatCalls_2019_1_sec_train_expert.json
+    - name: British Bat Calls 2019 Test
+      audio_dir: data/datasets/bat_data_2019/audio/
+      annotations:
+        format: batdetect2_file
+        path: data/datasets/bat_data_2019_test/annotation_sets/BritishBatCalls_2019_1_sec_test_expert.json
