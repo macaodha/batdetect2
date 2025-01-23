@@ -1,11 +1,20 @@
+from collections.abc import Iterable
 from functools import partial
+from pathlib import Path
 from typing import Callable, List, Optional, Set
 
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.configs import BaseConfig, load_config
 from batdetect2.terms import TagInfo, get_tag_from_info
+
+
+class ReplaceConfig(BaseConfig):
+    """Configuration for replacing tags."""
+
+    original: TagInfo
+    replacement: TagInfo
 
 
 class TargetConfig(BaseConfig):
@@ -23,6 +32,7 @@ class TargetConfig(BaseConfig):
     include: Optional[List[TagInfo]] = Field(
         default_factory=lambda: [TagInfo(key="event", value="Echolocation")]
     )
+
     exclude: Optional[List[TagInfo]] = Field(
         default_factory=lambda: [
             TagInfo(key="class", value=""),
@@ -30,6 +40,8 @@ class TargetConfig(BaseConfig):
             TagInfo(key="class", value="Unknown"),
         ]
     )
+
+    replace: Optional[List[ReplaceConfig]] = None
 
 
 def build_sound_event_filter(
@@ -57,9 +69,24 @@ def get_class_names(classes: List[TagInfo]) -> List[str]:
     return sorted({get_tag_label(tag) for tag in classes})
 
 
+def build_replacer(
+    rules: List[ReplaceConfig],
+) -> Callable[[data.Tag], data.Tag]:
+    mapping = {
+        get_tag_from_info(rule.original): get_tag_from_info(rule.replacement)
+        for rule in rules
+    }
+
+    def replacer(tag: data.Tag) -> data.Tag:
+        return mapping.get(tag, tag)
+
+    return replacer
+
+
 def build_encoder(
     classes: List[TagInfo],
-) -> Callable[[data.SoundEventAnnotation], Optional[str]]:
+    replacement_rules: Optional[List[ReplaceConfig]] = None,
+) -> Callable[[Iterable[data.Tag]], Optional[str]]:
     target_tags = set([get_tag_from_info(tag) for tag in classes])
 
     tag_mapping = {
@@ -67,12 +94,16 @@ def build_encoder(
         for tag, tag_info in zip(target_tags, classes)
     }
 
-    def encoder(
-        sound_event_annotation: data.SoundEventAnnotation,
-    ) -> Optional[str]:
-        tags = set(sound_event_annotation.tags)
+    replacer = (
+        build_replacer(replacement_rules) if replacement_rules else lambda x: x
+    )
 
-        intersection = tags & target_tags
+    def encoder(
+        tags: Iterable[data.Tag],
+    ) -> Optional[str]:
+        sanitized_tags = {replacer(tag) for tag in tags}
+
+        intersection = sanitized_tags & target_tags
 
         if not intersection:
             return None
@@ -113,6 +144,12 @@ def filter_sound_event(
         return False
 
     return True
+
+
+def load_target_config(
+    path: Path, field: Optional[str] = None
+) -> TargetConfig:
+    return load_config(path, schema=TargetConfig, field=field)
 
 
 DEFAULT_SPECIES_LIST = [

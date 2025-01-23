@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -22,7 +23,7 @@ def generate_heatmaps(
     sound_events: Sequence[data.SoundEventAnnotation],
     spec: xr.DataArray,
     class_names: List[str],
-    encoder: Callable[[data.SoundEventAnnotation], Optional[str]],
+    encoder: Callable[[Iterable[data.Tag]], Optional[str]],
     target_sigma: float = 3.0,
     position: Positions = "bottom-left",
     time_scale: float = 1000.0,
@@ -64,23 +65,29 @@ def generate_heatmaps(
         time, frequency = geometry.get_geometry_point(geom, position=position)
 
         # Set 1.0 at the position of the sound event in the detection heatmap
-        detection_heatmap = arrays.set_value_at_pos(
-            detection_heatmap,
-            1.0,
-            time=time,
-            frequency=frequency,
-        )
+        try:
+            detection_heatmap = arrays.set_value_at_pos(
+                detection_heatmap,
+                1.0,
+                time=time,
+                frequency=frequency,
+            )
+        except KeyError:
+            # Skip the sound event if the position is outside the spectrogram
+            continue
 
         # Set the size of the sound event at the position in the size heatmap
         start_time, low_freq, end_time, high_freq = geometry.compute_bounds(
             geom
         )
+
         size = np.array(
             [
                 (end_time - start_time) * time_scale,
                 (high_freq - low_freq) * frequency_scale,
             ]
         )
+
         size_heatmap = arrays.set_value_at_pos(
             size_heatmap,
             size,
@@ -89,14 +96,12 @@ def generate_heatmaps(
         )
 
         # Get the class name of the sound event
-        class_name = encoder(sound_event_annotation)
+        class_name = encoder(sound_event_annotation.tags)
 
         if class_name is None:
             # If the label is None skip the sound event
             continue
 
-        # Set 1.0 at the position and category of the sound event in the class
-        # heatmap
         class_heatmap = arrays.set_value_at_pos(
             class_heatmap,
             1.0,

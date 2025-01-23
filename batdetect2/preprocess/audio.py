@@ -12,7 +12,7 @@ from batdetect2.configs import BaseConfig
 
 TARGET_SAMPLERATE_HZ = 256_000
 SCALE_RAW_AUDIO = False
-DEFAULT_DURATION = 1
+DEFAULT_DURATION = None
 
 
 class ResampleConfig(BaseConfig):

@@ -28,7 +28,7 @@ class ModelType(str, Enum):
 
 class ModelConfig(BaseConfig):
     name: ModelType = ModelType.Net2DFast
-    num_features: int = 128
+    num_features: int = 32
 
 
 def get_backbone(

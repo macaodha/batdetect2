@@ -62,12 +62,16 @@ def generate_train_example(
         include=config.target.include,
         exclude=config.target.exclude,
     )
+
     selected_events = [
         event for event in clip_annotation.sound_events if filter_fn(event)
     ]
 
+    encoder = build_encoder(
+        config.target.classes,
+        replacement_rules=config.target.replace,
+    )
     class_names = get_class_names(config.target.classes)
-    encoder = build_encoder(config.target.classes)
 
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         selected_events,
@@ -172,5 +176,11 @@ def preprocess_single_annotation(
     if path.is_file() and replace:
         path.unlink()
 
-    sample = generate_train_example(clip_annotation, config=config)
+    try:
+        sample = generate_train_example(clip_annotation, config=config)
+    except Exception as error:
+        raise RuntimeError(
+            f"Failed to process annotation: {clip_annotation.uuid}"
+        ) from error
+
     save_to_file(sample, path)

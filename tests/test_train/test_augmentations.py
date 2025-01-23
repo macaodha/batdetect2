@@ -1,10 +1,12 @@
 from collections.abc import Callable
 
+import numpy as np
 import xarray as xr
 from soundevent import data
 
 from batdetect2.train.augmentations import (
     add_echo,
+    adjust_dataset_width,
     mix_examples,
     select_random_subclip,
 )
@@ -68,3 +70,67 @@ def test_selected_random_subclip_has_the_correct_width(
     subclip = select_random_subclip(original, width=100)
 
     assert subclip["spectrogram"].shape[1] == 100
+
+
+def test_adjust_dataset_width():
+    height = 128
+    width = 512
+    samplerate = 48_000
+
+    times = np.linspace(0, 1, width)
+
+    audio_times = np.linspace(0, 1, samplerate)
+    frequency = np.linspace(0, 24_000, height)
+
+    width_subset = 356
+    audio_width_subset = int(samplerate * width_subset / width)
+
+    times_subset = times[:width_subset]
+    audio_times_subset = audio_times[:audio_width_subset]
+    dimensions = ["width", "height"]
+    class_names = [f"species_{i}" for i in range(17)]
+
+    spectrogram = np.random.random([height, width_subset])
+    sizes = np.random.random([len(dimensions), height, width_subset])
+    classes = np.random.random([len(class_names), height, width_subset])
+    audio = np.random.random([int(samplerate * width_subset / width)])
+
+    dataset = xr.Dataset(
+        data_vars={
+            "audio": (("audio_time",), audio),
+            "spectrogram": (("frequency", "time"), spectrogram),
+            "sizes": (("dimension", "frequency", "time"), sizes),
+            "classes": (("class", "frequency", "time"), classes),
+        },
+        coords={
+            "audio_time": audio_times_subset,
+            "time": times_subset,
+            "frequency": frequency,
+            "dimension": dimensions,
+            "class": class_names,
+        },
+    )
+
+    adjusted = adjust_dataset_width(dataset, width=width)
+
+    # Spectrogram was adjusted correctly
+    assert np.isclose(adjusted["spectrogram"].time, times).all()
+    assert (adjusted["spectrogram"].frequency == frequency).all()
+
+    # Sizes was adjusted correctly
+    assert np.isclose(adjusted["sizes"].time, times).all()
+    assert (adjusted["sizes"].frequency == frequency).all()
+    assert list(adjusted["sizes"].dimension.values) == dimensions
+
+    # Sizes was adjusted correctly
+    assert np.isclose(adjusted["classes"].time, times).all()
+    assert (adjusted["sizes"].frequency == frequency).all()
+    assert list(adjusted["classes"]["class"].values) == class_names
+
+    # Audio time was adjusted corretly
+    assert np.isclose(
+        len(adjusted["audio"].audio_time), len(audio_times), atol=2
+    )
+    assert np.isclose(
+        adjusted["audio"].audio_time[-1], audio_times[-1], atol=1e-3
+    )

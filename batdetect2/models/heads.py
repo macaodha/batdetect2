@@ -41,8 +41,8 @@ class BBoxHead(nn.Module):
         self.in_channels = in_channels
 
         self.bbox = nn.Conv2d(
-            self.feature_extractor.out_channels,
-            2,
+            in_channels=self.in_channels,
+            out_channels=2,
             kernel_size=1,
             padding=0,
         )

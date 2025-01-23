@@ -215,6 +215,7 @@ def annotation_to_sound_event(
 def file_annotation_to_clip(
     file_annotation: FileAnnotation,
     audio_dir: Optional[PathLike] = None,
+    label_key: str = "class",
 ) -> data.Clip:
     """Convert file annotation to recording."""
     audio_dir = audio_dir or Path.cwd()
@@ -227,6 +228,12 @@ def file_annotation_to_clip(
     recording = data.Recording.from_file(
         full_path,
         time_expansion=file_annotation.time_exp,
+        tags=[
+            data.Tag(
+                term=data.term_from_key(label_key),
+                value=file_annotation.label,
+            )
+        ],
     )
 
     return data.Clip(

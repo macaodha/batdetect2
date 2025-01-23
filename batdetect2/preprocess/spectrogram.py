@@ -71,11 +71,12 @@ def compute_spectrogram(
     if config.size.divide_factor:
         # Need to pad the audio to make sure the spectrogram has a
         # width compatible with the divide factor
+        resize_factor = config.size.resize_factor or 1
         wav = pad_audio(
             wav,
             window_duration=config.fft.window_duration,
             window_overlap=config.fft.window_overlap,
-            divide_factor=config.size.divide_factor,
+            divide_factor=int(config.size.divide_factor / resize_factor),
         )
 
     spec = stft(

@@ -74,8 +74,20 @@ class LabeledDataset(Dataset):
         )
 
     @classmethod
-    def from_directory(cls, directory: PathLike, extension: str = ".nc"):
-        return cls(get_files(directory, extension))
+    def from_directory(
+        cls,
+        directory: PathLike,
+        extension: str = ".nc",
+        augment: bool = False,
+        preprocessing_config: Optional[PreprocessingConfig] = None,
+        augmentation_config: Optional[AugmentationsConfig] = None,
+    ):
+        return cls(
+            get_files(directory, extension),
+            augment=augment,
+            preprocessing_config=preprocessing_config,
+            augmentation_config=augmentation_config,
+        )
 
     def get_random_example(self) -> xr.Dataset:
         idx = np.random.randint(0, len(self))

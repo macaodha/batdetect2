@@ -1,6 +1,6 @@
 """Module for postprocessing model outputs."""
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -30,15 +30,12 @@ class PostprocessConfig(BaseModel):
     top_k_per_sec: int = Field(default=TOP_K_PER_SEC, gt=0)
 
 
-TagFunction = Callable[[int], List[data.Tag]]
-
-
 def postprocess_model_outputs(
     outputs: ModelOutput,
     clips: List[data.Clip],
     classes: List[str],
     decoder: Callable[[str], List[data.Tag]],
-    config: PostprocessConfig,
+    config: Optional[PostprocessConfig] = None,
 ) -> List[data.ClipPrediction]:
     """Postprocesses model outputs to generate clip predictions.
 
@@ -68,6 +65,9 @@ def postprocess_model_outputs(
     ValueError
         If the number of predictions does not match the number of clips.
     """
+
+    config = config or PostprocessConfig()
+
     num_predictions = len(outputs.detection_probs)
 
     if num_predictions == 0:
@@ -189,7 +189,7 @@ def compute_sound_events_from_outputs(
                 [
                     data.PredictedTag(
                         tag=tag,
-                        score=class_score.item(),
+                        score=max(min(class_score.item(), 1), 0),
                     )
                     for tag in corresponding_tags
                 ]
@@ -220,7 +220,7 @@ def compute_sound_events_from_outputs(
         predictions.append(
             data.SoundEventPrediction(
                 sound_event=sound_event,
-                score=score.item(),
+                score=max(min(score.item(), 1), 0),
                 tags=predicted_tags,
             )
         )

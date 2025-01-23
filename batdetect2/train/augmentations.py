@@ -20,6 +20,37 @@ class AugmentationConfig(BaseConfig):
 class SubclipConfig(BaseConfig):
     enable: bool = True
     duration: Optional[float] = None
+    width: Optional[int] = 512
+
+
+def adjust_dataset_width(
+    example: xr.Dataset,
+    duration: Optional[float] = None,
+    width: Optional[int] = None,
+) -> xr.Dataset:
+    step = arrays.get_dim_step(example, "time")  # type: ignore
+
+    if width is None:
+        if duration is None:
+            raise ValueError("Either duration or width must be provided")
+
+        width = int(np.floor(duration / step))
+
+    adjusted_arrays = {
+        name: ops.adjust_dim_width(array, "time", width)
+        for name, array in example.items()
+        if name != "audio"
+    }
+
+    ratio = width / example.spectrogram.sizes["time"]
+    audio_width = int(example.audio.sizes["audio_time"] * ratio)
+    adjusted_arrays["audio"] = ops.adjust_dim_width(
+        example["audio"],
+        "audio_time",
+        audio_width,
+    )
+
+    return xr.Dataset(data_vars=adjusted_arrays)
 
 
 def select_random_subclip(
@@ -30,6 +61,7 @@ def select_random_subclip(
 ) -> xr.Dataset:
     """Select a random subclip from a clip."""
     step = arrays.get_dim_step(example, "time")  # type: ignore
+    start, stop = arrays.get_dim_range(example, "time")  # type: ignore
 
     if width is None:
         if duration is None:
@@ -41,15 +73,19 @@ def select_random_subclip(
         duration = width * step
 
     if start_time is None:
-        start, stop = arrays.get_dim_range(example, "time")  # type: ignore
-        start_time = np.random.uniform(start, stop - duration)
+        start_time = np.random.uniform(start, max(stop - duration, start))
+
+    if start_time + duration > stop:
+        example = adjust_dataset_width(example, width=width)
 
     start_index = arrays.get_coord_index(
         example,  # type: ignore
         "time",
         start_time,
     )
+
     end_index = start_index + width - 1
+
     start_time = example.time.values[start_index]
     end_time = example.time.values[end_index]
 
@@ -78,8 +114,15 @@ def mix_examples(
     if weight is None:
         weight = np.random.uniform(min_weight, max_weight)
 
-    audio2 = other["audio"].values
-    audio1 = ops.adjust_dim_width(example["audio"], "audio_time", len(audio2))
+    audio1 = example["audio"]
+
+    audio2 = ops.adjust_dim_width(
+        other["audio"], "audio_time", len(audio1)
+    ).values
+
+    if len(audio2) > len(audio1):
+        audio2 = audio2[: len(audio1)]
+
     combined = weight * audio1 + (1 - weight) * audio2
 
     spec = compute_spectrogram(
@@ -104,11 +147,16 @@ def mix_examples(
     return xr.Dataset(
         {
             "audio": combined,
-            "spectrogram": spec,
+            "spectrogram": xr.DataArray(
+                data=spec.data,
+                dims=example["spectrogram"].dims,
+                coords=example["spectrogram"].coords,
+            ),
             "detection": detection_heatmap,
             "class": class_heatmap,
             "size": size_heatmap,
-        }
+        },
+        attrs=example.attrs,
     )
 
 
@@ -146,7 +194,14 @@ def add_echo(
         config=config.spectrogram,
     )
 
-    return example.assign(audio=audio, spectrogram=spectrogram)
+    return example.assign(
+        audio=audio,
+        spectrogram=xr.DataArray(
+            data=spectrogram.data,
+            dims=example["spectrogram"].dims,
+            coords=example["spectrogram"].coords,
+        ),
+    )
 
 
 class VolumeAugmentationConfig(AugmentationConfig):
@@ -340,15 +395,17 @@ def augment_example(
         example = select_random_subclip(
             example,
             duration=config.subclip.duration,
+            width=config.subclip.width,
         )
 
-    if should_apply(config.mix) and others is not None:
+    if should_apply(config.mix) and (others is not None):
         other = others()
 
         if config.subclip.enable:
             other = select_random_subclip(
                 other,
                 duration=config.subclip.duration,
+                width=config.subclip.width,
             )
 
         example = mix_examples(

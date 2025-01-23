@@ -6,6 +6,7 @@ from pydantic import Field
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.typing import ModelOutput
+from batdetect2.plot import detection
 from batdetect2.train.dataset import TrainExample
 
 
