@@ -3,7 +3,9 @@ from typing import Optional
 import pytorch_lightning as L
 import torch
 from pydantic import Field
-from torch import optim
+from torch.optim.adam import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.data import DataLoader
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models import (
@@ -13,11 +15,20 @@ from batdetect2.models import (
     get_backbone,
 )
 from batdetect2.models.typing import ModelOutput
-from batdetect2.post_process import PostprocessConfig
+from batdetect2.post_process import (
+    PostprocessConfig,
+    postprocess_model_outputs,
+)
 from batdetect2.preprocess import PreprocessingConfig
-from batdetect2.train.dataset import TrainExample
+from batdetect2.train.dataset import LabeledDataset, TrainExample
+from batdetect2.train.evaluate import match_predictions_and_annotations
 from batdetect2.train.losses import LossConfig, compute_loss
-from batdetect2.train.targets import TargetConfig
+from batdetect2.train.targets import (
+    TargetConfig,
+    build_decoder,
+    build_encoder,
+    get_class_names,
+)
 
 
 class OptimizerConfig(BaseConfig):
@@ -55,10 +66,8 @@ class DetectorModel(L.LightningModule):
         self.save_hyperparameters()
 
         size = self.config.preprocessing.spectrogram.size
-        self.backbone = get_backbone(
-            input_height=int(size.height * (size.resize_factor or 1)),
-            config=self.config.backbone,
-        )
+        assert size is not None
+        self.backbone = get_backbone(self.config.backbone)
 
         self.classifier = ClassifierHead(
             num_classes=len(self.config.targets.classes),
@@ -73,6 +82,13 @@ class DetectorModel(L.LightningModule):
         )
 
         self.validation_predictions = []
+
+        self.class_names = get_class_names(self.config.targets.classes)
+        self.encoder = build_encoder(
+            self.config.targets.classes,
+            replacement_rules=self.config.targets.replace,
+        )
+        self.decoder = build_decoder(self.config.targets.classes)
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:  # type: ignore
         features = self.backbone(spec)
@@ -117,14 +133,29 @@ class DetectorModel(L.LightningModule):
         self.log("val/loss/classification", losses.total, logger=True)
 
         dataloaders = self.trainer.val_dataloaders
-        print(dataloaders)
+        assert isinstance(dataloaders, DataLoader)
+        dataset = dataloaders.dataset
+        assert isinstance(dataset, LabeledDataset)
+        clip_annotation = dataset.get_clip_annotation(batch_idx)
 
+        clip_prediction = postprocess_model_outputs(
+            outputs,
+            clips=[clip_annotation.clip],
+            classes=self.class_names,
+            decoder=self.decoder,
+            config=self.config.postprocessing,
+        )[0]
+
+        self.validation_predictions.extend(
+            match_predictions_and_annotations(clip_annotation, clip_prediction)
+        )
+
+    def on_validation_epoch_end(self) -> None:
+        print(len(self.validation_predictions))
+        self.validation_predictions.clear()
 
     def configure_optimizers(self):
         conf = self.config.train.optimizer
-        optimizer = optim.Adam(self.parameters(), lr=conf.learning_rate)
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=conf.t_max,
-        )
+        optimizer = Adam(self.parameters(), lr=conf.learning_rate)
+        scheduler = CosineAnnealingLR(optimizer, T_max=conf.t_max)
         return [optimizer], [scheduler]

@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from soundevent import data
-from soundevent.types import ClassMapper
 
 from batdetect2.train.labels import generate_heatmaps
 
@@ -21,16 +20,6 @@ clip = data.Clip(
     start_time=0,
     end_time=1,
 )
-
-
-class Mapper(ClassMapper):
-    class_labels = ["bat", "cat"]
-
-    def encode(self, sound_event_annotation: data.SoundEventAnnotation) -> str:
-        return "bat"
-
-    def decode(self, label: str) -> list:
-        return [data.Tag(term=data.term_from_key("species"), value="bat")]
 
 
 def test_generated_heatmaps_have_correct_dimensions():
@@ -57,12 +46,11 @@ def test_generated_heatmaps_have_correct_dimensions():
         ],
     )
 
-    class_mapper = Mapper()
-
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         clip_annotation.sound_events,
         spec,
-        class_mapper,
+        class_names=["bat", "cat"],
+        encoder=lambda _: "bat",
     )
 
     assert isinstance(detection_heatmap, xr.DataArray)
@@ -107,11 +95,13 @@ def test_generated_heatmap_are_non_zero_at_correct_positions():
         ],
     )
 
-    class_mapper = Mapper()
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         clip_annotation.sound_events,
         spec,
-        class_mapper,
+        class_names=["bat", "cat"],
+        encoder=lambda _: "bat",
+        time_scale=1,
+        frequency_scale=1,
     )
     assert size_heatmap.sel(time=10, frequency=10, dimension="width") == 10
     assert size_heatmap.sel(time=10, frequency=10, dimension="height") == 10

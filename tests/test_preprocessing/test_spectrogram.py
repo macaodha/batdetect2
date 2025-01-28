@@ -8,14 +8,13 @@ from soundevent import arrays
 
 from batdetect2.preprocess.audio import AudioConfig, load_file_audio
 from batdetect2.preprocess.spectrogram import (
-    FFTConfig,
+    STFTConfig,
     FrequencyConfig,
     SpecSizeConfig,
     SpectrogramConfig,
     compute_spectrogram,
     duration_to_spec_width,
     get_spectrogram_resolution,
-    pad_audio,
     spec_width_to_samples,
     stft,
 )
@@ -68,45 +67,6 @@ def test_can_estimate_correctly_spectrogram_width_from_duration(
     )
 
 
-@settings(
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-    deadline=400,
-)
-@given(
-    duration=st.floats(min_value=0.1, max_value=1.0),
-    window_duration=st.floats(min_value=0.001, max_value=0.01),
-    window_overlap=st.floats(min_value=0.2, max_value=0.9),
-    samplerate=st.integers(min_value=256_000, max_value=512_000),
-    divide_factor=st.integers(min_value=16, max_value=64),
-)
-def test_can_pad_audio_to_adjust_spectrogram_width(
-    duration: float,
-    window_duration: float,
-    window_overlap: float,
-    samplerate: int,
-    divide_factor: int,
-    wav_factory: Callable[..., Path],
-):
-    path = wav_factory(duration=duration, samplerate=samplerate)
-
-    audio = load_file_audio(
-        path,
-        # NOTE: Dont resample nor adjust duration to test if the width
-        # estimation works on all scenarios
-        config=AudioConfig(resample=None, duration=None),
-    )
-
-    audio = pad_audio(
-        audio,
-        window_duration=window_duration,
-        window_overlap=window_overlap,
-        divide_factor=divide_factor,
-    )
-
-    spectrogram = stft(audio, window_duration, window_overlap)
-    assert spectrogram.sizes["time"] % divide_factor == 0
-
-
 def test_can_estimate_spectrogram_resolution(
     wav_factory: Callable[..., Path],
 ):
@@ -120,7 +80,7 @@ def test_can_estimate_spectrogram_resolution(
     )
 
     config = SpectrogramConfig(
-        fft=FFTConfig(),
+        stft=STFTConfig(),
         size=SpecSizeConfig(height=256, resize_factor=0.5),
         frequencies=FrequencyConfig(min_freq=10_000, max_freq=120_000),
     )

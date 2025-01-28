@@ -13,7 +13,7 @@ from batdetect2.preprocess.audio import (
 )
 from batdetect2.preprocess.spectrogram import (
     AmplitudeScaleConfig,
-    FFTConfig,
+    STFTConfig,
     FrequencyConfig,
     LogScaleConfig,
     PcenScaleConfig,
@@ -27,7 +27,7 @@ __all__ = [
     "AudioConfig",
     "ResampleConfig",
     "SpectrogramConfig",
-    "FFTConfig",
+    "STFTConfig",
     "FrequencyConfig",
     "PcenScaleConfig",
     "LogScaleConfig",

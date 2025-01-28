@@ -12,7 +12,7 @@ from soundevent.arrays import operations as ops
 from batdetect2.configs import BaseConfig
 
 
-class FFTConfig(BaseConfig):
+class STFTConfig(BaseConfig):
     window_duration: float = Field(default=0.002, gt=0)
     window_overlap: float = Field(default=0.75, ge=0, lt=1)
     window_fn: str = "hann"
@@ -24,9 +24,15 @@ class FrequencyConfig(BaseConfig):
 
 
 class SpecSizeConfig(BaseConfig):
-    height: int = 256
+    height: int = 128
+    """Height of the spectrogram in pixels. This value determines the 
+    number of frequency bands and corresponds to the vertical dimension 
+    of the spectrogram."""
+
     resize_factor: Optional[float] = 0.5
-    divide_factor: Optional[int] = 32
+    """Factor by which to resize the spectrogram along the time axis. 
+    A value of 0.5 reduces the temporal dimension by half, while a 
+    value of 2.0 doubles it. If None, no resizing is performed."""
 
 
 class LogScaleConfig(BaseConfig):
@@ -50,13 +56,13 @@ Scales = Union[LogScaleConfig, PcenScaleConfig, AmplitudeScaleConfig]
 
 
 class SpectrogramConfig(BaseConfig):
-    fft: FFTConfig = Field(default_factory=FFTConfig)
+    stft: STFTConfig = Field(default_factory=STFTConfig)
     frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
     scale: Scales = Field(
         default_factory=PcenScaleConfig,
         discriminator="name",
     )
-    size: SpecSizeConfig = Field(default_factory=SpecSizeConfig)
+    size: Optional[SpecSizeConfig] = Field(default_factory=SpecSizeConfig)
     denoise: bool = True
     max_scale: bool = False
 
@@ -68,22 +74,11 @@ def compute_spectrogram(
 ) -> xr.DataArray:
     config = config or SpectrogramConfig()
 
-    if config.size.divide_factor:
-        # Need to pad the audio to make sure the spectrogram has a
-        # width compatible with the divide factor
-        resize_factor = config.size.resize_factor or 1
-        wav = pad_audio(
-            wav,
-            window_duration=config.fft.window_duration,
-            window_overlap=config.fft.window_overlap,
-            divide_factor=int(config.size.divide_factor / resize_factor),
-        )
-
     spec = stft(
         wav,
-        window_duration=config.fft.window_duration,
-        window_overlap=config.fft.window_overlap,
-        window_fn=config.fft.window_fn,
+        window_duration=config.stft.window_duration,
+        window_overlap=config.stft.window_overlap,
+        window_fn=config.stft.window_fn,
         dtype=dtype,
     )
 
@@ -98,11 +93,12 @@ def compute_spectrogram(
     if config.denoise:
         spec = denoise_spectrogram(spec)
 
-    spec = resize_spectrogram(
-        spec,
-        height=config.size.height,
-        resize_factor=config.size.resize_factor,
-    )
+    if config.size:
+        spec = resize_spectrogram(
+            spec,
+            height=config.size.height,
+            resize_factor=config.size.resize_factor,
+        )
 
     if config.max_scale:
         spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
@@ -257,7 +253,7 @@ def resize_spectrogram(
     return ops.resize(
         spec,
         time=int(resize_factor * current_width),
-        frequency=int(resize_factor * height),
+        frequency=height,
         dtype=np.float32,
     )
 
@@ -283,43 +279,6 @@ def adjust_spectrogram_width(
         stop=stop + extra_duration,
     )
     return resized
-
-
-def pad_audio(
-    wave: xr.DataArray,
-    window_duration: float,
-    window_overlap: float,
-    divide_factor: int = 32,
-) -> xr.DataArray:
-    current_duration = arrays.get_dim_width(wave, dim="time")
-    step = arrays.get_dim_step(wave, dim="time")
-    samplerate = int(1 / step)
-
-    estimated_spec_width = duration_to_spec_width(
-        current_duration,
-        samplerate=samplerate,
-        window_duration=window_duration,
-        window_overlap=window_overlap,
-    )
-
-    if estimated_spec_width % divide_factor == 0:
-        return wave
-
-    target_spec_width = int(
-        np.ceil(estimated_spec_width / divide_factor) * divide_factor
-    )
-    target_samples = spec_width_to_samples(
-        target_spec_width,
-        samplerate=samplerate,
-        window_duration=window_duration,
-        window_overlap=window_overlap,
-    )
-    return ops.adjust_dim_width(
-        wave,
-        dim="time",
-        width=target_samples,
-        position="start",
-    )
 
 
 def duration_to_spec_width(
@@ -357,6 +316,8 @@ def get_spectrogram_resolution(
 
     spec_height = config.size.height
     resize_factor = config.size.resize_factor or 1
-    freq_bin_width = (max_freq - min_freq) / (spec_height * resize_factor)
-    hop_duration = config.fft.window_duration * (1 - config.fft.window_overlap)
+    freq_bin_width = (max_freq - min_freq) / spec_height
+    hop_duration = config.stft.window_duration * (
+        1 - config.stft.window_overlap
+    )
     return freq_bin_width, hop_duration / resize_factor

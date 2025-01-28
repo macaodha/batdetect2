@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 
 import torch
 import torch.nn as nn
@@ -45,15 +45,27 @@ class BackboneModel(ABC, nn.Module):
     input_height: int
     """Height of the input spectrogram."""
 
-    num_features: int
-    """Dimension of the feature tensor."""
+    encoder_channels: Tuple[int, ...]
+    """Tuple specifying the number of channels for each convolutional layer 
+    in the encoder. The length of this tuple determines the number of 
+    encoder layers."""
+
+    decoder_channels: Tuple[int, ...]
+    """Tuple specifying the number of channels for each convolutional layer 
+    in the decoder. The length of this tuple determines the number of 
+    decoder layers."""
+
+    bottleneck_channels: int
+    """Number of channels in the bottleneck layer, which connects the 
+    encoder and decoder."""
 
     out_channels: int
-    """Number of output channels of the feature extractor."""
+    """Number of channels in the final output feature map produced by the 
+    backbone model."""
 
     @abstractmethod
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the encoder model."""
+        """Forward pass of the model."""
 
 
 class DetectionModel(ABC, nn.Module):

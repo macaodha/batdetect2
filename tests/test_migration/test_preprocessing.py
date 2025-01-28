@@ -88,7 +88,7 @@ def test_spectrogram_generation_hasnt_changed(
         scale = preprocess.AmplitudeScaleConfig()
 
     config = preprocess.SpectrogramConfig(
-        fft=preprocess.FFTConfig(
+        stft=preprocess.STFTConfig(
             window_overlap=fft_overlap,
             window_duration=fft_win_length,
         ),

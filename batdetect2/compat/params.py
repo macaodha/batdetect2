@@ -1,7 +1,7 @@
 from batdetect2.preprocess import (
     AmplitudeScaleConfig,
     AudioConfig,
-    FFTConfig,
+    STFTConfig,
     FrequencyConfig,
     LogScaleConfig,
     PcenScaleConfig,
@@ -40,7 +40,7 @@ def get_preprocessing_config(params: dict) -> PreprocessingConfig:
             duration=None,
         ),
         spectrogram=SpectrogramConfig(
-            fft=FFTConfig(
+            stft=STFTConfig(
                 window_duration=params["fft_win_length"],
                 window_overlap=params["fft_overlap"],
                 window_fn="hann",

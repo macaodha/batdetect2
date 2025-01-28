@@ -5,10 +5,17 @@ from typing import NamedTuple, Optional, Sequence, Union
 import numpy as np
 import torch
 import xarray as xr
+from pydantic import Field
 from soundevent import data
 from torch.utils.data import Dataset
 
-from batdetect2.train.augmentations import AugmentationsConfig, augment_example
+from batdetect2.configs import BaseConfig
+from batdetect2.preprocess.tensors import adjust_width
+from batdetect2.train.augmentations import (
+    AugmentationsConfig,
+    augment_example,
+    select_subclip,
+)
 from batdetect2.train.preprocess import PreprocessingConfig
 
 __all__ = [
@@ -28,20 +35,36 @@ class TrainExample(NamedTuple):
     idx: torch.Tensor
 
 
+class SubclipConfig(BaseConfig):
+    duration: Optional[float] = None
+    width: int = 512
+    random: bool = False
+
+
+class DatasetConfig(BaseConfig):
+    subclip: SubclipConfig = Field(default_factory=SubclipConfig)
+    preprocessing: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+    augmentation: AugmentationsConfig = Field(
+        default_factory=AugmentationsConfig
+    )
+
+
 class LabeledDataset(Dataset):
+    config: DatasetConfig
+
     def __init__(
         self,
         filenames: Sequence[PathLike],
         augment: bool = False,
-        preprocessing_config: Optional[PreprocessingConfig] = None,
-        augmentation_config: Optional[AugmentationsConfig] = None,
+        subclip: bool = False,
+        config: Optional[DatasetConfig] = None,
     ):
         self.filenames = filenames
         self.augment = augment
-        self.preprocessing_config = (
-            preprocessing_config or PreprocessingConfig()
-        )
-        self.agumentation_config = augmentation_config or AugmentationsConfig()
+        self.subclip = subclip
+        self.config = config or DatasetConfig()
 
     def __len__(self):
         return len(self.filenames)
@@ -49,27 +72,27 @@ class LabeledDataset(Dataset):
     def __getitem__(self, idx) -> TrainExample:
         dataset = self.get_dataset(idx)
 
+        if self.subclip:
+            dataset = select_subclip(
+                dataset,
+                duration=self.config.subclip.duration,
+                width=self.config.subclip.width,
+                random=self.config.subclip.random,
+            )
+
         if self.augment:
             dataset = augment_example(
                 dataset,
-                self.agumentation_config,
-                preprocessing_config=self.preprocessing_config,
+                self.config.augmentation,
+                preprocessing_config=self.config.preprocessing,
                 others=self.get_random_example,
             )
 
         return TrainExample(
-            spec=torch.tensor(
-                dataset["spectrogram"].values.astype(np.float32)
-            ).unsqueeze(0),
-            detection_heatmap=torch.tensor(
-                dataset["detection"].values.astype(np.float32)
-            ),
-            class_heatmap=torch.tensor(
-                dataset["class"].values.astype(np.float32)
-            ),
-            size_heatmap=torch.tensor(
-                dataset["size"].values.astype(np.float32)
-            ),
+            spec=self.to_tensor(dataset["spectrogram"]).unsqueeze(0),
+            detection_heatmap=self.to_tensor(dataset["detection"]),
+            class_heatmap=self.to_tensor(dataset["class"]),
+            size_heatmap=self.to_tensor(dataset["size"]),
             idx=torch.tensor(idx),
         )
 
@@ -78,20 +101,30 @@ class LabeledDataset(Dataset):
         cls,
         directory: PathLike,
         extension: str = ".nc",
+        config: Optional[DatasetConfig] = None,
         augment: bool = False,
-        preprocessing_config: Optional[PreprocessingConfig] = None,
-        augmentation_config: Optional[AugmentationsConfig] = None,
+        subclip: bool = False,
     ):
         return cls(
             get_files(directory, extension),
+            config=config,
             augment=augment,
-            preprocessing_config=preprocessing_config,
-            augmentation_config=augmentation_config,
+            subclip=subclip,
         )
 
     def get_random_example(self) -> xr.Dataset:
         idx = np.random.randint(0, len(self))
-        return self.get_dataset(idx)
+        dataset = self.get_dataset(idx)
+
+        if self.subclip:
+            dataset = select_subclip(
+                dataset,
+                duration=self.config.subclip.duration,
+                width=self.config.subclip.width,
+                random=self.config.subclip.random,
+            )
+
+        return dataset
 
     def get_dataset(self, idx) -> xr.Dataset:
         return xr.open_dataset(self.filenames[idx])
@@ -100,6 +133,19 @@ class LabeledDataset(Dataset):
         return data.ClipAnnotation.model_validate_json(
             self.get_dataset(idx).attrs["clip_annotation"]
         )
+
+    def to_tensor(
+        self,
+        array: xr.DataArray,
+        dtype=np.float32,
+    ) -> torch.Tensor:
+        tensor = torch.tensor(array.values.astype(dtype))
+
+        if not self.subclip:
+            return tensor
+
+        width = self.config.subclip.width
+        return adjust_width(tensor, width)
 
 
 def get_files(directory: PathLike, extension: str = ".nc") -> Sequence[Path]:

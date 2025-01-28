@@ -101,7 +101,11 @@ def generate_train_example(
     return dataset.assign_attrs(
         title=f"Training example for {clip_annotation.uuid}",
         config=config.model_dump_json(),
-        clip_annotation=clip_annotation.model_dump_json(),
+        clip_annotation=clip_annotation.model_dump_json(
+            exclude_none=True,
+            exclude_defaults=True,
+            exclude_unset=True,
+        ),
     )
 
 
