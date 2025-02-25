@@ -1,9 +1,12 @@
 from typing import List
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import auc, roc_curve
 from soundevent import data
 from soundevent.evaluation import match_geometries
+
+from batdetect2.train.targets import build_encoder, get_class_names
 
 
 def match_predictions_and_annotations(
@@ -46,6 +49,13 @@ def match_predictions_and_annotations(
         )
 
     return matches
+
+
+def build_evaluation_dataframe(matches: List[data.Match]) -> pd.DataFrame:
+    ret = []
+
+    for match in matches:
+        pass
 
 
 def compute_error_auc(op_str, gt, pred, prob):

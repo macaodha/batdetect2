@@ -198,7 +198,6 @@ def save_summary_image(
     )
     ii = 0
     for row in ax:
-
         if type(row) != np.ndarray:
             row = np.array([row])
 
@@ -215,7 +214,9 @@ def save_summary_image(
                 )
                 col.grid(color="w", alpha=0.3, linewidth=0.3)
                 col.set_xticks([])
-                col.title.set_text(str(ii + 1) + " " + species_names[order[ii]])
+                col.title.set_text(
+                    str(ii + 1) + " " + species_names[order[ii]]
+                )
                 col.tick_params(axis="both", which="major", labelsize=7)
                 ii += 1
 

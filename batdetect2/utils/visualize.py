@@ -155,9 +155,9 @@ class InteractivePlotter:
 
                 # draw bounding box around call
                 self.ax[1].patches[0].remove()
-                spec_width_orig = self.spec_slices[self.current_id].shape[1] / (
-                    1.0 + 2.0 * self.spec_pad
-                )
+                spec_width_orig = self.spec_slices[self.current_id].shape[
+                    1
+                ] / (1.0 + 2.0 * self.spec_pad)
                 xx = w_diff + self.spec_pad * spec_width_orig
                 ww = spec_width_orig
                 yy = self.call_info[self.current_id]["low_freq"] / 1000
@@ -183,7 +183,9 @@ class InteractivePlotter:
                         round(self.call_info[self.current_id]["start_time"], 3)
                     )
                     + ", prob="
-                    + str(round(self.call_info[self.current_id]["det_prob"], 3))
+                    + str(
+                        round(self.call_info[self.current_id]["det_prob"], 3)
+                    )
                 )
                 self.ax[0].set_xlabel(info_str)
 

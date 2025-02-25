@@ -5,7 +5,10 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, computed_field
 
-from batdetect2.train.train_utils import get_genus_mapping, get_short_class_names
+from batdetect2.train.train_utils import (
+    get_genus_mapping,
+    get_short_class_names,
+)
 from batdetect2.types import ProcessingConfiguration, SpectrogramParameters
 
 TARGET_SAMPLERATE_HZ = 256000

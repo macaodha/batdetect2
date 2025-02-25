@@ -33,7 +33,6 @@ def filter_anns(anns, start_time, stop_time):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_file", type=str, help="Path to audio file")
     parser.add_argument("model_path", type=str, help="Path to BatDetect model")
@@ -143,7 +142,9 @@ if __name__ == "__main__":
 
     # run model and filter detections so only keep ones in relevant time range
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    results = du.process_file(args_cmd["audio_file"], model, run_config, device)
+    results = du.process_file(
+        args_cmd["audio_file"], model, run_config, device
+    )
     pred_anns = filter_anns(
         results["pred_dict"]["annotation"],
         args_cmd["start_time"],

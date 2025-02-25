@@ -417,7 +417,9 @@ def plot_confusion_matrix(
     cm_norm = cm.sum(1)
 
     valid_inds = np.where(cm_norm > 0)[0]
-    cm[valid_inds, :] = cm[valid_inds, :] / cm_norm[valid_inds][..., np.newaxis]
+    cm[valid_inds, :] = (
+        cm[valid_inds, :] / cm_norm[valid_inds][..., np.newaxis]
+    )
     cm[np.where(cm_norm == -0)[0], :] = np.nan
 
     if verbose:

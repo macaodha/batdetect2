@@ -1,4 +1,5 @@
 """Post-processing of the output of the model."""
+
 from typing import List, Tuple, Union
 
 import numpy as np

@@ -1,8 +1,10 @@
+from pathlib import Path
 from typing import Optional
 
 import pytorch_lightning as L
 import torch
 from pydantic import Field
+from soundevent import data
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
@@ -19,7 +21,7 @@ from batdetect2.post_process import (
     PostprocessConfig,
     postprocess_model_outputs,
 )
-from batdetect2.preprocess import PreprocessingConfig
+from batdetect2.preprocess import PreprocessingConfig, preprocess_audio_clip
 from batdetect2.train.dataset import LabeledDataset, TrainExample
 from batdetect2.train.evaluate import match_predictions_and_annotations
 from batdetect2.train.losses import LossConfig, compute_loss
@@ -146,12 +148,14 @@ class DetectorModel(L.LightningModule):
             config=self.config.postprocessing,
         )[0]
 
-        self.validation_predictions.extend(
-            match_predictions_and_annotations(clip_annotation, clip_prediction)
+        matches = match_predictions_and_annotations(
+            clip_annotation,
+            clip_prediction,
         )
 
+        self.validation_predictions.extend(matches)
+
     def on_validation_epoch_end(self) -> None:
-        print(len(self.validation_predictions))
         self.validation_predictions.clear()
 
     def configure_optimizers(self):
@@ -159,3 +163,23 @@ class DetectorModel(L.LightningModule):
         optimizer = Adam(self.parameters(), lr=conf.learning_rate)
         scheduler = CosineAnnealingLR(optimizer, T_max=conf.t_max)
         return [optimizer], [scheduler]
+
+    def process_clip(
+        self,
+        clip: data.Clip,
+        audio_dir: Optional[Path] = None,
+    ) -> data.ClipPrediction:
+        spec = preprocess_audio_clip(
+            clip,
+            config=self.config.preprocessing,
+            audio_dir=audio_dir,
+        )
+        tensor = torch.from_numpy(spec.data).unsqueeze(0).unsqueeze(0)
+        outputs = self.forward(tensor)
+        return postprocess_model_outputs(
+            outputs,
+            clips=[clip],
+            classes=self.class_names,
+            decoder=self.decoder,
+            config=self.config.postprocessing,
+        )[0]

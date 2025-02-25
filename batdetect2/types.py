@@ -1,4 +1,5 @@
 """Types used in the code base."""
+
 from typing import Any, List, NamedTuple, Optional
 
 
@@ -594,8 +595,7 @@ class FeatureExtractor(Protocol):
         self,
         prediction: Prediction,
         **kwargs: Any,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class DatasetDict(TypedDict):

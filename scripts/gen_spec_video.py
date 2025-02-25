@@ -25,7 +25,9 @@ import batdetect2.utils.plot_utils as viz
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("audio_file", type=str, help="Path to input audio file")
+    parser.add_argument(
+        "audio_file", type=str, help="Path to input audio file"
+    )
     parser.add_argument(
         "model_path", type=str, help="Path to trained BatDetect model"
     )

@@ -16,7 +16,6 @@ def get_train_test_data(ann_dir, wav_dir, split_name, load_extra=True):
 
 
 def split_diff(ann_dir, wav_dir, load_extra=True):
-
     train_sets = []
     if load_extra:
         train_sets.append(
@@ -144,7 +143,6 @@ def split_diff(ann_dir, wav_dir, load_extra=True):
 
 
 def split_same(ann_dir, wav_dir, load_extra=True):
-
     train_sets = []
     if load_extra:
         train_sets.append(

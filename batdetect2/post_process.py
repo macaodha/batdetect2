@@ -1,6 +1,6 @@
 """Module for postprocessing model outputs."""
 
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -28,6 +28,16 @@ class PostprocessConfig(BaseModel):
     min_freq: int = Field(default=10000, gt=0)
     max_freq: int = Field(default=120000, gt=0)
     top_k_per_sec: int = Field(default=TOP_K_PER_SEC, gt=0)
+
+
+class RawPrediction(BaseModel):
+    start_time: float
+    end_time: float
+    low_freq: float
+    high_freq: float
+    detection_score: float
+    class_scores: Dict[str, float]
+    features: np.ndarray
 
 
 def postprocess_model_outputs(
@@ -123,6 +133,88 @@ def postprocess_model_outputs(
         )
 
     return predictions
+
+
+def compute_predictions_from_outputs(
+    start: float,
+    end: float,
+    scores: torch.Tensor,
+    y_pos: torch.Tensor,
+    x_pos: torch.Tensor,
+    size_preds: torch.Tensor,
+    class_probs: torch.Tensor,
+    features: torch.Tensor,
+    classes: List[str],
+    min_freq: int = 10000,
+    max_freq: int = 120000,
+    detection_threshold: float = DETECTION_THRESHOLD,
+) -> List[RawPrediction]:
+    _, freq_bins, time_bins = size_preds.shape
+
+    sorted_indices = torch.argsort(x_pos)
+    valid_indices = sorted_indices[
+        scores[sorted_indices] > detection_threshold
+    ]
+
+    scores = scores[valid_indices]
+    x_pos = x_pos[valid_indices]
+    y_pos = y_pos[valid_indices]
+
+    predictions: List[RawPrediction] = []
+    for score, x, y in zip(scores, x_pos, y_pos):
+        width, height = size_preds[:, y, x]
+        class_prob = class_probs[:, y, x].detach().numpy()
+        feats = features[:, y, x].detach().numpy()
+
+        start_time = np.interp(
+            x.item(),
+            [0, time_bins],
+            [start, end],
+        )
+
+        end_time = np.interp(
+            x.item() + width.item(),
+            [0, time_bins],
+            [start, end],
+        )
+
+        low_freq = np.interp(
+            y.item(),
+            [0, freq_bins],
+            [max_freq, min_freq],
+        )
+
+        high_freq = np.interp(
+            y.item() - height.item(),
+            [0, freq_bins],
+            [max_freq, min_freq],
+        )
+
+        start_time, end_time = sorted([float(start_time), float(end_time)])
+        low_freq, high_freq = sorted([float(low_freq), float(high_freq)])
+
+        predictions.append(
+            RawPrediction(
+                start_time=start_time,
+                end_time=end_time,
+                low_freq=low_freq,
+                high_freq=high_freq,
+                detection_score=score.item(),
+                features=feats,
+                class_scores={
+                    class_name: prob
+                    for class_name, prob in zip(classes, class_prob)
+                },
+            )
+        )
+
+    return predictions
+
+
+def convert_raw_prediction_to_soundevent(
+    prediction: RawPrediction,
+) -> data.SoundEventPrediction:
+    pass
 
 
 def compute_sound_events_from_outputs(

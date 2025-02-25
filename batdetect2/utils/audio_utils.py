@@ -100,7 +100,7 @@ def generate_spectrogram(
         # log_scaling = (1.0 / sampling_rate)*10e4
         spec = np.log1p(log_scaling * spec)
     elif params["spec_scale"] == "pcen":
-        spec = pcen(spec , sampling_rate)
+        spec = pcen(spec, sampling_rate)
 
     elif params["spec_scale"] == "none":
         pass

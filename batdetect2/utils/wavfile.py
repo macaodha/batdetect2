@@ -8,6 +8,7 @@ Functions
 `write`: Write a numpy array as a WAV file.
 
 """
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -156,7 +157,6 @@ def read(filename, mmap=False):
         fid = open(filename, "rb")
 
     try:
-
         # some files seem to have the size recorded in the header greater than
         # the actual file size.
         fid.seek(0, os.SEEK_END)

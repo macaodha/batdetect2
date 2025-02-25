@@ -1,4 +1,5 @@
 """Functions to compute features from predictions."""
+
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -217,7 +218,6 @@ def compute_call_interval(
     if previous is None:
         return np.nan
     return round(prediction["start_time"] - previous["end_time"], 5)
-
 
 
 # NOTE: The order of the features in this dictionary is important. The

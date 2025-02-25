@@ -13,5 +13,3 @@ else:
     def pairwise(iterable: Sequence) -> Iterable:
         for x, y in zip(iterable[:-1], iterable[1:]):
             yield x, y
-
-

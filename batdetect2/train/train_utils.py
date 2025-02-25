@@ -69,7 +69,8 @@ def get_genus_mapping(class_names: List[str]) -> Tuple[List[str], List[int]]:
 
 
 def standardize_low_freq(
-    data: List[types.FileAnnotation], class_of_interest: str,
+    data: List[types.FileAnnotation],
+    class_of_interest: str,
 ) -> List[types.FileAnnotation]:
     # address the issue of highly variable low frequency annotations
     # this often happens for contstant frequency calls

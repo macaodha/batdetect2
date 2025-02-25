@@ -16,7 +16,6 @@ import batdetect2.train.train_utils as tu
 import batdetect2.utils.audio_utils as au
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "audio_path", type=str, help="Input directory for audio"
@@ -65,7 +64,9 @@ if __name__ == "__main__":
     else:
         # load uk data - special case
         print("\nLoading:", args["uk_split"], "\n")
-        dataset_name = "uk_" + args["uk_split"]  # should be uk_diff, or uk_same
+        dataset_name = (
+            "uk_" + args["uk_split"]
+        )  # should be uk_diff, or uk_same
         datasets, _ = ts.get_train_test_data(
             args["ann_file"],
             args["audio_path"],
