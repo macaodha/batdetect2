@@ -137,9 +137,10 @@ def test_pad_audio_with_fixed_width(duration: float, width: int):
     assert expected_width == width
 
 def test_get_samplerate_using_bytesio():
-    audio_url="https://anon.erda.au.dk/share_redirect/e5c7G2AWmg/F1/20240724/2MU02597/BIOBD01_20240626_231650.wav"
+    with open("example_data/audio/20170701_213954-MYOMYS-LR_0_0.5.wav", "rb") as f:
+        audio_bytes = io.BytesIO(f.read())
     
-    sample_rate = audio_utils.get_samplerate(io.BytesIO(requests.get(audio_url).content))
+    sample_rate = audio_utils.get_samplerate(audio_bytes)
 
-    expected_sample_rate = 256000
+    expected_sample_rate = 500000
     assert expected_sample_rate == sample_rate
