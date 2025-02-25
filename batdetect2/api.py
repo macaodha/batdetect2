@@ -97,7 +97,7 @@ consult the API documentation in the code.
 
 """
 import warnings
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, BinaryIO, Any, Union
 
 import numpy as np
 import torch
@@ -119,6 +119,10 @@ from batdetect2.types import (
     SpectrogramParameters,
 )
 from batdetect2.utils.detector_utils import list_audio_files, load_model
+
+import audioread
+import os 
+import soundfile as sf
 
 # Remove warnings from torch
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
@@ -238,32 +242,41 @@ def generate_spectrogram(
 
 
 def process_file(
-    audio_file: str,
+    path:  Union[
+        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    ],
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
+    file_id: str | None = None
 ) -> du.RunResults:
     """Process audio file with model.
 
     Parameters
     ----------
-    audio_file : str
-        Path to audio file.
+    path :  Union[
+        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    ]
+        Path to audio data.
     model : DetectionModel, optional
         Detection model. Uses default model if not specified.
     config : Optional[ProcessingConfiguration], optional
         Processing configuration, by default None (uses default parameters).
     device : torch.device, optional
         Device to use, by default tries to use GPU if available.
+    file_id: Optional[str],
+        Give the data an id. If path is a string path to a file this can be ignored and
+        the file_id will be the basename of the file.
     """
     if config is None:
         config = CONFIG
 
     return du.process_file(
-        audio_file,
+        path,
         model,
         config,
         device,
+        file_id
     )
 
 

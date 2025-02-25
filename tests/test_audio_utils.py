@@ -6,7 +6,8 @@ from hypothesis import strategies as st
 
 from batdetect2.detector import parameters
 from batdetect2.utils import audio_utils, detector_utils
-
+import io
+import requests
 
 @given(duration=st.floats(min_value=0.1, max_value=2))
 def test_can_compute_correct_spectrogram_width(duration: float):
@@ -134,3 +135,11 @@ def test_pad_audio_with_fixed_width(duration: float, width: int):
         resize_factor=params["resize_factor"],
     )
     assert expected_width == width
+
+def test_get_samplerate_using_bytesio():
+    audio_url="https://anon.erda.au.dk/share_redirect/e5c7G2AWmg/F1/20240724/2MU02597/BIOBD01_20240626_231650.wav"
+    
+    sample_rate = audio_utils.get_samplerate(io.BytesIO(requests.get(audio_url).content))
+
+    expected_sample_rate = 256000
+    assert expected_sample_rate == sample_rate
