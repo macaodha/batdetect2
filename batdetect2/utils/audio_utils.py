@@ -9,6 +9,7 @@ import torch
 import audioread
 import os 
 import soundfile as sf
+import io
 
 from batdetect2.detector import parameters
 
@@ -147,7 +148,10 @@ def generate_spectrogram(
 def get_samplerate(
     path:  Union[
         str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ]):
+    ]):       
+    if isinstance(path, (BinaryIO, io.BytesIO)):
+        path.seek(0)
+    
     with sf.SoundFile(path) as f:
         return f.samplerate
 
