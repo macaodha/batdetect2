@@ -33,8 +33,10 @@ from batdetect2.types import (
 
 import audioread
 import os 
+import io
 import soundfile as sf
-
+import hashlib
+import uuid
 
 __all__ = [
     "load_model",
@@ -832,7 +834,7 @@ def process_file(
 
     _file_id = file_id
     if _file_id is None:
-        _file_id = os.path.basename(path) if isinstance(path, str) else "unknown"
+        _file_id = _generate_id(path)
 
     # convert results to a dictionary in the right format
     results = convert_results(
@@ -855,6 +857,24 @@ def process_file(
         return predictions
 
     return results
+
+def _generate_id(path:  Union[
+        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    ]) -> str:
+    """ Generate an id based on the path.
+    
+    If the path is a str or PathLike it will parsed as the basename. 
+    This should ensure backwards compatibility with previous versions.     
+    """
+    if isinstance(path, str) or isinstance(path, os.PathLike):
+        return os.path.basename(path)
+    elif isinstance(path, (BinaryIO, io.BytesIO)):
+        path.seek(0)
+        md5 = hashlib.md5(path.read()).hexdigest()
+        path.seek(0)
+        return md5
+    else:
+        return str(uuid.uuid4())
 
 
 def summarize_results(results, predictions, config):
