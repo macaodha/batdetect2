@@ -17,6 +17,7 @@ from . import wavfile
 
 __all__ = [
     "load_audio",
+    "load_audio_data",
     "generate_spectrogram",
     "pad_audio",
 ]
@@ -145,16 +146,6 @@ def generate_spectrogram(
 
     return spec, spec_for_viz
 
-def get_samplerate(
-    path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ]):       
-    if isinstance(path, (BinaryIO, io.BytesIO)):
-        path.seek(0)
-    
-    with sf.SoundFile(path) as f:
-        return f.samplerate
-
 def load_audio(
     path:  Union[
         str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
@@ -164,6 +155,37 @@ def load_audio(
     scale: bool = False,
     max_duration: Optional[float] = None,
 ) -> Tuple[int, np.ndarray ]:
+    """Load an audio file and resample it to the target sampling rate.
+
+    The audio is also scaled to [-1, 1] and clipped to the maximum duration.
+    Only mono files are supported.
+
+    Args:
+        path (string, int, pathlib.Path, soundfile.SoundFile, audioread object, or file-like object): path to the input file.
+        target_samp_rate (int): Target sampling rate.
+        scale (bool): Whether to scale the audio to [-1, 1].
+        max_duration (float): Maximum duration of the audio in seconds.
+
+    Returns:
+        sampling_rate: The sampling rate of the audio.
+        audio_raw: The audio signal in a numpy array.
+
+    Raises:
+        ValueError: If the audio file is stereo.
+
+    """
+    sample_rate, audio_data, _ = load_audio_data(path, time_exp_fact, target_samp_rate, scale, max_duration)
+    return sample_rate, audio_data
+
+def load_audio_data(
+    path:  Union[
+        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    ],
+    time_exp_fact: float,
+    target_samp_rate: int,
+    scale: bool = False,
+    max_duration: Optional[float] = None,
+) -> Tuple[int, np.ndarray, int | float]:
     """Load an audio file and resample it to the target sampling rate.
 
     The audio is also scaled to [-1, 1] and clipped to the maximum duration.
@@ -223,7 +245,7 @@ def load_audio(
         audio_raw = audio_raw - audio_raw.mean()
         audio_raw = audio_raw / (np.abs(audio_raw).max() + 10e-6)
 
-    return sampling_rate, audio_raw
+    return sampling_rate, audio_raw, file_sampling_rate
 
 
 def compute_spectrogram_width(

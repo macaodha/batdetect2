@@ -773,14 +773,13 @@ def process_file(
     spec_slices = []
 
     # load audio file
-    sampling_rate, audio_full = au.load_audio(
+    sampling_rate, audio_full, file_samp_rate = au.load_audio_data(
         path,
         time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
         max_duration=config.get("max_duration"),
     )
-    file_samp_rate = au.get_samplerate(path)
 
     orig_samp_rate = file_samp_rate * (config.get("time_expansion") or 1)
 
