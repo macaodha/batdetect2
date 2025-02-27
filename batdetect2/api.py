@@ -250,7 +250,7 @@ def process_file(
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
-    file_id: str | None = None
+    file_id: Optional[str] = None
 ) -> du.RunResults:
     """Process audio file with model.
 
@@ -286,7 +286,7 @@ def process_url(
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
-    file_id: str | None = None
+    file_id: Optional[str] = None
 ) -> du.RunResults:
     """Process audio file with model.
 

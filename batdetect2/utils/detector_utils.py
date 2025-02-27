@@ -742,7 +742,7 @@ def process_file(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-    file_id: str | None = None
+    file_id: Optional[str] = None
 ) -> Union[RunResults, Any]:
     """Process a single audio file with detection model.
 
