@@ -46,6 +46,12 @@ def cli():
     help="Extracts CNN call features",
 )
 @click.option(
+    "--chunk_size",
+    type=float,
+    default=2,
+    help="Specifies the duration of chunks in seconds. BatDetect2 will divide longer files into smaller chunks and process them independently. Larger chunks increase computation time and memory usage but may provide more contextual information for inference.",
+)
+@click.option(
     "--spec_features",
     is_flag=True,
     default=False,
@@ -80,6 +86,7 @@ def detect(
     ann_dir: str,
     detection_threshold: float,
     time_expansion_factor: int,
+    chunk_size: float,
     **args,
 ):
     """Detect bat calls in files in AUDIO_DIR and save predictions to ANN_DIR.
@@ -108,7 +115,7 @@ def detect(
             **args,
             "time_expansion": time_expansion_factor,
             "spec_slices": False,
-            "chunk_size": 2,
+            "chunk_size": chunk_size,
             "detection_threshold": detection_threshold,
         }
     )
@@ -147,6 +154,7 @@ def print_config(config: ProcessingConfiguration):
     click.echo("\nProcessing Configuration:")
     click.echo(f"Time Expansion Factor: {config.get('time_expansion')}")
     click.echo(f"Detection Threshold: {config.get('detection_threshold')}")
+    click.echo(f"Chunk Size: {config.get('chunk_size')}s")
 
 
 if __name__ == "__main__":
