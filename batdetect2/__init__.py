@@ -3,4 +3,4 @@ import logging
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
