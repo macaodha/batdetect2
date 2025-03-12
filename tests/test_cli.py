@@ -130,3 +130,29 @@ def test_cli_detect_fails_gracefully_on_empty_file(tmp_path: Path):
     )
     assert result.exit_code == 0
     assert f"Error processing file {empty_file}" in result.output
+
+
+def test_can_set_chunk_size(tmp_path: Path):
+    results_dir = tmp_path / "results"
+
+    # Remove results dir if it exists
+    if results_dir.exists():
+        results_dir.rmdir()
+
+    result = runner.invoke(
+        cli,
+        [
+            "detect",
+            "example_data/audio",
+            str(results_dir),
+            "0.3",
+            "--chunk_size",
+            "1",
+        ],
+    )
+
+    assert "Chunk Size: 1.0s" in result.output
+    assert result.exit_code == 0
+    assert results_dir.exists()
+    assert len(list(results_dir.glob("*.csv"))) == 3
+    assert len(list(results_dir.glob("*.json"))) == 3
