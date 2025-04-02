@@ -73,7 +73,6 @@ dev-dependencies = [
   "ruff>=0.7.3",
   "ipykernel>=6.29.4",
   "setuptools>=69.5.1",
-  "dvc>=3.56.0",
 ]
 
 [tool.ruff]
