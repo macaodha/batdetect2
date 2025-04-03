@@ -3,7 +3,6 @@
 from typing import Optional
 
 import xarray as xr
-from pydantic import BaseModel, Field
 from soundevent import data
 
 from batdetect2.preprocess.audio import (
@@ -11,39 +10,37 @@ from batdetect2.preprocess.audio import (
     ResampleConfig,
     load_clip_audio,
 )
+from batdetect2.preprocess.config import (
+    PreprocessingConfig,
+    load_preprocessing_config,
+)
 from batdetect2.preprocess.spectrogram import (
     AmplitudeScaleConfig,
-    STFTConfig,
     FrequencyConfig,
     LogScaleConfig,
     PcenScaleConfig,
     Scales,
     SpecSizeConfig,
     SpectrogramConfig,
+    STFTConfig,
     compute_spectrogram,
 )
 
 __all__ = [
-    "AudioConfig",
-    "ResampleConfig",
-    "SpectrogramConfig",
-    "STFTConfig",
-    "FrequencyConfig",
-    "PcenScaleConfig",
-    "LogScaleConfig",
     "AmplitudeScaleConfig",
+    "AudioConfig",
+    "FrequencyConfig",
+    "LogScaleConfig",
+    "PcenScaleConfig",
+    "PreprocessingConfig",
+    "ResampleConfig",
+    "STFTConfig",
     "Scales",
     "SpecSizeConfig",
-    "PreprocessingConfig",
+    "SpectrogramConfig",
+    "load_preprocessing_config",
     "preprocess_audio_clip",
 ]
-
-
-class PreprocessingConfig(BaseModel):
-    """Configuration for preprocessing data."""
-
-    audio: AudioConfig = Field(default_factory=AudioConfig)
-    spectrogram: SpectrogramConfig = Field(default_factory=SpectrogramConfig)
 
 
 def preprocess_audio_clip(
