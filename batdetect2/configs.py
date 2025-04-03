@@ -1,4 +1,4 @@
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -12,6 +12,15 @@ class BaseConfig(BaseModel):
 T = TypeVar("T", bound=BaseModel)
 
 
+def get_object_field(obj: dict, field: str) -> Any:
+    if "." not in field:
+        return obj[field]
+
+    field, rest = field.split(".", 1)
+    subobj = obj[field]
+    return get_object_field(subobj, rest)
+
+
 def load_config(
     path: PathLike,
     schema: Type[T],
@@ -21,6 +30,6 @@ def load_config(
         config = yaml.safe_load(file)
 
     if field:
-        config = config[field]
+        config = get_object_field(config, field)
 
     return schema.model_validate(config)
