@@ -3,13 +3,19 @@ from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import xarray as xr
+from pydantic import Field
 from scipy.ndimage import gaussian_filter
 from soundevent import arrays, data, geometry
 from soundevent.geometry.operations import Positions
 
-from batdetect2.configs import BaseConfig
+from batdetect2.configs import BaseConfig, load_config
 
-__all__ = ["generate_heatmaps"]
+__all__ = [
+    "HeatmapsConfig",
+    "LabelConfig",
+    "generate_heatmaps",
+    "load_label_config",
+]
 
 
 class HeatmapsConfig(BaseConfig):
@@ -17,6 +23,10 @@ class HeatmapsConfig(BaseConfig):
     sigma: float = 3.0
     time_scale: float = 1000.0
     frequency_scale: float = 1 / 859.375
+
+
+class LabelConfig(BaseConfig):
+    heatmaps: HeatmapsConfig = Field(default_factory=HeatmapsConfig)
 
 
 def generate_heatmaps(
@@ -132,3 +142,9 @@ def generate_heatmaps(
     ).fillna(0.0)
 
     return detection_heatmap, class_heatmap, size_heatmap
+
+
+def load_label_config(
+    path: data.PathLike, field: Optional[str] = None
+) -> LabelConfig:
+    return load_config(path, schema=LabelConfig, field=field)

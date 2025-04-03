@@ -3,16 +3,30 @@ from typing import Callable, Optional, Union
 import numpy as np
 import xarray as xr
 from pydantic import Field
-from soundevent import arrays
+from soundevent import arrays, data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.configs import BaseConfig, load_config
 from batdetect2.preprocess import PreprocessingConfig, compute_spectrogram
 from batdetect2.preprocess.arrays import adjust_width
 
 Augmentation = Callable[[xr.Dataset], xr.Dataset]
 
 
-class AugmentationConfig(BaseConfig):
+__all__ = [
+    "AugmentationsConfig",
+    "load_agumentation_config",
+    "select_subclip",
+    "mix_examples",
+    "add_echo",
+    "scale_volume",
+    "warp_spectrogram",
+    "mask_time",
+    "mask_frequency",
+    "augment_example",
+]
+
+
+class BaseAugmentationConfig(BaseConfig):
     enable: bool = True
     probability: float = 0.2
 
@@ -63,7 +77,7 @@ def select_subclip(
     )
 
 
-class MixAugmentationConfig(AugmentationConfig):
+class MixAugmentationConfig(BaseAugmentationConfig):
     min_weight: float = 0.3
     max_weight: float = 0.7
 
@@ -133,7 +147,7 @@ def mix_examples(
     )
 
 
-class EchoAugmentationConfig(AugmentationConfig):
+class EchoAugmentationConfig(BaseAugmentationConfig):
     max_delay: float = 0.005
     min_weight: float = 0.0
     max_weight: float = 1.0
@@ -188,7 +202,7 @@ def add_echo(
     )
 
 
-class VolumeAugmentationConfig(AugmentationConfig):
+class VolumeAugmentationConfig(BaseAugmentationConfig):
     min_scaling: float = 0.0
     max_scaling: float = 2.0
 
@@ -206,7 +220,7 @@ def scale_volume(
     return example.assign(spectrogram=example["spectrogram"] * factor)
 
 
-class WarpAugmentationConfig(AugmentationConfig):
+class WarpAugmentationConfig(BaseAugmentationConfig):
     delta: float = 0.04
 
 
@@ -294,7 +308,7 @@ def mask_axis(
     return array.where(condition, other=mask_value)
 
 
-class TimeMaskAugmentationConfig(AugmentationConfig):
+class TimeMaskAugmentationConfig(BaseAugmentationConfig):
     max_perc: float = 0.05
     max_masks: int = 3
 
@@ -318,7 +332,7 @@ def mask_time(
     return example.assign(spectrogram=spectrogram)
 
 
-class FrequencyMaskAugmentationConfig(AugmentationConfig):
+class FrequencyMaskAugmentationConfig(BaseAugmentationConfig):
     max_perc: float = 0.10
     max_masks: int = 3
 
@@ -361,7 +375,13 @@ class AugmentationsConfig(BaseConfig):
     )
 
 
-def should_apply(config: AugmentationConfig) -> bool:
+def load_agumentation_config(
+    path: data.PathLike, field: Optional[str] = None
+) -> AugmentationsConfig:
+    return load_config(path, schema=AugmentationsConfig, field=field)
+
+
+def should_apply(config: BaseAugmentationConfig) -> bool:
     if not config.enable:
         return False
 

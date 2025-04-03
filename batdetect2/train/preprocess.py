@@ -17,7 +17,7 @@ from batdetect2.preprocess import (
     compute_spectrogram,
     load_clip_audio,
 )
-from batdetect2.train.labels import HeatmapsConfig, generate_heatmaps
+from batdetect2.train.labels import LabelConfig, generate_heatmaps
 from batdetect2.train.targets import (
     TargetConfig,
     build_encoder,
@@ -30,6 +30,9 @@ FilenameFn = Callable[[data.ClipAnnotation], str]
 
 __all__ = [
     "preprocess_annotations",
+    "preprocess_single_annotation",
+    "generate_train_example",
+    "TrainPreprocessingConfig",
 ]
 
 
@@ -38,15 +41,21 @@ class TrainPreprocessingConfig(BaseConfig):
         default_factory=PreprocessingConfig
     )
     target: TargetConfig = Field(default_factory=TargetConfig)
-    heatmaps: HeatmapsConfig = Field(default_factory=HeatmapsConfig)
+    labels: LabelConfig = Field(default_factory=LabelConfig)
 
 
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
-    config: Optional[TrainPreprocessingConfig] = None,
+    preprocessing_config: Optional[PreprocessingConfig] = None,
+    target_config: Optional[TargetConfig] = None,
+    label_config: Optional[LabelConfig] = None,
 ) -> xr.Dataset:
     """Generate a training example."""
-    config = config or TrainPreprocessingConfig()
+    config = TrainPreprocessingConfig(
+        preprocessing=preprocessing_config or PreprocessingConfig(),
+        target=target_config or TargetConfig(),
+        labels=label_config or LabelConfig(),
+    )
 
     wave = load_clip_audio(
         clip_annotation.clip,
@@ -78,10 +87,10 @@ def generate_train_example(
         spectrogram,
         class_names,
         encoder,
-        target_sigma=config.heatmaps.sigma,
-        position=config.heatmaps.position,
-        time_scale=config.heatmaps.time_scale,
-        frequency_scale=config.heatmaps.frequency_scale,
+        target_sigma=config.labels.heatmaps.sigma,
+        position=config.labels.heatmaps.position,
+        time_scale=config.labels.heatmaps.time_scale,
+        frequency_scale=config.labels.heatmaps.frequency_scale,
     )
 
     dataset = xr.Dataset(
@@ -133,13 +142,13 @@ def preprocess_annotations(
     output_dir: PathLike,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
-    config: Optional[TrainPreprocessingConfig] = None,
+    preprocessing_config: Optional[PreprocessingConfig] = None,
+    target_config: Optional[TargetConfig] = None,
+    label_config: Optional[LabelConfig] = None,
     max_workers: Optional[int] = None,
 ) -> None:
     """Preprocess annotations and save to disk."""
     output_dir = Path(output_dir)
-
-    config = config or TrainPreprocessingConfig()
 
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True)
@@ -151,9 +160,11 @@ def preprocess_annotations(
                     partial(
                         preprocess_single_annotation,
                         output_dir=output_dir,
-                        config=config,
                         filename_fn=filename_fn,
                         replace=replace,
+                        preprocessing_config=preprocessing_config,
+                        target_config=target_config,
+                        label_config=label_config,
                     ),
                     clip_annotations,
                 ),
@@ -165,7 +176,9 @@ def preprocess_annotations(
 def preprocess_single_annotation(
     clip_annotation: data.ClipAnnotation,
     output_dir: PathLike,
-    config: TrainPreprocessingConfig,
+    preprocessing_config: Optional[PreprocessingConfig] = None,
+    target_config: Optional[TargetConfig] = None,
+    label_config: Optional[LabelConfig] = None,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
 ) -> None:
@@ -181,7 +194,12 @@ def preprocess_single_annotation(
         path.unlink()
 
     try:
-        sample = generate_train_example(clip_annotation, config=config)
+        sample = generate_train_example(
+            clip_annotation,
+            preprocessing_config=preprocessing_config,
+            target_config=target_config,
+            label_config=label_config,
+        )
     except Exception as error:
         raise RuntimeError(
             f"Failed to process annotation: {clip_annotation.uuid}"

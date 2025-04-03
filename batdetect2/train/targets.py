@@ -9,6 +9,14 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.terms import TagInfo, get_tag_from_info
 
+__all__ = [
+    "TargetConfig",
+    "load_target_config",
+    "build_encoder",
+    "build_decoder",
+    "filter_sound_event",
+]
+
 
 class ReplaceConfig(BaseConfig):
     """Configuration for replacing tags."""

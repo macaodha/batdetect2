@@ -43,28 +43,23 @@ class SubclipConfig(BaseConfig):
 
 class DatasetConfig(BaseConfig):
     subclip: SubclipConfig = Field(default_factory=SubclipConfig)
-    preprocessing: PreprocessingConfig = Field(
-        default_factory=PreprocessingConfig
-    )
     augmentation: AugmentationsConfig = Field(
         default_factory=AugmentationsConfig
     )
 
 
 class LabeledDataset(Dataset):
-    config: DatasetConfig
-
     def __init__(
         self,
         filenames: Sequence[PathLike],
-        augment: bool = False,
-        subclip: bool = False,
-        config: Optional[DatasetConfig] = None,
+        subclip: Optional[SubclipConfig] = None,
+        augmentation: Optional[AugmentationsConfig] = None,
+        preprocessing: Optional[PreprocessingConfig] = None,
     ):
         self.filenames = filenames
-        self.augment = augment
         self.subclip = subclip
-        self.config = config or DatasetConfig()
+        self.augmentation = augmentation
+        self.preprocessing = preprocessing or PreprocessingConfig()
 
     def __len__(self):
         return len(self.filenames)
@@ -75,16 +70,16 @@ class LabeledDataset(Dataset):
         if self.subclip:
             dataset = select_subclip(
                 dataset,
-                duration=self.config.subclip.duration,
-                width=self.config.subclip.width,
-                random=self.config.subclip.random,
+                duration=self.subclip.duration,
+                width=self.subclip.width,
+                random=self.subclip.random,
             )
 
-        if self.augment:
+        if self.augmentation:
             dataset = augment_example(
                 dataset,
-                self.config.augmentation,
-                preprocessing_config=self.config.preprocessing,
+                self.augmentation,
+                preprocessing_config=self.preprocessing,
                 others=self.get_random_example,
             )
 
@@ -101,15 +96,15 @@ class LabeledDataset(Dataset):
         cls,
         directory: PathLike,
         extension: str = ".nc",
-        config: Optional[DatasetConfig] = None,
-        augment: bool = False,
-        subclip: bool = False,
+        subclip: Optional[SubclipConfig] = None,
+        augmentation: Optional[AugmentationsConfig] = None,
+        preprocessing: Optional[PreprocessingConfig] = None,
     ):
         return cls(
             get_files(directory, extension),
-            config=config,
-            augment=augment,
             subclip=subclip,
+            augmentation=augmentation,
+            preprocessing=preprocessing,
         )
 
     def get_random_example(self) -> xr.Dataset:
@@ -119,9 +114,9 @@ class LabeledDataset(Dataset):
         if self.subclip:
             dataset = select_subclip(
                 dataset,
-                duration=self.config.subclip.duration,
-                width=self.config.subclip.width,
-                random=self.config.subclip.random,
+                duration=self.subclip.duration,
+                width=self.subclip.width,
+                random=self.subclip.random,
             )
 
         return dataset
@@ -144,7 +139,7 @@ class LabeledDataset(Dataset):
         if not self.subclip:
             return tensor
 
-        width = self.config.subclip.width
+        width = self.subclip.width
         return adjust_width(tensor, width)
 
 

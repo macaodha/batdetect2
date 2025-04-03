@@ -1,82 +1,68 @@
-from typing import Callable, NamedTuple, Optional
+from typing import Optional, Union
 
-import torch
-from soundevent import data
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from lightning import LightningModule
+from lightning.pytorch import Trainer
+from soundevent.data import PathLike
 from torch.utils.data import DataLoader
 
-from batdetect2.data.datasets import ClipAnnotationDataset
-from batdetect2.models.typing import DetectionModel
+from batdetect2.configs import BaseConfig, load_config
+from batdetect2.train.dataset import LabeledDataset
+
+__all__ = [
+    "train",
+    "TrainerConfig",
+    "load_trainer_config",
+]
 
 
-class TrainInputs(NamedTuple):
-    spec: torch.Tensor
-    detection_heatmap: torch.Tensor
-    class_heatmap: torch.Tensor
-    size_heatmap: torch.Tensor
+class TrainerConfig(BaseConfig):
+    accelerator: str = "auto"
+    accumulate_grad_batches: int = 1
+    deterministic: bool = True
+    check_val_every_n_epoch: int = 1
+    devices: Union[str, int] = "auto"
+    enable_checkpointing: bool = True
+    gradient_clip_val: Optional[float] = None
+    limit_train_batches: Optional[Union[int, float]] = None
+    limit_test_batches: Optional[Union[int, float]] = None
+    limit_val_batches: Optional[Union[int, float]] = None
+    log_every_n_steps: Optional[int] = None
+    max_epochs: Optional[int] = None
+    min_epochs: Optional[int] = 100
+    max_steps: Optional[int] = None
+    min_steps: Optional[int] = None
+    max_time: Optional[str] = None
+    precision: Optional[str] = None
+    reload_dataloaders_every_n_epochs: Optional[int] = None
+    val_check_interval: Optional[Union[int, float]] = None
 
 
-def train_loop(
-    model: DetectionModel,
-    train_dataset: ClipAnnotationDataset[TrainInputs],
-    validation_dataset: ClipAnnotationDataset[TrainInputs],
-    device: Optional[torch.device] = None,
-    num_epochs: int = 100,
-    learning_rate: float = 1e-4,
+def load_trainer_config(path: PathLike, field: Optional[str] = None):
+    return load_config(path, schema=TrainerConfig, field=field)
+
+
+def train(
+    module: LightningModule,
+    train_dataset: LabeledDataset,
+    trainer_config: Optional[TrainerConfig] = None,
+    dev_run: bool = False,
+    overfit_batches: bool = False,
+    profiler: Optional[str] = None,
 ):
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    validation_loader = DataLoader(validation_dataset, batch_size=32)
-
-    model.to(device)
-
-    optimizer = Adam(model.parameters(), lr=learning_rate)
-    scheduler = CosineAnnealingLR(
-        optimizer,
-        num_epochs * len(train_loader),
+    trainer_config = trainer_config or TrainerConfig()
+    trainer = Trainer(
+        **trainer_config.model_dump(
+            exclude_unset=True,
+            exclude_none=True,
+        ),
+        fast_dev_run=dev_run,
+        overfit_batches=overfit_batches,
+        profiler=profiler,
     )
-
-    for epoch in range(num_epochs):
-        train_loss = train_single_epoch(
-            model,
-            train_loader,
-            optimizer,
-            device,
-            scheduler,
-        )
-
-
-def train_single_epoch(
-    model: DetectionModel,
-    train_loader: DataLoader,
-    optimizer: Adam,
-    device: torch.device,
-    scheduler: CosineAnnealingLR,
-):
-    model.train()
-    train_loss = tu.AverageMeter()
-
-    for batch in train_loader:
-        optimizer.zero_grad()
-
-        spec = batch.spec.to(device)
-        detection_heatmap = batch.detection_heatmap.to(device)
-        class_heatmap = batch.class_heatmap.to(device)
-        size_heatmap = batch.size_heatmap.to(device)
-
-        outputs = model(spec)
-
-        loss = loss_fun(
-            outputs,
-            gt_det,
-            gt_size,
-            gt_class,
-            det_criterion,
-            params,
-            class_inv_freq,
-        )
-
-        train_loss.update(loss.item(), data.shape[0])
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=module.config.train.batch_size,
+        shuffle=True,
+        num_workers=7,
+    )
+    trainer.fit(module, train_dataloaders=train_loader)
