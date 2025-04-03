@@ -8,10 +8,10 @@ import torch.utils.data
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 import batdetect2.detector.parameters as parameters
-import batdetect2.train.audio_dataloader as adl
+import batdetect2.train.legacy.audio_dataloader as adl
+import batdetect2.train.legacy.train_model as tm
+import batdetect2.train.legacy.train_utils as tu
 import batdetect2.train.losses as losses
-import batdetect2.train.train_model as tm
-import batdetect2.train.train_utils as tu
 import batdetect2.utils.detector_utils as du
 import batdetect2.utils.plot_utils as pu
 from batdetect2 import types

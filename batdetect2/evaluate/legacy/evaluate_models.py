@@ -12,8 +12,8 @@ import pandas as pd
 import torch
 from sklearn.ensemble import RandomForestClassifier
 
-import batdetect2.train.evaluate as evl
-import batdetect2.train.train_utils as tu
+import batdetect2.evaluate.legacy.evaluate_models as evl
+import batdetect2.train.legacy.train_utils as tu
 import batdetect2.utils.detector_utils as du
 import batdetect2.utils.plot_utils as pu
 from batdetect2.detector import parameters
