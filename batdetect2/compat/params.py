@@ -1,7 +1,6 @@
 from batdetect2.preprocess import (
     AmplitudeScaleConfig,
     AudioConfig,
-    STFTConfig,
     FrequencyConfig,
     LogScaleConfig,
     PcenScaleConfig,
@@ -10,6 +9,7 @@ from batdetect2.preprocess import (
     Scales,
     SpecSizeConfig,
     SpectrogramConfig,
+    STFTConfig,
 )
 from batdetect2.preprocess.spectrogram import get_spectrogram_resolution
 from batdetect2.terms import TagInfo

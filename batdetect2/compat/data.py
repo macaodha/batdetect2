@@ -1,6 +1,5 @@
 """Compatibility functions between old and new data structures."""
 
-import json
 import os
 import uuid
 from pathlib import Path
@@ -18,7 +17,8 @@ PathLike = Union[Path, str, os.PathLike]
 
 __all__ = [
     "convert_to_annotation_group",
-    "load_annotation_project_from_dir",
+    "load_file_annotation",
+    "annotation_to_sound_event",
 ]
 
 SPECIES_TAG_KEY = "species"
@@ -304,85 +304,3 @@ def list_file_annotations(path: PathLike) -> List[Path]:
     """List all annotations in a directory."""
     path = Path(path)
     return [file for file in path.glob("*.json")]
-
-
-def load_annotation_project_from_file(
-    path: PathLike,
-    name: Optional[str] = None,
-    audio_dir: Optional[PathLike] = None,
-) -> data.AnnotationProject:
-    old_annotations = json.loads(Path(path).read_text())
-
-    annotations = []
-    tasks = []
-
-    for ann in old_annotations:
-        try:
-            ann = FileAnnotation.model_validate(ann)
-        except ValueError:
-            continue
-
-        try:
-            clip = file_annotation_to_clip(ann, audio_dir=audio_dir)
-        except FileNotFoundError:
-            continue
-
-        annotations.append(file_annotation_to_clip_annotation(ann, clip))
-        tasks.append(file_annotation_to_annotation_task(ann, clip))
-
-    return data.AnnotationProject(
-        name=name or str(path),
-        clip_annotations=annotations,
-        tasks=tasks,
-    )
-
-
-def load_annotation_project_from_dir(
-    path: PathLike,
-    name: Optional[str] = None,
-    audio_dir: Optional[PathLike] = None,
-) -> data.AnnotationProject:
-    """Convert annotations to annotation project."""
-    audio_dir = audio_dir or Path.cwd()
-
-    paths = list_file_annotations(path)
-
-    if name is None:
-        name = str(path)
-
-    annotations = []
-    tasks = []
-
-    for p in paths:
-        try:
-            file_annotation = load_file_annotation(p)
-        except FileNotFoundError:
-            continue
-
-        try:
-            clip = file_annotation_to_clip(
-                file_annotation,
-                audio_dir=audio_dir,
-            )
-        except FileNotFoundError:
-            continue
-
-        annotations.append(
-            file_annotation_to_clip_annotation(
-                file_annotation,
-                clip,
-            )
-        )
-
-        tasks.append(
-            file_annotation_to_annotation_task(
-                file_annotation,
-                clip,
-            )
-        )
-
-    return data.AnnotationProject(
-        name=name,
-        clip_annotations=annotations,
-        tasks=tasks,
-    )
