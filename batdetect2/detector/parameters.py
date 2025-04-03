@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, computed_field
 
-from batdetect2.train.train_utils import (
+from batdetect2.train.legacy.train_utils import (
     get_genus_mapping,
     get_short_class_names,
 )

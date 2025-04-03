@@ -2,7 +2,7 @@ import torch
 from hypothesis import given
 from hypothesis import strategies as st
 
-from batdetect2.models import ModelConfig, ModelType, get_backbone
+from batdetect2.models import ModelConfig, ModelType, build_architecture
 
 
 @given(
@@ -20,7 +20,7 @@ def test_model_can_process_spectrograms_of_any_width(
 
     input = torch.rand([1, 1, input_height, input_width])
 
-    model = get_backbone(
+    model = build_architecture(
         config=ModelConfig(
             name=model_type,  # type: ignore
             input_height=input_height,
