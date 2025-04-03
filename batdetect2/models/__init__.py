@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Optional, Tuple
 
-from batdetect2.configs import BaseConfig
+from soundevent.data import PathLike
+
+from batdetect2.configs import BaseConfig, load_config
 from batdetect2.models.backbones import (
     Net2DFast,
     Net2DFastNoAttn,
@@ -12,13 +14,15 @@ from batdetect2.models.heads import BBoxHead, ClassifierHead
 from batdetect2.models.typing import BackboneModel
 
 __all__ = [
-    "get_backbone",
+    "BBoxHead",
+    "ClassifierHead",
+    "ModelConfig",
+    "ModelType",
     "Net2DFast",
     "Net2DFastNoAttn",
     "Net2DFastNoCoordConv",
-    "ModelType",
-    "BBoxHead",
-    "ClassifierHead",
+    "build_architecture",
+    "load_model_config",
 ]
 
 
@@ -38,7 +42,13 @@ class ModelConfig(BaseConfig):
     out_channels: int = 32
 
 
-def get_backbone(
+def load_model_config(
+    path: PathLike, field: Optional[str] = None
+) -> ModelConfig:
+    return load_config(path, schema=ModelConfig, field=field)
+
+
+def build_architecture(
     config: Optional[ModelConfig] = None,
 ) -> BackboneModel:
     config = config or ModelConfig()

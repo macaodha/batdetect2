@@ -165,6 +165,7 @@ def pad_adjust(
     spec: torch.Tensor,
     factor: int = 32,
 ) -> Tuple[torch.Tensor, int, int]:
+    print(spec.shape)
     h, w = spec.shape[2:]
     h_pad = -h % factor
     w_pad = -w % factor
