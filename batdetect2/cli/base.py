@@ -1,16 +1,12 @@
 """BatDetect2 command line interface."""
 
-import os
-
 import click
 
+# from batdetect2.cli.ascii import BATDETECT_ASCII_ART
 
 __all__ = [
     "cli",
 ]
-
-
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 INFO_STR = """
@@ -25,3 +21,4 @@ BatDetect2 - Detection and Classification
 def cli():
     """BatDetect2 - Bat Call Detection and Classification."""
     click.echo(INFO_STR)
+    # click.echo(BATDETECT_ASCII_ART)
