@@ -68,11 +68,11 @@ batdetect2 = "batdetect2.cli:cli"
 dev-dependencies = [
   "debugpy>=1.8.8",
   "hypothesis>=6.118.7",
-  "pyright>=1.1.388",
   "pytest>=7.2.2",
   "ruff>=0.7.3",
   "ipykernel>=6.29.4",
   "setuptools>=69.5.1",
+  "basedpyright>=1.28.4",
 ]
 
 [tool.ruff]
