@@ -20,7 +20,7 @@ from batdetect2.preprocess import (
 from batdetect2.train.labels import LabelConfig, generate_heatmaps
 from batdetect2.train.targets import (
     TargetConfig,
-    build_encoder,
+    build_target_encoder,
     build_sound_event_filter,
     get_class_names,
 )
@@ -76,7 +76,7 @@ def generate_train_example(
         event for event in clip_annotation.sound_events if filter_fn(event)
     ]
 
-    encoder = build_encoder(
+    encoder = build_target_encoder(
         config.target.classes,
         replacement_rules=config.target.replace,
     )

@@ -6,7 +6,7 @@ from sklearn.metrics import auc, roc_curve
 from soundevent import data
 from soundevent.evaluation import match_geometries
 
-from batdetect2.train.targets import build_encoder, get_class_names
+from batdetect2.train.targets import build_target_encoder, get_class_names
 
 
 def match_predictions_and_annotations(

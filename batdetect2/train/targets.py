@@ -12,7 +12,7 @@ from batdetect2.terms import TagInfo, get_tag_from_info
 __all__ = [
     "TargetConfig",
     "load_target_config",
-    "build_encoder",
+    "build_target_encoder",
     "build_decoder",
     "filter_sound_event",
 ]
@@ -91,7 +91,7 @@ def build_replacer(
     return replacer
 
 
-def build_encoder(
+def build_target_encoder(
     classes: List[TagInfo],
     replacement_rules: Optional[List[ReplaceConfig]] = None,
 ) -> Callable[[Iterable[data.Tag]], Optional[str]]:

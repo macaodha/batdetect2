@@ -101,7 +101,7 @@ class LabeledDataset(Dataset):
         preprocessing: Optional[PreprocessingConfig] = None,
     ):
         return cls(
-            get_files(directory, extension),
+            get_preprocessed_files(directory, extension),
             subclip=subclip,
             augmentation=augmentation,
             preprocessing=preprocessing,
@@ -143,5 +143,7 @@ class LabeledDataset(Dataset):
         return adjust_width(tensor, width)
 
 
-def get_files(directory: PathLike, extension: str = ".nc") -> Sequence[Path]:
+def get_preprocessed_files(
+    directory: PathLike, extension: str = ".nc"
+) -> Sequence[Path]:
     return list(Path(directory).glob(f"*{extension}"))

@@ -29,7 +29,7 @@ from batdetect2.train.losses import compute_loss
 from batdetect2.train.targets import (
     TargetConfig,
     build_decoder,
-    build_encoder,
+    build_target_encoder,
     get_class_names,
 )
 
@@ -78,7 +78,7 @@ class DetectorModel(L.LightningModule):
 
         # Training targets
         self.class_names = get_class_names(self.config.targets.classes)
-        self.encoder = build_encoder(
+        self.encoder = build_target_encoder(
             self.config.targets.classes,
             replacement_rules=self.config.targets.replace,
         )

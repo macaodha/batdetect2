@@ -15,10 +15,19 @@ from batdetect2.train.dataset import (
     LabeledDataset,
     SubclipConfig,
     TrainExample,
+    get_preprocessed_files,
 )
 from batdetect2.train.labels import LabelConfig, load_label_config
-from batdetect2.train.preprocess import preprocess_annotations
-from batdetect2.train.targets import TargetConfig, load_target_config
+from batdetect2.train.preprocess import (
+    generate_train_example,
+    preprocess_annotations,
+)
+from batdetect2.train.targets import (
+    TagInfo,
+    TargetConfig,
+    build_target_encoder,
+    load_target_config,
+)
 from batdetect2.train.train import TrainerConfig, load_trainer_config, train
 
 __all__ = [
@@ -26,12 +35,16 @@ __all__ = [
     "LabelConfig",
     "LabeledDataset",
     "SubclipConfig",
+    "TagInfo",
     "TargetConfig",
     "TrainExample",
     "TrainerConfig",
     "TrainingConfig",
     "add_echo",
     "augment_example",
+    "build_target_encoder",
+    "generate_train_example",
+    "get_preprocessed_files",
     "load_agumentation_config",
     "load_label_config",
     "load_target_config",
