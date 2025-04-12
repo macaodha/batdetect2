@@ -14,7 +14,6 @@ __all__ = [
     "load_target_config",
     "build_target_encoder",
     "build_decoder",
-    "filter_sound_event",
 ]
 
 
@@ -50,23 +49,6 @@ class TargetConfig(BaseConfig):
     )
 
     replace: Optional[List[ReplaceConfig]] = None
-
-
-def build_sound_event_filter(
-    include: Optional[List[TagInfo]] = None,
-    exclude: Optional[List[TagInfo]] = None,
-) -> Callable[[data.SoundEventAnnotation], bool]:
-    include_tags = (
-        {get_tag_from_info(tag) for tag in include} if include else None
-    )
-    exclude_tags = (
-        {get_tag_from_info(tag) for tag in exclude} if exclude else None
-    )
-    return partial(
-        filter_sound_event,
-        include=include_tags,
-        exclude=exclude_tags,
-    )
 
 
 def get_tag_label(tag_info: TagInfo) -> str:
@@ -136,22 +118,6 @@ def build_decoder(
         return [tag] if tag else []
 
     return decoder
-
-
-def filter_sound_event(
-    sound_event_annotation: data.SoundEventAnnotation,
-    include: Optional[Set[data.Tag]] = None,
-    exclude: Optional[Set[data.Tag]] = None,
-) -> bool:
-    tags = set(sound_event_annotation.tags)
-
-    if include is not None and not tags & include:
-        return False
-
-    if exclude is not None and tags & exclude:
-        return False
-
-    return True
 
 
 def load_target_config(
