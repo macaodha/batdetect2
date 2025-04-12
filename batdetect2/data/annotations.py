@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Literal, Union
 
@@ -32,5 +31,3 @@ AnnotationFormats = Union[
     BatDetect2AnnotationFile,
     AOEFAnnotationFile,
 ]
-
-

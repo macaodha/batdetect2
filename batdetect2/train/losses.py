@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from pydantic import Field
 
 from batdetect2.configs import BaseConfig
-from batdetect2.models.typing import ModelOutput
+from batdetect2.models.types import ModelOutput
 from batdetect2.train.dataset import TrainExample
 
 __all__ = [

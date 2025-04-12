@@ -12,10 +12,13 @@ from batdetect2.preprocess import (
     STFTConfig,
 )
 from batdetect2.preprocess.spectrogram import get_spectrogram_resolution
-from batdetect2.terms import TagInfo
-from batdetect2.train.preprocess import (
+from batdetect2.targets import (
     HeatmapsConfig,
+    TagInfo,
     TargetConfig,
+)
+from batdetect2.targets.labels import LabelConfig
+from batdetect2.train.preprocess import (
     TrainPreprocessingConfig,
 )
 
@@ -91,11 +94,13 @@ def get_training_preprocessing_config(
                 for value in params["classes_to_ignore"]
             ],
         ),
-        heatmaps=HeatmapsConfig(
-            position="bottom-left",
-            time_scale=1 / time_bin_width,
-            frequency_scale=1 / freq_bin_width,
-            sigma=params["target_sigma"],
+        labels=LabelConfig(
+            heatmaps=HeatmapsConfig(
+                position="bottom-left",
+                time_scale=1 / time_bin_width,
+                frequency_scale=1 / freq_bin_width,
+                sigma=params["target_sigma"],
+            )
         ),
     )
 

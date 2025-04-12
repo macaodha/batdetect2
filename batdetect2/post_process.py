@@ -9,7 +9,7 @@ from soundevent import data
 from torch import nn
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.models.typing import ModelOutput
+from batdetect2.models.types import ModelOutput
 
 __all__ = [
     "PostprocessConfig",

@@ -1,11 +1,18 @@
 import uuid
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, Iterable, List, Optional
 
 import numpy as np
 import pytest
 import soundfile as sf
-from soundevent import data
+from soundevent import data, terms
+
+from batdetect2.targets import (
+    TargetConfig,
+    build_target_encoder,
+    call_type,
+    get_class_names,
+)
 
 
 @pytest.fixture
@@ -107,3 +114,102 @@ def recording_factory(wav_factory: Callable[..., Path]):
         )
 
     return _recording_factory
+
+
+@pytest.fixture
+def recording(
+    recording_factory: Callable[..., data.Recording],
+) -> data.Recording:
+    return recording_factory()
+
+
+@pytest.fixture
+def clip(recording: data.Recording) -> data.Clip:
+    return data.Clip(recording=recording, start_time=0, end_time=0.5)
+
+
+@pytest.fixture
+def echolocation_call(recording: data.Recording) -> data.SoundEventAnnotation:
+    return data.SoundEventAnnotation(
+        sound_event=data.SoundEvent(
+            geometry=data.BoundingBox(coordinates=[0.1, 67_000, 0.11, 73_000]),
+            recording=recording,
+        ),
+        tags=[
+            data.Tag(term=terms.scientific_name, value="Myotis myotis"),
+            data.Tag(term=call_type, value="Echolocation"),
+        ],
+    )
+
+
+@pytest.fixture
+def generic_call(recording: data.Recording) -> data.SoundEventAnnotation:
+    return data.SoundEventAnnotation(
+        sound_event=data.SoundEvent(
+            geometry=data.BoundingBox(
+                coordinates=[0.34, 35_000, 0.348, 62_000]
+            ),
+            recording=recording,
+        ),
+        tags=[
+            data.Tag(term=terms.order, value="Chiroptera"),
+            data.Tag(term=call_type, value="Echolocation"),
+        ],
+    )
+
+
+@pytest.fixture
+def non_relevant_sound_event(
+    recording: data.Recording,
+) -> data.SoundEventAnnotation:
+    return data.SoundEventAnnotation(
+        sound_event=data.SoundEvent(
+            geometry=data.BoundingBox(
+                coordinates=[0.22, 50_000, 0.24, 58_000]
+            ),
+            recording=recording,
+        ),
+        tags=[
+            data.Tag(
+                term=terms.scientific_name,
+                value="Muscardinus avellanarius",
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def clip_annotation(
+    clip: data.Clip,
+    echolocation_call: data.SoundEventAnnotation,
+    generic_call: data.SoundEventAnnotation,
+    non_relevant_sound_event: data.SoundEventAnnotation,
+) -> data.ClipAnnotation:
+    return data.ClipAnnotation(
+        clip=clip,
+        sound_events=[
+            echolocation_call,
+            generic_call,
+            non_relevant_sound_event,
+        ],
+    )
+
+
+@pytest.fixture
+def target_config() -> TargetConfig:
+    return TargetConfig()
+
+
+@pytest.fixture
+def class_names(target_config: TargetConfig) -> List[str]:
+    return get_class_names(target_config.classes)
+
+
+@pytest.fixture
+def encoder(
+    target_config: TargetConfig,
+) -> Callable[[Iterable[data.Tag]], Optional[str]]:
+    return build_target_encoder(
+        classes=target_config.classes,
+        replacement_rules=target_config.replace,
+    )

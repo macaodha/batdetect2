@@ -8,9 +8,11 @@ from batdetect2.data import load_dataset_from_config
 from batdetect2.preprocess import (
     load_preprocessing_config,
 )
-from batdetect2.train import (
+from batdetect2.targets import (
     load_label_config,
     load_target_config,
+)
+from batdetect2.train import (
     preprocess_annotations,
 )
 

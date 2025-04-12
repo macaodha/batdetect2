@@ -15,6 +15,8 @@ from batdetect2.preprocess.config import (
     load_preprocessing_config,
 )
 from batdetect2.preprocess.spectrogram import (
+    MAX_FREQ,
+    MIN_FREQ,
     AmplitudeScaleConfig,
     FrequencyConfig,
     LogScaleConfig,
@@ -31,6 +33,8 @@ __all__ = [
     "AudioConfig",
     "FrequencyConfig",
     "LogScaleConfig",
+    "MAX_FREQ",
+    "MIN_FREQ",
     "PcenScaleConfig",
     "PreprocessingConfig",
     "ResampleConfig",

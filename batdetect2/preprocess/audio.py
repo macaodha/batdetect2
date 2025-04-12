@@ -31,7 +31,7 @@ def load_file_audio(
     path: data.PathLike,
     config: Optional[AudioConfig] = None,
     audio_dir: Optional[data.PathLike] = None,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     recording = data.Recording.from_file(path)
     return load_recording_audio(
@@ -46,7 +46,7 @@ def load_recording_audio(
     recording: data.Recording,
     config: Optional[AudioConfig] = None,
     audio_dir: Optional[data.PathLike] = None,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     clip = data.Clip(
         recording=recording,
@@ -65,7 +65,7 @@ def load_clip_audio(
     clip: data.Clip,
     config: Optional[AudioConfig] = None,
     audio_dir: Optional[data.PathLike] = None,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     config = config or AudioConfig()
 
@@ -122,7 +122,7 @@ def resample_audio(
     wav: xr.DataArray,
     samplerate: int = TARGET_SAMPLERATE_HZ,
     mode: str = "poly",
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     if "time" not in wav.dims:
         raise ValueError("Audio must have a time dimension")

@@ -30,8 +30,18 @@ def test_mix_examples(
 
     config = TrainPreprocessingConfig()
 
-    example1 = generate_train_example(clip_annotation_1, config)
-    example2 = generate_train_example(clip_annotation_2, config)
+    example1 = generate_train_example(
+        clip_annotation_1,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
+    example2 = generate_train_example(
+        clip_annotation_2,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
 
     mixed = mix_examples(example1, example2, config=config.preprocessing)
 
@@ -59,8 +69,18 @@ def test_mix_examples_of_different_durations(
 
     config = TrainPreprocessingConfig()
 
-    example1 = generate_train_example(clip_annotation_1, config)
-    example2 = generate_train_example(clip_annotation_2, config)
+    example1 = generate_train_example(
+        clip_annotation_1,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
+    example2 = generate_train_example(
+        clip_annotation_2,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
 
     mixed = mix_examples(example1, example2, config=config.preprocessing)
 
@@ -78,7 +98,12 @@ def test_add_echo(
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
-    original = generate_train_example(clip_annotation_1, config)
+    original = generate_train_example(
+        clip_annotation_1,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
     with_echo = add_echo(original, config=config.preprocessing)
 
     assert with_echo["spectrogram"].shape == original["spectrogram"].shape
@@ -94,7 +119,12 @@ def test_selected_random_subclip_has_the_correct_width(
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
-    original = generate_train_example(clip_annotation_1, config)
+    original = generate_train_example(
+        clip_annotation_1,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
     subclip = select_subclip(original, width=100)
 
     assert subclip["spectrogram"].shape[1] == 100
@@ -107,7 +137,12 @@ def test_add_echo_after_subclip(
     clip1 = data.Clip(recording=recording1, start_time=0, end_time=1)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
-    original = generate_train_example(clip_annotation_1, config)
+    original = generate_train_example(
+        clip_annotation_1,
+        preprocessing_config=config.preprocessing,
+        target_config=config.target,
+        label_config=config.labels,
+    )
 
     assert original.sizes["time"] > 512
 

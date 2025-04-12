@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Literal, Union
 
 from batdetect2.configs import BaseConfig
 
 __all__ = [
     "AnnotatedDataset",
-    "BatDetect2MergedAnnotations",
 ]
 
 
@@ -37,5 +35,3 @@ class AnnotatedDataset(BaseConfig):
     name: str
     audio_dir: Path
     description: str = ""
-
-

@@ -5,8 +5,8 @@ from typing import List
 import numpy as np
 import pytest
 
-from batdetect2.compat.data import load_annotation_project_from_dir
 from batdetect2.compat.params import get_training_preprocessing_config
+from batdetect2.data import BatDetect2FilesAnnotations, load_annotated_dataset
 from batdetect2.train.preprocess import generate_train_example
 
 
@@ -26,6 +26,8 @@ def test_can_generate_similar_training_inputs(
     old_parameters = json.loads((regression_dir / "params.json").read_text())
     config = get_training_preprocessing_config(old_parameters)
 
+    assert config is not None
+
     for audio_file in example_audio_files:
         example_file = regression_dir / f"{audio_file.name}.npz"
 
@@ -36,9 +38,12 @@ def test_can_generate_similar_training_inputs(
         size_mask = dataset["size_mask"]
         class_mask = dataset["class_mask"]
 
-        project = load_annotation_project_from_dir(
-            example_anns_dir,
-            audio_dir=example_audio_dir,
+        project = load_annotated_dataset(
+            BatDetect2FilesAnnotations(
+                name="test",
+                annotations_dir=example_anns_dir,
+                audio_dir=example_audio_dir,
+            )
         )
 
         clip_annotation = next(
@@ -47,7 +52,12 @@ def test_can_generate_similar_training_inputs(
             if ann.clip.recording.path == audio_file
         )
 
-        new_dataset = generate_train_example(clip_annotation, config)
+        new_dataset = generate_train_example(
+            clip_annotation,
+            preprocessing_config=config.preprocessing,
+            target_config=config.target,
+            label_config=config.labels,
+        )
         new_spec = new_dataset["spectrogram"].values
         new_detection_mask = new_dataset["detection"].values
         new_size_mask = new_dataset["size"].values

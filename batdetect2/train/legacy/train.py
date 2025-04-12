@@ -6,7 +6,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
-from batdetect2.models.typing import DetectionModel
+from batdetect2.models.types import DetectionModel
 from batdetect2.train.dataset import LabeledDataset
 
 

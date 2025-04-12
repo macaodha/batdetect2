@@ -12,12 +12,13 @@ from batdetect2.models.blocks import (
     UpscalingLayer,
     VerticalConv,
 )
-from batdetect2.models.typing import BackboneModel
+from batdetect2.models.types import BackboneModel
 
 __all__ = [
     "Net2DFast",
     "Net2DFastNoAttn",
     "Net2DFastNoCoordConv",
+    "Net2DPlain",
 ]
 
 
@@ -165,7 +166,6 @@ def pad_adjust(
     spec: torch.Tensor,
     factor: int = 32,
 ) -> Tuple[torch.Tensor, int, int]:
-    print(spec.shape)
     h, w = spec.shape[2:]
     h_pad = -h % factor
     w_pad = -w % factor

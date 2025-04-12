@@ -1,12 +1,9 @@
 from typing import List
 
 import numpy as np
-import pandas as pd
 from sklearn.metrics import auc, roc_curve
 from soundevent import data
 from soundevent.evaluation import match_geometries
-
-from batdetect2.train.targets import build_target_encoder, get_class_names
 
 
 def match_predictions_and_annotations(
@@ -51,20 +48,13 @@ def match_predictions_and_annotations(
     return matches
 
 
-def build_evaluation_dataframe(matches: List[data.Match]) -> pd.DataFrame:
-    ret = []
-
-    for match in matches:
-        pass
-
-
 def compute_error_auc(op_str, gt, pred, prob):
     # classification error
     pred_int = (pred > prob).astype(np.int32)
     class_acc = (pred_int == gt).mean() * 100.0
 
     # ROC - area under curve
-    fpr, tpr, thresholds = roc_curve(gt, pred)
+    fpr, tpr, _ = roc_curve(gt, pred)
     roc_auc = auc(fpr, tpr)
 
     print(
@@ -177,7 +167,7 @@ def compute_pre_rec(
         file_ids.append([pid] * valid_inds.sum())
 
     confidence = np.hstack(confidence)
-    file_ids = np.hstack(file_ids).astype(np.int)
+    file_ids = np.hstack(file_ids).astype(int)
     pred_boxes = np.vstack(pred_boxes)
     if len(pred_class) > 0:
         pred_class = np.hstack(pred_class)
@@ -197,8 +187,7 @@ def compute_pre_rec(
 
         # note, files with the incorrect duration will cause a problem
         if (gg["start_times"] > file_dur).sum() > 0:
-            print("Error: file duration incorrect for", gg["id"])
-            assert False
+            raise ValueError(f"Error: file duration incorrect for {gg['id']}")
 
         boxes = np.vstack(
             (
@@ -244,6 +233,8 @@ def compute_pre_rec(
         gt_id = file_ids[ind]
 
         valid_det = False
+        det_ind = 0
+
         if gt_boxes[gt_id].shape[0] > 0:
             # compute overlap
             valid_det, det_ind = compute_affinity_1d(
@@ -273,7 +264,7 @@ def compute_pre_rec(
     # store threshold values - used for plotting
     conf_sorted = np.sort(confidence)[::-1][valid_inds]
     thresholds = np.linspace(0.1, 0.9, 9)
-    thresholds_inds = np.zeros(len(thresholds), dtype=np.int)
+    thresholds_inds = np.zeros(len(thresholds), dtype=int)
     for ii, tt in enumerate(thresholds):
         thresholds_inds[ii] = np.argmin(conf_sorted > tt)
     thresholds_inds[thresholds_inds == 0] = -1
@@ -385,7 +376,7 @@ def compute_file_accuracy(gts, preds, num_classes):
     ).mean(0)
     best_thresh = np.argmax(acc_per_thresh)
     best_acc = acc_per_thresh[best_thresh]
-    pred_valid = pred_valid_all[:, best_thresh].astype(np.int).tolist()
+    pred_valid = pred_valid_all[:, best_thresh].astype(int).tolist()
 
     res = {}
     res["num_valid_files"] = len(gt_valid)

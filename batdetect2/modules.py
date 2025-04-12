@@ -7,31 +7,27 @@ from pydantic import Field
 from soundevent import data
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from torch.utils.data import DataLoader
 
 from batdetect2.configs import BaseConfig
-from batdetect2.evaluate.evaluate import match_predictions_and_annotations
 from batdetect2.models import (
     BBoxHead,
     ClassifierHead,
     ModelConfig,
+    ModelOutput,
     build_architecture,
 )
-from batdetect2.models.typing import ModelOutput
 from batdetect2.post_process import (
     PostprocessConfig,
     postprocess_model_outputs,
 )
 from batdetect2.preprocess import PreprocessingConfig, preprocess_audio_clip
-from batdetect2.train.config import TrainingConfig
-from batdetect2.train.dataset import LabeledDataset, TrainExample
-from batdetect2.train.losses import compute_loss
-from batdetect2.train.targets import (
+from batdetect2.targets import (
     TargetConfig,
     build_decoder,
     build_target_encoder,
     get_class_names,
 )
+from batdetect2.train import TrainExample, TrainingConfig, compute_loss
 
 __all__ = [
     "DetectorModel",
@@ -83,12 +79,9 @@ class DetectorModel(L.LightningModule):
             replacement_rules=self.config.targets.replace,
         )
         self.decoder = build_decoder(self.config.targets.classes)
-
-        self.validation_predictions = []
-
         self.example_input_array = torch.randn([1, 1, 128, 512])
 
-    def forward(self, spec: torch.Tensor) -> ModelOutput:  # type: ignore
+    def forward(self, spec: torch.Tensor) -> ModelOutput:
         features = self.backbone(spec)
         detection_probs, classification_probs = self.classifier(features)
         size_preds = self.bbox(features)
@@ -129,27 +122,6 @@ class DetectorModel(L.LightningModule):
         self.log("val/loss/detection", losses.total, logger=True)
         self.log("val/loss/size", losses.total, logger=True)
         self.log("val/loss/classification", losses.total, logger=True)
-
-        dataloaders = self.trainer.val_dataloaders
-        assert isinstance(dataloaders, DataLoader)
-        dataset = dataloaders.dataset
-        assert isinstance(dataset, LabeledDataset)
-        clip_annotation = dataset.get_clip_annotation(batch_idx)
-
-        clip_prediction = postprocess_model_outputs(
-            outputs,
-            clips=[clip_annotation.clip],
-            classes=self.class_names,
-            decoder=self.decoder,
-            config=self.config.postprocessing,
-        )[0]
-
-        matches = match_predictions_and_annotations(
-            clip_annotation,
-            clip_prediction,
-        )
-
-        self.validation_predictions.extend(matches)
 
     def on_validation_epoch_end(self) -> None:
         self.validation_predictions.clear()

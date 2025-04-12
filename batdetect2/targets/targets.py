@@ -7,7 +7,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.terms import TagInfo, get_tag_from_info
+from batdetect2.targets.terms import TagInfo, get_tag_from_info
 
 __all__ = [
     "TargetConfig",

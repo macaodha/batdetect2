@@ -91,7 +91,15 @@ convention = "numpy"
 
 [tool.pyright]
 include = ["batdetect2", "tests"]
-venvPath = "."
-venv = ".venv"
 pythonVersion = "3.9"
 pythonPlatform = "All"
+exclude = [
+  "batdetect2/detector/",
+  "batdetect2/finetune",
+  "batdetect2/utils",
+  "batdetect2/plotting",
+  "batdetect2/plot",
+  "batdetect2/api",
+  "batdetect2/evaluate/legacy",
+  "batdetect2/train/legacy",
+]

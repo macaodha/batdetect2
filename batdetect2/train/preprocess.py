@@ -17,11 +17,12 @@ from batdetect2.preprocess import (
     compute_spectrogram,
     load_clip_audio,
 )
-from batdetect2.train.labels import LabelConfig, generate_heatmaps
-from batdetect2.train.targets import (
+from batdetect2.targets import (
+    LabelConfig,
     TargetConfig,
-    build_target_encoder,
     build_sound_event_filter,
+    build_target_encoder,
+    generate_heatmaps,
     get_class_names,
 )
 

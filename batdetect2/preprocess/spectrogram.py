@@ -11,6 +11,20 @@ from soundevent.arrays import operations as ops
 
 from batdetect2.configs import BaseConfig
 
+__all__ = [
+    "STFTConfig",
+    "FrequencyConfig",
+    "LogScaleConfig",
+    "PcenScaleConfig",
+    "AmplitudeScaleConfig",
+    "Scales",
+    "SpectrogramConfig",
+    "compute_spectrogram",
+]
+
+MIN_FREQ = 10_000
+MAX_FREQ = 120_000
+
 
 class STFTConfig(BaseConfig):
     window_duration: float = Field(default=0.002, gt=0)
@@ -70,7 +84,7 @@ class SpectrogramConfig(BaseConfig):
 def compute_spectrogram(
     wav: xr.DataArray,
     config: Optional[SpectrogramConfig] = None,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     config = config or SpectrogramConfig()
 
@@ -124,7 +138,7 @@ def stft(
     window_duration: float,
     window_overlap: float,
     window_fn: str = "hann",
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     start_time, end_time = arrays.get_dim_range(wave, dim="time")
     step = arrays.get_dim_step(wave, dim="time")
@@ -190,7 +204,7 @@ def denoise_spectrogram(spec: xr.DataArray) -> xr.DataArray:
 def scale_spectrogram(
     spec: xr.DataArray,
     scale: Scales,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     if scale.name == "log":
         return scale_log(spec, dtype=dtype)
@@ -230,7 +244,7 @@ def scale_pcen(
 
 def scale_log(
     spec: xr.DataArray,
-    dtype: DTypeLike = np.float32,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     samplerate = spec.attrs["original_samplerate"]
     nfft = spec.attrs["nfft"]
