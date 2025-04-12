@@ -79,22 +79,29 @@ class TermRegistry:
     def __init__(self, terms: Optional[Dict[str, data.Term]] = None):
         """Initializes the TermRegistry.
 
-        Args:
-            terms: An optional dictionary of initial key-to-Term mappings
-                to populate the registry with. Defaults to an empty registry.
+        Parameters
+        ----------
+        terms : dict[str, soundevent.data.Term], optional
+            An optional dictionary of initial key-to-Term mappings
+            to populate the registry with. Defaults to an empty registry.
         """
         self._terms = terms or {}
 
     def add_term(self, key: str, term: data.Term) -> None:
         """Adds a Term object to the registry with the specified key.
 
-        Args:
-            key: The unique string key to associate with the term.
-            term: The soundevent.data.Term object to register.
+        Parameters
+        ----------
+        key : str
+            The unique string key to associate with the term.
+        term : soundevent.data.Term
+            The soundevent.data.Term object to register.
 
-        Raises:
-            KeyError: If a term with the provided key already exists in the
-                registry.
+        Raises
+        ------
+        KeyError
+            If a term with the provided key already exists in the
+            registry.
         """
         if key in self._terms:
             raise KeyError("A term with the provided key already exists.")
@@ -104,15 +111,21 @@ class TermRegistry:
     def get_term(self, key: str) -> data.Term:
         """Retrieves a registered term by its unique key.
 
-        Args:
-            key: The unique string key of the term to retrieve.
+        Parameters
+        ----------
+        key : str
+            The unique string key of the term to retrieve.
 
-        Returns:
+        Returns
+        -------
+        soundevent.data.Term
             The corresponding soundevent.data.Term object.
 
-        Raises:
-            KeyError: If no term with the specified key is found, with a
-                helpful message suggesting listing available keys.
+        Raises
+        ------
+        KeyError
+            If no term with the specified key is found, with a
+            helpful message suggesting listing available keys.
         """
         try:
             return self._terms[key]
@@ -140,18 +153,28 @@ class TermRegistry:
         reasonable defaults are used (`key` for name/label, "Unknown" for
         definition).
 
-        Args:
-            key: The unique string key for the new term.
-            name: The name for the new term (defaults to `key`).
-            uri: The URI for the new term (optional).
-            label: The display label for the new term (defaults to `key`).
-            definition: The definition for the new term (defaults to "Unknown").
+        Parameters
+        ----------
+        key : str
+            The unique string key for the new term.
+        name : str, optional
+            The name for the new term (defaults to `key`).
+        uri : str, optional
+            The URI for the new term (optional).
+        label : str, optional
+            The display label for the new term (defaults to `key`).
+        definition : str, optional
+            The definition for the new term (defaults to "Unknown").
 
-        Returns:
+        Returns
+        -------
+        soundevent.data.Term
             The newly created and registered soundevent.data.Term object.
 
-        Raises:
-            KeyError: If a term with the provided key already exists.
+        Raises
+        ------
+        KeyError
+            If a term with the provided key already exists.
         """
         term = data.Term(
             name=name or key,
@@ -165,7 +188,9 @@ class TermRegistry:
     def get_keys(self) -> List[str]:
         """Returns a list of all keys currently registered.
 
-        Returns:
+        Returns
+        -------
+        list[str]
             A list of strings representing the keys of all registered terms.
         """
         return list(self._terms.keys())
@@ -199,16 +224,23 @@ def get_term_from_key(
     Uses the global default registry unless a specific `term_registry`
     instance is provided.
 
-    Args:
-        key: The unique key of the term to retrieve.
-        term_registry: The TermRegistry instance to search in. Defaults to
-            the global `registry`.
+    Parameters
+    ----------
+    key : str
+        The unique key of the term to retrieve.
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to search in. Defaults to the global
+        `registry`.
 
-    Returns:
+    Returns
+    -------
+    soundevent.data.Term
         The corresponding soundevent.data.Term object.
 
-    Raises:
-        KeyError: If the key is not found in the specified registry.
+    Raises
+    ------
+    KeyError
+        If the key is not found in the specified registry.
     """
     return term_registry.get_term(key)
 
@@ -219,11 +251,14 @@ def get_term_keys(term_registry: TermRegistry = registry) -> List[str]:
     Uses the global default registry unless a specific `term_registry`
     instance is provided.
 
-    Args:
-        term_registry: The TermRegistry instance to query. Defaults to
-            the global `registry`.
+    Parameters
+    ----------
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to query. Defaults to the global `registry`.
 
-    Returns:
+    Returns
+    -------
+    list[str]
         A list of strings representing the keys of all registered terms.
     """
     return term_registry.get_keys()
@@ -237,11 +272,14 @@ class TagInfo(BaseModel):
     tags with output classes. It links a tag value to a term definition
     via the term's registry key.
 
-    Attributes:
-        value: The value of the tag (e.g., "Myotis myotis", "Echolocation").
-        key: The key (alias) of the term associated with this tag, as
-            registered in the TermRegistry. Defaults to "class", implying
-            it represents a classification target label by default.
+    Attributes
+    ----------
+    value : str
+        The value of the tag (e.g., "Myotis myotis", "Echolocation").
+    key : str, default="class"
+        The key (alias) of the term associated with this tag, as
+        registered in the TermRegistry. Defaults to "class", implying
+        it represents a classification target label by default.
     """
 
     value: str
@@ -257,17 +295,24 @@ def get_tag_from_info(
     Looks up the term using the key in the provided `tag_info` from the
     specified registry and constructs a Tag object.
 
-    Args:
-        tag_info: The TagInfo object containing the value and term key.
-        term_registry: The TermRegistry instance to use for term lookup.
-            Defaults to the global `registry`.
+    Parameters
+    ----------
+    tag_info : TagInfo
+        The TagInfo object containing the value and term key.
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to use for term lookup. Defaults to the
+        global `registry`.
 
-    Returns:
+    Returns
+    -------
+    soundevent.data.Tag
         A soundevent.data.Tag object corresponding to the input info.
 
-    Raises:
-        KeyError: If the term key specified in `tag_info.key` is not found
-            in the registry.
+    Raises
+    ------
+    KeyError
+        If the term key specified in `tag_info.key` is not found
+        in the registry.
     """
     term = get_term_from_key(tag_info.key, term_registry=term_registry)
     return data.Tag(term=term, value=tag_info.value)
@@ -280,17 +325,23 @@ class TermInfo(BaseModel):
     files (e.g., YAML) which can then be loaded into the TermRegistry.
     It mirrors the parameters of `TermRegistry.add_custom_term`.
 
-    Attributes:
-        key: The unique key (alias) that will be used to register and
-            reference this term.
-        label: The optional display label for the term. Defaults to `key`
-            if not provided during registration.
-        name: The optional formal name for the term. Defaults to `key`
-            if not provided during registration.
-        uri: The optional URI identifying the term (e.g., from a standard
-            vocabulary).
-        definition: The optional textual definition of the term. Defaults to
-            "Unknown" if not provided during registration.
+    Attributes
+    ----------
+    key : str
+        The unique key (alias) that will be used to register and
+        reference this term.
+    label : str, optional
+        The optional display label for the term. Defaults to `key`
+        if not provided during registration.
+    name : str, optional
+        The optional formal name for the term. Defaults to `key`
+        if not provided during registration.
+    uri : str, optional
+        The optional URI identifying the term (e.g., from a standard
+        vocabulary).
+    definition : str, optional
+        The optional textual definition of the term. Defaults to
+        "Unknown" if not provided during registration.
     """
 
     key: str
@@ -306,7 +357,16 @@ class TermConfig(BaseModel):
     This model typically corresponds to a section in a configuration file
     (e.g., YAML) containing a list of term definitions to be registered.
 
+    Attributes
+    ----------
+    terms : list[TermInfo]
+        A list of TermInfo objects, each defining a term to be
+        registered. Defaults to an empty list.
+
+    Examples
+    --------
     Example YAML structure:
+
     ```yaml
     terms:
       - key: species
@@ -317,10 +377,6 @@ class TermConfig(BaseModel):
         definition: Describes a specific project attribute.
       # ... more TermInfo definitions
     ```
-
-    Attributes:
-        terms: A list of TermInfo objects, each defining a term to be
-            registered. Defaults to an empty list.
     """
 
     terms: List[TermInfo] = Field(default_factory=list)
@@ -337,25 +393,34 @@ def load_terms_from_config(
     extracts the list of TermInfo definitions, and adds each one as a
     custom term to the specified TermRegistry instance.
 
-    Args:
-        path: The path to the configuration file.
-        field: Optional key indicating a specific section within the config
-            file where the 'terms' list is located. If None, expects the
-            list directly at the top level or within a structure matching
-            TermConfig schema.
-        term_registry: The TermRegistry instance to add the loaded terms to.
-            Defaults to the global `registry`.
+    Parameters
+    ----------
+    path : data.PathLike
+        The path to the configuration file.
+    field : str, optional
+        Optional key indicating a specific section within the config
+        file where the 'terms' list is located. If None, expects the
+        list directly at the top level or within a structure matching
+        TermConfig schema.
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to add the loaded terms to. Defaults to
+        the global `registry`.
 
-    Returns:
+    Returns
+    -------
+    dict[str, soundevent.data.Term]
         A dictionary mapping the keys of the newly added terms to their
         corresponding Term objects.
 
-    Raises:
-        FileNotFoundError: If the config file path does not exist.
-        ValidationError: If the config file structure does not match the
-        TermConfig schema.
-        KeyError: If a term key loaded from the config conflicts with a key
-            already present in the registry.
+    Raises
+    ------
+    FileNotFoundError
+        If the config file path does not exist.
+    pydantic.ValidationError
+        If the config file structure does not match the TermConfig schema.
+    KeyError
+        If a term key loaded from the config conflicts with a key
+        already present in the registry.
     """
     data = load_config(path, schema=TermConfig, field=field)
     return {
