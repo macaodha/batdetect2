@@ -195,6 +195,16 @@ class TermRegistry:
         """
         return list(self._terms.keys())
 
+    def get_terms(self) -> List[data.Term]:
+        """Returns a list of all registered terms.
+
+        Returns
+        -------
+        list[soundevent.data.Term]
+            A list containing all registered Term objects.
+        """
+        return list(self._terms.values())
+
 
 registry = TermRegistry(
     terms=dict(
@@ -262,6 +272,25 @@ def get_term_keys(term_registry: TermRegistry = registry) -> List[str]:
         A list of strings representing the keys of all registered terms.
     """
     return term_registry.get_keys()
+
+
+def get_terms(term_registry: TermRegistry = registry) -> List[data.Term]:
+    """Convenience function to get all registered terms from a registry.
+
+    Uses the global default registry unless a specific `term_registry`
+    instance is provided.
+
+    Parameters
+    ----------
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to query. Defaults to the global `registry`.
+
+    Returns
+    -------
+    list[soundevent.data.Term]
+        A list containing all registered Term objects.
+    """
+    return term_registry.get_terms()
 
 
 class TagInfo(BaseModel):
