@@ -9,8 +9,13 @@ from batdetect2.configs import BaseConfig, load_config
 from batdetect2.targets.terms import TagInfo, get_tag_from_info
 
 __all__ = [
-    "build_filter_from_config",
+    "FilterConfig",
+    "FilterRule",
     "SoundEventFilter",
+    "build_filter_from_config",
+    "build_filter_from_rule",
+    "load_filter_config",
+    "load_filter_from_config",
 ]
 
 

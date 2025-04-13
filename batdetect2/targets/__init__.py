@@ -15,9 +15,7 @@ from batdetect2.targets.labels import (
 from batdetect2.targets.targets import (
     TargetConfig,
     build_decoder,
-    build_sound_event_filter,
     build_target_encoder,
-    filter_sound_event,
     get_class_names,
     load_target_config,
 )
@@ -36,10 +34,8 @@ __all__ = [
     "TargetConfig",
     "TermInfo",
     "build_decoder",
-    "build_sound_event_filter",
     "build_target_encoder",
     "call_type",
-    "filter_sound_event",
     "generate_heatmaps",
     "get_class_names",
     "get_tag_from_info",

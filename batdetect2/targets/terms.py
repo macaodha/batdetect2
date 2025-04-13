@@ -13,6 +13,7 @@ Terms can be pre-defined, loaded from the `soundevent.terms` library, defined
 programmatically, or loaded from external configuration files (e.g., YAML).
 """
 
+from collections.abc import Mapping
 from inspect import getmembers
 from typing import Dict, List, Optional
 
@@ -68,7 +69,7 @@ generic_class = data.Term(
 """Generic term representing a classification model's output class label."""
 
 
-class TermRegistry:
+class TermRegistry(Mapping[str, data.Term]):
     """Manages a registry mapping unique keys to Term definitions.
 
     This class acts as the central repository for the vocabulary of terms
@@ -85,7 +86,16 @@ class TermRegistry:
             An optional dictionary of initial key-to-Term mappings
             to populate the registry with. Defaults to an empty registry.
         """
-        self._terms = terms or {}
+        self._terms: Dict[str, data.Term] = terms or {}
+
+    def __getitem__(self, key: str) -> data.Term:
+        return self._terms[key]
+
+    def __len__(self) -> int:
+        return len(self._terms)
+
+    def __iter__(self):
+        return iter(self._terms)
 
     def add_term(self, key: str, term: data.Term) -> None:
         """Adds a Term object to the registry with the specified key.
