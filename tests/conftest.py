@@ -129,6 +129,14 @@ def clip(recording: data.Recording) -> data.Clip:
 
 
 @pytest.fixture
+def sound_event(recording: data.Recording) -> data.SoundEvent:
+    return data.SoundEvent(
+        geometry=data.BoundingBox(coordinates=[0.1, 67_000, 0.11, 73_000]),
+        recording=recording,
+    )
+
+
+@pytest.fixture
 def echolocation_call(recording: data.Recording) -> data.SoundEventAnnotation:
     return data.SoundEventAnnotation(
         sound_event=data.SoundEvent(
