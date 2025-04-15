@@ -1,13 +1,13 @@
-## Step 5: Generating Training Targets (Heatmaps)
+# Step 5: Generating Training Targets
 
-### Purpose and Context
+## Purpose and Context
 
 Following the previous steps of defining terms, filtering events, transforming tags, and defining specific class rules, this final stage focuses on **generating the ground truth data** used directly for training the BatDetect2 model.
 This involves converting the refined annotation information for each audio clip into specific **heatmap formats** required by the underlying neural network architecture.
 
 This step essentially translates your structured annotations into the precise "answer key" the model learns to replicate during training.
 
-### What are Heatmaps?
+## What are Heatmaps?
 
 Heatmaps, in this context, are multi-dimensional arrays, often visualized as images aligned with the input spectrogram, where the values at different time-frequency coordinates represent specific information about the sound events.
 For BatDetect2 training, three primary heatmaps are generated:
@@ -31,7 +31,7 @@ For BatDetect2 training, three primary heatmaps are generated:
     - **Structure:** A 3D array with dimensions for size-dimension ('width', 'height'), time, and frequency.
       At the reference location of each detected sound event, this heatmap stores two numerical values corresponding to the scaled width and height derived from the event's bounding box.
 
-### How Heatmaps are Created (The Process)
+## How Heatmaps are Created
 
 The generation of these heatmaps is an automated process within `batdetect2`, driven by your configurations from all previous steps.
 For each audio clip and its corresponding spectrogram in the training dataset:
@@ -46,7 +46,7 @@ For each audio clip and its corresponding spectrogram in the training dataset:
     - If an annotation received a specific class name, a signal is placed on the corresponding layer of the **Class Heatmap** at the reference location.
 6.  Finally, Gaussian smoothing (a blurring effect) is typically applied to the Detection and Class heatmaps to create spatially smoother targets, which often aids model training stability and performance.
 
-### Configurable Settings for Heatmap Generation
+## Configurable Settings for Heatmap Generation
 
 While the content of the heatmaps is primarily determined by the previous configuration steps, a few parameters specific to the heatmap drawing process itself can be adjusted.
 These are usually set in your main configuration file under a section like `labelling`:
@@ -70,7 +70,7 @@ labelling:
   frequency_scale: 0.00116 # Example: Scales Hz relative to ~860 Hz (model specific!)
 ```
 
-### Outcome: Final Training Targets
+## Outcome: Final Training Targets
 
 Executing this step for all training data yields the complete set of target heatmaps (Detection, Class, Size) for each corresponding input spectrogram.
 These arrays constitute the ground truth data that the BatDetect2 model directly compares its predictions against during the training phase, guiding its learning process.

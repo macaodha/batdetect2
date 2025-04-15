@@ -1,6 +1,6 @@
-## Step 3: Transforming Annotation Tags (Optional)
+# Step 3: Transforming Annotation Tags (Optional)
 
-### Purpose and Context
+## Purpose and Context
 
 After defining your vocabulary (Step 1: Terms) and filtering out irrelevant sound events (Step 2: Filtering), you have a dataset of annotations ready for the next stages.
 Before you select the final target classes for training (Step 4), you might want or need to **modify the tags** associated with your annotations.
@@ -15,7 +15,7 @@ This optional step allows you to clean up, standardize, or derive new informatio
 
 This step uses the `batdetect2.targets.transform` module to apply these changes based on rules you define.
 
-### How it Works: Transformation Rules
+## How it Works: Transformation Rules
 
 You control how tags are transformed by defining a list of **rules** in your configuration file (e.g., your main `.yaml` file, often under a section named `transform`).
 
@@ -24,7 +24,7 @@ Importantly, the rules are applied **sequentially**, in the exact order they app
 The output annotation from one rule becomes the input for the next rule in the list.
 This means the order can matter!
 
-### Types of Transformation Rules
+## Types of Transformation Rules
 
 Here are the main types of rules you can define:
 
@@ -106,13 +106,13 @@ Here are the main types of rules you can define:
             keep_source: false # Replace the original species tag
       ```
 
-### Rule Order Matters!
+## Rule Order Matters
 
 Remember that rules are applied one after another.
 If you have multiple rules, make sure they are ordered correctly to achieve the desired outcome.
 For instance, you might want to standardize species names _before_ deriving the genus from them.
 
-### Outcome
+## Outcome
 
 After applying all the transformation rules you've defined, the annotations will proceed to the next step (Step 4: Select Target Tags & Define Classes) with their tags potentially cleaned, standardized, or augmented based on your configuration.
 If you don't define any rules, the tags simply pass through this step unchanged.

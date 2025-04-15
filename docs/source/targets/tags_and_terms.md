@@ -1,6 +1,6 @@
-## Managing Annotation Vocabulary: Terms and Tags
+# Step 1: Managing Annotation Vocabulary
 
-### Purpose
+## Purpose
 
 To train `batdetect2`, you will need sound events that have been carefully annotated. We annotate sound events using **tags**. A tag is simply a piece of information attached to an annotation, often describing what the sound is or its characteristics. Common examples include `Species: Myotis daubentonii` or `Quality: Good`.
 
@@ -19,7 +19,7 @@ This `terms` module is designed to help manage these definitions effectively:
 2.  It lets you **define your own custom terms** if you need concepts specific to your project.
 3.  Crucially, it allows you to use simple **"keys"** (like shortcuts) in your configuration files to refer to these potentially complex term definitions, making configuration much easier and less error-prone.
 
-### The Problem: Why We Need Defined Terms (and Why It Gets Complicated)
+## The Problem: Why We Need Defined Terms
 
 Imagine you have a tag that simply says `"Myomyo"`.
 If you created this tag, you might know it's a shortcut for the species _Myotis myotis_.
@@ -41,7 +41,7 @@ Using standard Terms whenever possible makes your data clearer, easier for other
 
 **But here's the practical problem:** While using standard, well-defined Terms is important for clarity and reusability, writing out full definitions or long standard names (like `dwc:scientificName` or "Scientific Name according to Darwin Core standard") every single time you need to refer to a species tag in a configuration file would be extremely tedious and prone to typing errors.
 
-### The Solution: Keys (Shortcuts) and the Registry
+## The Solution: Keys (Shortcuts) and the Registry
 
 This module uses a central **Registry** that stores the full definitions of various Terms.
 Each Term in the registry is assigned a unique, short **key** (a simple string).
@@ -57,7 +57,7 @@ The system automatically looks up the full definition in the registry using the 
 - **Key:** `species`
 - **In Config:** You just write `species`.
 
-### Available Keys
+## Available Keys
 
 The registry comes pre-loaded with keys for many standard terms used in bioacoustics, including those from the `soundevent` package and some specific to `batdetect2`. This means you can often use these common concepts without needing to define them yourself.
 
@@ -77,7 +77,7 @@ This is not an exhaustive list. To discover all the term keys currently availabl
 
 Okay, let's refine the "Defining Your Own Terms" section to incorporate the explanation about namespacing within the `name` field description, keeping the style clear and researcher-focused.
 
-### Defining Your Own Terms
+## Defining Your Own Terms
 
 While many common terms have pre-defined keys, you might need a term specific to your project or data that isn't already available (e.g., "Recording Setup", "Weather Condition", "Project Phase", "Noise Source"). You can easily define these custom terms directly within a configuration file (usually your main `.yaml` file).
 
@@ -119,7 +119,7 @@ terms:
 
 When `batdetect2` loads your configuration, it reads this `terms` section and adds your custom definitions (linked to their unique keys) to the central registry. These keys (`weather`, `setup_id`, etc.) are then ready to be used in other parts of your configuration, like defining filters or target classes.
 
-### Using Keys to Specify Tags (in Filters, Class Definitions, etc.)
+## Using Keys to Specify Tags (in Filters, Class Definitions, etc.)
 
 Now that you have keys for all the terms you need (both pre-defined and custom), you can easily refer to specific **tags** in other parts of your configuration, such as:
 
@@ -155,7 +155,7 @@ rules:
         value: Good
 ```
 
-### Summary
+## Summary
 
 - Annotations have **tags** (Term + Value).
 - This module uses short **keys** as shortcuts for Term definitions, stored in a **registry**.

@@ -73,6 +73,11 @@ dev-dependencies = [
   "ipykernel>=6.29.4",
   "setuptools>=69.5.1",
   "pyright>=1.1.399",
+  "myst-parser>=3.0.1",
+  "sphinx-autobuild>=2024.10.3",
+  "numpydoc>=1.8.0",
+  "sphinx-autodoc-typehints>=2.3.0",
+  "sphinx-book-theme>=1.1.4",
 ]
 
 [tool.ruff]

@@ -1,6 +1,6 @@
-## Filtering Sound Events for Training
+# Step 2: Filtering Sound Events
 
-### Purpose
+## Purpose
 
 When preparing your annotated audio data for training a `batdetect2` model, you often want to select only specific sound events.
 For example, you might want to:
@@ -12,14 +12,14 @@ For example, you might want to:
 This filtering module allows you to define rules based on the **tags** associated with each sound event annotation.
 Only the events that pass _all_ your defined rules will be kept for further processing and training.
 
-### How it Works: Rules
+## How it Works: Rules
 
 Filtering is controlled by a list of **rules**.
 Each rule defines a condition based on the tags attached to a sound event.
 An event must satisfy **all** the rules you define in your configuration to be included.
 If an event fails even one rule, it is discarded.
 
-### Defining Rules in Configuration
+## Defining Rules in Configuration
 
 You define these rules within your main configuration file (usually a `.yaml` file) under a specific section (the exact name might depend on the main training config, but let's assume it's called `filtering`).
 
@@ -48,7 +48,7 @@ filtering:
     # ... add more rules as needed
 ```
 
-### Understanding `match_type`
+## Understanding `match_type`
 
 This determines _how_ the list of `tags` in the rule is used to check a sound event.
 There are four types:
@@ -76,12 +76,12 @@ There are four types:
     - The sound event **passes** this rule only if its set of tags is _exactly identical_ to the list of `tags` provided in the rule (no more, no less).
     - _Note:_ This is very strict and usually less useful than `all` or `any`.
 
-### Combining Rules
+## Combining Rules
 
 Remember: A sound event must **pass every single rule** defined in the `rules` list to be kept.
 The rules are checked one by one, and if an event fails any rule, it's immediately excluded from further consideration.
 
-### Examples
+## Examples
 
 **Example 1: Keep good quality echolocation calls**
 
@@ -135,7 +135,7 @@ _Explanation:_ An event is kept only if it passes ALL three rules:
 2.  It has the `Project ID: Project Alpha` tag.
 3.  It does _not_ have an `ID Certainty: Low` tag AND it does _not_ have an `ID Certainty: Maybe` tag.
 
-### Usage
+## Usage
 
 You will typically specify the path to the configuration file containing these `filtering` rules when you set up your data processing or training pipeline in `batdetect2`.
 The tool will then automatically load these rules and apply them to your annotated sound events.

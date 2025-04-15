@@ -1,6 +1,6 @@
-## Step 4: Defining Target Classes for Training
+# Step 4: Defining Target Classes for Training
 
-### Purpose and Context
+## Purpose and Context
 
 You've prepared your data by defining your annotation vocabulary (Step 1: Terms), removing irrelevant sounds (Step 2: Filtering), and potentially cleaning up or modifying tags (Step 3: Transforming Tags).
 Now, it's time to tell `batdetect2` **exactly what categories (classes) your model should learn to identify**.
@@ -9,13 +9,13 @@ This step involves defining rules that map the final tags on your sound event an
 These class names are the labels the machine learning model will be trained to predict.
 Getting this definition right is essential for successful model training.
 
-### How it Works: Defining Classes with Rules
+## How it Works: Defining Classes with Rules
 
 You define your target classes in your main configuration file (e.g., your `.yaml` training config), typically under a section named `classes`.
 This section contains a **list** of class definitions.
 Each item in the list defines one specific class your model should learn.
 
-### Defining a Single Class
+## Defining a Single Class
 
 Each class definition rule requires a few key pieces of information:
 
@@ -77,7 +77,7 @@ classes:
         value: Pipistrellus nathusii
 ```
 
-### Handling Overlap: Priority Order Matters!
+## Handling Overlap: Priority Order Matters
 
 Sometimes, an annotation might have tags that match the rules for _more than one_ class definition.
 For example, an annotation tagged `species: Pipistrellus pipistrellus` would match both a specific `'pippip'` class rule and a broader `'pipistrelle'` genus rule (like the examples above) if both were defined.
@@ -121,7 +121,7 @@ It would not be assigned `noise`, even though it also matches the second conditi
 Okay, that's a very important clarification about how BatDetect2 handles sounds that don't match specific class definitions.
 Let's refine that section to accurately reflect this behavior.
 
-### What if No Class Matches? (The Generic "Bat" Class)
+## What if No Class Matches?
 
 It's important to understand what happens if a sound event annotation passes through the filtering (Step 2) and transformation (Step 3) steps, but its final set of tags doesn't match _any_ of the specific class definitions you've listed in this section.
 
@@ -142,7 +142,7 @@ The goal is generally that all relevant bat echolocation calls that pass the ini
 **Crucially:** If you want certain types of sounds (even if they are bat calls) to be **completely excluded** from the training process altogether (not even included in the generic "Bat" class), you **must remove them using rules in the Filtering step (Step 2)**.
 Any sound annotation that makes it past filtering _will_ be used in training, either under one of your specific classes or the generic one.
 
-### Outcome
+## Outcome
 
 By defining this list of prioritized class rules, you provide `batdetect2` with a clear procedure to assign a specific target label (your class `name`) to each relevant sound event annotation based on its tags.
 This labelled data is exactly what the model needs for training (Step 5).
