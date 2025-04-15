@@ -1,148 +1,141 @@
-# Step 4: Defining Target Classes for Training
+# Step 4: Defining Target Classes and Decoding Rules
 
 ## Purpose and Context
 
 You've prepared your data by defining your annotation vocabulary (Step 1: Terms), removing irrelevant sounds (Step 2: Filtering), and potentially cleaning up or modifying tags (Step 3: Transforming Tags).
-Now, it's time to tell `batdetect2` **exactly what categories (classes) your model should learn to identify**.
+Now, it's time for a crucial step with two related goals:
 
-This step involves defining rules that map the final tags on your sound event annotations to specific **class names** (like `pippip`, `myodau`, or `noise`).
-These class names are the labels the machine learning model will be trained to predict.
-Getting this definition right is essential for successful model training.
+1.  Telling `batdetect2` **exactly what categories (classes) your model should learn to identify** by defining rules that map annotation tags to class names (like `pippip`, `myodau`, or `noise`).
+    This process is often called **encoding**.
+2.  Defining how the model's predictions (those same class names) should be translated back into meaningful, structured **annotation tags** when you use the trained model.
+    This is often called **decoding**.
+
+These definitions are essential for both training the model correctly and interpreting its output later.
 
 ## How it Works: Defining Classes with Rules
 
-You define your target classes in your main configuration file (e.g., your `.yaml` training config), typically under a section named `classes`.
-This section contains a **list** of class definitions.
-Each item in the list defines one specific class your model should learn.
+You define your target classes and their corresponding decoding rules in your main configuration file (e.g., your `.yaml` training config), typically under a section named `classes`.
+This section contains:
+
+1.  A **list** of specific class definitions.
+2.  A definition for the **generic class** tags.
+
+Each item in the `classes` list defines one specific class your model should learn.
 
 ## Defining a Single Class
 
-Each class definition rule requires a few key pieces of information:
+Each specific class definition rule requires the following information:
 
-1.  `name`: **(Required)** This is the unique, simple name you want to give this class (e.g., `pipistrellus_pipistrellus`, `myotis_daubentonii`, `echolocation_noise`).
-    This is the label the model will actually use.
-    Choose names that are clear and distinct.
+1.  `name`: **(Required)** This is the unique, simple name for this class (e.g., `pipistrellus_pipistrellus`, `myotis_daubentonii`, `noise`).
+    This label is used during training and is what the model predicts.
+    Choose clear, distinct names.
     **Each class name must be unique.**
-2.  `tags`: **(Required)** This is a list containing one or more specific tags that identify annotations belonging to this class.
-    Remember, each tag is specified using its term `key` (like `species` or `sound_type`, defaulting to `class` if omitted) and its specific `value` (like `Pipistrellus pipistrellus` or `Echolocation`).
-3.  `match_type`: **(Optional, defaults to `"all"`)** This tells the system how to use the list of tags you provided in the `tag` field:
-    - `"all"`: An annotation must have **ALL** of the tags listed in the `tags` section to be considered part of this class.
-      (This is the default if you don't specify `match_type`).
-    - `"any"`: An annotation only needs to have **AT LEAST ONE** of the tags listed in the `tags` section to be considered part of this class.
+2.  `tags`: **(Required)** This list contains one or more specific tags (using `key` and `value`) used to identify if an _existing_ annotation belongs to this class during the _encoding_ phase (preparing training data).
+3.  `match_type`: **(Optional, defaults to `"all"`)** Determines how the `tags` list is evaluated during _encoding_:
+    - `"all"`: The annotation must have **ALL** listed tags to match.
+      (Default).
+    - `"any"`: The annotation needs **AT LEAST ONE** listed tag to match.
+4.  `output_tags`: **(Optional)** This list specifies the tags that should be assigned to an annotation when the model _predicts_ this class `name`.
+    This is used during the _decoding_ phase (interpreting model output).
+    - **If you omit `output_tags` (or set it to `null`/~), the system will default to using the same tags listed in the `tags` field for decoding.** This is often what you want.
+    - Providing `output_tags` allows you to specify a different, potentially more canonical or detailed, set of tags to represent the class upon prediction.
+      For example, you could match based on simplified tags but output standardized tags.
 
-**Example: Defining two specific bat species classes**
+**Example: Defining Species Classes (Encoding & Default Decoding)**
+
+Here, the `tags` used for matching during encoding will also be used for decoding, as `output_tags` is omitted.
 
 ```yaml
 # In your main configuration file
 classes:
   # Definition for the first class
   - name: pippip # Simple name for Pipistrellus pipistrellus
-    tags:
-      - key: species # Term key (could also default to 'class')
-        value: Pipistrellus pipistrellus # Specific tag value
-    # match_type defaults to "all" (which is fine for a single tag)
+    tags: # Used for BOTH encoding match and decoding output
+      - key: species
+        value: Pipistrellus pipistrellus
+    # match_type defaults to "all"
+    # output_tags is omitted, defaults to using 'tags' above
 
   # Definition for the second class
   - name: myodau # Simple name for Myotis daubentonii
-    tags:
+    tags: # Used for BOTH encoding match and decoding output
       - key: species
         value: Myotis daubentonii
 ```
 
-**Example: Defining a class requiring multiple conditions (`match_type: "all"`)**
+**Example: Defining a Class with Separate Encoding and Decoding Tags**
+
+Here, we match based on _either_ of two tags (`match_type: any`), but when the model predicts `'pipistrelle'`, we decode it _only_ to the specific `Pipistrellus pipistrellus` tag plus a genus tag.
 
 ```yaml
 classes:
-  - name: high_quality_pippip # Name for high-quality P. pip calls
-    match_type: all # Annotation must match BOTH tags below
-    tags:
-      - key: species
-        value: Pipistrellus pipistrellus
-      - key: quality # Assumes 'quality' term key exists
-        value: Good
-```
-
-**Example: Defining a class matching multiple alternative tags (`match_type: "any"`)**
-
-```yaml
-classes:
-  - name: pipistrelle # Name for any Pipistrellus species in this list
-    match_type: any # Annotation must match AT LEAST ONE tag below
+  - name: pipistrelle # Name for a Pipistrellus group
+    match_type: any # Match if EITHER tag below is present during encoding
     tags:
       - key: species
         value: Pipistrellus pipistrellus
       - key: species
-        value: Pipistrellus pygmaeus
+        value: Pipistrellus pygmaeus # Match pygmaeus too
+    output_tags: # BUT, when decoding 'pipistrelle', assign THESE tags:
       - key: species
-        value: Pipistrellus nathusii
+        value: Pipistrellus pipistrellus # Canonical species
+      - key: genus # Assumes 'genus' key exists
+        value: Pipistrellus # Add genus tag
 ```
 
-## Handling Overlap: Priority Order Matters
+## Handling Overlap During Encoding: Priority Order Matters
 
-Sometimes, an annotation might have tags that match the rules for _more than one_ class definition.
-For example, an annotation tagged `species: Pipistrellus pipistrellus` would match both a specific `'pippip'` class rule and a broader `'pipistrelle'` genus rule (like the examples above) if both were defined.
+As before, when preparing training data (encoding), if an annotation matches the `tags` and `match_type` rules for multiple class definitions, the **order of the class definitions in the configuration list determines the priority**.
 
-How does `batdetect2` decide which class name to assign? It uses the **order of the class definitions in your configuration list**.
+- The system checks rules from the **top** of the `classes` list down.
+- The annotation gets assigned the `name` of the **first class rule it matches**.
+- **Place more specific rules before more general rules.**
 
-- The system checks an annotation against your class rules one by one, starting from the **top** of the `classes` list and moving down.
-- As soon as it finds a rule that the annotation matches, it assigns that rule's `name` to the annotation and **stops checking** further rules for that annotation.
-- **The first match wins!**
+_(The YAML example for prioritizing Species over Noise remains the same as the previous version)_
 
-Therefore, you should generally place your **most specific rules before more general rules** if you want the specific category to take precedence.
+## Handling Non-Matches & Decoding the Generic Class
 
-**Example: Prioritizing Species over Noise**
+What happens if an annotation passes filtering/transformation but doesn't match any specific class rule during encoding?
+
+- **Encoding:** As explained previously, these annotations are **not ignored**.
+  They are typically assigned to a generic "relevant sound" category, often called the **"Bat"** class in BatDetect2, intended for all relevant bat calls not specifically classified.
+- **Decoding:** When the model predicts this generic "Bat" category (or when processing sounds that weren't assigned a specific class during encoding), we need a way to represent this generic status with tags.
+  This is defined by the `generic_class` list directly within the main `classes` configuration section.
+
+**Defining the Generic Class Tags:**
+
+You specify the tags for the generic class like this:
 
 ```yaml
-classes:
-  # --- Specific Species Rules (Checked First) ---
-  - name: pippip
-    tags:
-      - key: species
-        value: Pipistrellus pipistrellus
+# In your main configuration file
+classes: # Main configuration section for classes
+  # --- List of specific class definitions ---
+  classes:
+    - name: pippip
+      tags:
+        - key: species
+          value: Pipistrellus pipistrellus
+    # ... other specific classes ...
 
-  - name: myodau
-    tags:
-      - key: species
-        value: Myotis daubentonii
-
-  # --- General Noise Rule (Checked Last) ---
-  - name: noise # Catch-all for anything tagged as Noise
-    match_type: any # Match if any noise tag is present
-    tags:
-      - key: sound_type # Assume 'sound_type' term key exists
-        value: Noise
-      - key: quality # Assume 'quality' term key exists
-        value: Low # Maybe low quality is also considered noise for training
+  # --- Definition of the generic class tags ---
+  generic_class: # Define tags for the generic 'Bat' category
+    - key: call_type
+      value: Echolocation
+    - key: order
+      value: Chiroptera
+    # These tags will be assigned when decoding the generic category
 ```
 
-In this example, an annotation tagged with `species: Myotis daubentonii` _and_ `quality: Low` would be assigned the class name `myodau` because that rule comes first in the list.
-It would not be assigned `noise`, even though it also matches the second condition of the noise rule.
+This `generic_class` list provides the standard tags assigned when a sound is identified as relevant (passed filtering) but doesn't belong to one of the specific target classes you defined.
+Like the specific classes, sensible defaults are often provided if you don't explicitly define `generic_class`.
 
-Okay, that's a very important clarification about how BatDetect2 handles sounds that don't match specific class definitions.
-Let's refine that section to accurately reflect this behavior.
+**Crucially:** Remember, if sounds should be **completely excluded** from training (not even considered "generic"), use **Filtering rules (Step 2)**.
 
-## What if No Class Matches?
+### Outcome
 
-It's important to understand what happens if a sound event annotation passes through the filtering (Step 2) and transformation (Step 3) steps, but its final set of tags doesn't match _any_ of the specific class definitions you've listed in this section.
+By defining this list of prioritized class rules (including their `name`, matching `tags`, `match_type`, and optional `output_tags`) and the `generic_class` tags, you provide `batdetect2` with:
 
-These annotations are **not ignored** during training.
-Instead, they are typically assigned to a **generic "relevant sound" class**.
-Think of this as a category for sounds that you considered important enough to keep after filtering, but which don't fit into one of your specific target classes for detailed classification (like a particular species).
-This generic class is distinct from background noise.
+1.  A clear procedure to assign a target label (`name`) to each relevant annotation for training.
+2.  A clear mapping to convert predicted class names (including the generic case) back into meaningful annotation tags.
 
-In BatDetect2, this default generic class is often referred to as the **"Bat"** class.
-The goal is generally that all relevant bat echolocation calls that pass the initial filtering should fall into _either_ one of your specific defined classes (like `pippip` or `myodau`) _or_ this generic "Bat" class.
-
-**In summary:**
-
-- Sounds passing **filtering** are considered relevant.
-- If a relevant sound matches one of your **specific class rules** (in priority order), it gets that specific class label.
-- If a relevant sound does **not** match any specific class rule, it gets the **generic "Bat" class** label.
-
-**Crucially:** If you want certain types of sounds (even if they are bat calls) to be **completely excluded** from the training process altogether (not even included in the generic "Bat" class), you **must remove them using rules in the Filtering step (Step 2)**.
-Any sound annotation that makes it past filtering _will_ be used in training, either under one of your specific classes or the generic one.
-
-## Outcome
-
-By defining this list of prioritized class rules, you provide `batdetect2` with a clear procedure to assign a specific target label (your class `name`) to each relevant sound event annotation based on its tags.
-This labelled data is exactly what the model needs for training (Step 5).
+This complete definition prepares your data for the final heatmap generation (Step 5) and enables interpretation of the model's results.

@@ -1,18 +1,13 @@
 import uuid
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 import pytest
 import soundfile as sf
 from soundevent import data, terms
 
-from batdetect2.targets import (
-    TargetConfig,
-    build_target_encoder,
-    call_type,
-    get_class_names,
-)
+from batdetect2.targets import call_type
 
 
 @pytest.fixture
@@ -200,24 +195,4 @@ def clip_annotation(
             generic_call,
             non_relevant_sound_event,
         ],
-    )
-
-
-@pytest.fixture
-def target_config() -> TargetConfig:
-    return TargetConfig()
-
-
-@pytest.fixture
-def class_names(target_config: TargetConfig) -> List[str]:
-    return get_class_names(target_config.classes)
-
-
-@pytest.fixture
-def encoder(
-    target_config: TargetConfig,
-) -> Callable[[Iterable[data.Tag]], Optional[str]]:
-    return build_target_encoder(
-        classes=target_config.classes,
-        replacement_rules=target_config.replace,
     )

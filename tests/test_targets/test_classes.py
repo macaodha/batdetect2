@@ -7,11 +7,14 @@ from pydantic import ValidationError
 from soundevent import data
 
 from batdetect2.targets.classes import (
+    DEFAULT_SPECIES_LIST,
     ClassesConfig,
     TargetClass,
     build_encoder_from_config,
     get_class_names_from_config,
-    is_target_class,
+    _get_default_class_name,
+    _get_default_classes,
+    _is_target_class,
     load_classes_config,
     load_encoder_from_config,
 )
@@ -149,7 +152,7 @@ def test_is_target_class_match_all(
         ),
         data.Tag(term=sample_term_registry["quality"], value="Good"),
     }
-    assert is_target_class(sample_annotation, tags, match_all=True) is True
+    assert _is_target_class(sample_annotation, tags, match_all=True) is True
 
     tags = {
         data.Tag(
@@ -157,14 +160,14 @@ def test_is_target_class_match_all(
             value="Pipistrellus pipistrellus",
         )
     }
-    assert is_target_class(sample_annotation, tags, match_all=True) is True
+    assert _is_target_class(sample_annotation, tags, match_all=True) is True
 
     tags = {
         data.Tag(
             term=sample_term_registry["species"], value="Myotis daubentonii"
         )
     }
-    assert is_target_class(sample_annotation, tags, match_all=True) is False
+    assert _is_target_class(sample_annotation, tags, match_all=True) is False
 
 
 def test_is_target_class_match_any(
@@ -178,7 +181,7 @@ def test_is_target_class_match_any(
         ),
         data.Tag(term=sample_term_registry["quality"], value="Good"),
     }
-    assert is_target_class(sample_annotation, tags, match_all=False) is True
+    assert _is_target_class(sample_annotation, tags, match_all=False) is True
 
     tags = {
         data.Tag(
@@ -186,14 +189,14 @@ def test_is_target_class_match_any(
             value="Pipistrellus pipistrellus",
         )
     }
-    assert is_target_class(sample_annotation, tags, match_all=False) is True
+    assert _is_target_class(sample_annotation, tags, match_all=False) is True
 
     tags = {
         data.Tag(
             term=sample_term_registry["species"], value="Myotis daubentonii"
         )
     }
-    assert is_target_class(sample_annotation, tags, match_all=False) is False
+    assert _is_target_class(sample_annotation, tags, match_all=False) is False
 
 
 def test_get_class_names_from_config():
@@ -279,3 +282,17 @@ def test_load_encoder_from_config_invalid(
             temp_yaml_path,
             term_registry=sample_term_registry,
         )
+
+
+def test_get_default_class_name():
+    assert _get_default_class_name("Myotis daubentonii") == "myodau"
+
+
+def test_get_default_classes():
+    default_classes = _get_default_classes()
+    assert len(default_classes) == len(DEFAULT_SPECIES_LIST)
+    first_class = default_classes[0]
+    assert isinstance(first_class, TargetClass)
+    assert first_class.name == _get_default_class_name(DEFAULT_SPECIES_LIST[0])
+    assert first_class.tags[0].key == "class"
+    assert first_class.tags[0].value == DEFAULT_SPECIES_LIST[0]
