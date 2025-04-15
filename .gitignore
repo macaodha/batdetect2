@@ -111,3 +111,4 @@ experiments/*
 !tests/data/**/*.wav
 notebooks/lightning_logs
 example_data/preprocessed
+.aider*
