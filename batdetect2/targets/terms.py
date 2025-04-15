@@ -143,7 +143,7 @@ class TermRegistry(Mapping[str, data.Term]):
             raise KeyError(
                 "No term found for key "
                 f"'{key}'. Ensure it is registered or loaded. "
-                "Use `get_term_keys()` to list available terms."
+                f"Available keys: {', '.join(self.get_keys())}"
             ) from err
 
     def add_custom_term(
@@ -215,8 +215,11 @@ class TermRegistry(Mapping[str, data.Term]):
         """
         return list(self._terms.values())
 
+    def remove_key(self, key: str) -> None:
+        del self._terms[key]
 
-registry = TermRegistry(
+
+term_registry = TermRegistry(
     terms=dict(
         [
             *getmembers(terms, lambda x: isinstance(x, data.Term)),
@@ -237,7 +240,7 @@ is explicitly passed.
 
 def get_term_from_key(
     key: str,
-    term_registry: TermRegistry = registry,
+    term_registry: TermRegistry = term_registry,
 ) -> data.Term:
     """Convenience function to retrieve a term by key from a registry.
 
@@ -265,7 +268,7 @@ def get_term_from_key(
     return term_registry.get_term(key)
 
 
-def get_term_keys(term_registry: TermRegistry = registry) -> List[str]:
+def get_term_keys(term_registry: TermRegistry = term_registry) -> List[str]:
     """Convenience function to get all registered keys from a registry.
 
     Uses the global default registry unless a specific `term_registry`
@@ -284,7 +287,7 @@ def get_term_keys(term_registry: TermRegistry = registry) -> List[str]:
     return term_registry.get_keys()
 
 
-def get_terms(term_registry: TermRegistry = registry) -> List[data.Term]:
+def get_terms(term_registry: TermRegistry = term_registry) -> List[data.Term]:
     """Convenience function to get all registered terms from a registry.
 
     Uses the global default registry unless a specific `term_registry`
@@ -327,7 +330,7 @@ class TagInfo(BaseModel):
 
 def get_tag_from_info(
     tag_info: TagInfo,
-    term_registry: TermRegistry = registry,
+    term_registry: TermRegistry = term_registry,
 ) -> data.Tag:
     """Creates a soundevent.data.Tag object from TagInfo data.
 
@@ -424,7 +427,7 @@ class TermConfig(BaseModel):
 def load_terms_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = registry,
+    term_registry: TermRegistry = term_registry,
 ) -> Dict[str, data.Term]:
     """Loads term definitions from a configuration file and registers them.
 
@@ -472,3 +475,9 @@ def load_terms_from_config(
         )
         for info in data.terms
     }
+
+
+def register_term(
+    key: str, term: data.Term, registry: TermRegistry = term_registry
+) -> None:
+    registry.add_term(key, term)

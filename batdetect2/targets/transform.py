@@ -1,6 +1,15 @@
 import importlib
 from functools import partial
-from typing import Callable, Dict, List, Literal, Mapping, Optional, Union
+from typing import (
+    Annotated,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Union,
+)
 
 from pydantic import Field
 from soundevent import data
@@ -8,8 +17,12 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.targets.terms import (
     TagInfo,
+    TermRegistry,
     get_tag_from_info,
     get_term_from_key,
+)
+from batdetect2.targets.terms import (
+    term_registry as default_term_registry,
 )
 
 __all__ = [
@@ -282,9 +295,13 @@ class TransformConfig(BaseConfig):
         discriminates between the different rule models.
     """
 
-    rules: List[Union[ReplaceRule, MapValueRule, DeriveTagRule]] = Field(
+    rules: List[
+        Annotated[
+            Union[ReplaceRule, MapValueRule, DeriveTagRule],
+            Field(discriminator="rule_type"),
+        ]
+    ] = Field(
         default_factory=list,
-        discriminator="rule_type",
     )
 
 
@@ -442,7 +459,8 @@ def get_derivation(
 
 def build_transform_from_rule(
     rule: Union[ReplaceRule, MapValueRule, DeriveTagRule],
-    registry: DerivationRegistry = derivation_registry,
+    derivation_registry: DerivationRegistry = derivation_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventTransformation:
     """Build a specific SoundEventTransformation function from a rule config.
 
@@ -473,21 +491,33 @@ def build_transform_from_rule(
         If dynamic import of a derivation function fails.
     """
     if rule.rule_type == "replace":
-        source = get_tag_from_info(rule.original)
-        target = get_tag_from_info(rule.replacement)
+        source = get_tag_from_info(
+            rule.original,
+            term_registry=term_registry,
+        )
+        target = get_tag_from_info(
+            rule.replacement,
+            term_registry=term_registry,
+        )
         return partial(replace_tag_transform, source=source, target=target)
 
     if rule.rule_type == "derive_tag":
-        source_term = get_term_from_key(rule.source_term_key)
+        source_term = get_term_from_key(
+            rule.source_term_key,
+            term_registry=term_registry,
+        )
         target_term = (
-            get_term_from_key(rule.target_term_key)
+            get_term_from_key(
+                rule.target_term_key,
+                term_registry=term_registry,
+            )
             if rule.target_term_key
             else source_term
         )
         derivation = get_derivation(
             key=rule.derivation_function,
             import_derivation=rule.import_derivation,
-            registry=registry,
+            registry=derivation_registry,
         )
         return partial(
             derivation_tag_transform,
@@ -498,9 +528,15 @@ def build_transform_from_rule(
         )
 
     if rule.rule_type == "map_value":
-        source_term = get_term_from_key(rule.source_term_key)
+        source_term = get_term_from_key(
+            rule.source_term_key,
+            term_registry=term_registry,
+        )
         target_term = (
-            get_term_from_key(rule.target_term_key)
+            get_term_from_key(
+                rule.target_term_key,
+                term_registry=term_registry,
+            )
             if rule.target_term_key
             else source_term
         )
@@ -522,6 +558,8 @@ def build_transform_from_rule(
 
 def build_transformation_from_config(
     config: TransformConfig,
+    derivation_registry: DerivationRegistry = derivation_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventTransformation:
     """Build a composite transformation function from a TransformConfig.
 
@@ -542,7 +580,14 @@ def build_transformation_from_config(
     SoundEventTransformation
         A single function that applies all configured transformations in order.
     """
-    transforms = [build_transform_from_rule(rule) for rule in config.rules]
+    transforms = [
+        build_transform_from_rule(
+            rule,
+            derivation_registry=derivation_registry,
+            term_registry=term_registry,
+        )
+        for rule in config.rules
+    ]
 
     def transformation(
         sound_event_annotation: data.SoundEventAnnotation,
@@ -583,7 +628,10 @@ def load_transformation_config(
 
 
 def load_transformation_from_config(
-    path: data.PathLike, field: Optional[str] = None
+    path: data.PathLike,
+    field: Optional[str] = None,
+    derivation_registry: DerivationRegistry = derivation_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventTransformation:
     """Load transformation config from a file and build the final function.
 
@@ -618,4 +666,8 @@ def load_transformation_from_config(
         fails.
     """
     config = load_transformation_config(path=path, field=field)
-    return build_transformation_from_config(config)
+    return build_transformation_from_config(
+        config,
+        derivation_registry=derivation_registry,
+        term_registry=term_registry,
+    )
