@@ -13,11 +13,10 @@ from batdetect2.preprocess import (
 )
 from batdetect2.preprocess.spectrogram import get_spectrogram_resolution
 from batdetect2.targets import (
-    HeatmapsConfig,
+    LabelConfig,
     TagInfo,
     TargetConfig,
 )
-from batdetect2.targets.labels import LabelConfig
 from batdetect2.train.preprocess import (
     TrainPreprocessingConfig,
 )
@@ -77,13 +76,12 @@ def get_training_preprocessing_config(
         preprocessing=preprocessing,
         target=TargetConfig(
             classes=[
-                TagInfo(key="class", value=class_name, label=class_name)
+                TagInfo(key="class", value=class_name)
                 for class_name in params["class_names"]
             ],
             generic_class=TagInfo(
                 key="class",
                 value=generic,
-                label=generic,
             ),
             include=[
                 TagInfo(key="event", value=event)
@@ -95,12 +93,10 @@ def get_training_preprocessing_config(
             ],
         ),
         labels=LabelConfig(
-            heatmaps=HeatmapsConfig(
-                position="bottom-left",
-                time_scale=1 / time_bin_width,
-                frequency_scale=1 / freq_bin_width,
-                sigma=params["target_sigma"],
-            )
+            position="bottom-left",
+            time_scale=1 / time_bin_width,
+            frequency_scale=1 / freq_bin_width,
+            sigma=params["target_sigma"],
         ),
     )
 

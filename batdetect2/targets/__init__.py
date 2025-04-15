@@ -7,7 +7,6 @@ predicted class labels map back to the original tag system for interpretation.
 """
 
 from batdetect2.targets.labels import (
-    HeatmapsConfig,
     LabelConfig,
     generate_heatmaps,
     load_label_config,
@@ -47,7 +46,6 @@ from batdetect2.targets.transform import (
 __all__ = [
     "DerivationRegistry",
     "DeriveTagRule",
-    "HeatmapsConfig",
     "LabelConfig",
     "MapValueRule",
     "ReplaceRule",
@@ -66,6 +64,7 @@ __all__ = [
     "get_class_names",
     "get_derivation",
     "get_tag_from_info",
+    "get_term_from_key",
     "individual",
     "load_label_config",
     "load_target_config",

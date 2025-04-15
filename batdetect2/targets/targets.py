@@ -51,7 +51,8 @@ class TargetConfig(BaseConfig):
 
 
 def get_tag_label(tag_info: TagInfo) -> str:
-    return tag_info.label if tag_info.label else tag_info.value
+    # TODO: Review this
+    return tag_info.value
 
 
 def get_class_names(classes: List[TagInfo]) -> List[str]:

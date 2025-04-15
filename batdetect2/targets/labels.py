@@ -308,17 +308,17 @@ def generate_heatmaps(
     Notes
     -----
     * This function expects `sound_events` to be already filtered and
-      transformed.
+        transformed.
     * It includes error handling to skip individual annotations that cause
-      issues (e.g., missing geometry, out-of-bounds coordinates, encoder
-      errors) allowing the rest of the clip to be processed. Warnings or
-      errors are logged.
+        issues (e.g., missing geometry, out-of-bounds coordinates, encoder
+        errors) allowing the rest of the clip to be processed. Warnings or
+        errors are logged.
     * The `time_scale` and `frequency_scale` parameters are crucial and must be
-      set according to the expectations of the specific BatDetect2 model
-      architecture being trained. Consult model documentation for required
-      units/scales.
+        set according to the expectations of the specific BatDetect2 model
+        architecture being trained. Consult model documentation for required
+        units/scales.
     * Gaussian filtering and normalization are applied only to detection and
-      class heatmaps, not the size heatmap.
+        class heatmaps, not the size heatmap.
     """
     shape = dict(zip(spec.dims, spec.shape))
 
