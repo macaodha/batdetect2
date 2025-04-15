@@ -18,6 +18,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinxcontrib.autodoc_pydantic",
     "numpydoc",
     "myst_parser",
     "sphinx_autodoc_typehints",
@@ -47,3 +48,13 @@ intersphinx_mapping = {
 # -- Options for autodoc ------------------------------------------------------
 autosummary_generate = True
 autosummary_imported_members = True
+
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+    "private-members": False,
+    "special-members": False,
+    "inherited-members": False,
+    "show-inheritance": True,
+    "module-first": True,
+}

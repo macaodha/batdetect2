@@ -1,6 +1,6 @@
 # Config Reference
 
-```{eval-rst} 
+```{eval-rst}
 .. automodule:: batdetect2.configs
     :members:
     :inherited-members: pydantic.BaseModel
