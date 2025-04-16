@@ -6,7 +6,12 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.targets.terms import TagInfo, get_tag_from_info
+from batdetect2.targets.terms import (
+    TagInfo,
+    TermRegistry,
+    get_tag_from_info,
+    term_registry,
+)
 
 __all__ = [
     "FilterConfig",
@@ -149,7 +154,10 @@ def equal_tags(
     return tags == sound_event_tags
 
 
-def build_filter_from_rule(rule: FilterRule) -> SoundEventFilter:
+def build_filter_from_rule(
+    rule: FilterRule,
+    term_registry: TermRegistry = term_registry,
+) -> SoundEventFilter:
     """Creates a callable filter function from a single FilterRule.
 
     Parameters
@@ -168,7 +176,10 @@ def build_filter_from_rule(rule: FilterRule) -> SoundEventFilter:
     ValueError
         If the rule contains an invalid `match_type`.
     """
-    tag_set = {get_tag_from_info(tag_info) for tag_info in rule.tags}
+    tag_set = {
+        get_tag_from_info(tag_info, term_registry=term_registry)
+        for tag_info in rule.tags
+    }
 
     if rule.match_type == "any":
         return partial(has_any_tag, tags=tag_set)
@@ -188,39 +199,33 @@ def build_filter_from_rule(rule: FilterRule) -> SoundEventFilter:
     )
 
 
-def merge_filters(*filters: SoundEventFilter) -> SoundEventFilter:
-    """Combines multiple filter functions into a single filter function.
-
-    The resulting filter function applies AND logic: an annotation must pass
-    *all* the input filters to pass the merged filter.
+def _passes_all_filters(
+    sound_event_annotation: data.SoundEventAnnotation,
+    filters: List[SoundEventFilter],
+) -> bool:
+    """Check if the annotation passes all provided filters.
 
     Parameters
     ----------
-    *filters_with_rules : Tuple[FilterRule, SoundEventFilter]
-        Variable number of tuples, each containing the original FilterRule
-        and its corresponding filter function (SoundEventFilter).
+    sound_event_annotation : data.SoundEventAnnotation
+        The annotation to check.
+    filters : List[SoundEventFilter]
+        A list of filter functions to apply.
 
     Returns
     -------
-    SoundEventFilter
-        A single function that returns True only if the annotation passes
-        all the input filters.
+    bool
+        True if the annotation passes all filters, False otherwise.
     """
+    for filter_fn in filters:
+        if not filter_fn(sound_event_annotation):
+            logging.debug(
+                f"Sound event annotation {sound_event_annotation.uuid} "
+                f"excluded due to rule {filter_fn}",
+            )
+            return False
 
-    def merged_filter(
-        sound_event_annotation: data.SoundEventAnnotation,
-    ) -> bool:
-        for filter_fn in filters:
-            if not filter_fn(sound_event_annotation):
-                logging.debug(
-                    f"Sound event annotation {sound_event_annotation.uuid} "
-                    f"excluded due to rule {filter_fn}",
-                )
-                return False
-
-        return True
-
-    return merged_filter
+    return True
 
 
 class FilterConfig(BaseConfig):
@@ -236,7 +241,10 @@ class FilterConfig(BaseConfig):
     rules: List[FilterRule] = Field(default_factory=list)
 
 
-def build_filter_from_config(config: FilterConfig) -> SoundEventFilter:
+def build_filter_from_config(
+    config: FilterConfig,
+    term_registry: TermRegistry = term_registry,
+) -> SoundEventFilter:
     """Builds a merged filter function from a FilterConfig object.
 
     Creates individual filter functions for each rule in the configuration
@@ -252,8 +260,11 @@ def build_filter_from_config(config: FilterConfig) -> SoundEventFilter:
     SoundEventFilter
         A single callable filter function that applies all defined rules.
     """
-    filters = [build_filter_from_rule(rule) for rule in config.rules]
-    return merge_filters(*filters)
+    filters = [
+        build_filter_from_rule(rule, term_registry=term_registry)
+        for rule in config.rules
+    ]
+    return partial(_passes_all_filters, filters=filters)
 
 
 def load_filter_config(
@@ -278,7 +289,9 @@ def load_filter_config(
 
 
 def load_filter_from_config(
-    path: data.PathLike, field: Optional[str] = None
+    path: data.PathLike,
+    field: Optional[str] = None,
+    term_registry: TermRegistry = term_registry,
 ) -> SoundEventFilter:
     """Loads filter configuration from a file and builds the filter function.
 
@@ -299,4 +312,4 @@ def load_filter_from_config(
         The final merged filter function ready to be used.
     """
     config = load_filter_config(path=path, field=field)
-    return build_filter_from_config(config)
+    return build_filter_from_config(config, term_registry=term_registry)

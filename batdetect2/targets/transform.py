@@ -26,18 +26,19 @@ from batdetect2.targets.terms import (
 )
 
 __all__ = [
-    "SoundEventTransformation",
-    "MapValueRule",
-    "DeriveTagRule",
-    "ReplaceRule",
-    "TransformConfig",
     "DerivationRegistry",
-    "derivation_registry",
-    "get_derivation",
+    "DeriveTagRule",
+    "MapValueRule",
+    "ReplaceRule",
+    "SoundEventTransformation",
+    "TransformConfig",
     "build_transform_from_rule",
     "build_transformation_from_config",
+    "derivation_registry",
+    "get_derivation",
     "load_transformation_config",
     "load_transformation_from_config",
+    "register_derivation",
 ]
 
 SoundEventTransformation = Callable[
@@ -671,3 +672,28 @@ def load_transformation_from_config(
         derivation_registry=derivation_registry,
         term_registry=term_registry,
     )
+
+
+def register_derivation(
+    key: str,
+    derivation: Derivation,
+    derivation_registry: DerivationRegistry = derivation_registry,
+) -> None:
+    """Register a new derivation function in the global registry.
+
+    Parameters
+    ----------
+    key : str
+        The unique key to associate with the derivation function.
+    derivation : Derivation
+        The callable derivation function (takes str, returns str).
+    derivation_registry : DerivationRegistry, optional
+        The registry instance to register the derivation function with.
+        Defaults to the global `derivation_registry`.
+
+    Raises
+    ------
+    KeyError
+        If a derivation function with the same key is already registered.
+    """
+    derivation_registry.register(key, derivation)

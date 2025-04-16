@@ -114,22 +114,6 @@ def test_build_filter_from_rule():
         )
 
 
-def test_merge_filters(create_annotation):
-    def filter1(annotation):
-        return "tag1" in [tag.value for tag in annotation.tags]
-
-    def filter2(annotation):
-        return "tag2" in [tag.value for tag in annotation.tags]
-
-    merged_filter = merge_filters(filter1, filter2)
-
-    annotation_pass = create_annotation(["tag1", "tag2"])
-    assert merged_filter(annotation_pass) is True
-
-    annotation_fail = create_annotation(["tag1"])
-    assert merged_filter(annotation_fail) is False
-
-
 def test_build_filter_from_config(create_annotation):
     config = FilterConfig(
         rules=[
