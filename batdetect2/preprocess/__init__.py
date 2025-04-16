@@ -1,6 +1,7 @@
 """Module containing functions for preprocessing audio clips."""
 
-from typing import Optional
+from functools import partial
+from typing import Callable, Optional, Protocol
 
 import xarray as xr
 from soundevent import data
@@ -45,6 +46,20 @@ __all__ = [
     "load_preprocessing_config",
     "preprocess_audio_clip",
 ]
+
+
+class AudioPreprocessor(Protocol):
+    def __call__(
+        self,
+        clip: data.Clip,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray: ...
+
+
+def build_preprocessor_from_config(
+    config: PreprocessingConfig,
+) -> AudioPreprocessor:
+    return partial(preprocess_audio_clip, config=config)
 
 
 def preprocess_audio_clip(
