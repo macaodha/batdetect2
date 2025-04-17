@@ -90,11 +90,11 @@ class FrequencyConfig(BaseConfig):
         Frequencies above this value will be cropped. Must be > 0.
     min_freq : int, default=10000
         Minimum frequency in Hz to retain in the spectrogram after STFT.
-        Frequencies below this value will be cropped. Must be > 0.
+        Frequencies below this value will be cropped. Must be >= 0.
     """
 
-    max_freq: int = Field(default=120_000, gt=0)
-    min_freq: int = Field(default=10_000, gt=0)
+    max_freq: int = Field(default=120_000, ge=0)
+    min_freq: int = Field(default=10_000, ge=0)
 
 
 class SpecSizeConfig(BaseConfig):
@@ -395,11 +395,13 @@ def crop_spectrogram_frequencies(
     xr.DataArray
         Spectrogram cropped along the frequency axis. Preserves dtype.
     """
+    start_freq, end_freq = arrays.get_dim_range(spec, dim="frequency")
+
     return arrays.crop_dim(
         spec,
         dim="frequency",
-        start=min_freq,
-        stop=max_freq,
+        start=min_freq if start_freq < min_freq else None,
+        stop=max_freq if end_freq > max_freq else None,
     ).astype(spec.dtype)
 
 
