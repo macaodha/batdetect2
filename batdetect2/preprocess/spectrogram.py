@@ -6,20 +6,20 @@ spectrogram representations suitable for input into deep learning models like
 BatDetect2.
 
 It offers a configurable pipeline including:
-1.  Short-Time Fourier Transform (STFT) calculation.
+1.  Short-Time Fourier Transform (STFT) calculation to get magnitude.
 2.  Frequency axis cropping to a relevant range.
-3.  Amplitude scaling (e.g., Logarithmic, Per-Channel Energy Normalization -
-    PCEN).
-4.  Simple denoising (optional).
-5.  Resizing to target dimensions (optional).
-6.  Final peak normalization (optional).
+3.  Per-Channel Energy Normalization (PCEN) (optional).
+4.  Amplitude scaling/representation (dB, power, or linear amplitude).
+5.  Simple spectral mean subtraction denoising (optional).
+6.  Resizing to target dimensions (optional).
+7.  Final peak normalization (optional).
 
 Configuration is managed via the `SpectrogramConfig` class, allowing for
 reproducible spectrogram generation consistent between training and inference.
 The core computation is performed by `compute_spectrogram`.
 """
 
-from typing import Literal, Optional, Protocol, Union
+from typing import Literal, Optional, Union
 
 import librosa
 import librosa.core.spectrum
@@ -32,63 +32,21 @@ from soundevent.arrays import operations as ops
 
 from batdetect2.configs import BaseConfig
 from batdetect2.preprocess.audio import convert_to_xr
+from batdetect2.preprocess.types import SpectrogramBuilder
 
 __all__ = [
-    "SpectrogramBuilder",
     "STFTConfig",
     "FrequencyConfig",
     "SpecSizeConfig",
-    "LogScaleConfig",
-    "PcenScaleConfig",
-    "AmplitudeScaleConfig",
-    "Scales",
+    "PcenConfig",
     "SpectrogramConfig",
     "ConfigurableSpectrogramBuilder",
     "build_spectrogram_builder",
     "compute_spectrogram",
     "get_spectrogram_resolution",
+    "MIN_FREQ",
+    "MAX_FREQ",
 ]
-
-
-class SpectrogramBuilder(Protocol):
-    """Defines the interface for a spectrogram generation component.
-
-    A SpectrogramBuilder takes a waveform (as numpy array or xarray DataArray)
-    and produces a spectrogram (as an xarray DataArray) based on its internal
-    configuration or implementation.
-    """
-
-    def __call__(
-        self,
-        wav: Union[np.ndarray, xr.DataArray],
-        samplerate: Optional[int] = None,
-    ) -> xr.DataArray:
-        """Generate a spectrogram from an audio waveform.
-
-        Parameters
-        ----------
-        wav : Union[np.ndarray, xr.DataArray]
-            The input audio waveform. If a numpy array, `samplerate` must
-            also be provided. If an xarray DataArray, it must have a 'time'
-            coordinate from which the sample rate can be inferred.
-        samplerate : int, optional
-            The sample rate of the audio in Hz. Required if `wav` is a
-            numpy array. If `wav` is an xarray DataArray, this parameter is
-            ignored as the sample rate is derived from the coordinates.
-
-        Returns
-        -------
-        xr.DataArray
-            The computed spectrogram as an xarray DataArray with 'time' and
-            'frequency' coordinates.
-
-        Raises
-        ------
-        ValueError
-            If `wav` is a numpy array and `samplerate` is not provided, or
-            if `wav` is an xarray DataArray without a valid 'time' coordinate.
-        """
-        ...
 
 
 MIN_FREQ = 10_000
@@ -151,109 +109,84 @@ class SpecSizeConfig(BaseConfig):
     resize_factor : float, optional
         Factor by which to resize the spectrogram along the time axis *after*
         STFT calculation. A value of 0.5 halves the number of time bins,
-        2.0 doubles it. If None (default), no resizing along the time axis
-        is performed relative to the STFT output width. Must be > 0 if provided.
+        2.0 doubles it. If None (default), no resizing along the time axis is
+        performed relative to the STFT output width. Must be > 0 if provided.
     """
 
     height: int = 128
     resize_factor: Optional[float] = 0.5
 
 
-class LogScaleConfig(BaseConfig):
-    """Configuration marker for using Logarithmic Amplitude Scaling."""
+class PcenConfig(BaseConfig):
+    """Configuration for Per-Channel Energy Normalization (PCEN).
 
-    name: Literal["log"] = "log"
-
-
-class PcenScaleConfig(BaseConfig):
-    """Configuration for Per-Channel Energy Normalization (PCEN) scaling.
-
-    PCEN is an adaptive gain control method often used for audio event
-    detection.
+    PCEN is an adaptive gain control method that can help emphasize transients
+    and suppress stationary noise. Applied after STFT and frequency cropping,
+    but before final amplitude scaling (dB, power, amplitude).
 
     Attributes
     ----------
-    name : Literal["pcen"]
-        Discriminator field identifying this scaling type.
     time_constant : float, default=0.4
-        Time constant (in seconds) for the PCEN smoothing filter. Controls how
-        quickly the normalization adapts to energy changes.
+        Time constant (in seconds) for the PCEN smoothing filter. Controls
+        how quickly the normalization adapts to energy changes.
     gain : float, default=0.98
-        Gain factor (alpha in some formulations). Controls the AGC behavior.
+        Gain factor (alpha). Controls the adaptive gain component.
     bias : float, default=2.0
-        Bias factor (delta in some formulations). Added before the
-        exponentiation.
+        Bias factor (delta). Added before the exponentiation.
     power : float, default=0.5
-        Exponent (r in some formulations). Controls the compression
-        characteristic.
+        Exponent (r). Controls the compression characteristic.
     """
 
-    name: Literal["pcen"] = "pcen"
     time_constant: float = 0.4
     gain: float = 0.98
     bias: float = 2
     power: float = 0.5
 
 
-class AmplitudeScaleConfig(BaseConfig):
-    """Configuration marker for using Linear Amplitude (no scaling applied).
-
-    Note: The actual output is typically magnitude from STFT, not raw amplitude.
-    This option essentially skips log or PCEN scaling.
-    """
-
-    name: Literal["amplitude"] = "amplitude"
-
-
-Scales = Union[LogScaleConfig, PcenScaleConfig, AmplitudeScaleConfig]
-"""Type alias for the different amplitude scaling configuration options."""
-
-
 class SpectrogramConfig(BaseConfig):
-    """Unified configuration for spectrogram generation.
+    """Unified configuration for spectrogram generation pipeline.
 
-    Aggregates settings for STFT, frequency selection, amplitude scaling,
-    resizing, and optional post-processing steps like denoising and final
-    normalization.
+    Aggregates settings for all steps involved in converting a preprocessed
+    audio waveform into a final spectrogram representation suitable for model input.
 
     Attributes
     ----------
     stft : STFTConfig
-        Configuration for the Short-Time Fourier Transform. Defaults to standard
-        settings via `STFTConfig`.
+        Configuration for the initial Short-Time Fourier Transform.
+        Defaults to standard settings via `STFTConfig`.
     frequencies : FrequencyConfig
-        Configuration for cropping the frequency range. Defaults to standard
-        settings via `FrequencyConfig`.
-    scale : Scales
-        Configuration for amplitude scaling. Determines whether to apply
-        log scaling, PCEN, or leave as linear magnitude. Defaults to PCEN
-        via `PcenScaleConfig`. Use the `name` field ("log", "pcen", "amplitude")
-        in config files to select the type and provide relevant parameters.
+        Configuration for cropping the frequency range after STFT.
+        Defaults to standard settings via `FrequencyConfig`.
+    pcen : PcenConfig, optional
+        Configuration for applying Per-Channel Energy Normalization (PCEN). If
+        provided, PCEN is applied after frequency cropping. If None or omitted
+        (default), PCEN is skipped.
+    scale : Literal["dB", "amplitude", "power"], default="amplitude"
+        Determines the final amplitude representation *after* optional PCEN.
+        - "amplitude": Use linear magnitude values (output of STFT or PCEN).
+        - "power": Use power values (magnitude squared).
+        - "dB": Use logarithmic (decibel-like) scaling applied to the magnitude
+                (or PCEN output if enabled). Calculated as `log1p(C * S)`.
     size : SpecSizeConfig, optional
-        Configuration for resizing the final spectrogram dimensions (height in
-        frequency bins, optional time resizing factor). If None or omitted,
-        no resizing is performed after STFT and frequency cropping. Defaults
-        to standard settings via `SpecSizeConfig`.
-    denoise : bool, default=True
-        If True (default), applies a simple spectral mean subtraction denoising
-        step after amplitude scaling.
-    max_scale : bool, default=False
+        Configuration for resizing the spectrogram dimensions
+        (frequency height, optional time width factor). Applied after PCEN and
+        scaling. If None (default), no resizing is performed.
+    spectral_mean_substraction : bool, default=True
+        If True (default), applies simple spectral mean subtraction denoising
+        *after* PCEN and amplitude scaling, but *before* resizing.
+    peak_normalize : bool, default=False
         If True, applies a final peak normalization to the spectrogram *after*
-        all other steps (including log/PCEN scaling and resizing), scaling the
-        maximum value across the entire spectrogram to 1.0. If False (default),
-        this final scaling is skipped. **Note:** Applying this after log or PCEN
-        scaling will alter the characteristics of those scales.
+        all other steps (including resizing), scaling the overall maximum value
+        to 1.0. If False (default), this final normalization is skipped.
     """
 
     stft: STFTConfig = Field(default_factory=STFTConfig)
     frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
-    scale: Scales = Field(
-        default_factory=PcenScaleConfig,
-        discriminator="name",
-    )
+    pcen: Optional[PcenConfig] = Field(default_factory=PcenConfig)
+    scale: Literal["dB", "amplitude", "power"] = "amplitude"
     size: Optional[SpecSizeConfig] = Field(default_factory=SpecSizeConfig)
-    denoise: bool = True
-    max_scale: bool = False
+    spectral_mean_substraction: bool = True
+    peak_normalize: bool = False
 
 
 class ConfigurableSpectrogramBuilder(SpectrogramBuilder):
@@ -362,13 +295,13 @@ def compute_spectrogram(
     """Compute a spectrogram from a waveform using specified configurations.
 
     Applies a sequence of operations based on the `config`:
-
     1. Compute STFT magnitude (`stft`).
     2. Crop frequency axis (`crop_spectrogram_frequencies`).
-    3. Apply amplitude scaling (log, PCEN, or none) (`scale_spectrogram`).
-    4. Apply denoising if enabled (`denoise_spectrogram`).
-    5. Resize dimensions if specified (`resize_spectrogram`).
-    6. Apply final peak normalization if enabled (`max_scale`).
+    3. Apply PCEN if configured (`apply_pcen`).
+    4. Apply final amplitude scaling (dB, power, amplitude) (`scale_spectrogram`).
+    5. Apply spectral mean subtraction denoising if enabled.
+    6. Resize dimensions if specified (`resize_spectrogram`).
+    7. Apply final peak normalization if enabled.
 
     Parameters
     ----------
@@ -411,10 +344,19 @@ def compute_spectrogram(
         max_freq=config.frequencies.max_freq,
     )
 
+    if config.pcen:
+        spec = apply_pcen(
+            spec,
+            time_constant=config.pcen.time_constant,
+            gain=config.pcen.gain,
+            power=config.pcen.power,
+            bias=config.pcen.bias,
+        )
+
     spec = scale_spectrogram(spec, scale=config.scale)
 
-    if config.denoise:
-        spec = denoise_spectrogram(spec)
+    if config.spectral_mean_substraction:
+        spec = remove_spectral_mean(spec)
 
     if config.size:
         spec = resize_spectrogram(
@@ -423,7 +365,7 @@ def compute_spectrogram(
             resize_factor=config.size.resize_factor,
         )
 
-    if config.max_scale:
+    if config.peak_normalize:
         spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
 
     return spec.astype(dtype)
@@ -550,7 +492,7 @@ def stft(
     )
 
 
-def denoise_spectrogram(spec: xr.DataArray) -> xr.DataArray:
+def remove_spectral_mean(spec: xr.DataArray) -> xr.DataArray:
     """Apply simple spectral mean subtraction for denoising.
 
     Subtracts the mean value of each frequency bin (calculated across time)
@@ -576,23 +518,22 @@ def denoise_spectrogram(spec: xr.DataArray) -> xr.DataArray:
 
 def scale_spectrogram(
     spec: xr.DataArray,
-    scale: Scales,
+    scale: Literal["dB", "power", "amplitude"],
     dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
-    """Apply configured amplitude scaling to the spectrogram.
+    """Apply final amplitude scaling/representation to the spectrogram.
 
-    Dispatches to the appropriate scaling function (log, PCEN) based on the
-    `scale` configuration object's `name` field. If `scale.name` is
-    "amplitude", the spectrogram is returned unchanged (as it's already
-    magnitude/amplitude).
+    Converts the input magnitude spectrogram based on the `scale` type:
+    - "dB": Applies logarithmic scaling `log1p(C * S)`.
+    - "power": Squares the magnitude values `S^2`.
+    - "amplitude": Returns the input magnitude values `S` unchanged.
 
     Parameters
     ----------
     spec : xr.DataArray
-        Input magnitude spectrogram.
-    scale : Scales
-        The configuration object specifying the scaling method and parameters
-        (instance of LogScaleConfig, PcenScaleConfig, or AmplitudeScaleConfig).
+        Input magnitude spectrogram (potentially after PCEN).
+    scale : Literal["dB", "power", "amplitude"]
+        The target amplitude representation.
     dtype : DTypeLike, default=np.float32
         Target data type for the output scaled spectrogram.
 
@@ -601,22 +542,16 @@ def scale_spectrogram(
     xr.DataArray
         Spectrogram with the specified amplitude scaling applied.
     """
-    if scale.name == "log":
+    if scale == "dB":
         return scale_log(spec, dtype=dtype)
 
-    if scale.name == "pcen":
-        return scale_pcen(
-            spec,
-            time_constant=scale.time_constant,
-            gain=scale.gain,
-            power=scale.power,
-            bias=scale.bias,
-        )
+    if scale == "power":
+        return spec**2
 
     return spec
 
 
-def scale_pcen(
+def apply_pcen(
     spec: xr.DataArray,
     time_constant: float = 0.4,
     gain: float = 0.98,

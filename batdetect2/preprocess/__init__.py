@@ -1,87 +1,193 @@
 """Module containing functions for preprocessing audio clips."""
 
-from functools import partial
-from typing import Callable, Optional, Protocol
+from typing import Optional, Union
 
+import numpy as np
 import xarray as xr
+from pydantic import Field
 from soundevent import data
 
+from batdetect2.configs import BaseConfig, load_config
 from batdetect2.preprocess.audio import (
+    DEFAULT_DURATION,
+    SCALE_RAW_AUDIO,
+    TARGET_SAMPLERATE_HZ,
     AudioConfig,
     ResampleConfig,
+    adjust_audio_duration,
+    build_audio_loader,
+    convert_to_xr,
     load_clip_audio,
-)
-from batdetect2.preprocess.config import (
-    PreprocessingConfig,
-    load_preprocessing_config,
+    load_file_audio,
+    load_recording_audio,
+    resample_audio,
 )
 from batdetect2.preprocess.spectrogram import (
     MAX_FREQ,
     MIN_FREQ,
-    AmplitudeScaleConfig,
+    ConfigurableSpectrogramBuilder,
     FrequencyConfig,
-    LogScaleConfig,
-    PcenScaleConfig,
-    Scales,
+    PcenConfig,
     SpecSizeConfig,
     SpectrogramConfig,
     STFTConfig,
+    build_spectrogram_builder,
     compute_spectrogram,
+    get_spectrogram_resolution,
+)
+from batdetect2.preprocess.types import (
+    AudioLoader,
+    Preprocessor,
+    SpectrogramBuilder,
 )
 
 __all__ = [
-    "AmplitudeScaleConfig",
     "AudioConfig",
+    "AudioLoader",
+    "ConfigurableSpectrogramBuilder",
+    "DEFAULT_DURATION",
     "FrequencyConfig",
-    "LogScaleConfig",
+    "FrequencyConfig",
     "MAX_FREQ",
     "MIN_FREQ",
-    "PcenScaleConfig",
+    "PcenConfig",
+    "PcenConfig",
     "PreprocessingConfig",
     "ResampleConfig",
+    "SCALE_RAW_AUDIO",
     "STFTConfig",
-    "Scales",
+    "STFTConfig",
     "SpecSizeConfig",
+    "SpecSizeConfig",
+    "SpectrogramBuilder",
     "SpectrogramConfig",
+    "SpectrogramConfig",
+    "TARGET_SAMPLERATE_HZ",
+    "adjust_audio_duration",
+    "build_audio_loader",
+    "build_spectrogram_builder",
+    "compute_spectrogram",
+    "convert_to_xr",
+    "get_spectrogram_resolution",
+    "load_clip_audio",
+    "load_file_audio",
     "load_preprocessing_config",
-    "preprocess_audio_clip",
+    "load_recording_audio",
+    "resample_audio",
 ]
 
 
-class AudioPreprocessor(Protocol):
-    def __call__(
+class PreprocessingConfig(BaseConfig):
+    """Configuration for preprocessing data."""
+
+    audio: AudioConfig = Field(default_factory=AudioConfig)
+    spectrogram: SpectrogramConfig = Field(default_factory=SpectrogramConfig)
+
+
+class StandardPreprocessor(Preprocessor):
+    audio_loader: AudioLoader
+    spectrogram_builder: SpectrogramBuilder
+    default_samplerate: int
+
+    def __init__(
+        self,
+        audio_loader: AudioLoader,
+        spectrogram_builder: SpectrogramBuilder,
+        default_samplerate: int,
+    ) -> None:
+        self.audio_loader = audio_loader
+        self.spectrogram_builder = spectrogram_builder
+        self.default_samplerate = default_samplerate
+
+    def load_file_audio(
+        self,
+        path: data.PathLike,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray:
+        return self.audio_loader.load_file(
+            path,
+            audio_dir=audio_dir,
+        )
+
+    def load_recording_audio(
+        self,
+        recording: data.Recording,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray:
+        return self.audio_loader.load_recording(
+            recording,
+            audio_dir=audio_dir,
+        )
+
+    def load_clip_audio(
         self,
         clip: data.Clip,
         audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray: ...
+    ) -> xr.DataArray:
+        return self.audio_loader.load_clip(
+            clip,
+            audio_dir=audio_dir,
+        )
+
+    def preprocess_file(
+        self,
+        path: data.PathLike,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray:
+        wav = self.load_file_audio(path, audio_dir=audio_dir)
+        return self.spectrogram_builder(
+            wav,
+            samplerate=self.default_samplerate,
+        )
+
+    def preprocess_recording(
+        self,
+        recording: data.Recording,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray:
+        wav = self.load_recording_audio(recording, audio_dir=audio_dir)
+        return self.spectrogram_builder(
+            wav,
+            samplerate=self.default_samplerate,
+        )
+
+    def preprocess_clip(
+        self,
+        clip: data.Clip,
+        audio_dir: Optional[data.PathLike] = None,
+    ) -> xr.DataArray:
+        wav = self.load_clip_audio(clip, audio_dir=audio_dir)
+        return self.spectrogram_builder(
+            wav,
+            samplerate=self.default_samplerate,
+        )
+
+    def compute_spectrogram(
+        self, wav: Union[xr.DataArray, np.ndarray]
+    ) -> xr.DataArray:
+        return self.spectrogram_builder(
+            wav,
+            samplerate=self.default_samplerate,
+        )
+
+
+def load_preprocessing_config(
+    path: data.PathLike,
+    field: Optional[str] = None,
+) -> PreprocessingConfig:
+    return load_config(path, schema=PreprocessingConfig, field=field)
 
 
 def build_preprocessor_from_config(
     config: PreprocessingConfig,
-) -> AudioPreprocessor:
-    return partial(preprocess_audio_clip, config=config)
-
-
-def preprocess_audio_clip(
-    clip: data.Clip,
-    config: Optional[PreprocessingConfig] = None,
-    audio_dir: Optional[data.PathLike] = None,
-) -> xr.DataArray:
-    """Preprocesses audio clip to generate spectrogram.
-
-    Parameters
-    ----------
-    clip
-        The audio clip to preprocess.
-    config
-        Configuration for preprocessing.
-
-    Returns
-    -------
-    xr.DataArray
-        Preprocessed spectrogram.
-
-    """
-    config = config or PreprocessingConfig()
-    wav = load_clip_audio(clip, config=config.audio, audio_dir=audio_dir)
-    return compute_spectrogram(wav, config=config.spectrogram)
+) -> Preprocessor:
+    default_samplerate = (
+        config.audio.resample.samplerate
+        if config.audio.resample
+        else TARGET_SAMPLERATE_HZ
+    )
+    return StandardPreprocessor(
+        audio_loader=build_audio_loader(config.audio),
+        spectrogram_builder=build_spectrogram_builder(config.spectrogram),
+        default_samplerate=default_samplerate,
+    )

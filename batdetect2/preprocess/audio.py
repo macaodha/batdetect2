@@ -20,7 +20,7 @@ The primary interface is the `AudioLoader` protocol, with
 `AudioConfig`.
 """
 
-from typing import Optional, Protocol
+from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -32,9 +32,9 @@ from soundevent.arrays import operations as ops
 from soundfile import LibsndfileError
 
 from batdetect2.configs import BaseConfig
+from batdetect2.preprocess.types import AudioLoader
 
 __all__ = [
-    "AudioLoader",
     "ResampleConfig",
     "AudioConfig",
     "ConfigurableAudioLoader",
@@ -60,106 +60,6 @@ DEFAULT_DURATION = None
 """Default setting for target audio duration in seconds."""
 
 
-class AudioLoader(Protocol):
-    """Defines the interface for an audio loading and processing component.
-
-    An AudioLoader is responsible for retrieving audio data corresponding to
-    different soundevent objects (files, Recordings, Clips) and applying a
-    configured set of initial preprocessing steps. Adhering to this protocol
-    allows for different loading strategies or implementations.
-    """
-
-    def load_file(
-        self,
-        path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess audio directly from a file path.
-
-        Parameters
-        ----------
-        path : PathLike
-            Path to the audio file.
-        audio_dir : PathLike, optional
-            A directory prefix to prepend to the path if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform as an xarray DataArray
-            with time coordinates. Typically loads only the first channel.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file cannot be found.
-        Exception
-            If the audio file cannot be loaded or processed.
-        """
-        ...
-
-    def load_recording(
-        self,
-        recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess the entire audio for a Recording object.
-
-        Parameters
-        ----------
-        recording : data.Recording
-            The Recording object containing metadata about the audio file.
-        audio_dir : PathLike, optional
-            A directory where the audio file associated with the recording
-            can be found, especially if the path in the recording is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform. Typically loads only
-            the first channel.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file associated with the recording cannot be found.
-        Exception
-            If the audio file cannot be loaded or processed.
-        """
-        ...
-
-    def load_clip(
-        self,
-        clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess the audio segment defined by a Clip object.
-
-        Parameters
-        ----------
-        clip : data.Clip
-            The Clip object specifying the recording and the start/end times
-            of the segment to load.
-        audio_dir : PathLike, optional
-            A directory where the audio file associated with the clip's
-            recording can be found.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform for the specified clip
-            duration. Typically loads only the first channel.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file associated with the clip cannot be found.
-        Exception
-            If the audio file cannot be loaded or processed.
-        """
-        ...
-
-
 class ResampleConfig(BaseConfig):
     """Configuration for audio resampling.
 
@@ -167,7 +67,7 @@ class ResampleConfig(BaseConfig):
     ----------
     samplerate : int, default=256000
         The target sample rate in Hz to resample the audio to. Must be > 0.
-    mode : str, default="poly"
+    method : str, default="poly"
         The resampling algorithm to use. Options:
         - "poly": Polyphase resampling using `scipy.signal.resample_poly`.
                   Generally fast.
@@ -177,7 +77,7 @@ class ResampleConfig(BaseConfig):
     """
 
     samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
-    mode: str = "poly"
+    method: str = "poly"
 
 
 class AudioConfig(BaseConfig):
@@ -191,8 +91,8 @@ class AudioConfig(BaseConfig):
     ----------
     resample : ResampleConfig, optional
         Configuration for resampling. If provided (or defaulted), audio will
-        be resampled to the specified `samplerate` using the specified `mode`.
-        If set to `None` in the config file, resampling is skipped.
+        be resampled to the specified `samplerate` using the specified
+        `method`. If set to `None` in the config file, resampling is skipped.
         Defaults to a ResampleConfig instance with standard settings.
     scale : bool, default=False
         If True, scales the audio waveform using peak normalization so that
@@ -579,14 +479,14 @@ def adjust_audio_duration(
 def resample_audio(
     wav: xr.DataArray,
     samplerate: int = TARGET_SAMPLERATE_HZ,
-    mode: str = "poly",
+    method: str = "poly",
     dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     """Resample an audio waveform DataArray to a target sample rate.
 
     Updates the 'time' coordinate axis according to the new sample rate and
     number of samples. Uses either polyphase (`scipy.signal.resample_poly`)
-    or Fourier method (`scipy.signal.resample`) based on the `mode`.
+    or Fourier method (`scipy.signal.resample`) based on the `method`.
 
     Parameters
     ----------
@@ -594,7 +494,7 @@ def resample_audio(
         Input audio waveform with 'time' dimension and coordinates.
     samplerate : int, default=TARGET_SAMPLERATE_HZ
         Target sample rate in Hz.
-    mode : str, default="poly"
+    method : str, default="poly"
         Resampling algorithm: "poly" or "fourier".
     dtype : DTypeLike, default=np.float32
         Target data type for the resampled array.
@@ -610,7 +510,7 @@ def resample_audio(
     ------
     ValueError
         If `wav` lacks a 'time' dimension, the original sample rate cannot
-        be determined, `samplerate` is non-positive, or `mode` is invalid.
+        be determined, `samplerate` is non-positive, or `method` is invalid.
     """
     if "time" not in wav.dims:
         raise ValueError("Audio must have a time dimension")
@@ -622,14 +522,14 @@ def resample_audio(
     if original_samplerate == samplerate:
         return wav.astype(dtype)
 
-    if mode == "poly":
+    if method == "poly":
         resampled = resample_audio_poly(
             wav,
             sr_orig=original_samplerate,
             sr_new=samplerate,
             axis=time_axis,
         )
-    elif mode == "fourier":
+    elif method == "fourier":
         resampled = resample_audio_fourier(
             wav,
             sr_orig=original_samplerate,
@@ -637,7 +537,9 @@ def resample_audio(
             axis=time_axis,
         )
     else:
-        raise NotImplementedError(f"Resampling mode '{mode}' not implemented")
+        raise NotImplementedError(
+            f"Resampling method '{method}' not implemented"
+        )
 
     start, stop = arrays.get_dim_range(wav, dim="time")
     times = np.linspace(
