@@ -35,7 +35,7 @@ def get_preprocessing_config(params: dict) -> PreprocessingConfig:
         audio=AudioConfig(
             resample=ResampleConfig(
                 samplerate=params["target_samp_rate"],
-                mode="poly",
+                method="poly",
             ),
             scale=params["scale_raw_audio"],
             center=params["scale_raw_audio"],

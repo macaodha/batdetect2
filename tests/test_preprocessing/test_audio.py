@@ -125,7 +125,7 @@ def no_center_config() -> audio.AudioConfig:
 def resample_fourier_config() -> audio.AudioConfig:
     return audio.AudioConfig(
         resample=audio.ResampleConfig(
-            samplerate=audio.TARGET_SAMPLERATE_HZ // 2, mode="fourier"
+            samplerate=audio.TARGET_SAMPLERATE_HZ // 2, method="fourier"
         )
     )
 
@@ -133,21 +133,21 @@ def resample_fourier_config() -> audio.AudioConfig:
 def test_resample_config_defaults():
     config = audio.ResampleConfig()
     assert config.samplerate == audio.TARGET_SAMPLERATE_HZ
-    assert config.mode == "poly"
+    assert config.method == "poly"
 
 
 def test_audio_config_defaults():
     config = audio.AudioConfig()
     assert config.resample is not None
     assert config.resample.samplerate == audio.TARGET_SAMPLERATE_HZ
-    assert config.resample.mode == "poly"
+    assert config.resample.method == "poly"
     assert config.scale == audio.SCALE_RAW_AUDIO
     assert config.center is True
     assert config.duration == audio.DEFAULT_DURATION
 
 
 def test_audio_config_override():
-    resample_cfg = audio.ResampleConfig(samplerate=44100, mode="fourier")
+    resample_cfg = audio.ResampleConfig(samplerate=44100, method="fourier")
     config = audio.AudioConfig(
         resample=resample_cfg,
         scale=True,
@@ -206,7 +206,7 @@ def test_resample_audio(orig_sr, target_sr, mode):
     duration = 0.1
     wave = create_xr_wave(orig_sr, duration)
     resampled_wave = audio.resample_audio(
-        wave, samplerate=target_sr, mode=mode, dtype=np.float32
+        wave, samplerate=target_sr, method=mode, dtype=np.float32
     )
     expected_samples = int(wave.sizes["time"] * (target_sr / orig_sr))
     assert resampled_wave.sizes["time"] == expected_samples
@@ -233,7 +233,7 @@ def test_resample_audio_same_samplerate():
 def test_resample_audio_invalid_mode_raises():
     wave = create_xr_wave(48000, 0.1)
     with pytest.raises(NotImplementedError):
-        audio.resample_audio(wave, samplerate=96000, mode="invalid_mode")
+        audio.resample_audio(wave, samplerate=96000, method="invalid_mode")
 
 
 def test_resample_audio_no_time_dim_raises():
