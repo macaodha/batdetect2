@@ -29,6 +29,7 @@ from pydantic import Field
 from scipy.signal import resample, resample_poly
 from soundevent import arrays, audio, data
 from soundevent.arrays import operations as ops
+from soundfile import LibsndfileError
 
 from batdetect2.configs import BaseConfig
 
@@ -360,7 +361,13 @@ def load_file_audio(
     xr.DataArray
         Loaded and preprocessed waveform (first channel only).
     """
-    recording = data.Recording.from_file(path)
+    try:
+        recording = data.Recording.from_file(path)
+    except LibsndfileError as e:
+        raise FileNotFoundError(
+            f"Could not load the recording at path: {path}. Error: {e}"
+        ) from e
+
     return load_recording_audio(
         recording,
         config=config,
@@ -421,10 +428,10 @@ def load_clip_audio(
     This is the core function performing the configured processing pipeline:
     1. Loads the specified clip segment using `soundevent.audio.load_clip`.
     2. Selects the first audio channel.
-    3. Adjusts duration (crop/pad) if `config.duration` is set.
-    4. Resamples if `config.resample` is configured.
-    5. Centers (DC offset removal) if `config.center` is True.
-    6. Scales (peak normalization) if `config.scale` is True.
+    3. Resamples if `config.resample` is configured.
+    4. Centers (DC offset removal) if `config.center` is True.
+    5. Scales (peak normalization) if `config.scale` is True.
+    6. Adjusts duration (crop/pad) if `config.duration` is set.
 
     Parameters
     ----------
@@ -461,12 +468,17 @@ def load_clip_audio(
     """
     config = config or AudioConfig()
 
-    wav = (
-        audio.load_clip(clip, audio_dir=audio_dir).sel(channel=0).astype(dtype)
-    )
-
-    if config.duration is not None:
-        wav = adjust_audio_duration(wav, duration=config.duration)
+    try:
+        wav = (
+            audio.load_clip(clip, audio_dir=audio_dir)
+            .sel(channel=0)
+            .astype(dtype)
+        )
+    except LibsndfileError as e:
+        raise FileNotFoundError(
+            f"Could not load the recording at path: {clip.recording.path}. "
+            f"Error: {e}"
+        ) from e
 
     if config.resample:
         wav = resample_audio(
@@ -479,9 +491,33 @@ def load_clip_audio(
         wav = ops.center(wav)
 
     if config.scale:
-        wav = ops.scale(wav, 1 / (10e-6 + np.max(np.abs(wav))))
+        wav = scale_audio(wav)
+
+    if config.duration is not None:
+        wav = adjust_audio_duration(wav, duration=config.duration)
 
     return wav.astype(dtype)
+
+
+def scale_audio(
+    wave: xr.DataArray,
+) -> xr.DataArray:
+    """
+    Scale the audio waveform to have a maximum absolute value of 1.0.
+
+    This function normalizes the waveform by dividing it by its maximum
+    absolute value. If the maximum value is zero, the waveform is returned
+    unchanged. Also known as peak normalization, this process ensures that the
+    waveform's amplitude is within a standard range, which can be useful for
+    audio processing and analysis.
+
+    """
+    max_val = np.max(np.abs(wave))
+
+    if max_val == 0:
+        return wave
+
+    return ops.scale(wave, 1 / max_val)
 
 
 def adjust_audio_duration(
@@ -513,25 +549,30 @@ def adjust_audio_duration(
         If `duration` is negative.
     """
     start_time, end_time = arrays.get_dim_range(wave, dim="time")
-    current_duration = end_time - start_time
+    step = arrays.get_dim_step(wave, dim="time")
+    current_duration = end_time - start_time + step
 
     if current_duration == duration:
         return wave
 
-    if current_duration > duration:
-        return arrays.crop_dim(
+    with xr.set_options(keep_attrs=True):
+        if current_duration > duration:
+            return arrays.crop_dim(
+                wave,
+                dim="time",
+                start=start_time,
+                stop=start_time + duration - step / 2,
+                right_closed=True,
+            )
+
+        return arrays.extend_dim(
             wave,
             dim="time",
             start=start_time,
-            stop=start_time + duration,
+            stop=start_time + duration - step / 2,
+            eps=0,
+            right_closed=True,
         )
-
-    return arrays.extend_dim(
-        wave,
-        dim="time",
-        start=start_time,
-        stop=start_time + duration,
-    )
 
 
 def resample_audio(
@@ -616,7 +657,7 @@ def resample_audio(
                 samplerate=samplerate,
             ),
         },
-        attrs=wav.attrs,
+        attrs={**wav.attrs, "samplerate": samplerate},
     )
 
 
