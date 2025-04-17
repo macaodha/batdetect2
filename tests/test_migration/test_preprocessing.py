@@ -83,7 +83,7 @@ def test_spectrogram_generation_hasnt_changed(
     if spec_scale == "log":
         scale = preprocess.LogScaleConfig()
     elif spec_scale == "pcen":
-        scale = preprocess.PcenScaleConfig()
+        scale = preprocess.PcenConfig()
     else:
         scale = preprocess.AmplitudeScaleConfig()
 
@@ -97,9 +97,9 @@ def test_spectrogram_generation_hasnt_changed(
             max_freq=max_freq,
         ),
         scale=scale,
-        denoise=denoise_spec_avg,
+        spectral_mean_substraction=denoise_spec_avg,
         size=None,
-        max_scale=max_scale_spec,
+        peak_normalize=max_scale_spec,
     )
 
     recording = data.Recording.from_file(

@@ -3,7 +3,7 @@ from batdetect2.preprocess import (
     AudioConfig,
     FrequencyConfig,
     LogScaleConfig,
-    PcenScaleConfig,
+    PcenConfig,
     PreprocessingConfig,
     ResampleConfig,
     Scales,
@@ -24,7 +24,7 @@ from batdetect2.train.preprocess import (
 
 def get_spectrogram_scale(scale: str) -> Scales:
     if scale == "pcen":
-        return PcenScaleConfig()
+        return PcenConfig()
     if scale == "log":
         return LogScaleConfig()
     return AmplitudeScaleConfig()
@@ -52,12 +52,12 @@ def get_preprocessing_config(params: dict) -> PreprocessingConfig:
                 max_freq=params["max_freq"],
             ),
             scale=get_spectrogram_scale(params["spec_scale"]),
-            denoise=params["denoise_spec_avg"],
+            spectral_mean_substraction=params["denoise_spec_avg"],
             size=SpecSizeConfig(
                 height=params["spec_height"],
                 resize_factor=params["resize_factor"],
             ),
-            max_scale=params["max_scale_spec"],
+            peak_normalize=params["max_scale_spec"],
         ),
     )
 
