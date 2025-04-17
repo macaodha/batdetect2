@@ -47,6 +47,7 @@ __all__ = [
     "TARGET_SAMPLERATE_HZ",
     "SCALE_RAW_AUDIO",
     "DEFAULT_DURATION",
+    "convert_to_xr",
 ]
 
 TARGET_SAMPLERATE_HZ = 256_000
@@ -734,3 +735,67 @@ def resample_audio_fourier(
     """
     ratio = sr_new / sr_orig
     return resample(array, int(array.shape[axis] * ratio), axis=axis)  # type: ignore
+
+
+def convert_to_xr(
+    wav: np.ndarray,
+    samplerate: int,
+    dtype: DTypeLike = np.float32,  # type: ignore
+) -> xr.DataArray:
+    """Convert a NumPy array to an xarray DataArray with time coordinates.
+
+    Parameters
+    ----------
+    wav : np.ndarray
+        The input waveform array. Expected to be 1D or 2D (with the first axis as
+        the channel dimension).
+    samplerate : int
+        The sample rate in Hz.
+    dtype : DTypeLike, default=np.float32
+        Target data type for the xarray DataArray.
+
+    Returns
+    -------
+    xr.DataArray
+        The waveform as an xarray DataArray with time coordinates.
+
+    Raises
+    ------
+    ValueError
+        If the input array is not 1D or 2D, or if the sample rate is
+        non-positive. If the input array is empty.
+    """
+
+    if wav.ndim == 2:
+        wav = wav[0, :]
+
+    if wav.ndim != 1:
+        raise ValueError(
+            "Audio must be 1D array or 2D channel where the first axis is the channel dimension"
+        )
+
+    if wav.size == 0:
+        raise ValueError("Audio array is empty")
+
+    if samplerate <= 0:
+        raise ValueError("Sample rate must be positive")
+
+    times = np.linspace(
+        0,
+        wav.shape[0] / samplerate,
+        wav.shape[0],
+        endpoint=False,
+        dtype=dtype,
+    )
+
+    return xr.DataArray(
+        data=wav.astype(dtype),
+        dims=["time"],
+        coords={
+            "time": arrays.create_time_dim_from_array(
+                times,
+                samplerate=samplerate,
+            ),
+        },
+        attrs={"samplerate": samplerate},
+    )
