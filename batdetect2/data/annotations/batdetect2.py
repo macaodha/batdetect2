@@ -29,7 +29,7 @@ import os
 from pathlib import Path
 from typing import Literal, Optional, Union
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 from soundevent import data
 
 from batdetect2.configs import BaseConfig
@@ -101,7 +101,7 @@ class BatDetect2FilesAnnotations(AnnotatedDataset):
     format: Literal["batdetect2"] = "batdetect2"
     annotations_dir: Path
 
-    filter: AnnotationFilter = Field(
+    filter: Optional[AnnotationFilter] = Field(
         default_factory=AnnotationFilter,
     )
 
@@ -132,7 +132,7 @@ class BatDetect2MergedAnnotations(AnnotatedDataset):
     format: Literal["batdetect2_file"] = "batdetect2_file"
     annotations_path: Path
 
-    filter: AnnotationFilter = Field(
+    filter: Optional[AnnotationFilter] = Field(
         default_factory=AnnotationFilter,
     )
 
@@ -183,13 +183,21 @@ def load_batdetect2_files_annotated_dataset(
     for p in paths:
         try:
             file_annotation = load_file_annotation(p)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValidationError):
             continue
 
-        if dataset.filter.only_annotated and not file_annotation.annotated:
+        if (
+            dataset.filter
+            and dataset.filter.only_annotated
+            and not file_annotation.annotated
+        ):
             continue
 
-        if dataset.filter.exclude_issues and file_annotation.issues:
+        if (
+            dataset.filter
+            and dataset.filter.exclude_issues
+            and file_annotation.issues
+        ):
             continue
 
         try:
@@ -263,6 +271,11 @@ def load_batdetect2_merged_annotated_dataset(
 
     content = json.loads(Path(path).read_text())
 
+    if not isinstance(content, list):
+        raise TypeError(
+            f"Expected a list of FileAnnotations, but got {type(content)}",
+        )
+
     annotations = []
 
     for ann in content:
@@ -271,10 +284,14 @@ def load_batdetect2_merged_annotated_dataset(
         except ValueError:
             continue
 
-        if dataset.filter.only_annotated and not ann.annotated:
+        if (
+            dataset.filter
+            and dataset.filter.only_annotated
+            and not ann.annotated
+        ):
             continue
 
-        if dataset.filter.exclude_issues and ann.issues:
+        if dataset.filter and dataset.filter.exclude_issues and ann.issues:
             continue
 
         try:
