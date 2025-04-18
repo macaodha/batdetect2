@@ -22,23 +22,23 @@ from batdetect2.data.annotations.aoef import (
     AOEFAnnotations,
     load_aoef_annotated_dataset,
 )
-from batdetect2.data.annotations.batdetect2_files import (
+from batdetect2.data.annotations.batdetect2 import (
+    AnnotationFilter,
     BatDetect2FilesAnnotations,
-    load_batdetect2_files_annotated_dataset,
-)
-from batdetect2.data.annotations.batdetect2_merged import (
     BatDetect2MergedAnnotations,
+    load_batdetect2_files_annotated_dataset,
     load_batdetect2_merged_annotated_dataset,
 )
 from batdetect2.data.annotations.types import AnnotatedDataset
 
 __all__ = [
-    "load_annotated_dataset",
-    "AnnotatedDataset",
     "AOEFAnnotations",
+    "AnnotatedDataset",
+    "AnnotationFilter",
+    "AnnotationFormats",
     "BatDetect2FilesAnnotations",
     "BatDetect2MergedAnnotations",
-    "AnnotationFormats",
+    "load_annotated_dataset",
 ]
 
 
