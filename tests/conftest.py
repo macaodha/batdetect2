@@ -86,8 +86,8 @@ def wav_factory(tmp_path: Path):
 
 
 @pytest.fixture
-def recording_factory(wav_factory: Callable[..., Path]):
-    def _recording_factory(
+def create_recording(wav_factory: Callable[..., Path]):
+    def factory(
         tags: Optional[list[data.Tag]] = None,
         path: Optional[Path] = None,
         recording_id: Optional[uuid.UUID] = None,
@@ -96,7 +96,8 @@ def recording_factory(wav_factory: Callable[..., Path]):
         samplerate: int = 256_000,
         time_expansion: float = 1,
     ) -> data.Recording:
-        path = path or wav_factory(
+        path = wav_factory(
+            path=path,
             duration=duration,
             channels=channels,
             samplerate=samplerate,
@@ -108,14 +109,30 @@ def recording_factory(wav_factory: Callable[..., Path]):
             tags=tags or [],
         )
 
-    return _recording_factory
+    return factory
 
 
 @pytest.fixture
 def recording(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
 ) -> data.Recording:
-    return recording_factory()
+    return create_recording()
+
+
+@pytest.fixture
+def create_clip():
+    def factory(
+        recording: data.Recording,
+        start_time: float = 0,
+        end_time: float = 0.5,
+    ) -> data.Clip:
+        return data.Clip(
+            recording=recording,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
+    return factory
 
 
 @pytest.fixture
@@ -124,11 +141,41 @@ def clip(recording: data.Recording) -> data.Clip:
 
 
 @pytest.fixture
+def create_sound_event():
+    def factory(
+        recording: data.Recording,
+        coords: Optional[List[float]] = None,
+    ) -> data.SoundEvent:
+        coords = coords or [0.2, 60_000, 0.3, 70_000]
+
+        return data.SoundEvent(
+            geometry=data.BoundingBox(coordinates=coords),
+            recording=recording,
+        )
+
+    return factory
+
+
+@pytest.fixture
 def sound_event(recording: data.Recording) -> data.SoundEvent:
     return data.SoundEvent(
         geometry=data.BoundingBox(coordinates=[0.1, 67_000, 0.11, 73_000]),
         recording=recording,
     )
+
+
+@pytest.fixture
+def create_sound_event_annotation():
+    def factory(
+        sound_event: data.SoundEvent,
+        tags: Optional[List[data.Tag]] = None,
+    ) -> data.SoundEventAnnotation:
+        return data.SoundEventAnnotation(
+            sound_event=sound_event,
+            tags=tags or [],
+        )
+
+    return factory
 
 
 @pytest.fixture
@@ -182,6 +229,22 @@ def non_relevant_sound_event(
 
 
 @pytest.fixture
+def create_clip_annotation():
+    def factory(
+        clip: data.Clip,
+        clip_tags: Optional[List[data.Tag]] = None,
+        sound_events: Optional[List[data.SoundEventAnnotation]] = None,
+    ) -> data.ClipAnnotation:
+        return data.ClipAnnotation(
+            clip=clip,
+            tags=clip_tags or [],
+            sound_events=sound_events or [],
+        )
+
+    return factory
+
+
+@pytest.fixture
 def clip_annotation(
     clip: data.Clip,
     echolocation_call: data.SoundEventAnnotation,
@@ -196,3 +259,37 @@ def clip_annotation(
             non_relevant_sound_event,
         ],
     )
+
+
+@pytest.fixture
+def create_annotation_set():
+    def factory(
+        name: str = "test",
+        description: str = "Test annotation set",
+        annotations: Optional[List[data.ClipAnnotation]] = None,
+    ) -> data.AnnotationSet:
+        return data.AnnotationSet(
+            name=name,
+            description=description,
+            clip_annotations=annotations or [],
+        )
+
+    return factory
+
+
+@pytest.fixture
+def create_annotation_project():
+    def factory(
+        name: str = "test_project",
+        description: str = "Test Annotation Project",
+        tasks: Optional[List[data.AnnotationTask]] = None,
+        annotations: Optional[List[data.ClipAnnotation]] = None,
+    ) -> data.AnnotationProject:
+        return data.AnnotationProject(
+            name=name,
+            description=description,
+            tasks=tasks or [],
+            clip_annotations=annotations or [],
+        )
+
+    return factory

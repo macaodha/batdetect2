@@ -5,15 +5,18 @@ from batdetect2.data.annotations import (
     BatDetect2MergedAnnotations,
     load_annotated_dataset,
 )
-from batdetect2.data.data import load_dataset, load_dataset_from_config
-from batdetect2.data.types import Dataset
+from batdetect2.data.datasets import (
+    DatasetConfig,
+    load_dataset,
+    load_dataset_from_config,
+)
 
 __all__ = [
     "AOEFAnnotations",
     "AnnotatedDataset",
     "BatDetect2FilesAnnotations",
     "BatDetect2MergedAnnotations",
-    "Dataset",
+    "DatasetConfig",
     "load_annotated_dataset",
     "load_dataset",
     "load_dataset_from_config",

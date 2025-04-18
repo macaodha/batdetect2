@@ -17,11 +17,10 @@ class AnnotatedDataset(BaseConfig):
 
     Annotations associated with these recordings are defined by the
     `annotations` field, which supports various formats (e.g., AOEF files,
-                                                         specific CSV
-                                                         structures).
-    Crucially, file paths referenced within the annotation data *must* be
-    relative to the `audio_dir`. This ensures that the dataset definition
-    remains portable across different systems and base directories.
+    specific CSV structures). Crucially, file paths referenced within the
+    annotation data *must* be relative to the `audio_dir`. This ensures that
+    the dataset definition remains portable across different systems and base
+    directories.
 
     Attributes:
         name: A unique identifier for this data source.

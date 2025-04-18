@@ -17,10 +17,10 @@ from batdetect2.train.preprocess import (
 
 
 def test_mix_examples(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
 ):
-    recording1 = recording_factory()
-    recording2 = recording_factory()
+    recording1 = create_recording()
+    recording2 = create_recording()
 
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip2 = data.Clip(recording=recording2, start_time=0.3, end_time=0.8)
@@ -54,12 +54,12 @@ def test_mix_examples(
 @pytest.mark.parametrize("duration1", [0.1, 0.4, 0.7])
 @pytest.mark.parametrize("duration2", [0.1, 0.4, 0.7])
 def test_mix_examples_of_different_durations(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
     duration1: float,
     duration2: float,
 ):
-    recording1 = recording_factory()
-    recording2 = recording_factory()
+    recording1 = create_recording()
+    recording2 = create_recording()
 
     clip1 = data.Clip(recording=recording1, start_time=0, end_time=duration1)
     clip2 = data.Clip(recording=recording2, start_time=0, end_time=duration2)
@@ -92,9 +92,9 @@ def test_mix_examples_of_different_durations(
 
 
 def test_add_echo(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
 ):
-    recording1 = recording_factory()
+    recording1 = create_recording()
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
@@ -113,9 +113,9 @@ def test_add_echo(
 
 
 def test_selected_random_subclip_has_the_correct_width(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
 ):
-    recording1 = recording_factory()
+    recording1 = create_recording()
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
@@ -131,9 +131,9 @@ def test_selected_random_subclip_has_the_correct_width(
 
 
 def test_add_echo_after_subclip(
-    recording_factory: Callable[..., data.Recording],
+    create_recording: Callable[..., data.Recording],
 ):
-    recording1 = recording_factory(duration=2)
+    recording1 = create_recording(duration=2)
     clip1 = data.Clip(recording=recording1, start_time=0, end_time=1)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     config = TrainPreprocessingConfig()
