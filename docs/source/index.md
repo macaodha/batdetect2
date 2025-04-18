@@ -6,6 +6,7 @@ Hi!
 :maxdepth: 1
 :caption: Contents:
 
+data/index
 preprocessing/index
 targets/index
 reference/index
