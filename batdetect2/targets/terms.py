@@ -25,6 +25,7 @@ from batdetect2.configs import load_config
 __all__ = [
     "call_type",
     "individual",
+    "data_source",
     "get_tag_from_info",
     "TermInfo",
     "TagInfo",
@@ -33,6 +34,16 @@ __all__ = [
 # The default key used to reference the 'generic_class' term.
 # Often used implicitly when defining classification targets.
 GENERIC_CLASS_KEY = "class"
+
+
+data_source = data.Term(
+    name="soundevent:data_source",
+    label="Data Source",
+    definition=(
+        "A unique identifier for the source of the data, typically "
+        "representing the project, site, or deployment context."
+    ),
+)
 
 
 call_type = data.Term(
@@ -225,6 +236,7 @@ term_registry = TermRegistry(
             *getmembers(terms, lambda x: isinstance(x, data.Term)),
             ("call_type", call_type),
             ("individual", individual),
+            ("data_source", data_source),
             (GENERIC_CLASS_KEY, generic_class),
         ]
     )
