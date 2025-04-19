@@ -1,4 +1,4 @@
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Protocol
 
 import numpy as np
 
@@ -15,3 +15,7 @@ class BatDetect2Prediction(NamedTuple):
     detection_score: float
     class_scores: Dict[str, float]
     features: np.ndarray
+
+
+class PostprocessorProtocol(Protocol):
+    pass

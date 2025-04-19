@@ -158,7 +158,7 @@ class SpectrogramBuilder(Protocol):
         ...
 
 
-class Preprocessor(Protocol):
+class PreprocessorProtocol(Protocol):
     """Defines a high-level interface for the complete preprocessing pipeline.
 
     A Preprocessor combines audio loading and spectrogram generation steps.

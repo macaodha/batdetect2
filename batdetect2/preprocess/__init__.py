@@ -58,7 +58,7 @@ from batdetect2.preprocess.spectrogram import (
 )
 from batdetect2.preprocess.types import (
     AudioLoader,
-    Preprocessor,
+    PreprocessorProtocol,
     SpectrogramBuilder,
 )
 
@@ -110,7 +110,7 @@ class PreprocessingConfig(BaseConfig):
     spectrogram: SpectrogramConfig = Field(default_factory=SpectrogramConfig)
 
 
-class StandardPreprocessor(Preprocessor):
+class StandardPreprocessor(PreprocessorProtocol):
     """Standard implementation of the `Preprocessor` protocol.
 
     Orchestrates the audio loading and spectrogram generation pipeline using
@@ -402,7 +402,7 @@ def load_preprocessing_config(
 
 def build_preprocessor(
     config: Optional[PreprocessingConfig] = None,
-) -> Preprocessor:
+) -> PreprocessorProtocol:
     """Factory function to build the standard preprocessor from configuration.
 
     Creates instances of the required `AudioLoader` and `SpectrogramBuilder`
