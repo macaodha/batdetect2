@@ -13,9 +13,9 @@ from batdetect2.targets.classes import (
     _get_default_class_name,
     _get_default_classes,
     _is_target_class,
-    build_decoder_from_config,
-    build_encoder_from_config,
-    build_generic_class_tags_from_config,
+    build_sound_event_decoder,
+    build_sound_event_encoder,
+    build_generic_class_tags,
     get_class_names_from_config,
     load_classes_config,
     load_decoder_from_config,
@@ -231,7 +231,7 @@ def test_build_encoder_from_config(
             )
         ]
     )
-    encoder = build_encoder_from_config(
+    encoder = build_sound_event_encoder(
         config,
         term_registry=sample_term_registry,
     )
@@ -239,7 +239,7 @@ def test_build_encoder_from_config(
     assert result == "pippip"
 
     config = ClassesConfig(classes=[])
-    encoder = build_encoder_from_config(
+    encoder = build_sound_event_encoder(
         config,
         term_registry=sample_term_registry,
     )
@@ -315,7 +315,7 @@ def test_build_decoder_from_config(sample_term_registry: TermRegistry):
         ],
         generic_class=[TagInfo(key="order", value="Chiroptera")],
     )
-    decoder = build_decoder_from_config(
+    decoder = build_sound_event_decoder(
         config, term_registry=sample_term_registry
     )
     tags = decoder("pippip")
@@ -335,7 +335,7 @@ def test_build_decoder_from_config(sample_term_registry: TermRegistry):
         ],
         generic_class=[TagInfo(key="order", value="Chiroptera")],
     )
-    decoder = build_decoder_from_config(
+    decoder = build_sound_event_decoder(
         config, term_registry=sample_term_registry
     )
     tags = decoder("pippip")
@@ -344,14 +344,14 @@ def test_build_decoder_from_config(sample_term_registry: TermRegistry):
     assert tags[0].value == "Pipistrellus pipistrellus"
 
     # Test raise_on_unmapped=True
-    decoder = build_decoder_from_config(
+    decoder = build_sound_event_decoder(
         config, term_registry=sample_term_registry, raise_on_unmapped=True
     )
     with pytest.raises(ValueError):
         decoder("unknown_class")
 
     # Test raise_on_unmapped=False
-    decoder = build_decoder_from_config(
+    decoder = build_sound_event_decoder(
         config, term_registry=sample_term_registry, raise_on_unmapped=False
     )
     tags = decoder("unknown_class")
@@ -402,7 +402,7 @@ def test_build_generic_class_tags_from_config(
             TagInfo(key="call_type", value="Echolocation"),
         ],
     )
-    generic_tags = build_generic_class_tags_from_config(
+    generic_tags = build_generic_class_tags(
         config, term_registry=sample_term_registry
     )
     assert len(generic_tags) == 2

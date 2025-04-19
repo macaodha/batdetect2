@@ -17,7 +17,7 @@ __all__ = [
     "FilterConfig",
     "FilterRule",
     "SoundEventFilter",
-    "build_filter_from_config",
+    "build_sound_event_filter",
     "build_filter_from_rule",
     "load_filter_config",
     "load_filter_from_config",
@@ -241,7 +241,7 @@ class FilterConfig(BaseConfig):
     rules: List[FilterRule] = Field(default_factory=list)
 
 
-def build_filter_from_config(
+def build_sound_event_filter(
     config: FilterConfig,
     term_registry: TermRegistry = term_registry,
 ) -> SoundEventFilter:
@@ -312,4 +312,4 @@ def load_filter_from_config(
         The final merged filter function ready to be used.
     """
     config = load_filter_config(path=path, field=field)
-    return build_filter_from_config(config, term_registry=term_registry)
+    return build_sound_event_filter(config, term_registry=term_registry)

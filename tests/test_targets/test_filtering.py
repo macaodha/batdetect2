@@ -7,7 +7,7 @@ from soundevent import data
 from batdetect2.targets.filtering import (
     FilterConfig,
     FilterRule,
-    build_filter_from_config,
+    build_sound_event_filter,
     build_filter_from_rule,
     contains_tags,
     does_not_have_tags,
@@ -121,7 +121,7 @@ def test_build_filter_from_config(create_annotation):
             FilterRule(match_type="any", tags=[TagInfo(value="tag2")]),
         ]
     )
-    filter_from_config = build_filter_from_config(config)
+    filter_from_config = build_sound_event_filter(config)
 
     annotation_pass = create_annotation(["tag1", "tag2"])
     assert filter_from_config(annotation_pass)

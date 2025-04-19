@@ -1,25 +1,29 @@
 """Main entry point for the BatDetect2 Target Definition subsystem.
 
 This package (`batdetect2.targets`) provides the tools and configurations
-necessary to define precisely what the BatDetect2 model should learn to detect
-and classify from audio data. It involves several conceptual steps, managed
-through configuration files and culminating in executable functions:
+necessary to define precisely what the BatDetect2 model should learn to detect,
+classify, and localize from audio data. It involves several conceptual steps,
+managed through configuration files and culminating in an executable pipeline:
 
-1.  **Terms (`.terms`)**: Defining a controlled vocabulary for annotation tags.
+1.  **Terms (`.terms`)**: Defining vocabulary for annotation tags.
 2.  **Filtering (`.filtering`)**: Selecting relevant sound event annotations.
-3.  **Transformation (`.transform`)**: Modifying tags (e.g., standardization,
+3.  **Transformation (`.transform`)**: Modifying tags (standardization,
     derivation).
-4.  **Class Definition (`.classes`)**: Mapping tags to specific target class
-    names (encoding) and defining how predicted class names map back to tags
-    (decoding).
+4.  **ROI Mapping (`.roi`)**: Defining how annotation geometry (ROIs) maps to
+    target position and size representations, and back.
+5.  **Class Definition (`.classes`)**: Mapping tags to target class names
+    (encoding) and mapping predicted names back to tags (decoding).
 
 This module exposes the key components for users to configure and utilize this
 target definition pipeline, primarily through the `TargetConfig` data structure
-and the `Targets` class, which encapsulates the configured processing steps.
+and the `Targets` class (implementing `TargetProtocol`), which encapsulates the
+configured processing steps. The main way to create a functional `Targets`
+object is via the `build_targets` or `load_targets` functions.
 """
 
 from typing import List, Optional
 
+import numpy as np
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
@@ -28,9 +32,9 @@ from batdetect2.targets.classes import (
     SoundEventDecoder,
     SoundEventEncoder,
     TargetClass,
-    build_decoder_from_config,
-    build_encoder_from_config,
-    build_generic_class_tags_from_config,
+    build_generic_class_tags,
+    build_sound_event_decoder,
+    build_sound_event_encoder,
     get_class_names_from_config,
     load_classes_config,
     load_decoder_from_config,
@@ -40,9 +44,14 @@ from batdetect2.targets.filtering import (
     FilterConfig,
     FilterRule,
     SoundEventFilter,
-    build_filter_from_config,
+    build_sound_event_filter,
     load_filter_config,
     load_filter_from_config,
+)
+from batdetect2.targets.rois import (
+    ROIConfig,
+    ROITargetMapper,
+    build_roi_mapper,
 )
 from batdetect2.targets.terms import (
     TagInfo,
@@ -69,6 +78,7 @@ from batdetect2.targets.transform import (
     load_transformation_from_config,
     register_derivation,
 )
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "ClassesConfig",
@@ -76,6 +86,8 @@ __all__ = [
     "FilterConfig",
     "FilterRule",
     "MapValueRule",
+    "ROIConfig",
+    "ROITargetMapper",
     "ReplaceRule",
     "SoundEventDecoder",
     "SoundEventEncoder",
@@ -84,13 +96,15 @@ __all__ = [
     "TagInfo",
     "TargetClass",
     "TargetConfig",
+    "TargetProtocol",
     "Targets",
     "TermInfo",
     "TransformConfig",
-    "build_decoder_from_config",
-    "build_encoder_from_config",
-    "build_filter_from_config",
-    "build_generic_class_tags_from_config",
+    "build_sound_event_decoder",
+    "build_sound_event_encoder",
+    "build_sound_event_filter",
+    "build_generic_class_tags",
+    "build_roi_mapper",
     "build_transformation_from_config",
     "call_type",
     "get_class_names_from_config",
@@ -114,29 +128,36 @@ __all__ = [
 class TargetConfig(BaseConfig):
     """Unified configuration for the entire target definition pipeline.
 
-    This model aggregates the configurations for the optional filtering and
-    transformation steps, and the mandatory class definition step. It serves as
-    the primary input for building a complete `Targets` processing object.
+    This model aggregates the configurations for semantic processing (filtering,
+    transformation, class definition) and geometric processing (ROI mapping).
+    It serves as the primary input for building a complete `Targets` object
+    via `build_targets` or `load_targets`.
 
     Attributes
     ----------
     filtering : FilterConfig, optional
-        Configuration for filtering sound event annotations. If None or
-        omitted, no filtering is applied.
+        Configuration for filtering sound event annotations based on tags.
+        If None or omitted, no filtering is applied.
     transforms : TransformConfig, optional
-        Configuration for transforming annotation tags. If None or omitted, no
-        transformations are applied.
+        Configuration for transforming annotation tags
+        (mapping, derivation, etc.). If None or omitted, no tag transformations
+        are applied.
     classes : ClassesConfig
-        Configuration defining the specific target classes, their matching
-        rules, decoding rules (`output_tags`), and the generic class
-        definition. This section is mandatory.
+        Configuration defining the specific target classes, their tag matching
+        rules for encoding, their representative tags for decoding
+        (`output_tags`), and the definition of the generic class tags.
+        This section is mandatory.
+    roi : ROIConfig, optional
+        Configuration defining how geometric ROIs (e.g., bounding boxes) are
+        mapped to target representations (reference point, scaled size).
+        Controls `position`, `time_scale`, `frequency_scale`. If None or
+        omitted, default ROI mapping settings are used.
     """
 
     filtering: Optional[FilterConfig] = None
-
     transforms: Optional[TransformConfig] = None
-
     classes: ClassesConfig
+    roi: Optional[ROIConfig] = None
 
 
 def load_target_config(
@@ -177,34 +198,40 @@ def load_target_config(
     return load_config(path=path, schema=TargetConfig, field=field)
 
 
-class Targets:
+class Targets(TargetProtocol):
     """Encapsulates the complete configured target definition pipeline.
 
-    This class holds the functions for filtering, transforming, encoding, and
-    decoding annotations based on a loaded `TargetConfig`. It provides a
-    high-level interface to apply these steps and access relevant metadata
-    like class names and generic class tags.
+    This class implements the `TargetProtocol`, holding the configured
+    functions for filtering, transforming, encoding (tags to class name),
+    decoding (class name to tags), and mapping ROIs (geometry to position/size
+    and back). It provides a high-level interface to apply these steps and
+    access relevant metadata like class names and dimension names.
 
-    Instances are typically created using the `Targets.from_config` or
-    `Targets.from_file` classmethods.
+    Instances are typically created using the `build_targets` factory function
+    or the `load_targets` convenience loader.
 
     Attributes
     ----------
-    class_names : list[str]
+    class_names : List[str]
         An ordered list of the unique names of the specific target classes
         defined in the configuration.
     generic_class_tags : List[data.Tag]
         A list of `soundevent.data.Tag` objects representing the configured
-        generic class (e.g., the default 'Bat' class).
+        generic class category (used when no specific class matches).
+    dimension_names : List[str]
+        The names of the size dimensions handled by the ROI mapper
+        (e.g., ['width', 'height']).
     """
 
-    class_names: list[str]
+    class_names: List[str]
     generic_class_tags: List[data.Tag]
+    dimension_names: List[str]
 
     def __init__(
         self,
         encode_fn: SoundEventEncoder,
         decode_fn: SoundEventDecoder,
+        roi_mapper: ROITargetMapper,
         class_names: list[str],
         generic_class_tags: List[data.Tag],
         filter_fn: Optional[SoundEventFilter] = None,
@@ -212,26 +239,31 @@ class Targets:
     ):
         """Initialize the Targets object.
 
+        Note: This constructor is typically called internally by the
+        `build_targets` factory function.
+
         Parameters
         ----------
         encode_fn : SoundEventEncoder
-            The configured function to encode annotations to class names.
+            Configured function to encode annotations to class names.
         decode_fn : SoundEventDecoder
-            The configured function to decode class names to tags.
+            Configured function to decode class names to tags.
+        roi_mapper : ROITargetMapper
+            Configured object for mapping geometry to/from position/size.
         class_names : list[str]
-            The ordered list of specific target class names.
+            Ordered list of specific target class names.
         generic_class_tags : List[data.Tag]
-            The list of tags representing the generic class.
+            List of tags representing the generic class.
         filter_fn : SoundEventFilter, optional
-            The configured function to filter annotations. Defaults to None (no
-            filtering).
+            Configured function to filter annotations. Defaults to None.
         transform_fn : SoundEventTransformation, optional
-            The configured function to transform annotation tags. Defaults to
-            None (no transformation).
+            Configured function to transform annotation tags. Defaults to None.
         """
         self.class_names = class_names
         self.generic_class_tags = generic_class_tags
+        self.dimension_names = roi_mapper.dimension_names
 
+        self._roi_mapper = roi_mapper
         self._filter_fn = filter_fn
         self._encode_fn = encode_fn
         self._decode_fn = decode_fn
@@ -316,133 +348,223 @@ class Targets:
             return self._transform_fn(sound_event)
         return sound_event
 
-    @classmethod
-    def from_config(
-        cls,
-        config: TargetConfig,
-        term_registry: TermRegistry = term_registry,
-        derivation_registry: DerivationRegistry = derivation_registry,
-    ) -> "Targets":
-        """Build a Targets object from a loaded TargetConfig.
+    def get_position(
+        self, sound_event: data.SoundEventAnnotation
+    ) -> tuple[float, float]:
+        """Extract the target reference position from the annotation's roi.
 
-        This factory method takes the unified configuration object and
-        constructs all the necessary functional components (filter, transform,
-        encoder, decoder) and extracts metadata (class names, generic tags) to
-        create a fully configured `Targets` instance.
+        Delegates to the internal ROI mapper's `get_roi_position` method.
 
         Parameters
         ----------
-        config : TargetConfig
-            The loaded and validated unified target configuration object.
-        term_registry : TermRegistry, optional
-            The TermRegistry instance to use for resolving term keys. Defaults
-            to the global `batdetect2.targets.terms.term_registry`.
-        derivation_registry : DerivationRegistry, optional
-            The DerivationRegistry instance to use for resolving derivation
-            function names. Defaults to the global
-            `batdetect2.targets.transform.derivation_registry`.
+        sound_event : data.SoundEventAnnotation
+            The annotation containing the geometry (ROI).
 
         Returns
         -------
-        Targets
-            An initialized `Targets` object ready for use.
+        Tuple[float, float]
+            The reference position `(time, frequency)`.
 
         Raises
         ------
-        KeyError
-            If term keys or derivation function keys specified in the `config`
-            are not found in their respective registries.
-        ImportError, AttributeError, TypeError
-            If dynamic import of a derivation function fails (when configured).
+        ValueError
+            If the annotation lacks geometry.
         """
-        filter_fn = (
-            build_filter_from_config(
-                config.filtering,
-                term_registry=term_registry,
+        geom = sound_event.sound_event.geometry
+
+        if geom is None:
+            raise ValueError(
+                "Sound event has no geometry, cannot get its position."
             )
-            if config.filtering
-            else None
-        )
-        encode_fn = build_encoder_from_config(
-            config.classes,
-            term_registry=term_registry,
-        )
-        decode_fn = build_decoder_from_config(
-            config.classes,
-            term_registry=term_registry,
-        )
-        transform_fn = (
-            build_transformation_from_config(
-                config.transforms,
-                term_registry=term_registry,
-                derivation_registry=derivation_registry,
-            )
-            if config.transforms
-            else None
-        )
-        class_names = get_class_names_from_config(config.classes)
-        generic_class_tags = build_generic_class_tags_from_config(
-            config.classes,
-            term_registry=term_registry,
-        )
 
-        return cls(
-            filter_fn=filter_fn,
-            encode_fn=encode_fn,
-            decode_fn=decode_fn,
-            class_names=class_names,
-            generic_class_tags=generic_class_tags,
-            transform_fn=transform_fn,
-        )
+        return self._roi_mapper.get_roi_position(geom)
 
-    @classmethod
-    def from_file(
-        cls,
-        config_path: data.PathLike,
-        field: Optional[str] = None,
-        term_registry: TermRegistry = term_registry,
-        derivation_registry: DerivationRegistry = derivation_registry,
-    ) -> "Targets":
-        """Load a Targets object directly from a configuration file.
+    def get_size(self, sound_event: data.SoundEventAnnotation) -> np.ndarray:
+        """Calculate the target size dimensions from the annotation's geometry.
 
-        This convenience factory method loads the `TargetConfig` from the
-        specified file path and then calls `Targets.from_config` to build
-        the fully initialized `Targets` object.
+        Delegates to the internal ROI mapper's `get_roi_size` method, which
+        applies configured scaling factors.
 
         Parameters
         ----------
-        config_path : data.PathLike
-            Path to the configuration file (e.g., YAML).
-        field : str, optional
-            Dot-separated path to a nested section within the file containing
-            the target configuration. If None, the entire file content is used.
-        term_registry : TermRegistry, optional
-            The TermRegistry instance to use. Defaults to the global default.
-        derivation_registry : DerivationRegistry, optional
-            The DerivationRegistry instance to use. Defaults to the global
-            default.
+        sound_event : data.SoundEventAnnotation
+            The annotation containing the geometry (ROI).
 
         Returns
         -------
-        Targets
-            An initialized `Targets` object ready for use.
+        np.ndarray
+            NumPy array containing the size dimensions, matching the
+            order in `self.dimension_names` (e.g., `[width, height]`).
 
         Raises
         ------
-        FileNotFoundError, yaml.YAMLError, pydantic.ValidationError, KeyError,
-        TypeError
-            Errors raised during file loading, validation, or extraction via
-            `load_target_config`.
-        KeyError, ImportError, AttributeError, TypeError
-            Errors raised during the build process by `Targets.from_config`
-            (e.g., missing keys in registries, failed imports).
+        ValueError
+            If the annotation lacks geometry.
         """
-        config = load_target_config(
-            config_path,
-            field=field,
+        geom = sound_event.sound_event.geometry
+
+        if geom is None:
+            raise ValueError(
+                "Sound event has no geometry, cannot get its size."
+            )
+
+        return self._roi_mapper.get_roi_size(geom)
+
+    def recover_roi(
+        self,
+        pos: tuple[float, float],
+        dims: np.ndarray,
+    ) -> data.Geometry:
+        """Recover an approximate geometric ROI from a position and dimensions.
+
+        Delegates to the internal ROI mapper's `recover_roi` method, which
+        un-scales the dimensions and reconstructs the geometry (typically a
+        `BoundingBox`).
+
+        Parameters
+        ----------
+        pos : Tuple[float, float]
+            The reference position `(time, frequency)`.
+        dims : np.ndarray
+            NumPy array with size dimensions (e.g., from model prediction),
+            matching the order in `self.dimension_names`.
+
+        Returns
+        -------
+        data.Geometry
+            The reconstructed geometry (typically `BoundingBox`).
+        """
+        return self._roi_mapper.recover_roi(pos, dims)
+
+
+def build_targets(
+    config: TargetConfig,
+    term_registry: TermRegistry = term_registry,
+    derivation_registry: DerivationRegistry = derivation_registry,
+) -> Targets:
+    """Build a Targets object from a loaded TargetConfig.
+
+    This factory function takes the unified `TargetConfig` and constructs all
+    necessary functional components (filter, transform, encoder,
+    decoder, ROI mapper) by calling their respective builder functions. It also
+    extracts metadata (class names, generic tags, dimension names) to create
+    and return a fully initialized `Targets` instance, ready to process
+    annotations.
+
+    Parameters
+    ----------
+    config : TargetConfig
+        The loaded and validated unified target configuration object.
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to use for resolving term keys. Defaults
+        to the global `batdetect2.targets.terms.term_registry`.
+    derivation_registry : DerivationRegistry, optional
+        The DerivationRegistry instance to use for resolving derivation
+        function names. Defaults to the global
+        `batdetect2.targets.transform.derivation_registry`.
+
+    Returns
+    -------
+    Targets
+        An initialized `Targets` object ready for use.
+
+    Raises
+    ------
+    KeyError
+        If term keys or derivation function keys specified in the `config`
+        are not found in their respective registries.
+    ImportError, AttributeError, TypeError
+        If dynamic import of a derivation function fails (when configured).
+    """
+    filter_fn = (
+        build_sound_event_filter(
+            config.filtering,
+            term_registry=term_registry,
         )
-        return cls.from_config(
-            config,
+        if config.filtering
+        else None
+    )
+    encode_fn = build_sound_event_encoder(
+        config.classes,
+        term_registry=term_registry,
+    )
+    decode_fn = build_sound_event_decoder(
+        config.classes,
+        term_registry=term_registry,
+    )
+    transform_fn = (
+        build_transformation_from_config(
+            config.transforms,
             term_registry=term_registry,
             derivation_registry=derivation_registry,
         )
+        if config.transforms
+        else None
+    )
+    roi_mapper = build_roi_mapper(config.roi or ROIConfig())
+    class_names = get_class_names_from_config(config.classes)
+    generic_class_tags = build_generic_class_tags(
+        config.classes,
+        term_registry=term_registry,
+    )
+
+    return Targets(
+        filter_fn=filter_fn,
+        encode_fn=encode_fn,
+        decode_fn=decode_fn,
+        class_names=class_names,
+        roi_mapper=roi_mapper,
+        generic_class_tags=generic_class_tags,
+        transform_fn=transform_fn,
+    )
+
+
+def load_targets(
+    config_path: data.PathLike,
+    field: Optional[str] = None,
+    term_registry: TermRegistry = term_registry,
+    derivation_registry: DerivationRegistry = derivation_registry,
+) -> Targets:
+    """Load a Targets object directly from a configuration file.
+
+    This convenience factory method loads the `TargetConfig` from the
+    specified file path and then calls `Targets.from_config` to build
+    the fully initialized `Targets` object.
+
+    Parameters
+    ----------
+    config_path : data.PathLike
+        Path to the configuration file (e.g., YAML).
+    field : str, optional
+        Dot-separated path to a nested section within the file containing
+        the target configuration. If None, the entire file content is used.
+    term_registry : TermRegistry, optional
+        The TermRegistry instance to use. Defaults to the global default.
+    derivation_registry : DerivationRegistry, optional
+        The DerivationRegistry instance to use. Defaults to the global
+        default.
+
+    Returns
+    -------
+    Targets
+        An initialized `Targets` object ready for use.
+
+    Raises
+    ------
+    FileNotFoundError, yaml.YAMLError, pydantic.ValidationError, KeyError,
+    TypeError
+        Errors raised during file loading, validation, or extraction via
+        `load_target_config`.
+    KeyError, ImportError, AttributeError, TypeError
+        Errors raised during the build process by `Targets.from_config`
+        (e.g., missing keys in registries, failed imports).
+    """
+    config = load_target_config(
+        config_path,
+        field=field,
+    )
+    return build_targets(
+        config,
+        term_registry=term_registry,
+        derivation_registry=derivation_registry,
+    )

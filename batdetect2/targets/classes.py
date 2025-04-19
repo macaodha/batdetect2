@@ -22,9 +22,9 @@ __all__ = [
     "load_classes_config",
     "load_encoder_from_config",
     "load_decoder_from_config",
-    "build_encoder_from_config",
-    "build_decoder_from_config",
-    "build_generic_class_tags_from_config",
+    "build_sound_event_encoder",
+    "build_sound_event_decoder",
+    "build_generic_class_tags",
     "get_class_names_from_config",
     "DEFAULT_SPECIES_LIST",
 ]
@@ -314,7 +314,7 @@ def _encode_with_multiple_classifiers(
     return None
 
 
-def build_encoder_from_config(
+def build_sound_event_encoder(
     config: ClassesConfig,
     term_registry: TermRegistry = term_registry,
 ) -> SoundEventEncoder:
@@ -408,7 +408,7 @@ def _decode_class(
     return mapping[name]
 
 
-def build_decoder_from_config(
+def build_sound_event_decoder(
     config: ClassesConfig,
     term_registry: TermRegistry = term_registry,
     raise_on_unmapped: bool = False,
@@ -463,7 +463,7 @@ def build_decoder_from_config(
     )
 
 
-def build_generic_class_tags_from_config(
+def build_generic_class_tags(
     config: ClassesConfig,
     term_registry: TermRegistry = term_registry,
 ) -> List[data.Tag]:
@@ -565,7 +565,7 @@ def load_encoder_from_config(
         provided `term_registry` during the build process.
     """
     config = load_classes_config(path, field=field)
-    return build_encoder_from_config(config, term_registry=term_registry)
+    return build_sound_event_encoder(config, term_registry=term_registry)
 
 
 def load_decoder_from_config(
@@ -611,7 +611,7 @@ def load_decoder_from_config(
         provided `term_registry` during the build process.
     """
     config = load_classes_config(path, field=field)
-    return build_decoder_from_config(
+    return build_sound_event_decoder(
         config,
         term_registry=term_registry,
         raise_on_unmapped=raise_on_unmapped,
