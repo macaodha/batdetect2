@@ -1,4 +1,4 @@
-# Using AOEF / Soundevent Data Sources (`format: "aoef"`)
+# Using AOEF / Soundevent Data Sources
 
 ## Introduction
 
