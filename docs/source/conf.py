@@ -43,6 +43,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "soundevent": ("https://mbsantiago.github.io/soundevent/", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
 }
 
 # -- Options for autodoc ------------------------------------------------------
