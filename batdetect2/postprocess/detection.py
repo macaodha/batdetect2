@@ -103,7 +103,7 @@ def extract_detections_from_array(
         top_values = top_values[mask]
         top_sorted_indices = top_sorted_indices[mask]
 
-    time_indices, freq_indices = np.unravel_index(
+    freq_indices, time_indices = np.unravel_index(
         top_sorted_indices,
         detection_array.shape,
     )

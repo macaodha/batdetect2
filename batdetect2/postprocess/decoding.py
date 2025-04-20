@@ -29,6 +29,7 @@ The process involves:
 
 from typing import List, Optional
 
+import numpy as np
 import xarray as xr
 from soundevent import data
 from soundevent.geometry import compute_bounds
@@ -256,8 +257,17 @@ def convert_raw_prediction_to_sound_event_prediction(
             ]
         ),
         features=[
-            data.Feature(term=data.term_from_key(feat_name), value=value)
-            for feat_name, value in raw_prediction.features
+            data.Feature(
+                term=data.Term(
+                    name=f"batdetect2:{feat_name}",
+                    label=feat_name,
+                    definition="Automatically extracted features by BatDetect2",
+                ),
+                value=value,
+            )
+            for feat_name, value in _iterate_over_array(
+                raw_prediction.features
+            )
         ],
     )
 
@@ -274,9 +284,7 @@ def convert_raw_prediction_to_sound_event_prediction(
             drop=True,
         )
 
-    for class_name, score in class_scores.sortby(
-        class_scores, ascending=False
-    ):
+    for class_name, score in _iterate_sorted(class_scores):
         class_tags = sound_event_decoder(class_name)
 
         for tag in class_tags:
@@ -295,3 +303,18 @@ def convert_raw_prediction_to_sound_event_prediction(
         score=raw_prediction.detection_score,
         tags=tags,
     )
+
+
+def _iterate_over_array(array: xr.DataArray):
+    dim_name = array.dims[0]
+    coords = array.coords[dim_name]
+    for value, coord in zip(array.values, coords.values):
+        yield coord, float(value)
+
+
+def _iterate_sorted(array: xr.DataArray):
+    dim_name = array.dims[0]
+    coords = array.coords[dim_name]
+    indices = np.argsort(coords.values)
+    for index in indices:
+        yield str(coords[index]), coords.values[index]
