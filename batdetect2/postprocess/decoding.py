@@ -102,10 +102,6 @@ def convert_xr_dataset_to_raw_prediction(
         )
 
         start_time, low_freq, end_time, high_freq = compute_bounds(geom)
-
-        classes = det_info.classes
-        features = det_info.features
-
         detections.append(
             RawPrediction(
                 detection_score=det_info.score,
@@ -113,8 +109,8 @@ def convert_xr_dataset_to_raw_prediction(
                 end_time=end_time,
                 low_freq=low_freq,
                 high_freq=high_freq,
-                class_scores=classes,
-                features=features,
+                class_scores=det_info.classes,
+                features=det_info.features,
             )
         )
 
@@ -256,33 +252,130 @@ def convert_raw_prediction_to_sound_event_prediction(
                 raw_prediction.high_freq,
             ]
         ),
-        features=[
-            data.Feature(
-                term=data.Term(
-                    name=f"batdetect2:{feat_name}",
-                    label=feat_name,
-                    definition="Automatically extracted features by BatDetect2",
-                ),
-                value=value,
-            )
-            for feat_name, value in _iterate_over_array(
-                raw_prediction.features
-            )
-        ],
+        features=get_prediction_features(raw_prediction.features),
     )
 
     tags = [
-        data.PredictedTag(tag=tag, score=raw_prediction.detection_score)
+        *get_generic_tags(
+            raw_prediction.detection_score,
+            generic_class_tags=generic_class_tags,
+        ),
+        *get_class_tags(
+            raw_prediction.class_scores,
+            sound_event_decoder,
+            top_class_only=top_class_only,
+            threshold=classification_threshold,
+        ),
+    ]
+
+    return data.SoundEventPrediction(
+        sound_event=sound_event,
+        score=raw_prediction.detection_score,
+        tags=tags,
+    )
+
+
+def get_generic_tags(
+    detection_score: float,
+    generic_class_tags: List[data.Tag],
+) -> List[data.PredictedTag]:
+    """Create PredictedTag objects for the generic category.
+
+    Takes the base list of generic tags and assigns the overall detection
+    score to each one, wrapping them in `PredictedTag` objects.
+
+    Parameters
+    ----------
+    detection_score : float
+        The overall confidence score of the detection event.
+    generic_class_tags : List[data.Tag]
+        The list of base `soundevent.data.Tag` objects that define the
+        generic category (e.g., ['call_type:Echolocation', 'order:Chiroptera']).
+
+    Returns
+    -------
+    List[data.PredictedTag]
+        A list of `PredictedTag` objects for the generic category, each
+        assigned the `detection_score`.
+    """
+    return [
+        data.PredictedTag(tag=tag, score=detection_score)
         for tag in generic_class_tags
     ]
 
-    class_scores = raw_prediction.class_scores
 
-    if classification_threshold is not None:
-        class_scores = class_scores.where(
-            class_scores > classification_threshold,
-            drop=True,
+def get_prediction_features(features: xr.DataArray) -> List[data.Feature]:
+    """Convert an extracted feature vector DataArray into soundevent Features.
+
+    Parameters
+    ----------
+    features : xr.DataArray
+        A 1D xarray DataArray containing feature values, indexed by a coordinate
+        named 'feature' which holds the feature names (e.g., output of selecting
+        features for one detection from `extract_detection_xr_dataset`).
+
+    Returns
+    -------
+    List[data.Feature]
+        A list of `soundevent.data.Feature` objects.
+
+    Notes
+    -----
+    - This function creates basic `Term` objects using the feature coordinate
+      names with a "batdetect2:" prefix.
+    """
+    return [
+        data.Feature(
+            term=data.Term(
+                name=f"batdetect2:{feat_name}",
+                label=feat_name,
+                definition="Automatically extracted features by BatDetect2",
+            ),
+            value=value,
         )
+        for feat_name, value in _iterate_over_array(features)
+    ]
+
+
+def get_class_tags(
+    class_scores: xr.DataArray,
+    sound_event_decoder: SoundEventDecoder,
+    top_class_only: bool = False,
+    threshold: Optional[float] = DEFAULT_CLASSIFICATION_THRESHOLD,
+) -> List[data.PredictedTag]:
+    """Generate specific PredictedTags based on class scores and decoder.
+
+    Filters class scores by the threshold, sorts remaining scores descending,
+    decodes the class name(s) into base tags using the `sound_event_decoder`,
+    and creates `PredictedTag` objects associating the class score. Stops after
+    the first (top) class if `top_class_only` is True.
+
+    Parameters
+    ----------
+    class_scores : xr.DataArray
+        A 1D xarray DataArray containing class probabilities/scores, indexed
+        by a 'category' coordinate holding the class names.
+    sound_event_decoder : SoundEventDecoder
+        Function to map a class name string to a list of base `data.Tag`
+        objects.
+    top_class_only : bool, default=False
+        If True, only generate tags for the single highest-scoring class above
+        the threshold.
+    threshold : float, optional
+        Minimum score for a class to be considered. If None, all classes are
+        processed (or top-1 if `top_class_only` is True). Defaults to
+        `DEFAULT_CLASSIFICATION_THRESHOLD`.
+
+    Returns
+    -------
+    List[data.PredictedTag]
+        A list of `PredictedTag` objects for the class(es) that passed the
+        threshold, ordered by score if `top_class_only` is False.
+    """
+    tags = []
+
+    if threshold is not None:
+        class_scores = class_scores.where(class_scores > threshold, drop=True)
 
     for class_name, score in _iterate_sorted(class_scores):
         class_tags = sound_event_decoder(class_name)
@@ -298,11 +391,7 @@ def convert_raw_prediction_to_sound_event_prediction(
         if top_class_only:
             break
 
-    return data.SoundEventPrediction(
-        sound_event=sound_event,
-        score=raw_prediction.detection_score,
-        tags=tags,
-    )
+    return tags
 
 
 def _iterate_over_array(array: xr.DataArray):
@@ -314,7 +403,7 @@ def _iterate_over_array(array: xr.DataArray):
 
 def _iterate_sorted(array: xr.DataArray):
     dim_name = array.dims[0]
-    coords = array.coords[dim_name]
-    indices = np.argsort(coords.values)
+    coords = array.coords[dim_name].values
+    indices = np.argsort(-array.values)
     for index in indices:
-        yield str(coords[index]), coords.values[index]
+        yield str(coords[index]), float(array.values[index])
