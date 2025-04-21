@@ -1,25 +1,26 @@
-"""Constructs the Encoder part of an Encoder-Decoder neural network.
+"""Constructs the Encoder part of a configurable neural network backbone.
 
 This module defines the configuration structure (`EncoderConfig`) and provides
 the `Encoder` class (an `nn.Module`) along with a factory function
-(`build_encoder`) to create sequential encoders commonly used as the
-downsampling path in architectures like U-Nets for spectrogram analysis.
+(`build_encoder`) to create sequential encoders. Encoders typically form the
+downsampling path in architectures like U-Nets, processing input feature maps
+(like spectrograms) to produce lower-resolution, higher-dimensionality feature
+representations (bottleneck features).
 
-The encoder is built by stacking configurable downscaling blocks. Two types
-of downscaling blocks are supported, selectable via the configuration:
-- `StandardConvDownBlock`: A basic Conv2d -> MaxPool2d -> BN -> ReLU block.
-- `FreqCoordConvDownBlock`: A similar block that incorporates frequency
-  coordinate information (CoordF) before the convolution to potentially aid
-  spatial awareness along the frequency axis.
+The encoder is built dynamically by stacking neural network blocks based on a
+list of configuration objects provided in `EncoderConfig.layers`. Each
+configuration object specifies the type of block (e.g., standard convolution,
+coordinate-feature convolution with downsampling) and its parameters
+(e.g., output channels). This allows for flexible definition of encoder
+architectures via configuration files.
 
-The `Encoder`'s `forward` method provides access to intermediate feature maps
-from each stage, suitable for use as skip connections in a corresponding
-Decoder. A separate `encode` method returns only the final output (bottleneck)
-features.
+The `Encoder`'s `forward` method returns outputs from all intermediate layers,
+suitable for skip connections, while the `encode` method returns only the final
+bottleneck output. A default configuration (`DEFAULT_ENCODER_CONFIG`) is also
+provided.
 """
 
-from enum import Enum
-from typing import List
+from typing import Annotated, List, Optional, Union
 
 import torch
 from pydantic import Field
@@ -27,142 +28,44 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
-    FreqCoordConvDownBlock,
-    StandardConvDownBlock,
+    ConvConfig,
+    FreqCoordConvDownConfig,
+    StandardConvDownConfig,
+    build_layer_from_config,
 )
 
 __all__ = [
-    "DownscalingLayer",
-    "EncoderLayer",
     "EncoderConfig",
     "Encoder",
     "build_encoder",
+    "DEFAULT_ENCODER_CONFIG",
 ]
 
-
-class DownscalingLayer(str, Enum):
-    """Enumeration of available downscaling layer types for the Encoder.
-
-    Used in configuration to specify which block implementation to use at each
-    stage of the encoder.
-
-    Attributes
-    ----------
-    standard : str
-        Identifier for the `StandardConvDownBlock`.
-    coord : str
-        Identifier for the `FreqCoordConvDownBlock` (incorporates frequency
-        coords).
-    """
-
-    standard = "ConvBlockDownStandard"
-    coord = "FreqCoordConvDownBlock"
-
-
-class EncoderLayer(BaseConfig):
-    """Configuration for a single layer within the Encoder sequence.
-
-    Attributes
-    ----------
-    layer_type : DownscalingLayer
-        Specifies the type of downscaling block to use for this layer
-        (either 'standard' or 'coord').
-    channels : int
-        The number of output channels this layer should produce. Must be > 0.
-    """
-
-    layer_type: DownscalingLayer
-    channels: int
+EncoderLayerConfig = Annotated[
+    Union[ConvConfig, FreqCoordConvDownConfig, StandardConvDownConfig],
+    Field(discriminator="block_type"),
+]
+"""Type alias for the discriminated union of block configs usable in Encoder."""
 
 
 class EncoderConfig(BaseConfig):
-    """Configuration for building the entire sequential Encoder.
+    """Configuration for building the sequential Encoder module.
+
+    Defines the sequence of neural network blocks that constitute the encoder
+    (downsampling path).
 
     Attributes
     ----------
-    input_height : int
-        The expected height (number of frequency bins) of the input spectrogram
-        tensor fed into the first layer of the encoder. Required for
-        calculating intermediate heights, especially for CoordF layers. Must be
-        > 0.
-    layers : List[EncoderLayer]
-        An ordered list defining the sequence of downscaling layers in the
-        encoder. Each item specifies the layer type and its output channel
-        count. The number of input channels for each layer is inferred from the
-        previous layer's output channels (or `input_channels` for the first
-        layer). Must contain at least one layer definition.
-    input_channels : int, default=1
-        The number of channels in the initial input tensor to the encoder
-        (e.g., 1 for a standard single-channel spectrogram). Must be > 0.
+    layers : List[EncoderLayerConfig]
+        An ordered list of configuration objects, each defining one layer or
+        block in the encoder sequence. Each item must be a valid block config
+        (e.g., `ConvConfig`, `FreqCoordConvDownConfig`,
+        `StandardConvDownConfig`) including a `block_type` field and necessary
+        parameters like `out_channels`. Input channels for each layer are
+        inferred sequentially. The list must contain at least one layer.
     """
 
-    input_height: int = Field(gt=0)
-    layers: List[EncoderLayer] = Field(min_length=1)
-    input_channels: int = Field(gt=0)
-
-
-def build_downscaling_layer(
-    in_channels: int,
-    out_channels: int,
-    input_height: int,
-    layer_type: DownscalingLayer,
-) -> tuple[nn.Module, int, int]:
-    """Build a single downscaling layer based on configuration.
-
-    Internal factory function used by `build_encoder`. Instantiates the
-    appropriate downscaling block (`StandardConvDownBlock` or
-    `FreqCoordConvDownBlock`) and returns it along with its expected output
-    channel count and output height (assuming 2x spatial downsampling).
-
-    Parameters
-    ----------
-    in_channels : int
-        Number of input channels to the layer.
-    out_channels : int
-        Desired number of output channels from the layer.
-    input_height : int
-        Height of the input feature map to this layer.
-    layer_type : DownscalingLayer
-        The type of layer to build ('standard' or 'coord').
-
-    Returns
-    -------
-    Tuple[nn.Module, int, int]
-        A tuple containing:
-        - The instantiated `nn.Module` layer.
-        - The number of output channels (`out_channels`).
-        - The expected output height (`input_height // 2`).
-
-    Raises
-    ------
-    ValueError
-        If `layer_type` is invalid.
-    """
-    if layer_type == DownscalingLayer.standard:
-        return (
-            StandardConvDownBlock(
-                in_channels=in_channels,
-                out_channels=out_channels,
-            ),
-            out_channels,
-            input_height // 2,
-        )
-
-    if layer_type == DownscalingLayer.coord:
-        return (
-            FreqCoordConvDownBlock(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                input_height=input_height,
-            ),
-            out_channels,
-            input_height // 2,
-        )
-
-    raise ValueError(
-        f"Invalid downscaling layer type {layer_type}. "
-        f"Valid values: ConvBlockDownCoordF, ConvBlockDownStandard"
-    )
+    layers: List[EncoderLayerConfig] = Field(min_length=1)
 
 
 class Encoder(nn.Module):
@@ -178,12 +81,14 @@ class Encoder(nn.Module):
 
     Attributes
     ----------
-    input_channels : int
+    in_channels : int
         Number of channels expected in the input tensor.
     input_height : int
         Height (frequency bins) expected in the input tensor.
     output_channels : int
         Number of channels in the final output tensor (bottleneck).
+    output_height : int
+        Height (frequency bins) expected in the output tensor.
     layers : nn.ModuleList
         The sequence of instantiated downscaling layer modules.
     depth : int
@@ -193,9 +98,10 @@ class Encoder(nn.Module):
     def __init__(
         self,
         output_channels: int,
+        output_height: int,
         layers: List[nn.Module],
         input_height: int = 128,
-        input_channels: int = 1,
+        in_channels: int = 1,
     ):
         """Initialize the Encoder module.
 
@@ -206,20 +112,23 @@ class Encoder(nn.Module):
         ----------
         output_channels : int
             Number of channels produced by the final layer.
+        output_height : int
+            The expected height of the output tensor.
         layers : List[nn.Module]
             A list of pre-instantiated downscaling layer modules (e.g.,
             `StandardConvDownBlock` or `FreqCoordConvDownBlock`) in the desired
             sequence.
         input_height : int, default=128
             Expected height of the input tensor.
-        input_channels : int, default=1
+        in_channels : int, default=1
             Expected number of channels in the input tensor.
         """
         super().__init__()
 
-        self.input_channels = input_channels
+        self.in_channels = in_channels
         self.input_height = input_height
-        self.output_channels = output_channels
+        self.out_channels = output_channels
+        self.output_height = output_height
 
         self.layers = nn.ModuleList(layers)
         self.depth = len(self.layers)
@@ -234,7 +143,7 @@ class Encoder(nn.Module):
         ----------
         x : torch.Tensor
             Input tensor, shape `(B, C_in, H_in, W)`, where `C_in` must match
-            `self.input_channels` and `H_in` must match `self.input_height`.
+            `self.in_channels` and `H_in` must match `self.input_height`.
 
         Returns
         -------
@@ -249,10 +158,10 @@ class Encoder(nn.Module):
             If input tensor channel count or height does not match expected
             values.
         """
-        if x.shape[1] != self.input_channels:
+        if x.shape[1] != self.in_channels:
             raise ValueError(
                 f"Input tensor has {x.shape[1]} channels, "
-                f"but encoder expects {self.input_channels}."
+                f"but encoder expects {self.in_channels}."
             )
 
         if x.shape[2] != self.input_height:
@@ -279,7 +188,7 @@ class Encoder(nn.Module):
         ----------
         x : torch.Tensor
             Input tensor, shape `(B, C_in, H_in, W)`. Must match expected
-            `input_channels` and `input_height`.
+            `in_channels` and `input_height`.
 
         Returns
         -------
@@ -293,10 +202,10 @@ class Encoder(nn.Module):
             If input tensor channel count or height does not match expected
             values.
         """
-        if x.shape[1] != self.input_channels:
+        if x.shape[1] != self.in_channels:
             raise ValueError(
                 f"Input tensor has {x.shape[1]} channels, "
-                f"but encoder expects {self.input_channels}."
+                f"but encoder expects {self.in_channels}."
             )
 
         if x.shape[2] != self.input_height:
@@ -311,19 +220,53 @@ class Encoder(nn.Module):
         return x
 
 
-def build_encoder(config: EncoderConfig) -> Encoder:
+DEFAULT_ENCODER_CONFIG: EncoderConfig = EncoderConfig(
+    layers=[
+        FreqCoordConvDownConfig(out_channels=32),
+        FreqCoordConvDownConfig(out_channels=64),
+        FreqCoordConvDownConfig(out_channels=128),
+        ConvConfig(out_channels=256),
+    ],
+)
+"""Default configuration for the Encoder.
+
+Specifies an architecture typically used in BatDetect2:
+- Input: 1 channel, 128 frequency bins.
+- Layer 1: FreqCoordConvDown -> 32 channels, H=64
+- Layer 2: FreqCoordConvDown -> 64 channels, H=32
+- Layer 3: FreqCoordConvDown -> 128 channels, H=16
+- Layer 4: ConvBlock -> 256 channels, H=16 (Bottleneck)
+"""
+
+
+def build_encoder(
+    in_channels: int,
+    input_height: int,
+    config: Optional[EncoderConfig] = None,
+) -> Encoder:
     """Factory function to build an Encoder instance from configuration.
 
-    Constructs a sequential `Encoder` module based on the specifications in
-    an `EncoderConfig` object. It iteratively builds the specified sequence
-    of downscaling layers (`StandardConvDownBlock` or `FreqCoordConvDownBlock`),
-    tracking the changing number of channels and feature map height.
+    Constructs a sequential `Encoder` module based on the layer sequence
+    defined in an `EncoderConfig` object and the provided input dimensions.
+    If no config is provided, uses the default layer sequence from
+    `DEFAULT_ENCODER_CONFIG`.
+
+    It iteratively builds the layers using the unified
+    `build_layer_from_config` factory (from `.blocks`), tracking the changing
+    number of channels and feature map height required for each subsequent
+    layer, especially for coordinate- aware blocks.
 
     Parameters
     ----------
-    config : EncoderConfig
-        The configuration object detailing the encoder architecture, including
-        input dimensions, layer types, and channel counts for each stage.
+    in_channels : int
+        The number of channels expected in the input tensor to the encoder.
+        Must be > 0.
+    input_height : int
+        The height (frequency bins) expected in the input tensor. Must be > 0.
+        Crucial for initializing coordinate-aware layers correctly.
+    config : EncoderConfig, optional
+        The configuration object detailing the sequence of layers and their
+        parameters. If None, `DEFAULT_ENCODER_CONFIG` is used.
 
     Returns
     -------
@@ -333,25 +276,33 @@ def build_encoder(config: EncoderConfig) -> Encoder:
     Raises
     ------
     ValueError
-        If the layer configuration is invalid (e.g., unknown layer type).
+        If `in_channels` or `input_height` are not positive, or if the layer
+        configuration is invalid (e.g., empty list, unknown `block_type`).
+    NotImplementedError
+        If `build_layer_from_config` encounters an unknown `block_type`.
     """
-    current_channels = config.input_channels
-    current_height = config.input_height
+    if in_channels <= 0 or input_height <= 0:
+        raise ValueError("in_channels and input_height must be positive.")
+
+    config = config or DEFAULT_ENCODER_CONFIG
+
+    current_channels = in_channels
+    current_height = input_height
 
     layers = []
 
     for layer_config in config.layers:
-        layer, current_channels, current_height = build_downscaling_layer(
+        layer, current_channels, current_height = build_layer_from_config(
             in_channels=current_channels,
-            out_channels=layer_config.channels,
             input_height=current_height,
-            layer_type=layer_config.layer_type,
+            config=layer_config,
         )
         layers.append(layer)
 
     return Encoder(
-        input_height=config.input_height,
+        input_height=input_height,
         layers=layers,
-        input_channels=config.input_channels,
+        in_channels=in_channels,
         output_channels=current_channels,
+        output_height=current_height,
     )

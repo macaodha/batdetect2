@@ -22,13 +22,19 @@ research:
 
 These blocks can be utilized directly in custom PyTorch model definitions or
 assembled into larger architectures.
+
+A unified factory function `build_layer_from_config` allows creating instances
+of these blocks based on configuration objects.
 """
 
-from typing import Tuple
+from typing import Annotated, Literal, Tuple, Union
 
 import torch
 import torch.nn.functional as F
+from pydantic import Field
 from torch import nn
+
+from batdetect2.configs import BaseConfig
 
 __all__ = [
     "ConvBlock",
@@ -38,6 +44,13 @@ __all__ = [
     "FreqCoordConvUpBlock",
     "StandardConvUpBlock",
     "SelfAttention",
+    "ConvConfig",
+    "FreqCoordConvDownConfig",
+    "StandardConvDownConfig",
+    "FreqCoordConvUpConfig",
+    "StandardConvUpConfig",
+    "LayerConfig",
+    "build_layer_from_config",
 ]
 
 
@@ -154,6 +167,22 @@ class SelfAttention(nn.Module):
         return op
 
 
+class ConvConfig(BaseConfig):
+    """Configuration for a basic ConvBlock."""
+
+    block_type: Literal["ConvBlock"] = "ConvBlock"
+    """Discriminator field indicating the block type."""
+
+    out_channels: int
+    """Number of output channels."""
+
+    kernel_size: int = 3
+    """Size of the square convolutional kernel."""
+
+    pad_size: int = 1
+    """Padding size."""
+
+
 class ConvBlock(nn.Module):
     """Basic Convolutional Block.
 
@@ -171,8 +200,7 @@ class ConvBlock(nn.Module):
     kernel_size : int, default=3
         Size of the square convolutional kernel.
     pad_size : int, default=1
-        Amount of padding added to preserve spatial dimensions (assuming
-        stride=1 and kernel_size=3).
+        Amount of padding added to preserve spatial dimensions.
     """
 
     def __init__(
@@ -261,6 +289,22 @@ class VerticalConv(nn.Module):
         return F.relu_(self.bn(self.conv(x)))
 
 
+class FreqCoordConvDownConfig(BaseConfig):
+    """Configuration for a FreqCoordConvDownBlock."""
+
+    block_type: Literal["FreqCoordConvDown"] = "FreqCoordConvDown"
+    """Discriminator field indicating the block type."""
+
+    out_channels: int
+    """Number of output channels."""
+
+    kernel_size: int = 3
+    """Size of the square convolutional kernel."""
+
+    pad_size: int = 1
+    """Padding size."""
+
+
 class FreqCoordConvDownBlock(nn.Module):
     """Downsampling Conv Block incorporating Frequency Coordinate features.
 
@@ -289,9 +333,6 @@ class FreqCoordConvDownBlock(nn.Module):
         Size of the square convolutional kernel.
     pad_size : int, default=1
         Padding added before convolution.
-    stride : int, default=1
-        Stride of the convolution. Note: Downsampling is achieved via
-        MaxPool2d(2, 2).
     """
 
     def __init__(
@@ -301,7 +342,6 @@ class FreqCoordConvDownBlock(nn.Module):
         input_height: int,
         kernel_size: int = 3,
         pad_size: int = 1,
-        stride: int = 1,
     ):
         super().__init__()
 
@@ -314,7 +354,7 @@ class FreqCoordConvDownBlock(nn.Module):
             out_channels,
             kernel_size=kernel_size,
             padding=pad_size,
-            stride=stride,
+            stride=1,
         )
         self.conv_bn = nn.BatchNorm2d(out_channels)
 
@@ -339,6 +379,22 @@ class FreqCoordConvDownBlock(nn.Module):
         return x
 
 
+class StandardConvDownConfig(BaseConfig):
+    """Configuration for a StandardConvDownBlock."""
+
+    block_type: Literal["StandardConvDown"] = "StandardConvDown"
+    """Discriminator field indicating the block type."""
+
+    out_channels: int
+    """Number of output channels."""
+
+    kernel_size: int = 3
+    """Size of the square convolutional kernel."""
+
+    pad_size: int = 1
+    """Padding size."""
+
+
 class StandardConvDownBlock(nn.Module):
     """Standard Downsampling Convolutional Block.
 
@@ -357,8 +413,6 @@ class StandardConvDownBlock(nn.Module):
         Size of the square convolutional kernel.
     pad_size : int, default=1
         Padding added before convolution.
-    stride : int, default=1
-        Stride of the convolution (downsampling is done by MaxPool).
     """
 
     def __init__(
@@ -367,7 +421,6 @@ class StandardConvDownBlock(nn.Module):
         out_channels: int,
         kernel_size: int = 3,
         pad_size: int = 1,
-        stride: int = 1,
     ):
         super(StandardConvDownBlock, self).__init__()
         self.conv = nn.Conv2d(
@@ -375,7 +428,7 @@ class StandardConvDownBlock(nn.Module):
             out_channels,
             kernel_size=kernel_size,
             padding=pad_size,
-            stride=stride,
+            stride=1,
         )
         self.conv_bn = nn.BatchNorm2d(out_channels)
 
@@ -394,6 +447,22 @@ class StandardConvDownBlock(nn.Module):
         """
         x = F.max_pool2d(self.conv(x), 2, 2)
         return F.relu(self.conv_bn(x), inplace=True)
+
+
+class FreqCoordConvUpConfig(BaseConfig):
+    """Configuration for a FreqCoordConvUpBlock."""
+
+    block_type: Literal["FreqCoordConvUp"] = "FreqCoordConvUp"
+    """Discriminator field indicating the block type."""
+
+    out_channels: int
+    """Number of output channels."""
+
+    kernel_size: int = 3
+    """Size of the square convolutional kernel."""
+
+    pad_size: int = 1
+    """Padding size."""
 
 
 class FreqCoordConvUpBlock(nn.Module):
@@ -489,6 +558,22 @@ class FreqCoordConvUpBlock(nn.Module):
         return op
 
 
+class StandardConvUpConfig(BaseConfig):
+    """Configuration for a StandardConvUpBlock."""
+
+    block_type: Literal["StandardConvUp"] = "StandardConvUp"
+    """Discriminator field indicating the block type."""
+
+    out_channels: int
+    """Number of output channels."""
+
+    kernel_size: int = 3
+    """Size of the square convolutional kernel."""
+
+    pad_size: int = 1
+    """Padding size."""
+
+
 class StandardConvUpBlock(nn.Module):
     """Standard Upsampling Convolutional Block.
 
@@ -559,3 +644,122 @@ class StandardConvUpBlock(nn.Module):
         op = self.conv(op)
         op = F.relu(self.conv_bn(op), inplace=True)
         return op
+
+
+LayerConfig = Annotated[
+    Union[
+        ConvConfig,
+        FreqCoordConvDownConfig,
+        StandardConvDownConfig,
+        FreqCoordConvUpConfig,
+        StandardConvUpConfig,
+    ],
+    Field(discriminator="block_type"),
+]
+"""Type alias for the discriminated union of block configuration models."""
+
+
+def build_layer_from_config(
+    input_height: int,
+    in_channels: int,
+    config: LayerConfig,
+) -> Tuple[nn.Module, int, int]:
+    """Factory function to build a specific nn.Module block from its config.
+
+    Takes configuration object (one of the types included in the `LayerConfig`
+    union) and instantiates the corresponding nn.Module block with the correct
+    parameters derived from the config and the current pipeline state
+    (`input_height`, `in_channels`).
+
+    It uses the `block_type` field within the `config` object to determine
+    which block class to instantiate.
+
+    Parameters
+    ----------
+    input_height : int
+        Height (frequency bins) of the input tensor *to this layer*.
+    in_channels : int
+        Number of channels in the input tensor *to this layer*.
+    config : LayerConfig
+        A Pydantic configuration object for the desired block (e.g., an
+        instance of `ConvConfig`, `FreqCoordConvDownConfig`, etc.), identified
+        by its `block_type` field.
+
+    Returns
+    -------
+    Tuple[nn.Module, int, int]
+        A tuple containing:
+        - The instantiated `nn.Module` block.
+        - The number of output channels produced by the block.
+        - The calculated height of the output produced by the block.
+
+    Raises
+    ------
+    NotImplementedError
+        If the `config.block_type` does not correspond to a known block type.
+    ValueError
+        If parameters derived from the config are invalid for the block.
+    """
+    if config.block_type == "ConvBlock":
+        return (
+            ConvBlock(
+                in_channels=in_channels,
+                out_channels=config.out_channels,
+                kernel_size=config.kernel_size,
+                pad_size=config.pad_size,
+            ),
+            config.out_channels,
+            input_height,
+        )
+
+    if config.block_type == "FreqCoordConvDown":
+        return (
+            FreqCoordConvDownBlock(
+                in_channels=in_channels,
+                out_channels=config.out_channels,
+                input_height=input_height,
+                kernel_size=config.kernel_size,
+                pad_size=config.pad_size,
+            ),
+            config.out_channels,
+            input_height // 2,
+        )
+
+    if config.block_type == "StandardConvDown":
+        return (
+            StandardConvDownBlock(
+                in_channels=in_channels,
+                out_channels=config.out_channels,
+                kernel_size=config.kernel_size,
+                pad_size=config.pad_size,
+            ),
+            config.out_channels,
+            input_height // 2,
+        )
+
+    if config.block_type == "FreqCoordConvUp":
+        return (
+            FreqCoordConvUpBlock(
+                in_channels=in_channels,
+                out_channels=config.out_channels,
+                input_height=input_height,
+                kernel_size=config.kernel_size,
+                pad_size=config.pad_size,
+            ),
+            config.out_channels,
+            input_height * 2,
+        )
+
+    if config.block_type == "StandardConvUp":
+        return (
+            StandardConvUpBlock(
+                in_channels=in_channels,
+                out_channels=config.out_channels,
+                kernel_size=config.kernel_size,
+                pad_size=config.pad_size,
+            ),
+            config.out_channels,
+            input_height * 2,
+        )
+
+    raise NotImplementedError(f"Unknown block type {config.block_type}")
