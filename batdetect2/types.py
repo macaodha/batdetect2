@@ -1,13 +1,9 @@
 """Types used in the code base."""
 
-from typing import Any, List, NamedTuple, Optional
-
+from typing import Any, List, NamedTuple, Optional, TypedDict
 
 import numpy as np
 import torch
-
-from typing import TypedDict
-
 
 try:
     from typing import Protocol

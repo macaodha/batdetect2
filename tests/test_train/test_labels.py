@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from soundevent import data
 
-from batdetect2.targets import generate_heatmaps
+from batdetect2.train.labels import generate_heatmaps
 
 recording = data.Recording(
     samplerate=256_000,

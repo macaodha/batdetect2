@@ -10,13 +10,13 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models import (
+    BackboneConfig,
     BBoxHead,
     ClassifierHead,
-    ModelConfig,
     ModelOutput,
-    build_architecture,
+    build_backbone,
 )
-from batdetect2.post_process import (
+from batdetect2.postprocess import (
     PostprocessConfig,
     postprocess_model_outputs,
 )
@@ -37,7 +37,7 @@ __all__ = [
 class ModuleConfig(BaseConfig):
     train: TrainingConfig = Field(default_factory=TrainingConfig)
     targets: TargetConfig = Field(default_factory=TargetConfig)
-    architecture: ModelConfig = Field(default_factory=ModelConfig)
+    architecture: BackboneConfig = Field(default_factory=BackboneConfig)
     preprocessing: PreprocessingConfig = Field(
         default_factory=PreprocessingConfig
     )
@@ -58,7 +58,7 @@ class DetectorModel(L.LightningModule):
         self.config = config or ModuleConfig()
         self.save_hyperparameters()
 
-        self.backbone = build_architecture(self.config.architecture)
+        self.backbone = build_model_backbone(self.config.architecture)
 
         self.classifier = ClassifierHead(
             num_classes=len(self.config.targets.classes),

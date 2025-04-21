@@ -10,13 +10,13 @@ from soundevent import data
 from torch.utils.data import Dataset
 
 from batdetect2.configs import BaseConfig
-from batdetect2.preprocess.tensors import adjust_width
 from batdetect2.train.augmentations import (
     AugmentationsConfig,
     augment_example,
     select_subclip,
 )
-from batdetect2.train.preprocess import PreprocessingConfig
+from batdetect2.train.preprocess import PreprocessorProtocol
+from batdetect2.utils.tensors import adjust_width
 
 __all__ = [
     "TrainExample",
@@ -51,15 +51,15 @@ class DatasetConfig(BaseConfig):
 class LabeledDataset(Dataset):
     def __init__(
         self,
+        preprocessor: PreprocessorProtocol,
         filenames: Sequence[PathLike],
         subclip: Optional[SubclipConfig] = None,
         augmentation: Optional[AugmentationsConfig] = None,
-        preprocessing: Optional[PreprocessingConfig] = None,
     ):
+        self.preprocessor = preprocessor
         self.filenames = filenames
         self.subclip = subclip
         self.augmentation = augmentation
-        self.preprocessing = preprocessing or PreprocessingConfig()
 
     def __len__(self):
         return len(self.filenames)
@@ -79,7 +79,7 @@ class LabeledDataset(Dataset):
             dataset = augment_example(
                 dataset,
                 self.augmentation,
-                preprocessing_config=self.preprocessing,
+                preprocessor=self.preprocessor,
                 others=self.get_random_example,
             )
 
@@ -95,16 +95,16 @@ class LabeledDataset(Dataset):
     def from_directory(
         cls,
         directory: PathLike,
+        preprocessor: PreprocessorProtocol,
         extension: str = ".nc",
         subclip: Optional[SubclipConfig] = None,
         augmentation: Optional[AugmentationsConfig] = None,
-        preprocessing: Optional[PreprocessingConfig] = None,
     ):
         return cls(
-            get_preprocessed_files(directory, extension),
+            preprocessor=preprocessor,
+            filenames=get_preprocessed_files(directory, extension),
             subclip=subclip,
             augmentation=augmentation,
-            preprocessing=preprocessing,
         )
 
     def get_random_example(self) -> xr.Dataset:
