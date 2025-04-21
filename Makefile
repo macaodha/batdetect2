@@ -1,4 +1,6 @@
 # Variables
+SOURCE_DIR = batdetect2
+TESTS_DIR = tests
 PYTHON_DIRS = batdetect2 tests
 DOCS_SOURCE = docs/source
 DOCS_BUILD = docs/build
@@ -52,7 +54,7 @@ docs:
 	sphinx-build -b html $(DOCS_SOURCE) $(DOCS_BUILD)
 
 docs-serve:
-	sphinx-autobuild $(DOCS_SOURCE) $(DOCS_BUILD) --watch $(PYTHON_DIRS)
+	sphinx-autobuild $(DOCS_SOURCE) $(DOCS_BUILD) --watch $(SOURCE_DIR) --open-browser
 
 # Formatting & Linting
 format:
