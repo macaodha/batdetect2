@@ -8,15 +8,15 @@ HTML_COVERAGE_DIR = htmlcov
 .DEFAULT_GOAL := help
 
 # Phony targets (targets that don't produce a file with the same name)
-.PHONY: help test coverage coverage-report coverage-html docs docs-serve format format-check lint lint-fix typecheck check clean clean-pyc clean-test clean-docs clean-build
+.PHONY: help test coverage coverage-html coverage-serve docs docs-serve format format-check lint lint-fix typecheck check clean clean-pyc clean-test clean-docs clean-build
 
 help:
 	@echo "Makefile Targets:"
 	@echo "  help             Show this help message."
 	@echo "  test             Run tests using pytest."
 	@echo "  coverage         Run tests and generate coverage data (.coverage, coverage.xml)."
-	@echo "  coverage-report  Show coverage report in the terminal."
-	@echo "  coverage-html    Generate an HTML coverage report in htmlcov/."
+	@echo "  coverage-html    Generate an HTML coverage report in $(HTML_COVERAGE_DIR)/."
+	@echo "  coverage-serve   Serve the HTML coverage report locally."
 	@echo "  docs             Build documentation using Sphinx."
 	@echo "  docs-serve       Serve documentation with live reload using sphinx-autobuild."
 	@echo "  format           Format code using ruff."
@@ -38,12 +38,14 @@ test:
 coverage:
 	pytest --cov=batdetect2 --cov-report=term-missing --cov-report=xml tests
 
-coverage-report: coverage
+coverage-html: coverage
 	@echo "Generating HTML coverage report..."
 	coverage html -d $(HTML_COVERAGE_DIR)
 	@echo "HTML coverage report generated in $(HTML_COVERAGE_DIR)/"
+
+coverage-serve: coverage-html
 	@echo "Serving report at http://localhost:8000/ ..."
-	python -m http.server --directory $(HTML_COVERAGE_DIR)
+	python -m http.server --directory $(HTML_COVERAGE_DIR) 8000
 
 # Documentation
 docs:
