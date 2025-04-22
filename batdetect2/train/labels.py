@@ -71,7 +71,7 @@ class LabelConfig(BaseConfig):
 
 def build_clip_labeler(
     targets: TargetProtocol,
-    config: LabelConfig,
+    config: Optional[LabelConfig] = None,
 ) -> ClipLabeller:
     """Construct the final clip labelling function.
 
@@ -98,7 +98,7 @@ def build_clip_labeler(
     return partial(
         generate_clip_label,
         targets=targets,
-        config=config,
+        config=config or LabelConfig(),
     )
 
 

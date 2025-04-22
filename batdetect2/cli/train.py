@@ -5,16 +5,10 @@ import click
 
 from batdetect2.cli.base import cli
 from batdetect2.data import load_dataset_from_config
-from batdetect2.preprocess import (
-    load_preprocessing_config,
-)
-from batdetect2.targets import (
-    load_label_config,
-    load_target_config,
-)
-from batdetect2.train import (
-    preprocess_annotations,
-)
+from batdetect2.preprocess import build_preprocessor, load_preprocessing_config
+from batdetect2.targets import build_targets, load_target_config
+from batdetect2.train import load_label_config, preprocess_annotations
+from batdetect2.train.labels import build_clip_labeler
 
 __all__ = ["train"]
 
@@ -129,9 +123,9 @@ def train(): ...
 def preprocess(
     dataset_config: Path,
     output: Path,
+    target_config: Path,
     base_dir: Optional[Path] = None,
     preprocess_config: Optional[Path] = None,
-    target_config: Optional[Path] = None,
     label_config: Optional[Path] = None,
     force: bool = False,
     num_workers: Optional[int] = None,
@@ -152,13 +146,9 @@ def preprocess(
         else None
     )
 
-    target = (
-        load_target_config(
-            target_config,
-            field=target_config_field,
-        )
-        if target_config
-        else None
+    target = load_target_config(
+        target_config,
+        field=target_config_field,
     )
 
     label = (
@@ -176,15 +166,18 @@ def preprocess(
         base_dir=base_dir,
     )
 
+    targets = build_targets(config=target)
+    preprocessor = build_preprocessor(config=preprocess)
+    labeller = build_clip_labeler(targets, config=label)
+
     if not output.exists():
         output.mkdir(parents=True)
 
     preprocess_annotations(
-        dataset.clip_annotations,
+        dataset,
         output_dir=output,
+        preprocessor=preprocessor,
+        labeller=labeller,
         replace=force,
-        preprocessing_config=preprocess,
-        label_config=label,
-        target_config=target,
         max_workers=num_workers,
     )

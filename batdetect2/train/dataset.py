@@ -11,8 +11,8 @@ from torch.utils.data import Dataset
 
 from batdetect2.configs import BaseConfig
 from batdetect2.train.augmentations import (
+    Augmentation,
     AugmentationsConfig,
-    augment_example,
     select_subclip,
 )
 from batdetect2.train.preprocess import PreprocessorProtocol
@@ -54,7 +54,7 @@ class LabeledDataset(Dataset):
         preprocessor: PreprocessorProtocol,
         filenames: Sequence[PathLike],
         subclip: Optional[SubclipConfig] = None,
-        augmentation: Optional[AugmentationsConfig] = None,
+        augmentation: Optional[Augmentation] = None,
     ):
         self.preprocessor = preprocessor
         self.filenames = filenames
@@ -76,12 +76,7 @@ class LabeledDataset(Dataset):
             )
 
         if self.augmentation:
-            dataset = augment_example(
-                dataset,
-                self.augmentation,
-                preprocessor=self.preprocessor,
-                others=self.get_random_example,
-            )
+            dataset = self.augmentation(dataset)
 
         return TrainExample(
             spec=self.to_tensor(dataset["spectrogram"]).unsqueeze(0),
@@ -98,7 +93,7 @@ class LabeledDataset(Dataset):
         preprocessor: PreprocessorProtocol,
         extension: str = ".nc",
         subclip: Optional[SubclipConfig] = None,
-        augmentation: Optional[AugmentationsConfig] = None,
+        augmentation: Optional[Augmentation] = None,
     ):
         return cls(
             preprocessor=preprocessor,

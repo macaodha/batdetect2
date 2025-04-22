@@ -63,7 +63,7 @@ def extract_values_at_positions(
             ],
             Dimensions.time.value: positions.coords[Dimensions.time.value],
         }
-    )
+    ).T
 
 
 def extract_detection_xr_dataset(
@@ -109,9 +109,9 @@ def extract_detection_xr_dataset(
           DataArrays share the 'detection' dimension and associated
           time/frequency coordinates.
     """
-    sizes = extract_values_at_positions(sizes, positions).T
-    classes = extract_values_at_positions(classes, positions).T
-    features = extract_values_at_positions(features, positions).T
+    sizes = extract_values_at_positions(sizes, positions)
+    classes = extract_values_at_positions(classes, positions)
+    features = extract_values_at_positions(features, positions)
     return xr.Dataset(
         {
             "scores": positions,
