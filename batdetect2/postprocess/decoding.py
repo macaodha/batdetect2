@@ -93,7 +93,7 @@ def convert_xr_dataset_to_raw_prediction(
     """
     detections = []
 
-    for det_num in range(detection_dataset.dims["detection"]):
+    for det_num in range(detection_dataset.sizes["detection"]):
         det_info = detection_dataset.sel(detection=det_num)
 
         geom = geometry_builder(

@@ -373,7 +373,7 @@ def test_extract_detection_xr_dataset_empty(
 
     assert isinstance(actual_dataset, xr.Dataset)
     assert "detection" in actual_dataset.dims
-    assert actual_dataset.dims["detection"] == 0
+    assert actual_dataset.sizes["detection"] == 0
 
     assert "scores" in actual_dataset
     assert actual_dataset["scores"].dims == ("detection",)

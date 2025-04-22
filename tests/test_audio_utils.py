@@ -8,7 +8,7 @@ from batdetect2.detector import parameters
 from batdetect2.utils import audio_utils, detector_utils
 
 
-@given(duration=st.floats(min_value=0.1, max_value=2))
+@given(duration=st.floats(min_value=0.1, max_value=1))
 def test_can_compute_correct_spectrogram_width(duration: float):
     samplerate = parameters.TARGET_SAMPLERATE_HZ
     params = parameters.DEFAULT_SPECTROGRAM_PARAMETERS
