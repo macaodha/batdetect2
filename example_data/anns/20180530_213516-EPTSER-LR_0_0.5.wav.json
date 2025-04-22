@@ -1,0 +1,231 @@
+{
+  "annotated": true,
+  "annotation": [
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.744,
+      "det_prob": 0.77,
+      "end_time": 0.0162,
+      "event": "Echolocation",
+      "high_freq": 65592,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.0085
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.453,
+      "det_prob": 0.459,
+      "end_time": 0.0255,
+      "event": "Echolocation",
+      "high_freq": 59730,
+      "individual": "-1",
+      "low_freq": 46093,
+      "start_time": 0.0205
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.668,
+      "det_prob": 0.68,
+      "end_time": 0.0499,
+      "event": "Echolocation",
+      "high_freq": 57080,
+      "individual": "-1",
+      "low_freq": 46953,
+      "start_time": 0.0445
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.729,
+      "det_prob": 0.739,
+      "end_time": 0.109,
+      "event": "Echolocation",
+      "high_freq": 62808,
+      "individual": "-1",
+      "low_freq": 44375,
+      "start_time": 0.1025
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.591,
+      "det_prob": 0.602,
+      "end_time": 0.1311,
+      "event": "Echolocation",
+      "high_freq": 56848,
+      "individual": "-1",
+      "low_freq": 46953,
+      "start_time": 0.1255
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.696,
+      "det_prob": 0.735,
+      "end_time": 0.1694,
+      "event": "Echolocation",
+      "high_freq": 67238,
+      "individual": "-1",
+      "low_freq": 28046,
+      "start_time": 0.1625
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.617,
+      "det_prob": 0.643,
+      "end_time": 0.2031,
+      "event": "Echolocation",
+      "high_freq": 57047,
+      "individual": "-1",
+      "low_freq": 46093,
+      "start_time": 0.1975
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.507,
+      "det_prob": 0.515,
+      "end_time": 0.2222,
+      "event": "Echolocation",
+      "high_freq": 58214,
+      "individual": "-1",
+      "low_freq": 47812,
+      "start_time": 0.2175
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.201,
+      "det_prob": 0.372,
+      "end_time": 0.2839,
+      "event": "Echolocation",
+      "high_freq": 55667,
+      "individual": "-1",
+      "low_freq": 33203,
+      "start_time": 0.2775
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.749,
+      "det_prob": 0.78,
+      "end_time": 0.2918,
+      "event": "Echolocation",
+      "high_freq": 60611,
+      "individual": "-1",
+      "low_freq": 45234,
+      "start_time": 0.2855
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.239,
+      "det_prob": 0.325,
+      "end_time": 0.3148,
+      "event": "Echolocation",
+      "high_freq": 54100,
+      "individual": "-1",
+      "low_freq": 30625,
+      "start_time": 0.3085
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.621,
+      "det_prob": 0.652,
+      "end_time": 0.3227,
+      "event": "Echolocation",
+      "high_freq": 63504,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.3155
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.32,
+      "det_prob": 0.414,
+      "end_time": 0.3546,
+      "event": "Echolocation",
+      "high_freq": 37589,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.3455
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.69,
+      "det_prob": 0.697,
+      "end_time": 0.3776,
+      "event": "Echolocation",
+      "high_freq": 57262,
+      "individual": "-1",
+      "low_freq": 46093,
+      "start_time": 0.3735
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.34,
+      "det_prob": 0.415,
+      "end_time": 0.4069,
+      "event": "Echolocation",
+      "high_freq": 52025,
+      "individual": "-1",
+      "low_freq": 31484,
+      "start_time": 0.4005
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.386,
+      "det_prob": 0.445,
+      "end_time": 0.4178,
+      "event": "Echolocation",
+      "high_freq": 53951,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.4115
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.393,
+      "det_prob": 0.517,
+      "end_time": 0.4359,
+      "event": "Echolocation",
+      "high_freq": 51724,
+      "individual": "-1",
+      "low_freq": 30625,
+      "start_time": 0.4305
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.332,
+      "det_prob": 0.396,
+      "end_time": 0.4502,
+      "event": "Echolocation",
+      "high_freq": 58310,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.4435
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.45,
+      "det_prob": 0.456,
+      "end_time": 0.4638,
+      "event": "Echolocation",
+      "high_freq": 55714,
+      "individual": "-1",
+      "low_freq": 46093,
+      "start_time": 0.4575
+    },
+    {
+      "class": "Eptesicus serotinus",
+      "class_prob": 0.719,
+      "det_prob": 0.766,
+      "end_time": 0.4824,
+      "event": "Echolocation",
+      "high_freq": 66101,
+      "individual": "-1",
+      "low_freq": 28046,
+      "start_time": 0.4755
+    }
+  ],
+  "class_name": "Pipistrellus pipistrellus",
+  "duration": 0.5,
+  "id": "20180530_213516-EPTSER-LR_0_0.5.wav",
+  "issues": false,
+  "notes": "Automatically generated. Example data do not assume correct!",
+  "time_exp": 1
+}
