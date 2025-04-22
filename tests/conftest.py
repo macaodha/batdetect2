@@ -7,7 +7,20 @@ import pytest
 import soundfile as sf
 from soundevent import data, terms
 
-from batdetect2.targets import call_type
+from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets import (
+    TargetConfig,
+    TermRegistry,
+    build_targets,
+    call_type,
+)
+from batdetect2.targets.classes import ClassesConfig, TargetClass
+from batdetect2.targets.filtering import FilterConfig, FilterRule
+from batdetect2.targets.terms import TagInfo
+from batdetect2.targets.types import TargetProtocol
+from batdetect2.train.labels import build_clip_labeler
+from batdetect2.train.types import ClipLabeller
 
 
 @pytest.fixture
@@ -293,3 +306,80 @@ def create_annotation_project():
         )
 
     return factory
+
+
+@pytest.fixture
+def sample_term_registry() -> TermRegistry:
+    """Fixture for a sample TermRegistry."""
+    registry = TermRegistry()
+    registry.add_custom_term("class")
+    registry.add_custom_term("order")
+    registry.add_custom_term("species")
+    registry.add_custom_term("call_type")
+    registry.add_custom_term("quality")
+    return registry
+
+
+@pytest.fixture
+def sample_preprocessor() -> PreprocessorProtocol:
+    return build_preprocessor()
+
+
+@pytest.fixture
+def bat_tag() -> TagInfo:
+    return TagInfo(key="class", value="bat")
+
+
+@pytest.fixture
+def noise_tag() -> TagInfo:
+    return TagInfo(key="class", value="noise")
+
+
+@pytest.fixture
+def myomyo_tag() -> TagInfo:
+    return TagInfo(key="species", value="Myotis myotis")
+
+
+@pytest.fixture
+def pippip_tag() -> TagInfo:
+    return TagInfo(key="species", value="Pipistrellus pipistrellus")
+
+
+@pytest.fixture
+def sample_target_config(
+    sample_term_registry: TermRegistry,
+    bat_tag: TagInfo,
+    noise_tag: TagInfo,
+    myomyo_tag: TagInfo,
+    pippip_tag: TagInfo,
+) -> TargetConfig:
+    return TargetConfig(
+        filtering=FilterConfig(
+            rules=[FilterRule(match_type="exclude", tags=[noise_tag])]
+        ),
+        classes=ClassesConfig(
+            classes=[
+                TargetClass(name="pippip", tags=[pippip_tag]),
+                TargetClass(name="myomyo", tags=[myomyo_tag]),
+            ],
+            generic_class=[bat_tag],
+        ),
+    )
+
+
+@pytest.fixture
+def sample_targets(
+    sample_target_config: TargetConfig,
+    sample_term_registry: TermRegistry,
+) -> TargetProtocol:
+    return build_targets(
+        sample_target_config,
+        term_registry=sample_term_registry,
+    )
+
+
+@pytest.fixture
+def sample_labeller(
+    sample_targets: TargetProtocol,
+) -> ClipLabeller:
+    return build_clip_labeler(sample_targets)

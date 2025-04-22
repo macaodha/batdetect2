@@ -9,11 +9,13 @@ from batdetect2.targets import (
     ReplaceRule,
     TagInfo,
     TransformConfig,
-    build_transform_from_rule,
     build_transformation_from_config,
 )
 from batdetect2.targets.terms import TermRegistry
-from batdetect2.targets.transform import DerivationRegistry
+from batdetect2.targets.transform import (
+    DerivationRegistry,
+    build_transform_from_rule,
+)
 
 
 @pytest.fixture

@@ -7,15 +7,14 @@ from soundevent import data
 from batdetect2.targets.filtering import (
     FilterConfig,
     FilterRule,
-    build_sound_event_filter,
     build_filter_from_rule,
+    build_sound_event_filter,
     contains_tags,
     does_not_have_tags,
     equal_tags,
     has_any_tag,
     load_filter_config,
     load_filter_from_config,
-    merge_filters,
 )
 from batdetect2.targets.terms import TagInfo, generic_class
 
