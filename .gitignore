@@ -95,6 +95,8 @@ dmypy.json
 *.json
 plots/*
 
+!example_data/anns/*.json
+
 # Model experiments
 experiments/*
 
