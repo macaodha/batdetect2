@@ -1,6 +1,6 @@
 import numpy as np
 
-from batdetect2.preprocess.arrays import adjust_width, extend_width
+from batdetect2.utils.arrays import adjust_width, extend_width
 
 
 def test_extend_width():

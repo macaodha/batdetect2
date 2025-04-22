@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from batdetect2.preprocess.tensors import adjust_width, make_width_divisible
+from batdetect2.utils.tensors import adjust_width, make_width_divisible
 
 
 def test_width_is_divisible_after_adjustment():
