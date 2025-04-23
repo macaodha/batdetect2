@@ -26,6 +26,7 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
+    BlockGroupConfig,
     ConvConfig,
     FreqCoordConvUpConfig,
     StandardConvUpConfig,
@@ -40,7 +41,12 @@ __all__ = [
 ]
 
 DecoderLayerConfig = Annotated[
-    Union[ConvConfig, FreqCoordConvUpConfig, StandardConvUpConfig],
+    Union[
+        ConvConfig,
+        FreqCoordConvUpConfig,
+        StandardConvUpConfig,
+        BlockGroupConfig,
+    ],
     Field(discriminator="block_type"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""
@@ -191,8 +197,12 @@ DEFAULT_DECODER_CONFIG: DecoderConfig = DecoderConfig(
     layers=[
         FreqCoordConvUpConfig(out_channels=64),
         FreqCoordConvUpConfig(out_channels=32),
-        FreqCoordConvUpConfig(out_channels=32),
-        ConvConfig(out_channels=32),
+        BlockGroupConfig(
+            blocks=[
+                FreqCoordConvUpConfig(out_channels=32),
+                ConvConfig(out_channels=32),
+            ]
+        ),
     ],
 )
 """A default configuration for the Decoder's *layer sequence*.

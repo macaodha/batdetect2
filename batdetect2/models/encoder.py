@@ -28,6 +28,7 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
+    BlockGroupConfig,
     ConvConfig,
     FreqCoordConvDownConfig,
     StandardConvDownConfig,
@@ -42,7 +43,12 @@ __all__ = [
 ]
 
 EncoderLayerConfig = Annotated[
-    Union[ConvConfig, FreqCoordConvDownConfig, StandardConvDownConfig],
+    Union[
+        ConvConfig,
+        FreqCoordConvDownConfig,
+        StandardConvDownConfig,
+        BlockGroupConfig,
+    ],
     Field(discriminator="block_type"),
 ]
 """Type alias for the discriminated union of block configs usable in Encoder."""
@@ -224,8 +230,12 @@ DEFAULT_ENCODER_CONFIG: EncoderConfig = EncoderConfig(
     layers=[
         FreqCoordConvDownConfig(out_channels=32),
         FreqCoordConvDownConfig(out_channels=64),
-        FreqCoordConvDownConfig(out_channels=128),
-        ConvConfig(out_channels=256),
+        BlockGroupConfig(
+            blocks=[
+                FreqCoordConvDownConfig(out_channels=128),
+                ConvConfig(out_channels=256),
+            ]
+        ),
     ],
 )
 """Default configuration for the Encoder.

@@ -27,7 +27,7 @@ A unified factory function `build_layer_from_config` allows creating instances
 of these blocks based on configuration objects.
 """
 
-from typing import Annotated, Literal, Tuple, Union
+from typing import Annotated, List, Literal, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -38,6 +38,7 @@ from batdetect2.configs import BaseConfig
 
 __all__ = [
     "ConvBlock",
+    "BlockGroupConfig",
     "VerticalConv",
     "FreqCoordConvDownBlock",
     "StandardConvDownBlock",
@@ -653,10 +654,16 @@ LayerConfig = Annotated[
         StandardConvDownConfig,
         FreqCoordConvUpConfig,
         StandardConvUpConfig,
+        "BlockGroupConfig",
     ],
     Field(discriminator="block_type"),
 ]
 """Type alias for the discriminated union of block configuration models."""
+
+
+class BlockGroupConfig(BaseConfig):
+    block_type: Literal["group"] = "group"
+    blocks: List[LayerConfig]
 
 
 def build_layer_from_config(
@@ -761,5 +768,21 @@ def build_layer_from_config(
             config.out_channels,
             input_height * 2,
         )
+
+    if config.block_type == "group":
+        current_channels = in_channels
+        current_height = input_height
+
+        blocks = []
+
+        for block_config in config.blocks:
+            block, current_channels, current_height = build_layer_from_config(
+                input_height=current_height,
+                in_channels=current_channels,
+                config=block_config,
+            )
+            blocks.append(block)
+
+        return nn.Sequential(*blocks), current_channels, current_height
 
     raise NotImplementedError(f"Unknown block type {config.block_type}")
