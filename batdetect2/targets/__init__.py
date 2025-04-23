@@ -82,6 +82,7 @@ from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "ClassesConfig",
+    "DEFAULT_TARGET_CONFIG",
     "DeriveTagRule",
     "FilterConfig",
     "FilterRule",
@@ -100,11 +101,11 @@ __all__ = [
     "Targets",
     "TermInfo",
     "TransformConfig",
+    "build_generic_class_tags",
+    "build_roi_mapper",
     "build_sound_event_decoder",
     "build_sound_event_encoder",
     "build_sound_event_filter",
-    "build_generic_class_tags",
-    "build_roi_mapper",
     "build_transformation_from_config",
     "call_type",
     "get_class_names_from_config",
@@ -437,8 +438,101 @@ class Targets(TargetProtocol):
         return self._roi_mapper.recover_roi(pos, dims)
 
 
+DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
+    filtering=FilterConfig(
+        rules=[
+            FilterRule(
+                match_type="all",
+                tags=[TagInfo(key="event", value="Echolocation")],
+            ),
+            FilterRule(
+                match_type="exclude",
+                tags=[
+                    TagInfo(key="event", value="Feeding"),
+                    TagInfo(key="event", value="Unknown"),
+                    TagInfo(key="event", value="Not Bat"),
+                ],
+            ),
+        ]
+    ),
+    classes=ClassesConfig(
+        classes=[
+            TargetClass(
+                tags=[TagInfo(value="Myotis mystacinus")],
+                name="myomys",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Myotis alcathoe")],
+                name="myoalc",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Eptesicus serotinus")],
+                name="eptser",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Pipistrellus nathusii")],
+                name="pipnat",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Barbastellus barbastellus")],
+                name="barbar",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Myotis nattereri")],
+                name="myonat",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Myotis daubentonii")],
+                name="myodau",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Myotis brandtii")],
+                name="myobra",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Pipistrellus pipistrellus")],
+                name="pippip",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Myotis bechsteinii")],
+                name="myobec",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Pipistrellus pygmaeus")],
+                name="pippyg",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Rhinolophus hipposideros")],
+                name="rhihip",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Nyctalus leisleri")],
+                name="nyclei",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Rhinolophus ferrumequinum")],
+                name="rhifer",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Plecotus auritus")],
+                name="pleaur",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Nyctalus noctula")],
+                name="nycnoc",
+            ),
+            TargetClass(
+                tags=[TagInfo(value="Plecotus austriacus")],
+                name="pleaus",
+            ),
+        ],
+        generic_class=[TagInfo(value="Bat")],
+    ),
+)
+
+
 def build_targets(
-    config: TargetConfig,
+    config: Optional[TargetConfig] = None,
     term_registry: TermRegistry = term_registry,
     derivation_registry: DerivationRegistry = derivation_registry,
 ) -> Targets:
@@ -476,6 +570,8 @@ def build_targets(
     ImportError, AttributeError, TypeError
         If dynamic import of a derivation function fails (when configured).
     """
+    config = config or DEFAULT_TARGET_CONFIG
+
     filter_fn = (
         build_sound_event_filter(
             config.filtering,

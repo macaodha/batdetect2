@@ -234,7 +234,7 @@ term_registry = TermRegistry(
     terms=dict(
         [
             *getmembers(terms, lambda x: isinstance(x, data.Term)),
-            ("call_type", call_type),
+            ("event", call_type),
             ("individual", individual),
             ("data_source", data_source),
             (GENERIC_CLASS_KEY, generic_class),
