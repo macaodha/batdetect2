@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Callable, Optional, Sequence
 
 import xarray as xr
+from loguru import logger
 from soundevent import data
 from tqdm.auto import tqdm
 

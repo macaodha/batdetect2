@@ -18,7 +18,6 @@ from batdetect2.train.config import TrainingConfig, load_train_config
 from batdetect2.train.dataset import (
     LabeledDataset,
     RandomExampleSource,
-    SubclipConfig,
     TrainExample,
     list_preprocessed_files,
 )
@@ -37,7 +36,6 @@ __all__ = [
     "LabeledDataset",
     "LossFunction",
     "RandomExampleSource",
-    "SubclipConfig",
     "TimeMaskAugmentationConfig",
     "TrainExample",
     "TrainerConfig",
