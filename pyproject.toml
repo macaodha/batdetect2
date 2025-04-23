@@ -110,3 +110,12 @@ exclude = [
   "batdetect2/evaluate/legacy",
   "batdetect2/train/legacy",
 ]
+
+[dependency-groups]
+jupyter = [
+    "ipywidgets>=8.1.5",
+    "jupyter>=1.1.1",
+]
+marimo = [
+    "marimo>=0.12.2",
+]
