@@ -4,33 +4,15 @@ from typing import List, Optional, Sequence, Tuple
 import numpy as np
 import torch
 import xarray as xr
-from pydantic import Field
 from soundevent import data
 from torch.utils.data import Dataset
 
-from batdetect2.configs import BaseConfig
-from batdetect2.train.augmentations import (
-    Augmentation,
-    AugmentationsConfig,
-)
+from batdetect2.train.augmentations import Augmentation
 from batdetect2.train.types import ClipperProtocol, TrainExample
 
 __all__ = [
     "LabeledDataset",
 ]
-
-
-class SubclipConfig(BaseConfig):
-    duration: Optional[float] = None
-    width: int = 512
-    random: bool = False
-
-
-class DatasetConfig(BaseConfig):
-    subclip: SubclipConfig = Field(default_factory=SubclipConfig)
-    augmentation: AugmentationsConfig = Field(
-        default_factory=AugmentationsConfig
-    )
 
 
 class LabeledDataset(Dataset):

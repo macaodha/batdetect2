@@ -11,7 +11,7 @@ DEFAULT_TRAIN_CLIP_DURATION = 0.513
 DEFAULT_MAX_EMPTY_CLIP = 0.1
 
 
-class ClipperConfig(BaseConfig):
+class ClipingConfig(BaseConfig):
     duration: float = DEFAULT_TRAIN_CLIP_DURATION
     random: bool = True
     max_empty: float = DEFAULT_MAX_EMPTY_CLIP
@@ -69,8 +69,8 @@ class Clipper(ClipperProtocol):
         )
 
 
-def build_clipper(config: Optional[ClipperConfig] = None) -> ClipperProtocol:
-    config = config or ClipperConfig()
+def build_clipper(config: Optional[ClipingConfig] = None) -> ClipperProtocol:
+    config = config or ClipingConfig()
     return Clipper(
         duration=config.duration,
         max_empty=config.max_empty,
