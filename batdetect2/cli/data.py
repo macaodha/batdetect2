@@ -35,6 +35,8 @@ def summary(
 ):
     base_dir = base_dir or Path.cwd()
     dataset = load_dataset_from_config(
-        dataset_config, field=field, base_dir=base_dir
+        dataset_config,
+        field=field,
+        base_dir=base_dir,
     )
-    print(f"Number of annotated clips: {len(dataset.clip_annotations)}")
+    print(f"Number of annotated clips: {len(dataset)}")

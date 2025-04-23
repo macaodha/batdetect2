@@ -2,7 +2,6 @@ from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
 from torch.utils.data import DataLoader
 
-from batdetect2.evaluate import match_predictions_and_annotations
 from batdetect2.postprocess import PostprocessorProtocol
 from batdetect2.train.dataset import LabeledDataset, TrainExample
 from batdetect2.types import ModelOutput

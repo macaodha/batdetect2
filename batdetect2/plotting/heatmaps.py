@@ -2,7 +2,6 @@
 
 from typing import Optional, Tuple
 
-import matplotlib.pyplot as plt
 import xarray as xr
 from matplotlib import axes
 

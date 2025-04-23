@@ -1,4 +1,4 @@
-from typing import Callable, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 import torch
 from soundevent import data
