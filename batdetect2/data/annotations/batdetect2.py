@@ -29,6 +29,7 @@ import os
 from pathlib import Path
 from typing import Literal, Optional, Union
 
+from loguru import logger
 from pydantic import Field, ValidationError
 from soundevent import data
 
@@ -177,6 +178,11 @@ def load_batdetect2_files_annotated_dataset(
         path = base_dir / path
 
     paths = list_file_annotations(path)
+    logger.debug(
+        "Found {num_files} files in the annotations directory {path}",
+        num_files=len(paths),
+        path=path,
+    )
 
     annotations = []
 
@@ -184,6 +190,7 @@ def load_batdetect2_files_annotated_dataset(
         try:
             file_annotation = load_file_annotation(p)
         except (FileNotFoundError, ValidationError):
+            logger.warning("Could not load annotations in file {path}", path=p)
             continue
 
         if (
@@ -191,6 +198,10 @@ def load_batdetect2_files_annotated_dataset(
             and dataset.filter.only_annotated
             and not file_annotation.annotated
         ):
+            logger.debug(
+                "Annotation in file {path} omited: not annotated",
+                path=p,
+            )
             continue
 
         if (
@@ -198,6 +209,10 @@ def load_batdetect2_files_annotated_dataset(
             and dataset.filter.exclude_issues
             and file_annotation.issues
         ):
+            logger.debug(
+                "Annotation in file {path} omited: has issues",
+                path=p,
+            )
             continue
 
         try:
@@ -205,7 +220,12 @@ def load_batdetect2_files_annotated_dataset(
                 file_annotation,
                 audio_dir=audio_dir,
             )
-        except FileNotFoundError:
+        except FileNotFoundError as err:
+            logger.warning(
+                "Did not find the audio related to the annotation file {path}. Error: {err}",
+                path=p,
+                err=err,
+            )
             continue
 
         annotations.append(

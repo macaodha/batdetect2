@@ -21,6 +21,7 @@ The core components are:
 from pathlib import Path
 from typing import Annotated, List, Optional
 
+from loguru import logger
 from pydantic import Field
 from soundevent import data, io
 
@@ -115,6 +116,11 @@ def load_dataset(
     clip_annotations = []
     for source in dataset.sources:
         annotated_source = load_annotated_dataset(source, base_dir=base_dir)
+        logger.debug(
+            "Loaded {num_examples} from dataset source '{source_name}'",
+            num_examples=len(annotated_source.clip_annotations),
+            source_name=source.name,
+        )
         clip_annotations.extend(
             insert_source_tag(clip_annotation, source)
             for clip_annotation in annotated_source.clip_annotations

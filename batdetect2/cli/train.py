@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from loguru import logger
 
 from batdetect2.cli.base import cli
 from batdetect2.data import load_dataset_from_config
@@ -123,7 +124,7 @@ def train(): ...
 def preprocess(
     dataset_config: Path,
     output: Path,
-    target_config: Path,
+    target_config: Optional[Path] = None,
     base_dir: Optional[Path] = None,
     preprocess_config: Optional[Path] = None,
     label_config: Optional[Path] = None,
@@ -134,8 +135,13 @@ def preprocess(
     label_config_field: Optional[str] = None,
     dataset_field: Optional[str] = None,
 ):
+    logger.info("Starting preprocessing.")
+
     output = Path(output)
+    logger.info("Will save outputs to {output}", output=output)
+
     base_dir = base_dir or Path.cwd()
+    logger.debug("Current working directory: {base_dir}", base_dir=base_dir)
 
     preprocess = (
         load_preprocessing_config(
@@ -146,9 +152,13 @@ def preprocess(
         else None
     )
 
-    target = load_target_config(
-        target_config,
-        field=target_config_field,
+    target = (
+        load_target_config(
+            target_config,
+            field=target_config_field,
+        )
+        if target_config
+        else None
     )
 
     label = (
@@ -166,13 +176,20 @@ def preprocess(
         base_dir=base_dir,
     )
 
+    logger.info(
+        "Loaded {num_examples} annotated clips from the configured dataset",
+        num_examples=len(dataset),
+    )
+
     targets = build_targets(config=target)
     preprocessor = build_preprocessor(config=preprocess)
     labeller = build_clip_labeler(targets, config=label)
 
     if not output.exists():
+        logger.debug("Creating directory {directory}", directory=output)
         output.mkdir(parents=True)
 
+    logger.info("Will start preprocessing")
     preprocess_annotations(
         dataset,
         output_dir=output,
