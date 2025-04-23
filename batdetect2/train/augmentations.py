@@ -37,24 +37,24 @@ from batdetect2.train.types import Augmentation
 from batdetect2.utils.arrays import adjust_width
 
 __all__ = [
+    "AugmentationConfig",
     "AugmentationsConfig",
-    "load_augmentation_config",
-    "build_augmentations",
-    "select_subclip",
-    "mix_examples",
-    "add_echo",
-    "scale_volume",
-    "warp_spectrogram",
-    "mask_time",
-    "mask_frequency",
-    "MixAugmentationConfig",
+    "DEFAULT_AUGMENTATION_CONFIG",
     "EchoAugmentationConfig",
+    "ExampleSource",
+    "FrequencyMaskAugmentationConfig",
+    "MixAugmentationConfig",
+    "TimeMaskAugmentationConfig",
     "VolumeAugmentationConfig",
     "WarpAugmentationConfig",
-    "TimeMaskAugmentationConfig",
-    "FrequencyMaskAugmentationConfig",
-    "AugmentationConfig",
-    "ExampleSource",
+    "add_echo",
+    "build_augmentations",
+    "load_augmentation_config",
+    "mask_frequency",
+    "mask_time",
+    "mix_examples",
+    "scale_volume",
+    "warp_spectrogram",
 ]
 
 ExampleSource = Callable[[], xr.Dataset]
@@ -62,92 +62,6 @@ ExampleSource = Callable[[], xr.Dataset]
 
 Used by the `mix_examples` augmentation to fetch another example to mix with.
 """
-
-
-def select_subclip(
-    example: xr.Dataset,
-    start_time: Optional[float] = None,
-    duration: Optional[float] = None,
-    width: Optional[int] = None,
-    random: bool = False,
-) -> xr.Dataset:
-    """Extract a sub-clip (time segment) from a training example dataset.
-
-    Selects a portion of the 'time' dimension from all relevant DataArrays
-    (`audio`, `spectrogram`, `detection`, `class`, `size`) within the example
-    Dataset. The segment can be defined by a fixed start time and
-    duration/width, or a random start time can be chosen.
-
-    Parameters
-    ----------
-    example : xr.Dataset
-        The input training example containing 'audio', 'spectrogram', and
-        target heatmaps, all with compatible 'time' (or 'audio_time')
-        coordinates.
-    start_time : float, optional
-        Desired start time (seconds) of the subclip. If None and `random` is
-        False, starts from the beginning of the example. If None and `random`
-        is True, a random start time is chosen.
-    duration : float, optional
-        Desired duration (seconds) of the subclip. Either `duration` or `width`
-        must be provided.
-    width : int, optional
-        Desired width (number of time bins) of the subclip's
-        spectrogram/heatmaps. Either `duration` or `width` must be provided. If
-        both are given, `duration` takes precedence.
-    random : bool, default=False
-        If True and `start_time` is None, selects a random start time ensuring
-        the subclip fits within the original example's duration.
-
-    Returns
-    -------
-    xr.Dataset
-        A new dataset containing only the selected time segment. Coordinates
-        are adjusted accordingly. Returns the original example if the requested
-        subclip cannot be extracted (e.g., duration too long).
-
-    Raises
-    ------
-    ValueError
-        If neither `duration` nor `width` is provided, or if time coordinates
-        are missing or invalid.
-    """
-    step = arrays.get_dim_step(example, "time")  # type: ignore
-    start, stop = arrays.get_dim_range(example, "time")  # type: ignore
-
-    if width is None:
-        if duration is None:
-            raise ValueError("Either duration or width must be provided")
-
-        width = int(np.floor(duration / step))
-
-    if duration is None:
-        duration = width * step
-
-    if start_time is None:
-        if random:
-            start_time = np.random.uniform(start, max(stop - duration, start))
-        else:
-            start_time = start
-
-    if start_time + duration > stop:
-        return example
-
-    start_index = arrays.get_coord_index(
-        example,  # type: ignore
-        "time",
-        start_time,
-    )
-
-    end_index = start_index + width - 1
-
-    start_time = example.time.values[start_index]
-    end_time = example.time.values[end_index]
-
-    return example.sel(
-        time=slice(start_time, end_time),
-        audio_time=slice(start_time, end_time + step),
-    )
 
 
 class MixAugmentationConfig(BaseConfig):
@@ -878,9 +792,21 @@ def build_augmentation_from_config(
     )
 
 
+DEFAULT_AUGMENTATION_CONFIG: AugmentationsConfig = AugmentationsConfig(
+    steps=[
+        MixAugmentationConfig(),
+        EchoAugmentationConfig(),
+        VolumeAugmentationConfig(),
+        WarpAugmentationConfig(),
+        TimeMaskAugmentationConfig(),
+        FrequencyMaskAugmentationConfig(),
+    ]
+)
+
+
 def build_augmentations(
-    config: AugmentationsConfig,
     preprocessor: PreprocessorProtocol,
+    config: Optional[AugmentationsConfig] = None,
     example_source: Optional[ExampleSource] = None,
 ) -> Augmentation:
     """Build a composite augmentation pipeline function from configuration.
@@ -915,6 +841,8 @@ def build_augmentations(
     NotImplementedError
         If an unknown `augmentation_type` is encountered in `config.steps`.
     """
+    config = config or DEFAULT_AUGMENTATION_CONFIG
+
     augmentations = []
 
     for step_config in config.steps:

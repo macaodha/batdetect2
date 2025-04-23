@@ -139,6 +139,7 @@ def _save_xr_dataset_to_file(
     dataset.to_netcdf(
         path,
         encoding={
+            "audio": {"zlib": True},
             "spectrogram": {"zlib": True},
             "size": {"zlib": True},
             "class": {"zlib": True},

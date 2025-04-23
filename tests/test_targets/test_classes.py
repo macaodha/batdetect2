@@ -25,17 +25,6 @@ from batdetect2.targets.terms import TagInfo, TermRegistry
 
 
 @pytest.fixture
-def sample_term_registry() -> TermRegistry:
-    """Fixture for a sample TermRegistry."""
-    registry = TermRegistry()
-    registry.add_custom_term("order")
-    registry.add_custom_term("species")
-    registry.add_custom_term("call_type")
-    registry.add_custom_term("quality")
-    return registry
-
-
-@pytest.fixture
 def sample_annotation(
     sound_event: data.SoundEvent,
     sample_term_registry: TermRegistry,

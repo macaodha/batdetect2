@@ -11,18 +11,19 @@ from batdetect2.train.augmentations import (
     mask_time,
     mix_examples,
     scale_volume,
-    select_subclip,
     warp_spectrogram,
 )
+from batdetect2.train.clips import build_clipper, select_subclip
 from batdetect2.train.config import TrainingConfig, load_train_config
 from batdetect2.train.dataset import (
     LabeledDataset,
+    RandomExampleSource,
     SubclipConfig,
     TrainExample,
-    get_preprocessed_files,
+    list_preprocessed_files,
 )
 from batdetect2.train.labels import load_label_config
-from batdetect2.train.losses import compute_loss
+from batdetect2.train.losses import LossFunction, build_loss
 from batdetect2.train.preprocess import (
     generate_train_example,
     preprocess_annotations,
@@ -34,6 +35,8 @@ __all__ = [
     "EchoAugmentationConfig",
     "FrequencyMaskAugmentationConfig",
     "LabeledDataset",
+    "LossFunction",
+    "RandomExampleSource",
     "SubclipConfig",
     "TimeMaskAugmentationConfig",
     "TrainExample",
@@ -43,9 +46,11 @@ __all__ = [
     "WarpAugmentationConfig",
     "add_echo",
     "build_augmentations",
-    "compute_loss",
+    "build_clipper",
+    "build_loss",
     "generate_train_example",
-    "get_preprocessed_files",
+    "list_preprocessed_files",
+    "load_label_config",
     "load_train_config",
     "load_trainer_config",
     "mask_frequency",
@@ -56,5 +61,4 @@ __all__ = [
     "select_subclip",
     "train",
     "warp_spectrogram",
-    "load_label_config",
 ]

@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-from typing import NamedTuple, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -13,26 +12,12 @@ from batdetect2.configs import BaseConfig
 from batdetect2.train.augmentations import (
     Augmentation,
     AugmentationsConfig,
-    select_subclip,
 )
-from batdetect2.train.preprocess import PreprocessorProtocol
-from batdetect2.utils.tensors import adjust_width
+from batdetect2.train.types import ClipperProtocol, TrainExample
 
 __all__ = [
-    "TrainExample",
     "LabeledDataset",
 ]
-
-
-PathLike = Union[Path, str, os.PathLike]
-
-
-class TrainExample(NamedTuple):
-    spec: torch.Tensor
-    detection_heatmap: torch.Tensor
-    class_heatmap: torch.Tensor
-    size_heatmap: torch.Tensor
-    idx: torch.Tensor
 
 
 class SubclipConfig(BaseConfig):
@@ -51,14 +36,12 @@ class DatasetConfig(BaseConfig):
 class LabeledDataset(Dataset):
     def __init__(
         self,
-        preprocessor: PreprocessorProtocol,
-        filenames: Sequence[PathLike],
-        subclip: Optional[SubclipConfig] = None,
+        filenames: Sequence[data.PathLike],
+        clipper: ClipperProtocol,
         augmentation: Optional[Augmentation] = None,
     ):
-        self.preprocessor = preprocessor
         self.filenames = filenames
-        self.subclip = subclip
+        self.clipper = clipper
         self.augmentation = augmentation
 
     def __len__(self):
@@ -66,14 +49,7 @@ class LabeledDataset(Dataset):
 
     def __getitem__(self, idx) -> TrainExample:
         dataset = self.get_dataset(idx)
-
-        if self.subclip:
-            dataset = select_subclip(
-                dataset,
-                duration=self.subclip.duration,
-                width=self.subclip.width,
-                random=self.subclip.random,
-            )
+        dataset, start_time, end_time = self.clipper.extract_clip(dataset)
 
         if self.augmentation:
             dataset = self.augmentation(dataset)
@@ -84,37 +60,31 @@ class LabeledDataset(Dataset):
             class_heatmap=self.to_tensor(dataset["class"]),
             size_heatmap=self.to_tensor(dataset["size"]),
             idx=torch.tensor(idx),
+            start_time=start_time,
+            end_time=end_time,
         )
 
     @classmethod
     def from_directory(
         cls,
-        directory: PathLike,
-        preprocessor: PreprocessorProtocol,
+        directory: data.PathLike,
+        clipper: ClipperProtocol,
         extension: str = ".nc",
-        subclip: Optional[SubclipConfig] = None,
         augmentation: Optional[Augmentation] = None,
     ):
         return cls(
-            preprocessor=preprocessor,
-            filenames=get_preprocessed_files(directory, extension),
-            subclip=subclip,
+            filenames=list_preprocessed_files(directory, extension),
+            clipper=clipper,
             augmentation=augmentation,
         )
 
-    def get_random_example(self) -> xr.Dataset:
+    def get_random_example(self) -> Tuple[xr.Dataset, float, float]:
         idx = np.random.randint(0, len(self))
         dataset = self.get_dataset(idx)
 
-        if self.subclip:
-            dataset = select_subclip(
-                dataset,
-                duration=self.subclip.duration,
-                width=self.subclip.width,
-                random=self.subclip.random,
-            )
+        dataset, start_time, end_time = self.clipper.extract_clip(dataset)
 
-        return dataset
+        return dataset, start_time, end_time
 
     def get_dataset(self, idx) -> xr.Dataset:
         return xr.open_dataset(self.filenames[idx])
@@ -129,16 +99,23 @@ class LabeledDataset(Dataset):
         array: xr.DataArray,
         dtype=np.float32,
     ) -> torch.Tensor:
-        tensor = torch.tensor(array.values.astype(dtype))
-
-        if not self.subclip:
-            return tensor
-
-        width = self.subclip.width
-        return adjust_width(tensor, width)
+        return torch.tensor(array.values.astype(dtype))
 
 
-def get_preprocessed_files(
-    directory: PathLike, extension: str = ".nc"
+def list_preprocessed_files(
+    directory: data.PathLike, extension: str = ".nc"
 ) -> Sequence[Path]:
     return list(Path(directory).glob(f"*{extension}"))
+
+
+class RandomExampleSource:
+    def __init__(self, filenames: List[str], clipper: ClipperProtocol):
+        self.filenames = filenames
+        self.clipper = clipper
+
+    def __call__(self):
+        index = int(np.random.randint(len(self.filenames)))
+        filename = self.filenames[index]
+        dataset = xr.open_dataset(filename)
+        example, _, _ = self.clipper.extract_clip(dataset)
+        return example
