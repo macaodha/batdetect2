@@ -1,0 +1,10 @@
+datasets:
+  train:
+    name: example dataset
+    description: Only for demonstration purposes
+    sources:
+      - format: batdetect2
+        name: Example Data
+        description: Examples included for testing batdetect2
+        annotations_dir: example_data/anns
+        audio_dir: example_data/audio
