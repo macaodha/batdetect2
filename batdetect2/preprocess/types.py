@@ -168,6 +168,10 @@ class PreprocessorProtocol(Protocol):
     loading or spectrogram computation from a waveform.
     """
 
+    max_freq: float
+
+    min_freq: float
+
     def preprocess_file(
         self,
         path: data.PathLike,

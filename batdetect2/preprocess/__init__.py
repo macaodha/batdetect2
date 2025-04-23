@@ -144,12 +144,16 @@ class StandardPreprocessor(PreprocessorProtocol):
     audio_loader: AudioLoader
     spectrogram_builder: SpectrogramBuilder
     default_samplerate: int
+    max_freq: float
+    min_freq: float
 
     def __init__(
         self,
         audio_loader: AudioLoader,
         spectrogram_builder: SpectrogramBuilder,
         default_samplerate: int,
+        max_freq: float,
+        min_freq: float,
     ) -> None:
         """Initialize the StandardPreprocessor.
 
@@ -167,6 +171,8 @@ class StandardPreprocessor(PreprocessorProtocol):
         self.audio_loader = audio_loader
         self.spectrogram_builder = spectrogram_builder
         self.default_samplerate = default_samplerate
+        self.max_freq = max_freq
+        self.min_freq = min_freq
 
     def load_file_audio(
         self,
@@ -429,8 +435,14 @@ def build_preprocessor(
         if config.audio.resample
         else TARGET_SAMPLERATE_HZ
     )
+
+    min_freq = config.spectrogram.frequencies.min_freq
+    max_freq = config.spectrogram.frequencies.max_freq
+
     return StandardPreprocessor(
         audio_loader=build_audio_loader(config.audio),
         spectrogram_builder=build_spectrogram_builder(config.spectrogram),
         default_samplerate=default_samplerate,
+        min_freq=min_freq,
+        max_freq=max_freq,
     )

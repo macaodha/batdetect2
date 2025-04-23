@@ -286,7 +286,8 @@ def load_recording_audio(
     """Load and preprocess the entire audio content of a recording using config.
 
     Creates a `soundevent.data.Clip` spanning the full duration of the
-    recording and then delegates the loading and processing to `load_clip_audio`.
+    recording and then delegates the loading and processing to
+    `load_clip_audio`.
 
     Parameters
     ----------
@@ -636,7 +637,11 @@ def resample_audio_fourier(
         If `num` is negative.
     """
     ratio = sr_new / sr_orig
-    return resample(array, int(array.shape[axis] * ratio), axis=axis)  # type: ignore
+    return resample(  # type: ignore
+        array,
+        int(array.shape[axis] * ratio),
+        axis=axis,
+    )
 
 
 def convert_to_xr(
@@ -649,8 +654,8 @@ def convert_to_xr(
     Parameters
     ----------
     wav : np.ndarray
-        The input waveform array. Expected to be 1D or 2D (with the first axis as
-        the channel dimension).
+        The input waveform array. Expected to be 1D or 2D (with the first
+        axis as the channel dimension).
     samplerate : int
         The sample rate in Hz.
     dtype : DTypeLike, default=np.float32
@@ -673,7 +678,8 @@ def convert_to_xr(
 
     if wav.ndim != 1:
         raise ValueError(
-            "Audio must be 1D array or 2D channel where the first axis is the channel dimension"
+            "Audio must be 1D array or 2D channel where the first "
+            "axis is the channel dimension"
         )
 
     if wav.size == 0:
