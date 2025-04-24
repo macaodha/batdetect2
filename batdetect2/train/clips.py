@@ -69,12 +69,15 @@ class Clipper(ClipperProtocol):
         )
 
 
-def build_clipper(config: Optional[ClipingConfig] = None) -> ClipperProtocol:
+def build_clipper(
+    config: Optional[ClipingConfig] = None,
+    random: Optional[bool] = None,
+) -> ClipperProtocol:
     config = config or ClipingConfig()
     return Clipper(
         duration=config.duration,
         max_empty=config.max_empty,
-        random=config.random,
+        random=config.random if random else False,
     )
 
 

@@ -40,7 +40,9 @@ class TrainingModule(L.LightningModule):
         self.learning_rate = learning_rate
         self.t_max = t_max
 
-        self.save_hyperparameters()
+        # NOTE: Ignore detector and loss from hyperparameter saving
+        # as they are nn.Module and should be saved regardless.
+        self.save_hyperparameters(ignore=["detector", "loss"])
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:
         return self.detector(spec)

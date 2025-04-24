@@ -81,7 +81,10 @@ class LabeledDataset(Dataset):
         array: xr.DataArray,
         dtype=np.float32,
     ) -> torch.Tensor:
-        return torch.tensor(array.values.astype(dtype))
+        return torch.nan_to_num(
+            torch.tensor(array.values.astype(dtype)),
+            nan=0,
+        )
 
 
 def list_preprocessed_files(
@@ -91,7 +94,11 @@ def list_preprocessed_files(
 
 
 class RandomExampleSource:
-    def __init__(self, filenames: List[str], clipper: ClipperProtocol):
+    def __init__(
+        self,
+        filenames: List[data.PathLike],
+        clipper: ClipperProtocol,
+    ):
         self.filenames = filenames
         self.clipper = clipper
 

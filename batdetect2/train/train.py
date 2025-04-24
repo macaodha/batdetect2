@@ -1,68 +1,112 @@
-from typing import Optional, Union
+from typing import List, Optional
 
-from lightning import LightningModule
-from lightning.pytorch import Trainer
-from soundevent.data import PathLike
+from lightning import Trainer
+from soundevent import data
 from torch.utils.data import DataLoader
 
-from batdetect2.configs import BaseConfig, load_config
-from batdetect2.train.dataset import LabeledDataset
+from batdetect2.models.types import DetectionModel
+from batdetect2.postprocess.types import PostprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets.types import TargetProtocol
+from batdetect2.train.augmentations import (
+    build_augmentations,
+)
+from batdetect2.train.clips import build_clipper
+from batdetect2.train.config import TrainingConfig
+from batdetect2.train.dataset import LabeledDataset, RandomExampleSource
+from batdetect2.train.lightning import TrainingModule
+from batdetect2.train.losses import build_loss
 
 __all__ = [
     "train",
-    "TrainerConfig",
-    "load_trainer_config",
 ]
 
 
-class TrainerConfig(BaseConfig):
-    accelerator: str = "auto"
-    accumulate_grad_batches: int = 1
-    deterministic: bool = True
-    check_val_every_n_epoch: int = 1
-    devices: Union[str, int] = "auto"
-    enable_checkpointing: bool = True
-    gradient_clip_val: Optional[float] = None
-    limit_train_batches: Optional[Union[int, float]] = None
-    limit_test_batches: Optional[Union[int, float]] = None
-    limit_val_batches: Optional[Union[int, float]] = None
-    log_every_n_steps: Optional[int] = None
-    max_epochs: Optional[int] = None
-    min_epochs: Optional[int] = 100
-    max_steps: Optional[int] = None
-    min_steps: Optional[int] = None
-    max_time: Optional[str] = None
-    precision: Optional[str] = None
-    reload_dataloaders_every_n_epochs: Optional[int] = None
-    val_check_interval: Optional[Union[int, float]] = None
-
-
-def load_trainer_config(path: PathLike, field: Optional[str] = None):
-    return load_config(path, schema=TrainerConfig, field=field)
-
-
 def train(
-    module: LightningModule,
-    train_dataset: LabeledDataset,
-    trainer_config: Optional[TrainerConfig] = None,
-    dev_run: bool = False,
-    overfit_batches: bool = False,
-    profiler: Optional[str] = None,
-):
-    trainer_config = trainer_config or TrainerConfig()
-    trainer = Trainer(
-        **trainer_config.model_dump(
-            exclude_unset=True,
-            exclude_none=True,
-        ),
-        fast_dev_run=dev_run,
-        overfit_batches=overfit_batches,
-        profiler=profiler,
+    detector: DetectionModel,
+    targets: TargetProtocol,
+    preprocessor: PreprocessorProtocol,
+    postprocessor: PostprocessorProtocol,
+    train_examples: List[data.PathLike],
+    val_examples: Optional[List[data.PathLike]] = None,
+    config: Optional[TrainingConfig] = None,
+) -> None:
+    config = config or TrainingConfig()
+
+    train_dataset = build_dataset(
+        train_examples,
+        preprocessor,
+        config=config,
+        train=True,
     )
-    train_loader = DataLoader(
+
+    loss = build_loss(config.loss)
+
+    module = TrainingModule(
+        detector=detector,
+        loss=loss,
+        targets=targets,
+        preprocessor=preprocessor,
+        postprocessor=postprocessor,
+        learning_rate=config.optimizer.learning_rate,
+        t_max=config.optimizer.t_max,
+    )
+
+    trainer = Trainer(**config.trainer.model_dump())
+
+    train_dataloader = DataLoader(
         train_dataset,
-        batch_size=module.config.train.batch_size,
+        batch_size=config.batch_size,
         shuffle=True,
-        num_workers=7,
     )
-    trainer.fit(module, train_dataloaders=train_loader)
+
+    val_dataloader = None
+    if val_examples:
+        val_dataset = build_dataset(
+            val_examples,
+            preprocessor,
+            config=config,
+            train=False,
+        )
+        val_dataloader = DataLoader(
+            val_dataset,
+            batch_size=config.batch_size,
+            shuffle=False,
+        )
+
+    trainer.fit(
+        module,
+        train_dataloaders=train_dataloader,
+        val_dataloaders=val_dataloader,
+    )
+
+
+def build_dataset(
+    examples: List[data.PathLike],
+    preprocessor: PreprocessorProtocol,
+    config: Optional[TrainingConfig] = None,
+    train: bool = True,
+):
+    config = config or TrainingConfig()
+
+    clipper = build_clipper(config.cliping, random=train)
+
+    augmentations = None
+
+    if train:
+        random_example_source = RandomExampleSource(
+            examples,
+            clipper=clipper,
+        )
+
+        augmentations = build_augmentations(
+            preprocessor,
+            config=config.augmentations,
+            example_source=random_example_source,
+        )
+
+    return LabeledDataset(
+        examples,
+        clipper=clipper,
+        augmentation=augmentations,
+    )
