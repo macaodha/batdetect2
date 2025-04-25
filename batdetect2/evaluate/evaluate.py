@@ -1,51 +1,6 @@
-from typing import List
 
 import numpy as np
 from sklearn.metrics import auc, roc_curve
-from soundevent import data
-from soundevent.evaluation import match_geometries
-
-
-def match_predictions_and_annotations(
-    clip_annotation: data.ClipAnnotation,
-    clip_prediction: data.ClipPrediction,
-) -> List[data.Match]:
-    annotated_sound_events = [
-        sound_event_annotation
-        for sound_event_annotation in clip_annotation.sound_events
-        if sound_event_annotation.sound_event.geometry is not None
-    ]
-
-    predicted_sound_events = [
-        sound_event_prediction
-        for sound_event_prediction in clip_prediction.sound_events
-        if sound_event_prediction.sound_event.geometry is not None
-    ]
-
-    annotated_geometries: List[data.Geometry] = [
-        sound_event.sound_event.geometry
-        for sound_event in annotated_sound_events
-        if sound_event.sound_event.geometry is not None
-    ]
-
-    predicted_geometries: List[data.Geometry] = [
-        sound_event.sound_event.geometry
-        for sound_event in predicted_sound_events
-        if sound_event.sound_event.geometry is not None
-    ]
-
-    matches = []
-    for id1, id2, affinity in match_geometries(
-        annotated_geometries,
-        predicted_geometries,
-    ):
-        target = annotated_sound_events[id1] if id1 is not None else None
-        source = predicted_sound_events[id2] if id2 is not None else None
-        matches.append(
-            data.Match(source=source, target=target, affinity=affinity)
-        )
-
-    return matches
 
 
 def compute_error_auc(op_str, gt, pred, prob):

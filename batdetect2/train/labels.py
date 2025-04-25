@@ -23,13 +23,13 @@ parameter specific to this module is the Gaussian smoothing sigma (`sigma`)
 defined in `LabelConfig`.
 """
 
-import logging
 from collections.abc import Iterable
 from functools import partial
 from typing import Optional
 
 import numpy as np
 import xarray as xr
+from loguru import logger
 from scipy.ndimage import gaussian_filter
 from soundevent import arrays, data
 
@@ -51,8 +51,6 @@ __all__ = [
 
 SIZE_DIMENSION = "dimension"
 """Dimension name for the size heatmap."""
-
-logger = logging.getLogger(__name__)
 
 
 class LabelConfig(BaseConfig):
@@ -137,12 +135,27 @@ def generate_clip_label(
         A NamedTuple containing the generated 'detection', 'classes', and 'size'
         heatmaps for this clip.
     """
+    logger.debug(
+        "Will generate heatmaps for clip annotation {uuid} with {num} annotated sound events",
+        uuid=clip_annotation.uuid,
+        num=len(clip_annotation.sound_events)
+    )
+
+    sound_events = []
+
+    for sound_event_annotation in clip_annotation.sound_events:
+        if not targets.filter(sound_event_annotation):
+            logger.debug(
+                "Sound event {sound_event} did not pass the filter. Tags: {tags}",
+                sound_event=sound_event_annotation,
+                tags=sound_event_annotation.tags,
+            )
+            continue
+
+        sound_events.append(targets.transform(sound_event_annotation))
+
     return generate_heatmaps(
-        (
-            targets.transform(sound_event_annotation)
-            for sound_event_annotation in clip_annotation.sound_events
-            if targets.filter(sound_event_annotation)
-        ),
+        sound_events,
         spec=spec,
         targets=targets,
         target_sigma=config.sigma,

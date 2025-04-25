@@ -42,8 +42,8 @@ class LabeledDataset(Dataset):
             class_heatmap=self.to_tensor(dataset["class"]),
             size_heatmap=self.to_tensor(dataset["size"]),
             idx=torch.tensor(idx),
-            start_time=start_time,
-            end_time=end_time,
+            start_time=torch.tensor(start_time),
+            end_time=torch.tensor(end_time),
         )
 
     @classmethod

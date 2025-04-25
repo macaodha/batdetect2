@@ -1,12 +1,16 @@
 from typing import List, Optional
 
 from lightning import Trainer
+from lightning.pytorch.callbacks import Callback
 from soundevent import data
 from torch.utils.data import DataLoader
 
 from batdetect2.models.types import DetectionModel
+from batdetect2.postprocess import build_postprocessor
 from batdetect2.postprocess.types import PostprocessorProtocol
+from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets import build_targets
 from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.augmentations import (
     build_augmentations,
@@ -19,25 +23,40 @@ from batdetect2.train.losses import build_loss
 
 __all__ = [
     "train",
+    "build_val_dataset",
+    "build_train_dataset",
 ]
 
 
 def train(
     detector: DetectionModel,
-    targets: TargetProtocol,
-    preprocessor: PreprocessorProtocol,
-    postprocessor: PostprocessorProtocol,
     train_examples: List[data.PathLike],
+    targets: Optional[TargetProtocol] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
+    postprocessor: Optional[PostprocessorProtocol] = None,
     val_examples: Optional[List[data.PathLike]] = None,
     config: Optional[TrainingConfig] = None,
+    callbacks: Optional[List[Callback]] = None,
 ) -> None:
     config = config or TrainingConfig()
 
-    train_dataset = build_dataset(
+    if preprocessor is None:
+        preprocessor = build_preprocessor()
+
+    if targets is None:
+        targets = build_targets()
+
+    if postprocessor is None:
+        postprocessor = build_postprocessor(
+            targets,
+            min_freq=preprocessor.min_freq,
+            max_freq=preprocessor.max_freq,
+        )
+
+    train_dataset = build_train_dataset(
         train_examples,
         preprocessor,
         config=config,
-        train=True,
     )
 
     loss = build_loss(config.loss)
@@ -52,7 +71,13 @@ def train(
         t_max=config.optimizer.t_max,
     )
 
-    trainer = Trainer(**config.trainer.model_dump())
+    trainer = Trainer(
+        **config.trainer.model_dump(exclude_none=True),
+        callbacks=callbacks,
+        num_sanity_val_steps=0,
+        # enable_model_summary=False,
+        # enable_progress_bar=False,
+    )
 
     train_dataloader = DataLoader(
         train_dataset,
@@ -62,11 +87,9 @@ def train(
 
     val_dataloader = None
     if val_examples:
-        val_dataset = build_dataset(
+        val_dataset = build_val_dataset(
             val_examples,
-            preprocessor,
             config=config,
-            train=False,
         )
         val_dataloader = DataLoader(
             val_dataset,
@@ -81,32 +104,38 @@ def train(
     )
 
 
-def build_dataset(
+def build_train_dataset(
     examples: List[data.PathLike],
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
-    train: bool = True,
-):
+) -> LabeledDataset:
     config = config or TrainingConfig()
 
-    clipper = build_clipper(config.cliping, random=train)
+    clipper = build_clipper(config.cliping, random=True)
 
-    augmentations = None
+    random_example_source = RandomExampleSource(
+        examples,
+        clipper=clipper,
+    )
 
-    if train:
-        random_example_source = RandomExampleSource(
-            examples,
-            clipper=clipper,
-        )
-
-        augmentations = build_augmentations(
-            preprocessor,
-            config=config.augmentations,
-            example_source=random_example_source,
-        )
+    augmentations = build_augmentations(
+        preprocessor,
+        config=config.augmentations,
+        example_source=random_example_source,
+    )
 
     return LabeledDataset(
         examples,
         clipper=clipper,
         augmentation=augmentations,
     )
+
+
+def build_val_dataset(
+    examples: List[data.PathLike],
+    config: Optional[TrainingConfig] = None,
+    train: bool = True,
+) -> LabeledDataset:
+    config = config or TrainingConfig()
+    clipper = build_clipper(config.cliping, random=train)
+    return LabeledDataset(examples, clipper=clipper)

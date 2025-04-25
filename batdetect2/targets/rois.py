@@ -20,13 +20,26 @@ scaling factors) is managed by the `ROIConfig`. This module separates the
 handled in `batdetect2.targets.classes`.
 """
 
-from typing import List, Optional, Protocol, Tuple
+from typing import List, Literal, Optional, Protocol, Tuple
 
 import numpy as np
-from soundevent import data, geometry
-from soundevent.geometry.operations import Positions
+from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
+
+Positions = Literal[
+    "bottom-left",
+    "bottom-right",
+    "top-left",
+    "top-right",
+    "center-left",
+    "center-right",
+    "top-center",
+    "bottom-center",
+    "center",
+    "centroid",
+    "point_on_surface",
+]
 
 __all__ = [
     "ROITargetMapper",
@@ -242,6 +255,8 @@ class BBoxEncoder(ROITargetMapper):
         Tuple[float, float]
             Reference position (time, frequency).
         """
+        from soundevent import geometry
+
         return geometry.get_geometry_point(geom, position=self.position)
 
     def get_roi_size(self, geom: data.Geometry) -> np.ndarray:
@@ -260,6 +275,8 @@ class BBoxEncoder(ROITargetMapper):
         np.ndarray
             A 1D NumPy array: `[scaled_width, scaled_height]`.
         """
+        from soundevent import geometry
+
         start_time, low_freq, end_time, high_freq = geometry.compute_bounds(
             geom
         )
@@ -308,8 +325,8 @@ class BBoxEncoder(ROITargetMapper):
         width, height = dims
         return _build_bounding_box(
             pos,
-            duration=width / self.time_scale,
-            bandwidth=height / self.frequency_scale,
+            duration=float(width) / self.time_scale,
+            bandwidth=float(height) / self.frequency_scale,
             position=self.position,
         )
 
@@ -421,14 +438,16 @@ def _build_bounding_box(
     ValueError
         If `position` is not a recognized value or format.
     """
-    time, freq = pos
+    time, freq = map(float, pos)
+    duration = max(0, duration)
+    bandwidth = max(0, bandwidth)
     if position in ["center", "centroid", "point_on_surface"]:
         return data.BoundingBox(
             coordinates=[
-                time - duration / 2,
-                freq - bandwidth / 2,
-                time + duration / 2,
-                freq + bandwidth / 2,
+                max(time - duration / 2, 0),
+                max(freq - bandwidth / 2, 0),
+                max(time + duration / 2, 0),
+                max(freq + bandwidth / 2, 0),
             ]
         )
 
@@ -454,9 +473,9 @@ def _build_bounding_box(
 
     return data.BoundingBox(
         coordinates=[
-            start_time,
-            low_freq,
-            start_time + duration,
-            low_freq + bandwidth,
+            max(0, start_time),
+            max(0, low_freq),
+            max(0, start_time + duration),
+            max(0, low_freq + bandwidth),
         ]
     )

@@ -32,10 +32,10 @@ from typing import List, Optional
 import numpy as np
 import xarray as xr
 from soundevent import data
-from soundevent.geometry import compute_bounds
 
 from batdetect2.postprocess.types import GeometryBuilder, RawPrediction
 from batdetect2.targets.classes import SoundEventDecoder
+from batdetect2.utils.arrays import iterate_over_array
 
 __all__ = [
     "convert_xr_dataset_to_raw_prediction",
@@ -97,18 +97,14 @@ def convert_xr_dataset_to_raw_prediction(
         det_info = detection_dataset.sel(detection=det_num)
 
         geom = geometry_builder(
-            (det_info.time, det_info.freq),
+            (det_info.time, det_info.frequency),
             det_info.dimensions,
         )
 
-        start_time, low_freq, end_time, high_freq = compute_bounds(geom)
         detections.append(
             RawPrediction(
-                detection_score=det_info.score,
-                start_time=start_time,
-                end_time=end_time,
-                low_freq=low_freq,
-                high_freq=high_freq,
+                detection_score=det_info.scores,
+                geometry=geom,
                 class_scores=det_info.classes,
                 features=det_info.features,
             )
@@ -244,14 +240,7 @@ def convert_raw_prediction_to_sound_event_prediction(
     """
     sound_event = data.SoundEvent(
         recording=recording,
-        geometry=data.BoundingBox(
-            coordinates=[
-                raw_prediction.start_time,
-                raw_prediction.low_freq,
-                raw_prediction.end_time,
-                raw_prediction.high_freq,
-            ]
-        ),
+        geometry=raw_prediction.geometry,
         features=get_prediction_features(raw_prediction.features),
     )
 
@@ -333,7 +322,7 @@ def get_prediction_features(features: xr.DataArray) -> List[data.Feature]:
             ),
             value=value,
         )
-        for feat_name, value in _iterate_over_array(features)
+        for feat_name, value in iterate_over_array(features)
     ]
 
 
@@ -392,13 +381,6 @@ def get_class_tags(
             break
 
     return tags
-
-
-def _iterate_over_array(array: xr.DataArray):
-    dim_name = array.dims[0]
-    coords = array.coords[dim_name]
-    for value, coord in zip(array.values, coords.values):
-        yield coord, float(value)
 
 
 def _iterate_sorted(array: xr.DataArray):

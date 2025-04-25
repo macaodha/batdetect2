@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 
 
 def extend_width(
@@ -59,3 +60,10 @@ def adjust_width(
         for index in range(dims)
     ]
     return array[tuple(slices)]
+
+
+def iterate_over_array(array: xr.DataArray):
+    dim_name = array.dims[0]
+    coords = array.coords[dim_name]
+    for value, coord in zip(array.values, coords.values):
+        yield coord, float(value)

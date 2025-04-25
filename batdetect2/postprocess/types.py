@@ -47,14 +47,9 @@ class RawPrediction(NamedTuple):
 
     Attributes
     ----------
-    start_time : float
-        Start time of the recovered bounding box in seconds.
-    end_time : float
-        End time of the recovered bounding box in seconds.
-    low_freq : float
-        Lowest frequency of the recovered bounding box in Hz.
-    high_freq : float
-        Highest frequency of the recovered bounding box in Hz.
+    geometry: data.Geometry
+        The recovered estimated geometry of the detected sound event.
+        Usually a bounding box.
     detection_score : float
         The confidence score associated with this detection, typically from
         the detection heatmap peak.
@@ -67,10 +62,7 @@ class RawPrediction(NamedTuple):
         detection location. Indexed by a 'feature' coordinate.
     """
 
-    start_time: float
-    end_time: float
-    low_freq: float
-    high_freq: float
+    geometry: data.Geometry
     detection_score: float
     class_scores: xr.DataArray
     features: xr.DataArray

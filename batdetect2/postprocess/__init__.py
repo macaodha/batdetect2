@@ -170,8 +170,8 @@ def load_postprocess_config(
 def build_postprocessor(
     targets: TargetProtocol,
     config: Optional[PostprocessConfig] = None,
-    max_freq: int = MAX_FREQ,
-    min_freq: int = MIN_FREQ,
+    max_freq: float = MAX_FREQ,
+    min_freq: float = MIN_FREQ,
 ) -> PostprocessorProtocol:
     """Factory function to build the standard postprocessor.
 
@@ -234,9 +234,9 @@ class Postprocessor(PostprocessorProtocol):
         recovery.
     config : PostprocessConfig
         Configuration object holding parameters for NMS, thresholds, etc.
-    min_freq : int
+    min_freq : float
         Minimum frequency (Hz) assumed for the model output's frequency axis.
-    max_freq : int
+    max_freq : float
         Maximum frequency (Hz) assumed for the model output's frequency axis.
     """
 
@@ -246,8 +246,8 @@ class Postprocessor(PostprocessorProtocol):
         self,
         targets: TargetProtocol,
         config: PostprocessConfig,
-        min_freq: int = MIN_FREQ,
-        max_freq: int = MAX_FREQ,
+        min_freq: float = MIN_FREQ,
+        max_freq: float = MAX_FREQ,
     ):
         """Initialize the Postprocessor.
 

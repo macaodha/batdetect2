@@ -57,8 +57,8 @@ class TrainExample(NamedTuple):
     class_heatmap: torch.Tensor
     size_heatmap: torch.Tensor
     idx: torch.Tensor
-    start_time: float
-    end_time: float
+    start_time: torch.Tensor
+    end_time: torch.Tensor
 
 
 class Losses(NamedTuple):

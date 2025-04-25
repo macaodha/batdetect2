@@ -106,7 +106,7 @@ def contains_tags(
         False otherwise.
     """
     sound_event_tags = set(sound_event_annotation.tags)
-    return tags < sound_event_tags
+    return tags <= sound_event_tags
 
 
 def does_not_have_tags(

@@ -58,7 +58,9 @@ class TrainingModule(L.LightningModule):
 
         return losses.total
 
-    def validation_step(self, batch: TrainExample, batch_idx: int) -> None:
+    def validation_step(  # type: ignore
+        self, batch: TrainExample, batch_idx: int
+    ) -> ModelOutput:
         outputs = self.forward(batch.spec)
         losses = self.loss(outputs, batch)
 
@@ -66,6 +68,8 @@ class TrainingModule(L.LightningModule):
         self.log("val/loss/detection", losses.total, logger=True)
         self.log("val/loss/size", losses.total, logger=True)
         self.log("val/loss/classification", losses.total, logger=True)
+
+        return outputs
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
