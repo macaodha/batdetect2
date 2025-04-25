@@ -5,19 +5,14 @@ import uuid
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 
-import numpy as np
 from pydantic import BaseModel, Field
 from soundevent import data
-from soundevent.geometry import compute_bounds
-from soundevent.types import ClassMapper
 
-from batdetect2 import types
+from batdetect2.targets import get_term_from_key
 
 PathLike = Union[Path, str, os.PathLike]
 
-__all__ = [
-    "convert_to_annotation_group",
-]
+__all__ = []
 
 SPECIES_TAG_KEY = "species"
 ECHOLOCATION_EVENT = "Echolocation"
@@ -31,104 +26,6 @@ EventFn = Callable[[data.SoundEventAnnotation], Optional[str]]
 ClassFn = Callable[[data.Recording], int]
 
 IndividualFn = Callable[[data.SoundEventAnnotation], int]
-
-
-def get_recording_class_name(recording: data.Recording) -> str:
-    """Get the class name for a recording."""
-    tag = data.find_tag(recording.tags, SPECIES_TAG_KEY)
-    if tag is None:
-        return UNKNOWN_CLASS
-    return tag.value
-
-
-def get_annotation_notes(annotation: data.ClipAnnotation) -> str:
-    """Get the notes for a ClipAnnotation."""
-    all_notes = [
-        *annotation.notes,
-        *annotation.clip.recording.notes,
-    ]
-    messages = [note.message for note in all_notes if note.message is not None]
-    return "\n".join(messages)
-
-
-def convert_to_annotation_group(
-    annotation: data.ClipAnnotation,
-    class_mapper: ClassMapper,
-    event_fn: EventFn = lambda _: ECHOLOCATION_EVENT,
-    class_fn: ClassFn = lambda _: 0,
-    individual_fn: IndividualFn = lambda _: 0,
-) -> types.AudioLoaderAnnotationGroup:
-    """Convert a ClipAnnotation to an AudioLoaderAnnotationGroup."""
-    recording = annotation.clip.recording
-
-    start_times = []
-    end_times = []
-    low_freqs = []
-    high_freqs = []
-    class_ids = []
-    x_inds = []
-    y_inds = []
-    individual_ids = []
-    annotations: List[types.Annotation] = []
-    class_id_file = class_fn(recording)
-
-    for sound_event in annotation.sound_events:
-        geometry = sound_event.sound_event.geometry
-
-        if geometry is None:
-            continue
-
-        start_time, low_freq, end_time, high_freq = compute_bounds(geometry)
-        class_id = class_mapper.transform(sound_event) or -1
-        event = event_fn(sound_event) or ""
-        individual_id = individual_fn(sound_event) or -1
-
-        start_times.append(start_time)
-        end_times.append(end_time)
-        low_freqs.append(low_freq)
-        high_freqs.append(high_freq)
-        class_ids.append(class_id)
-        individual_ids.append(individual_id)
-
-        # NOTE: This will be computed later so we just put a placeholder
-        # here for now.
-        x_inds.append(0)
-        y_inds.append(0)
-
-        annotations.append(
-            {
-                "start_time": start_time,
-                "end_time": end_time,
-                "low_freq": low_freq,
-                "high_freq": high_freq,
-                "class_prob": 1.0,
-                "det_prob": 1.0,
-                "individual": "0",
-                "event": event,
-                "class_id": class_id,  # type: ignore
-            }
-        )
-
-    return {
-        "id": str(recording.path),
-        "duration": recording.duration,
-        "issues": False,
-        "file_path": str(recording.path),
-        "time_exp": recording.time_expansion,
-        "class_name": get_recording_class_name(recording),
-        "notes": get_annotation_notes(annotation),
-        "annotated": True,
-        "start_times": np.array(start_times),
-        "end_times": np.array(end_times),
-        "low_freqs": np.array(low_freqs),
-        "high_freqs": np.array(high_freqs),
-        "class_ids": np.array(class_ids),
-        "x_inds": np.array(x_inds),
-        "y_inds": np.array(y_inds),
-        "individual_ids": np.array(individual_ids),
-        "annotation": annotations,
-        "class_id_file": class_id_file,
-    }
 
 
 class Annotation(BaseModel):
@@ -195,15 +92,15 @@ def annotation_to_sound_event(
         sound_event=sound_event,
         tags=[
             data.Tag(
-                term=data.term_from_key(label_key),
+                term=get_term_from_key(label_key),
                 value=annotation.label,
             ),
             data.Tag(
-                term=data.term_from_key(event_key),
+                term=get_term_from_key(event_key),
                 value=annotation.event,
             ),
             data.Tag(
-                term=data.term_from_key(individual_key),
+                term=get_term_from_key(individual_key),
                 value=str(annotation.individual),
             ),
         ],
@@ -228,7 +125,7 @@ def file_annotation_to_clip(
         time_expansion=file_annotation.time_exp,
         tags=[
             data.Tag(
-                term=data.term_from_key(label_key),
+                term=get_term_from_key(label_key),
                 value=file_annotation.label,
             )
         ],
@@ -260,7 +157,7 @@ def file_annotation_to_clip_annotation(
         notes=notes,
         tags=[
             data.Tag(
-                term=data.term_from_key(label_key), value=file_annotation.label
+                term=get_term_from_key(label_key), value=file_annotation.label
             )
         ],
         sound_events=[
