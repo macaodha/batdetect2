@@ -44,7 +44,7 @@ DEFAULT_CONFIG_FILE = Path("config.yaml")
     default=DEFAULT_CONFIG_FILE,
 )
 @click.option(
-    "--train-field",
+    "--train-config-field",
     type=str,
     default="train",
 )
@@ -108,6 +108,16 @@ DEFAULT_CONFIG_FILE = Path("config.yaml")
     type=str,
     default="model",
 )
+@click.option(
+    "--train-workers",
+    type=int,
+    default=0,
+)
+@click.option(
+    "--val-workers",
+    type=int,
+    default=0,
+)
 def train_command(
     train_examples: Path,
     val_examples: Optional[Path] = None,
@@ -122,6 +132,8 @@ def train_command(
     postprocess_config_field: str = "postprocess",
     model_config: Path = DEFAULT_CONFIG_FILE,
     model_config_field: str = "model",
+    train_workers: int = 0,
+    val_workers: int = 0,
 ):
     logger.info("Starting training!")
 
@@ -176,15 +188,27 @@ def train_command(
             targets=targets,
             config=postprocess_config_loaded,
         )
+        logger.debug(
+            "Loaded postprocessor from file {path}",
+            path=train_config,
+        )
     except IOError:
+        logger.debug(
+            "Could not load postprocessor config from file. Using default"
+        )
         postprocessor = build_postprocessor(targets=targets)
 
     try:
         train_config_loaded = load_train_config(
             path=train_config, field=train_config_field
         )
+        logger.debug(
+            "Loaded training config from file {path}",
+            path=train_config,
+        )
     except IOError:
         train_config_loaded = TrainingConfig()
+        logger.debug("Could not load training config from file. Using default")
 
     train_files = list_preprocessed_files(train_examples)
 
@@ -212,4 +236,6 @@ def train_command(
                 ]
             )
         ],
+        train_workers=train_workers,
+        val_workers=val_workers,
     )

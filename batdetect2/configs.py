@@ -88,7 +88,7 @@ def get_object_field(obj: dict, current_key: str) -> Any:
     KeyError: 'x'
     """
     if "." not in current_key:
-        return obj[current_key]
+        return obj.get(current_key, {})
 
     current_key, rest = current_key.split(".", 1)
     subobj = obj[current_key]

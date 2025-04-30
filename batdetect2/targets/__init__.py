@@ -24,6 +24,7 @@ object is via the `build_targets` or `load_targets` functions.
 from typing import List, Optional
 
 import numpy as np
+from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
@@ -157,7 +158,9 @@ class TargetConfig(BaseConfig):
 
     filtering: Optional[FilterConfig] = None
     transforms: Optional[TransformConfig] = None
-    classes: ClassesConfig
+    classes: ClassesConfig = Field(
+        default_factory=lambda: DEFAULT_CLASSES_CONFIG
+    )
     roi: Optional[ROIConfig] = None
 
 
@@ -438,6 +441,84 @@ class Targets(TargetProtocol):
         return self._roi_mapper.recover_roi(pos, dims)
 
 
+DEFAULT_CLASSES = [
+    TargetClass(
+        tags=[TagInfo(value="Myotis mystacinus")],
+        name="myomys",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Myotis alcathoe")],
+        name="myoalc",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Eptesicus serotinus")],
+        name="eptser",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Pipistrellus nathusii")],
+        name="pipnat",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Barbastellus barbastellus")],
+        name="barbar",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Myotis nattereri")],
+        name="myonat",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Myotis daubentonii")],
+        name="myodau",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Myotis brandtii")],
+        name="myobra",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Pipistrellus pipistrellus")],
+        name="pippip",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Myotis bechsteinii")],
+        name="myobec",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Pipistrellus pygmaeus")],
+        name="pippyg",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Rhinolophus hipposideros")],
+        name="rhihip",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Nyctalus leisleri")],
+        name="nyclei",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Rhinolophus ferrumequinum")],
+        name="rhifer",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Plecotus auritus")],
+        name="pleaur",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Nyctalus noctula")],
+        name="nycnoc",
+    ),
+    TargetClass(
+        tags=[TagInfo(value="Plecotus austriacus")],
+        name="pleaus",
+    ),
+]
+
+
+DEFAULT_CLASSES_CONFIG: ClassesConfig = ClassesConfig(
+    classes=DEFAULT_CLASSES,
+    generic_class=[TagInfo(value="Bat")],
+)
+
+
 DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
     filtering=FilterConfig(
         rules=[
@@ -455,79 +536,7 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
             ),
         ]
     ),
-    classes=ClassesConfig(
-        classes=[
-            TargetClass(
-                tags=[TagInfo(value="Myotis mystacinus")],
-                name="myomys",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Myotis alcathoe")],
-                name="myoalc",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Eptesicus serotinus")],
-                name="eptser",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Pipistrellus nathusii")],
-                name="pipnat",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Barbastellus barbastellus")],
-                name="barbar",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Myotis nattereri")],
-                name="myonat",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Myotis daubentonii")],
-                name="myodau",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Myotis brandtii")],
-                name="myobra",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Pipistrellus pipistrellus")],
-                name="pippip",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Myotis bechsteinii")],
-                name="myobec",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Pipistrellus pygmaeus")],
-                name="pippyg",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Rhinolophus hipposideros")],
-                name="rhihip",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Nyctalus leisleri")],
-                name="nyclei",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Rhinolophus ferrumequinum")],
-                name="rhifer",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Plecotus auritus")],
-                name="pleaur",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Nyctalus noctula")],
-                name="nycnoc",
-            ),
-            TargetClass(
-                tags=[TagInfo(value="Plecotus austriacus")],
-                name="pleaus",
-            ),
-        ],
-        generic_class=[TagInfo(value="Bat")],
-    ),
+    classes=DEFAULT_CLASSES_CONFIG,
 )
 
 

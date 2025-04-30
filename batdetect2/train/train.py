@@ -38,6 +38,8 @@ def train(
     config: Optional[TrainingConfig] = None,
     callbacks: Optional[List[Callback]] = None,
     model_path: Optional[data.PathLike] = None,
+    train_workers: int = 0,
+    val_workers: int = 0,
     **trainer_kwargs,
 ) -> None:
     config = config or TrainingConfig()
@@ -85,6 +87,7 @@ def train(
         train_dataset,
         batch_size=config.batch_size,
         shuffle=True,
+        num_workers=train_workers,
     )
 
     val_dataloader = None
@@ -97,6 +100,7 @@ def train(
             val_dataset,
             batch_size=config.batch_size,
             shuffle=False,
+            num_workers=val_workers,
         )
 
     trainer.fit(
