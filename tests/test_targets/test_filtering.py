@@ -4,6 +4,7 @@ from typing import Callable, List, Set
 import pytest
 from soundevent import data
 
+from batdetect2.targets import build_targets
 from batdetect2.targets.filtering import (
     FilterConfig,
     FilterRule,
@@ -176,3 +177,34 @@ rules:
     filter_result = load_filter_from_config(test_config_path)
     annotation = create_annotation(["tag1", "tag3"])
     assert filter_result(annotation) is False
+
+
+def test_default_filtering_over_example_dataset(
+    example_annotations: List[data.ClipAnnotation],
+):
+    targets = build_targets()
+
+    clip1 = example_annotations[0]
+    clip2 = example_annotations[1]
+    clip3 = example_annotations[2]
+
+    assert (
+        sum(
+            [targets.filter(sound_event) for sound_event in clip1.sound_events]
+        )
+        == 9
+    )
+
+    assert (
+        sum(
+            [targets.filter(sound_event) for sound_event in clip2.sound_events]
+        )
+        == 15
+    )
+
+    assert (
+        sum(
+            [targets.filter(sound_event) for sound_event in clip3.sound_events]
+        )
+        == 20
+    )

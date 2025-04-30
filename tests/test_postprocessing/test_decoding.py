@@ -98,7 +98,7 @@ def sample_detection_dataset() -> xr.Dataset:
     expected_freqs = np.array([300, 200])
     detection_coords = {
         "time": ("detection", expected_times),
-        "freq": ("detection", expected_freqs),
+        "frequency": ("detection", expected_freqs),
     }
 
     scores_data = np.array([0.9, 0.8], dtype=np.float64)
@@ -106,7 +106,7 @@ def sample_detection_dataset() -> xr.Dataset:
         scores_data,
         coords=detection_coords,
         dims=["detection"],
-        name="scores",
+        name="score",
     )
 
     dimensions_data = np.array([[7.0, 16.0], [3.0, 12.0]], dtype=np.float32)
@@ -183,7 +183,7 @@ def empty_detection_dataset() -> xr.Dataset:
     )
     return xr.Dataset(
         {
-            "scores": scores,
+            "score": scores,
             "dimensions": dimensions,
             "classes": classes,
             "features": features,
@@ -206,10 +206,14 @@ def sample_raw_predictions() -> List[RawPrediction]:
     )
     pred1 = RawPrediction(
         detection_score=0.9,
-        start_time=20 - 7 / 2,
-        end_time=20 + 7 / 2,
-        low_freq=300 - 16 / 2,
-        high_freq=300 + 16 / 2,
+        geometry=data.BoundingBox(
+            coordinates=[
+                20 - 7 / 2,
+                300 - 16 / 2,
+                20 + 7 / 2,
+                300 + 16 / 2,
+            ]
+        ),
         class_scores=pred1_classes,
         features=pred1_features,
     )
@@ -224,10 +228,14 @@ def sample_raw_predictions() -> List[RawPrediction]:
     )
     pred2 = RawPrediction(
         detection_score=0.8,
-        start_time=10 - 3 / 2,
-        end_time=10 + 3 / 2,
-        low_freq=200 - 12 / 2,
-        high_freq=200 + 12 / 2,
+        geometry=data.BoundingBox(
+            coordinates=[
+                10 - 3 / 2,
+                200 - 12 / 2,
+                10 + 3 / 2,
+                200 + 12 / 2,
+            ]
+        ),
         class_scores=pred2_classes,
         features=pred2_features,
     )
@@ -242,10 +250,14 @@ def sample_raw_predictions() -> List[RawPrediction]:
     )
     pred3 = RawPrediction(
         detection_score=0.15,
-        start_time=5.0,
-        end_time=6.0,
-        low_freq=50.0,
-        high_freq=60.0,
+        geometry=data.BoundingBox(
+            coordinates=[
+                5.0,
+                50.0,
+                6.0,
+                60.0,
+            ]
+        ),
         class_scores=pred3_classes,
         features=pred3_features,
     )
@@ -267,10 +279,12 @@ def test_convert_xr_dataset_basic(
     assert isinstance(pred1, RawPrediction)
     assert pred1.detection_score == 0.9
 
-    assert pred1.start_time == 20 - 7 / 2
-    assert pred1.end_time == 20 + 7 / 2
-    assert pred1.low_freq == 300 - 16 / 2
-    assert pred1.high_freq == 300 + 16 / 2
+    assert pred1.geometry.coordinates == [
+        20 - 7 / 2,
+        300 - 16 / 2,
+        20 + 7 / 2,
+        300 + 16 / 2,
+    ]
     xr.testing.assert_allclose(
         pred1.class_scores,
         sample_detection_dataset["classes"].sel(detection=0),
@@ -283,10 +297,12 @@ def test_convert_xr_dataset_basic(
     assert isinstance(pred2, RawPrediction)
     assert pred2.detection_score == 0.8
 
-    assert pred2.start_time == 10 - 3 / 2
-    assert pred2.end_time == 10 + 3 / 2
-    assert pred2.low_freq == 200 - 12 / 2
-    assert pred2.high_freq == 200 + 12 / 2
+    assert pred2.geometry.coordinates == [
+        10 - 3 / 2,
+        200 - 12 / 2,
+        10 + 3 / 2,
+        200 + 12 / 2,
+    ]
     xr.testing.assert_allclose(
         pred2.class_scores,
         sample_detection_dataset["classes"].sel(detection=1),
@@ -331,15 +347,7 @@ def test_convert_raw_to_sound_event_basic(
     assert isinstance(se, data.SoundEvent)
     assert se.recording == sample_recording
     assert isinstance(se.geometry, data.BoundingBox)
-    np.testing.assert_allclose(
-        se.geometry.coordinates,
-        [
-            raw_pred.start_time,
-            raw_pred.low_freq,
-            raw_pred.end_time,
-            raw_pred.high_freq,
-        ],
-    )
+    assert se.geometry == raw_pred.geometry
     assert len(se.features) == len(raw_pred.features)
 
     feat_dict = {f.term.name: f.value for f in se.features}

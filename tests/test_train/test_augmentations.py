@@ -9,8 +9,8 @@ from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.train.augmentations import (
     add_echo,
     mix_examples,
-    select_subclip,
 )
+from batdetect2.train.clips import select_subclip
 from batdetect2.train.preprocess import generate_train_example
 from batdetect2.train.types import ClipLabeller
 
@@ -121,7 +121,7 @@ def test_selected_random_subclip_has_the_correct_width(
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
-    subclip = select_subclip(original, width=100)
+    subclip = select_subclip(original, start=0, span=100)
 
     assert subclip["spectrogram"].shape[1] == 100
 
@@ -142,7 +142,7 @@ def test_add_echo_after_subclip(
 
     assert original.sizes["time"] > 512
 
-    subclip = select_subclip(original, width=512)
+    subclip = select_subclip(original, start=0, span=512)
     with_echo = add_echo(subclip, preprocessor=sample_preprocessor)
 
     assert with_echo.sizes["time"] == 512

@@ -7,6 +7,8 @@ import pytest
 import soundfile as sf
 from soundevent import data, terms
 
+from batdetect2.data import DatasetConfig, load_dataset
+from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import (
@@ -383,3 +385,27 @@ def sample_labeller(
     sample_targets: TargetProtocol,
 ) -> ClipLabeller:
     return build_clip_labeler(sample_targets)
+
+
+@pytest.fixture
+def example_dataset(example_data_dir: Path) -> DatasetConfig:
+    return DatasetConfig(
+        name="test dataset",
+        description="test dataset",
+        sources=[
+            BatDetect2FilesAnnotations(
+                name="example annotations",
+                audio_dir=example_data_dir / "audio",
+                annotations_dir=example_data_dir / "anns",
+            )
+        ],
+    )
+
+
+@pytest.fixture
+def example_annotations(
+    example_dataset: DatasetConfig,
+) -> List[data.ClipAnnotation]:
+    annotations = load_dataset(example_dataset)
+    assert len(annotations) == 3
+    return annotations

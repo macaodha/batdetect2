@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
 
 import numpy as np
 import pytest
@@ -307,7 +307,7 @@ def test_remove_spectral_mean_constant(constant_wave_xr: xr.DataArray):
 def test_resize_spectrogram(
     sample_spec: xr.DataArray,
     height: int,
-    resize_factor: float | None,
+    resize_factor: Union[float, None],
     expected_freq_size: int,
     expected_time_factor: float,
 ):

@@ -254,11 +254,11 @@ class TestLoadBatDetect2Files:
         assert clip_ann.clip.recording.duration == 5.0
         assert len(clip_ann.sound_events) == 1
         assert clip_ann.notes[0].message == "Standard notes."
-        clip_tag = data.find_tag(clip_ann.tags, "class")
+        clip_tag = data.find_tag(clip_ann.tags, "Class")
         assert clip_tag is not None
         assert clip_tag.value == "Myotis"
 
-        recording_tag = data.find_tag(clip_ann.clip.recording.tags, "class")
+        recording_tag = data.find_tag(clip_ann.clip.recording.tags, "Class")
         assert recording_tag is not None
         assert recording_tag.value == "Myotis"
 
@@ -271,15 +271,15 @@ class TestLoadBatDetect2Files:
             40000,
         ]
 
-        se_class_tag = data.find_tag(se_ann.tags, "class")
+        se_class_tag = data.find_tag(se_ann.tags, "Class")
         assert se_class_tag is not None
         assert se_class_tag.value == "Myotis"
 
-        se_event_tag = data.find_tag(se_ann.tags, "event")
+        se_event_tag = data.find_tag(se_ann.tags, "Call Type")
         assert se_event_tag is not None
         assert se_event_tag.value == "Echolocation"
 
-        se_individual_tag = data.find_tag(se_ann.tags, "individual")
+        se_individual_tag = data.find_tag(se_ann.tags, "Individual")
         assert se_individual_tag is not None
         assert se_individual_tag.value == "0"
 
@@ -439,7 +439,7 @@ class TestLoadBatDetect2Merged:
         assert clip_ann.clip.recording.duration == 5.0
         assert len(clip_ann.sound_events) == 1
 
-        clip_class_tag = data.find_tag(clip_ann.tags, "class")
+        clip_class_tag = data.find_tag(clip_ann.tags, "Class")
         assert clip_class_tag is not None
         assert clip_class_tag.value == "Myotis"
 
