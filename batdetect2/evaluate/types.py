@@ -19,6 +19,4 @@ class Match:
 
 
 class MetricsProtocol(Protocol):
-    name: str
-
-    def __call__(self, matches: List[Match]) -> float: ...
+    def __call__(self, matches: List[Match]) -> Dict[str, float]: ...

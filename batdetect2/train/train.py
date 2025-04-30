@@ -37,6 +37,7 @@ def train(
     val_examples: Optional[List[data.PathLike]] = None,
     config: Optional[TrainingConfig] = None,
     callbacks: Optional[List[Callback]] = None,
+    **trainer_kwargs,
 ) -> None:
     config = config or TrainingConfig()
 
@@ -74,9 +75,7 @@ def train(
     trainer = Trainer(
         **config.trainer.model_dump(exclude_none=True),
         callbacks=callbacks,
-        num_sanity_val_steps=0,
-        # enable_model_summary=False,
-        # enable_progress_bar=False,
+        **trainer_kwargs,
     )
 
     train_dataloader = DataLoader(

@@ -51,10 +51,10 @@ class TrainingModule(L.LightningModule):
         outputs = self.forward(batch.spec)
         losses = self.loss(outputs, batch)
 
-        self.log("train/loss/total", losses.total, prog_bar=True, logger=True)
-        self.log("train/loss/detection", losses.total, logger=True)
-        self.log("train/loss/size", losses.total, logger=True)
-        self.log("train/loss/classification", losses.total, logger=True)
+        self.log("total_loss/train", losses.total, prog_bar=True, logger=True)
+        self.log("detection_loss/train", losses.total, logger=True)
+        self.log("size_loss/train", losses.total, logger=True)
+        self.log("classification_loss/train", losses.total, logger=True)
 
         return losses.total
 
@@ -64,10 +64,10 @@ class TrainingModule(L.LightningModule):
         outputs = self.forward(batch.spec)
         losses = self.loss(outputs, batch)
 
-        self.log("val/loss/total", losses.total, prog_bar=True, logger=True)
-        self.log("val/loss/detection", losses.total, logger=True)
-        self.log("val/loss/size", losses.total, logger=True)
-        self.log("val/loss/classification", losses.total, logger=True)
+        self.log("total_loss/val", losses.total, prog_bar=True, logger=True)
+        self.log("detection_loss/val", losses.total, logger=True)
+        self.log("size_loss/val", losses.total, logger=True)
+        self.log("classification_loss/val", losses.total, logger=True)
 
         return outputs
 

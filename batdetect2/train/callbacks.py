@@ -28,10 +28,11 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
+        metrics = {}
         for metric in self.metrics:
-            value = metric(self.matches)
-            pl_module.log(f"val/metric/{metric.name}", value, prog_bar=True)
+            metrics.update(metric(self.matches).items())
 
+        pl_module.log_dict(metrics)
         return super().on_validation_epoch_end(trainer, pl_module)
 
     def on_validation_epoch_start(

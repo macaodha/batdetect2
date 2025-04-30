@@ -26,7 +26,14 @@ from batdetect2.train.dataset import (
     list_preprocessed_files,
 )
 from batdetect2.train.labels import build_clip_labeler, load_label_config
-from batdetect2.train.losses import LossFunction, build_loss
+from batdetect2.train.losses import (
+    ClassificationLossConfig,
+    DetectionLossConfig,
+    LossConfig,
+    LossFunction,
+    SizeLossConfig,
+    build_loss,
+)
 from batdetect2.train.preprocess import (
     generate_train_example,
     preprocess_annotations,
@@ -39,11 +46,15 @@ from batdetect2.train.train import (
 
 __all__ = [
     "AugmentationsConfig",
+    "ClassificationLossConfig",
+    "DetectionLossConfig",
     "EchoAugmentationConfig",
     "FrequencyMaskAugmentationConfig",
     "LabeledDataset",
+    "LossConfig",
     "LossFunction",
     "RandomExampleSource",
+    "SizeLossConfig",
     "TimeMaskAugmentationConfig",
     "TrainExample",
     "TrainerConfig",
