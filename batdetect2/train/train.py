@@ -37,39 +37,42 @@ def train(
     val_examples: Optional[List[data.PathLike]] = None,
     config: Optional[TrainingConfig] = None,
     callbacks: Optional[List[Callback]] = None,
+    model_path: Optional[data.PathLike] = None,
     **trainer_kwargs,
 ) -> None:
     config = config or TrainingConfig()
+    if model_path is None:
+        if preprocessor is None:
+            preprocessor = build_preprocessor()
 
-    if preprocessor is None:
-        preprocessor = build_preprocessor()
+        if targets is None:
+            targets = build_targets()
 
-    if targets is None:
-        targets = build_targets()
+        if postprocessor is None:
+            postprocessor = build_postprocessor(
+                targets,
+                min_freq=preprocessor.min_freq,
+                max_freq=preprocessor.max_freq,
+            )
 
-    if postprocessor is None:
-        postprocessor = build_postprocessor(
-            targets,
-            min_freq=preprocessor.min_freq,
-            max_freq=preprocessor.max_freq,
+        loss = build_loss(config.loss)
+
+        module = TrainingModule(
+            detector=detector,
+            loss=loss,
+            targets=targets,
+            preprocessor=preprocessor,
+            postprocessor=postprocessor,
+            learning_rate=config.optimizer.learning_rate,
+            t_max=config.optimizer.t_max,
         )
+    else:
+        module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
 
     train_dataset = build_train_dataset(
         train_examples,
-        preprocessor,
+        preprocessor=module.preprocessor,
         config=config,
-    )
-
-    loss = build_loss(config.loss)
-
-    module = TrainingModule(
-        detector=detector,
-        loss=loss,
-        targets=targets,
-        preprocessor=preprocessor,
-        postprocessor=postprocessor,
-        learning_rate=config.optimizer.learning_rate,
-        t_max=config.optimizer.t_max,
     )
 
     trainer = Trainer(

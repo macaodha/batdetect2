@@ -89,7 +89,7 @@ class LabeledDataset(Dataset):
 
 def list_preprocessed_files(
     directory: data.PathLike, extension: str = ".nc"
-) -> Sequence[Path]:
+) -> List[Path]:
     return list(Path(directory).glob(f"*{extension}"))
 
 
