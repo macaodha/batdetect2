@@ -1,6 +1,10 @@
 """Types used in the code base."""
 
-from typing import List, NamedTuple, Optional, Union
+from typing import List, NamedTuple, Optional, Union, Any, BinaryIO
+
+import audioread
+import os 
+import soundfile as sf
 
 import numpy as np
 import torch
@@ -40,6 +44,9 @@ __all__ = [
     "SpectrogramParameters",
 ]
 
+AudioPath =  Union[
+        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    ]
 
 class SpectrogramParameters(TypedDict):
     """Parameters for generating spectrograms."""

@@ -99,6 +99,7 @@ consult the API documentation in the code.
 import warnings
 from typing import List, Optional, Tuple, BinaryIO, Any, Union
 
+from .types import AudioPath
 import numpy as np
 import torch
 
@@ -244,9 +245,7 @@ def generate_spectrogram(
 
 
 def process_file(
-    path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ],
+    path: AudioPath,
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
@@ -256,9 +255,7 @@ def process_file(
 
     Parameters
     ----------
-    path :  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ]
+    path : AudioPath
         Path to audio data.
     model : DetectionModel, optional
         Detection model. Uses default model if not specified.

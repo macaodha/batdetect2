@@ -2,6 +2,8 @@ import json
 import os
 from typing import Any, Iterator, List, Optional, Tuple, Union, BinaryIO
 
+from ..types import AudioPath
+
 import numpy as np
 import pandas as pd
 import torch
@@ -735,9 +737,7 @@ def process_audio_array(
 
 
 def process_file(
-    path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ],
+    path: AudioPath,
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
@@ -750,7 +750,7 @@ def process_file(
 
     Parameters
     ----------
-    path : str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
+    path : AudioPath
         Path to audio file.
 
     model : torch.nn.Module
@@ -760,7 +760,7 @@ def process_file(
         Configuration for processing.
     
     file_id: Optional[str],
-        Give the data an id. Defaults to the filename if path is a string. Otherwise
+        Give the data an id. Defaults to the filename if path is a string. Otherwise an md5 will be calculated from the binary data.
 
     Returns
     -------
@@ -859,9 +859,7 @@ def process_file(
 
     return results
 
-def _generate_id(path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ]) -> str:
+def _generate_id(path: AudioPath) -> str:
     """ Generate an id based on the path.
     
     If the path is a str or PathLike it will parsed as the basename. 

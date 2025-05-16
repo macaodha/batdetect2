@@ -1,6 +1,8 @@
 import warnings
 from typing import Optional, Tuple, Union, Any, BinaryIO
 
+from ..types import AudioPath
+
 import librosa
 import librosa.core.spectrum
 import numpy as np
@@ -146,9 +148,7 @@ def generate_spectrogram(
     return spec, spec_for_viz
 
 def load_audio(
-    path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ],
+    path: AudioPath,
     time_exp_fact: float,
     target_samp_rate: int,
     scale: bool = False,
@@ -177,9 +177,7 @@ def load_audio(
     return sample_rate, audio_data
 
 def load_audio_and_samplerate(
-    path:  Union[
-        str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
-    ],
+    path: AudioPath,
     time_exp_fact: float,
     target_samp_rate: int,
     scale: bool = False,
