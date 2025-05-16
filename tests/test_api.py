@@ -284,7 +284,7 @@ def test_process_file_with_empty_predictions_does_not_fail(
     assert len(results["pred_dict"]["annotation"]) == 0
 
 def test_process_file_file_id_defaults_to_basename():
-    """Test that no detections are made above the nyquist frequency."""
+    """Test that process_file assigns basename as an id if no file_id is provided."""
     # Recording donated by @@kdarras
     basename = "20230322_172000_selec2.wav"
     path = os.path.join(DATA_DIR, basename)
@@ -295,7 +295,7 @@ def test_process_file_file_id_defaults_to_basename():
     assert id == basename
 
 def test_bytesio_file_id_defaults_to_md5():
-    """Test that no detections are made above the nyquist frequency."""
+    """Test that process_file assigns an md5 sum as an id if no file_id is provided when using binary data."""
     # Recording donated by @@kdarras
     basename = "20230322_172000_selec2.wav"
     path = os.path.join(DATA_DIR, basename)
