@@ -2,7 +2,6 @@ import json
 import os
 from typing import Any, Iterator, List, Optional, Tuple, Union, BinaryIO
 
-import librosa
 import numpy as np
 import pandas as pd
 import torch
@@ -759,6 +758,9 @@ def process_file(
 
     config : ProcessingConfiguration
         Configuration for processing.
+    
+    file_id: Optional[str],
+        Give the data an id. Defaults to the filename if path is a string. Otherwise
 
     Returns
     -------
@@ -773,7 +775,7 @@ def process_file(
     spec_slices = []
 
     # load audio file
-    sampling_rate, audio_full, file_samp_rate = au.load_audio_data(
+    sampling_rate, audio_full, file_samp_rate = au.load_audio_and_samplerate(
         path,
         time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],

@@ -9,7 +9,6 @@ import torch
 import audioread
 import os 
 import soundfile as sf
-import io
 
 from batdetect2.detector import parameters
 
@@ -17,7 +16,7 @@ from . import wavfile
 
 __all__ = [
     "load_audio",
-    "load_audio_data",
+    "load_audio_and_samplerate",
     "generate_spectrogram",
     "pad_audio",
 ]
@@ -174,10 +173,10 @@ def load_audio(
         ValueError: If the audio file is stereo.
 
     """
-    sample_rate, audio_data, _ = load_audio_data(path, time_exp_fact, target_samp_rate, scale, max_duration)
+    sample_rate, audio_data, _ = load_audio_and_samplerate(path, time_exp_fact, target_samp_rate, scale, max_duration)
     return sample_rate, audio_data
 
-def load_audio_data(
+def load_audio_and_samplerate(
     path:  Union[
         str, int, os.PathLike[Any], sf.SoundFile, audioread.AudioFile, BinaryIO
     ],
@@ -200,6 +199,7 @@ def load_audio_data(
     Returns:
         sampling_rate: The sampling rate of the audio.
         audio_raw: The audio signal in a numpy array.
+        file_sampling_rate: The original sampling rate of the audio
 
     Raises:
         ValueError: If the audio file is stereo.
