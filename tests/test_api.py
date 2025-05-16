@@ -10,11 +10,13 @@ import torch
 from torch import nn
 
 from batdetect2 import api
+import io 
 
 PKG_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_DATA_DIR = os.path.join(PKG_DIR, "example_data", "audio")
 TEST_DATA = glob(os.path.join(TEST_DATA_DIR, "*.wav"))
 
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 def test_load_model_with_default_params():
     """Test loading model with default parameters."""
@@ -280,3 +282,28 @@ def test_process_file_with_empty_predictions_does_not_fail(
 
     assert results is not None
     assert len(results["pred_dict"]["annotation"]) == 0
+
+def test_process_file_file_id_defaults_to_basename():
+    """Test that process_file assigns basename as an id if no file_id is provided."""
+    # Recording donated by @@kdarras
+    basename = "20230322_172000_selec2.wav"
+    path = os.path.join(DATA_DIR, basename)
+
+    output = api.process_file(path)
+    predictions = output["pred_dict"]
+    id = predictions["id"]
+    assert id == basename
+
+def test_bytesio_file_id_defaults_to_md5():
+    """Test that process_file assigns an md5 sum as an id if no file_id is provided when using binary data."""
+    # Recording donated by @@kdarras
+    basename = "20230322_172000_selec2.wav"
+    path = os.path.join(DATA_DIR, basename)
+
+    with open(path, "rb") as f:
+        data = io.BytesIO(f.read())
+
+    output = api.process_file(data)
+    predictions = output["pred_dict"]
+    id = predictions["id"]
+    assert id == "7ade9ebf1a9fe5477ff3a2dc57001929"

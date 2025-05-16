@@ -6,7 +6,10 @@ from hypothesis import strategies as st
 
 from batdetect2.detector import parameters
 from batdetect2.utils import audio_utils, detector_utils
+import io
+import os
 
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 @given(duration=st.floats(min_value=0.1, max_value=2))
 def test_can_compute_correct_spectrogram_width(duration: float):
@@ -134,3 +137,20 @@ def test_pad_audio_with_fixed_width(duration: float, width: int):
         resize_factor=params["resize_factor"],
     )
     assert expected_width == width
+    
+
+def test_load_audio_using_bytesio():
+    basename = "20230322_172000_selec2.wav"
+    path = os.path.join(DATA_DIR, basename)
+
+    with open(path, "rb") as f:
+        data = io.BytesIO(f.read())
+    
+    sample_rate, audio_data, file_sample_rate = audio_utils.load_audio_and_samplerate(data, time_exp_fact=1, target_samp_rate=parameters.TARGET_SAMPLERATE_HZ)
+
+    expected_sample_rate, expected_audio_data, exp_file_sample_rate = audio_utils.load_audio_and_samplerate(path, time_exp_fact=1, target_samp_rate=parameters.TARGET_SAMPLERATE_HZ)
+
+    assert expected_sample_rate == sample_rate
+    assert exp_file_sample_rate == file_sample_rate
+
+    assert np.array_equal(audio_data, expected_audio_data)

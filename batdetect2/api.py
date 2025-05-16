@@ -97,8 +97,9 @@ consult the API documentation in the code.
 
 """
 import warnings
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, BinaryIO, Any, Union
 
+from .types import AudioPath
 import numpy as np
 import torch
 
@@ -119,6 +120,12 @@ from batdetect2.types import (
     SpectrogramParameters,
 )
 from batdetect2.utils.detector_utils import list_audio_files, load_model
+
+import audioread
+import os 
+import soundfile as sf
+import requests
+import io
 
 # Remove warnings from torch
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
@@ -238,34 +245,82 @@ def generate_spectrogram(
 
 
 def process_file(
-    audio_file: str,
+    path: AudioPath,
     model: DetectionModel = MODEL,
     config: Optional[ProcessingConfiguration] = None,
     device: torch.device = DEVICE,
+    file_id: Optional[str] = None
 ) -> du.RunResults:
     """Process audio file with model.
 
     Parameters
     ----------
-    audio_file : str
-        Path to audio file.
+    path : AudioPath
+        Path to audio data.
     model : DetectionModel, optional
         Detection model. Uses default model if not specified.
     config : Optional[ProcessingConfiguration], optional
         Processing configuration, by default None (uses default parameters).
     device : torch.device, optional
         Device to use, by default tries to use GPU if available.
+    file_id: Optional[str],
+        Give the data an id. If path is a string path to a file this can be ignored and
+        the file_id will be the basename of the file.
     """
     if config is None:
         config = CONFIG
 
     return du.process_file(
-        audio_file,
+        path,
         model,
         config,
         device,
+        file_id
     )
 
+def process_url(
+    url: str,
+    model: DetectionModel = MODEL,
+    config: Optional[ProcessingConfiguration] = None,
+    device: torch.device = DEVICE,
+    file_id: Optional[str] = None
+) -> du.RunResults:
+    """Process audio file with model.
+
+    Parameters
+    ----------
+    url : str
+        HTTP URL to load the audio data from
+    model : DetectionModel, optional
+        Detection model. Uses default model if not specified.
+    config : Optional[ProcessingConfiguration], optional
+        Processing configuration, by default None (uses default parameters).
+    device : torch.device, optional
+        Device to use, by default tries to use GPU if available.
+    file_id: Optional[str],
+        Give the data an id. Defaults to the URL
+    """
+    if config is None:
+        config = CONFIG
+
+    if file_id is None:
+        file_id = url
+
+    response = requests.get(url)
+
+    # Raise exception on HTTP error
+    response.raise_for_status()
+
+    # Retrieve body as raw bytes
+    raw_audio_data = response.content
+    
+    return du.process_file(
+        io.BytesIO(raw_audio_data),
+        model,
+        config,
+        device,
+        file_id
+    )
 
 def process_spectrogram(
     spec: torch.Tensor,

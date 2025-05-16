@@ -1,8 +1,9 @@
 import json
 import os
-from typing import Any, Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union, BinaryIO
 
-import librosa
+from ..types import AudioPath
+
 import numpy as np
 import pandas as pd
 import torch
@@ -30,6 +31,13 @@ from batdetect2.types import (
     RunResults,
     SpectrogramParameters,
 )
+
+import audioread
+import os 
+import io
+import soundfile as sf
+import hashlib
+import uuid
 
 __all__ = [
     "load_model",
@@ -729,10 +737,11 @@ def process_audio_array(
 
 
 def process_file(
-    audio_file: str,
+    path: AudioPath,
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
+    file_id: Optional[str] = None
 ) -> Union[RunResults, Any]:
     """Process a single audio file with detection model.
 
@@ -741,7 +750,7 @@ def process_file(
 
     Parameters
     ----------
-    audio_file : str
+    path : AudioPath
         Path to audio file.
 
     model : torch.nn.Module
@@ -749,6 +758,9 @@ def process_file(
 
     config : ProcessingConfiguration
         Configuration for processing.
+    
+    file_id: Optional[str],
+        Give the data an id. Defaults to the filename if path is a string. Otherwise an md5 will be calculated from the binary data.
 
     Returns
     -------
@@ -762,18 +774,16 @@ def process_file(
     cnn_feats = []
     spec_slices = []
 
-    # Get original sampling rate
-    file_samp_rate = librosa.get_samplerate(audio_file)
-    orig_samp_rate = file_samp_rate * (config.get("time_expansion") or 1)
-
     # load audio file
-    sampling_rate, audio_full = au.load_audio(
-        audio_file,
+    sampling_rate, audio_full, file_samp_rate = au.load_audio_and_samplerate(
+        path,
         time_exp_fact=config.get("time_expansion", 1) or 1,
         target_samp_rate=config["target_samp_rate"],
         scale=config["scale_raw_audio"],
         max_duration=config.get("max_duration"),
     )
+
+    orig_samp_rate = file_samp_rate * (config.get("time_expansion") or 1)
 
     # loop through larger file and split into chunks
     # TODO: fix so that it overlaps correctly and takes care of
@@ -823,9 +833,13 @@ def process_file(
         spec_slices,
     )
 
+    _file_id = file_id
+    if _file_id is None:
+        _file_id = _generate_id(path)
+
     # convert results to a dictionary in the right format
     results = convert_results(
-        file_id=os.path.basename(audio_file),
+        file_id=_file_id,
         time_exp=config.get("time_expansion", 1) or 1,
         duration=audio_full.shape[0] / float(sampling_rate),
         params=config,
@@ -844,6 +858,22 @@ def process_file(
         return predictions
 
     return results
+
+def _generate_id(path: AudioPath) -> str:
+    """ Generate an id based on the path.
+    
+    If the path is a str or PathLike it will parsed as the basename. 
+    This should ensure backwards compatibility with previous versions.     
+    """
+    if isinstance(path, str) or isinstance(path, os.PathLike):
+        return os.path.basename(path)
+    elif isinstance(path, (BinaryIO, io.BytesIO)):
+        path.seek(0)
+        md5 = hashlib.md5(path.read()).hexdigest()
+        path.seek(0)
+        return md5
+    else:
+        return str(uuid.uuid4())
 
 
 def summarize_results(results, predictions, config):
