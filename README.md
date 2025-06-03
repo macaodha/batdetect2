@@ -105,10 +105,11 @@ import requests
 
 AUDIO_URL = "<insert your audio url here>"
 
-# Process a whole file
+# Process a whole file from a url
 results = api.process_url(AUDIO_URL)
 
 # Or, load audio and compute spectrograms
+# 'requests.get(AUDIO_URL).content' fetches the raw bytes. You are free to use other sources to fetch the raw bytes
 audio = api.load_audio(io.BytesIO(requests.get(AUDIO_URL).content))
 spec = api.generate_spectrogram(audio)
 
