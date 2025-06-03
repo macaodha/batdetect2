@@ -96,6 +96,27 @@ detections, features = api.process_spectrogram(spec)
 
 You can integrate the detections or the extracted features to your custom analysis pipeline.
 
+#### Using the Python API with HTTP
+
+```python
+from batdetect2 import api
+import io
+import requests
+
+AUDIO_URL = "<insert your audio url here>"
+
+# Process a whole file from a url
+results = api.process_url(AUDIO_URL)
+
+# Or, load audio and compute spectrograms
+# 'requests.get(AUDIO_URL).content' fetches the raw bytes. You are free to use other sources to fetch the raw bytes
+audio = api.load_audio(io.BytesIO(requests.get(AUDIO_URL).content))
+spec = api.generate_spectrogram(audio)
+
+# And process the audio or the spectrogram with the model
+detections, features, spec = api.process_audio(audio)
+detections, features = api.process_spectrogram(spec)
+```
 
 ## Training the model on your own data
 Take a look at the steps outlined in finetuning readme [here](batdetect2/finetune/readme.md) for a description of how to train your own model.
