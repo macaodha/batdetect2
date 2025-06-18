@@ -276,8 +276,11 @@ def preprocess_single_annotation(
             labeller=labeller,
         )
     except Exception as error:
-        raise RuntimeError(
-            f"Failed to process annotation: {clip_annotation.uuid}"
-        ) from error
+        logger.error(
+            "Failed to process annotation: {uuid}. Error {error}",
+            uuid=clip_annotation.uuid,
+            error=error,
+        )
+        return
 
     _save_xr_dataset_to_file(sample, path)

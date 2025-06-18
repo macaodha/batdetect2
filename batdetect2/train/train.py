@@ -17,7 +17,11 @@ from batdetect2.train.augmentations import (
 )
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.config import TrainingConfig
-from batdetect2.train.dataset import LabeledDataset, RandomExampleSource
+from batdetect2.train.dataset import (
+    LabeledDataset,
+    RandomExampleSource,
+    collate_fn,
+)
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.losses import build_loss
 
@@ -88,6 +92,7 @@ def train(
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=train_workers,
+        collate_fn=collate_fn,
     )
 
     val_dataloader = None
@@ -101,6 +106,7 @@ def train(
             batch_size=config.batch_size,
             shuffle=False,
             num_workers=val_workers,
+            collate_fn=collate_fn,
         )
 
     trainer.fit(

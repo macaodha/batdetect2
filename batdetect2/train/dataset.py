@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 
 from batdetect2.train.augmentations import Augmentation
 from batdetect2.train.types import ClipperProtocol, TrainExample
+from batdetect2.utils.tensors import adjust_width
 
 __all__ = [
     "LabeledDataset",
@@ -85,6 +86,26 @@ class LabeledDataset(Dataset):
             torch.tensor(array.values.astype(dtype)),
             nan=0,
         )
+
+
+def collate_fn(batch: List[TrainExample]):
+    width = 512
+
+    return TrainExample(
+        spec=torch.stack([adjust_width(x.spec, width) for x in batch]),
+        detection_heatmap=torch.stack(
+            [adjust_width(x.detection_heatmap, width) for x in batch]
+        ),
+        class_heatmap=torch.stack(
+            [adjust_width(x.class_heatmap, width) for x in batch]
+        ),
+        size_heatmap=torch.stack(
+            [adjust_width(x.size_heatmap, width) for x in batch]
+        ),
+        idx=torch.stack([x.idx for x in batch]),
+        start_time=torch.stack([x.start_time for x in batch]),
+        end_time=torch.stack([x.end_time for x in batch]),
+    )
 
 
 def list_preprocessed_files(
