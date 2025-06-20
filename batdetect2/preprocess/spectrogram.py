@@ -363,7 +363,7 @@ def compute_spectrogram(
             )
 
         if config.peak_normalize:
-            spec = ops.scale(spec, 1 / (10e-6 + np.max(spec)))
+            spec = ops.normalize(spec)
 
         return spec.astype(dtype)
 
@@ -436,6 +436,9 @@ def stft(
     ValueError
         If sample rate cannot be determined from `wave` coordinates.
     """
+    if "channel" not in wave.coords:
+        wave = wave.assign_coords(channel=0)
+
     return audio.compute_spectrogram(
         wave,
         window_size=window_duration,
@@ -544,7 +547,7 @@ def apply_pcen(
       verified against the specific `soundevent.audio.pcen` implementation
       details.
     """
-    samplerate = spec.attrs["samplerate"]
+    samplerate = 1 / spec.time.attrs["step"]
     hop_size = spec.attrs["hop_size"]
 
     hop_length = int(hop_size * samplerate)
@@ -622,6 +625,7 @@ def resize_spectrogram(
     spec: xr.DataArray,
     height: int = 128,
     resize_factor: Optional[float] = 0.5,
+    dtype: DTypeLike = np.float32,  # type: ignore
 ) -> xr.DataArray:
     """Resize a spectrogram to target dimensions using interpolation.
 
@@ -647,11 +651,26 @@ def resize_spectrogram(
     """
     resize_factor = resize_factor or 1
     current_width = spec.sizes["time"]
-    return ops.resize(
-        spec,
-        time=int(resize_factor * current_width),
-        frequency=height,
-        dtype=np.float32,
+
+    target_sizes = {
+        "time": int(current_width * resize_factor),
+        "frequency": height,
+    }
+
+    new_coords = {}
+    for dim in ["time", "frequency"]:
+        step = arrays.get_dim_step(spec, dim)
+        start, stop = arrays.get_dim_range(spec, dim)
+        new_coords[dim] = arrays.create_range_dim(
+            name=dim,
+            start=start,
+            stop=stop + step,
+            size=target_sizes[dim],
+            dtype=dtype,
+        )
+
+    return spec.interp(
+        coords=new_coords, method="linear", kwargs=dict(fill_value=0)
     )
 
 

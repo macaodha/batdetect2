@@ -72,7 +72,7 @@ def test_term_registry_get_keys():
 
 
 def test_get_term_from_key():
-    term = terms.get_term_from_key("call_type")
+    term = terms.get_term_from_key("event")
     assert term == terms.call_type
 
     custom_registry = TermRegistry()
@@ -84,7 +84,7 @@ def test_get_term_from_key():
 
 def test_get_term_keys():
     keys = terms.get_term_keys()
-    assert "call_type" in keys
+    assert "event" in keys
     assert "individual" in keys
     assert terms.GENERIC_CLASS_KEY in keys
 
@@ -96,7 +96,7 @@ def test_get_term_keys():
 
 
 def test_tag_info_and_get_tag_from_info():
-    tag_info = TagInfo(value="Myotis myotis", key="call_type")
+    tag_info = TagInfo(value="Myotis myotis", key="event")
     tag = terms.get_tag_from_info(tag_info)
     assert tag.value == "Myotis myotis"
     assert tag.term == terms.call_type
@@ -161,7 +161,7 @@ def test_load_terms_from_config_key_already_exists(tmp_path):
     config_data = {
         "terms": [
             {
-                "key": "call_type",
+                "key": "event",
                 "uri": "dwc:scientificName",
                 "label": "Scientific Name",
             },  # Duplicate key

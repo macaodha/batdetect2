@@ -103,7 +103,7 @@ def convert_xr_dataset_to_raw_prediction(
 
         detections.append(
             RawPrediction(
-                detection_score=det_info.scores,
+                detection_score=det_info.score,
                 geometry=geom,
                 class_scores=det_info.classes,
                 features=det_info.features,

@@ -370,35 +370,36 @@ def load_clip_audio(
     """
     config = config or AudioConfig()
 
-    try:
-        wav = (
-            audio.load_clip(clip, audio_dir=audio_dir)
-            .sel(channel=0)
-            .astype(dtype)
-        )
-    except LibsndfileError as e:
-        raise FileNotFoundError(
-            f"Could not load the recording at path: {clip.recording.path}. "
-            f"Error: {e}"
-        ) from e
+    with xr.set_options(keep_attrs=True):
+        try:
+            wav = (
+                audio.load_clip(clip, audio_dir=audio_dir)
+                .sel(channel=0)
+                .astype(dtype)
+            )
+        except LibsndfileError as e:
+            raise FileNotFoundError(
+                f"Could not load the recording at path: {clip.recording.path}. "
+                f"Error: {e}"
+            ) from e
 
-    if config.resample:
-        wav = resample_audio(
-            wav,
-            samplerate=config.resample.samplerate,
-            dtype=dtype,
-        )
+        if config.resample:
+            wav = resample_audio(
+                wav,
+                samplerate=config.resample.samplerate,
+                dtype=dtype,
+            )
 
-    if config.center:
-        wav = ops.center(wav)
+        if config.center:
+            wav = ops.center(wav)
 
-    if config.scale:
-        wav = scale_audio(wav)
+        if config.scale:
+            wav = scale_audio(wav)
 
-    if config.duration is not None:
-        wav = adjust_audio_duration(wav, duration=config.duration)
+        if config.duration is not None:
+            wav = adjust_audio_duration(wav, duration=config.duration)
 
-    return wav.astype(dtype)
+        return wav.astype(dtype)
 
 
 def scale_audio(
@@ -521,7 +522,7 @@ def resample_audio(
     original_samplerate = int(1 / step)
 
     if original_samplerate == samplerate:
-        return wav.astype(dtype)
+        return wav.astype(dtype).assign_attrs(original_samplerate=samplerate)
 
     if method == "poly":
         resampled = resample_audio_poly(
@@ -561,7 +562,11 @@ def resample_audio(
                 samplerate=samplerate,
             ),
         },
-        attrs={**wav.attrs, "samplerate": samplerate},
+        attrs={
+            **wav.attrs,
+            "samplerate": samplerate,
+            "original_samplerate": original_samplerate,
+        },
     )
 
 

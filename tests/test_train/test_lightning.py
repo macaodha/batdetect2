@@ -53,4 +53,4 @@ def test_can_save_checkpoint(tmp_path: Path, clip: data.Clip):
     output1 = module(input1)
     output2 = recovered(input2)
 
-    assert output1 == output2
+    torch.testing.assert_close(output1, output2)

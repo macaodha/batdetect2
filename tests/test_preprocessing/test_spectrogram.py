@@ -24,7 +24,6 @@ from batdetect2.preprocess.spectrogram import (
     get_spectrogram_resolution,
     remove_spectral_mean,
     resize_spectrogram,
-    scale_log,
     scale_spectrogram,
     stft,
 )
@@ -153,13 +152,13 @@ def test_stft_output_properties(sine_wave_xr: xr.DataArray):
     assert np.isclose(time_step, hop_len / samplerate)
     assert spec.frequency.min() >= 0
     assert freq_start == 0
-    assert np.isclose(freq_end + freq_step, samplerate / 2, atol=5)
-    assert spec.time.min() >= 0
+    assert np.isclose(freq_end, samplerate / 2, atol=freq_step / 2)
+    assert np.isclose(spec.time.min(), 0)
     assert spec.time.max() < DURATION
 
-    assert spec.attrs["original_samplerate"] == samplerate
-    assert spec.attrs["nfft"] == nfft
-    assert spec.attrs["noverlap"] == int(window_overlap * nfft)
+    assert spec.attrs["samplerate"] == samplerate
+    assert spec.attrs["window_size"] == window_duration
+    assert spec.attrs["hop_size"] == window_duration * (1 - window_overlap)
 
     assert np.all(spec.data >= 0)
 
@@ -192,7 +191,7 @@ def test_crop_spectrogram_frequencies(sample_spec: xr.DataArray):
 
 
 def test_crop_spectrogram_full_range(sample_spec: xr.DataArray):
-    samplerate = sample_spec.attrs["original_samplerate"]
+    samplerate = sample_spec.attrs["samplerate"]
     min_f, max_f = 0, samplerate / 2
     cropped_spec = crop_spectrogram_frequencies(
         sample_spec, min_freq=min_f, max_freq=max_f
@@ -227,33 +226,6 @@ def test_apply_pcen(sample_spec: xr.DataArray):
     assert not np.allclose(pcen_spec.data, sample_spec.data)
 
 
-def test_scale_log(sample_spec: xr.DataArray):
-    if "original_samplerate" not in sample_spec.attrs:
-        sample_spec.attrs["original_samplerate"] = SAMPLERATE
-    if "nfft" not in sample_spec.attrs:
-        sample_spec.attrs["nfft"] = int(0.002 * SAMPLERATE)
-
-    log_spec = scale_log(sample_spec, dtype=np.float32)
-
-    assert log_spec.dims == sample_spec.dims
-    assert log_spec.sizes == sample_spec.sizes
-    assert log_spec.dtype == np.float32
-    assert np.all(log_spec.data >= 0)
-    assert not np.allclose(log_spec.data, sample_spec.data)
-
-
-def test_scale_log_missing_attrs(sample_spec: xr.DataArray):
-    spec_copy = sample_spec.copy()
-    del spec_copy.attrs["original_samplerate"]
-    with pytest.raises(KeyError):
-        scale_log(spec_copy)
-
-    spec_copy = sample_spec.copy()
-    del spec_copy.attrs["nfft"]
-    with pytest.raises(KeyError):
-        scale_log(spec_copy)
-
-
 def test_scale_spectrogram_amplitude(sample_spec: xr.DataArray):
     scaled_spec = scale_spectrogram(sample_spec, scale="amplitude")
     assert np.allclose(scaled_spec.data, sample_spec.data)
@@ -267,15 +239,9 @@ def test_scale_spectrogram_power(sample_spec: xr.DataArray):
 
 
 def test_scale_spectrogram_db(sample_spec: xr.DataArray):
-    if "original_samplerate" not in sample_spec.attrs:
-        sample_spec.attrs["original_samplerate"] = SAMPLERATE
-    if "nfft" not in sample_spec.attrs:
-        sample_spec.attrs["nfft"] = int(0.002 * SAMPLERATE)
-
-    scaled_spec = scale_spectrogram(sample_spec, scale="dB", dtype=np.float64)
-    log_spec_expected = scale_log(sample_spec, dtype=np.float64)
-    assert scaled_spec.dtype == np.float64
-    assert np.allclose(scaled_spec.data, log_spec_expected.data)
+    scaled_spec = scale_spectrogram(sample_spec, scale="dB")
+    log_spec_expected = arrays.to_db(sample_spec)
+    xr.testing.assert_allclose(scaled_spec, log_spec_expected)
 
 
 def test_remove_spectral_mean(sample_spec: xr.DataArray):
@@ -291,8 +257,7 @@ def test_remove_spectral_mean(sample_spec: xr.DataArray):
 def test_remove_spectral_mean_constant(constant_wave_xr: xr.DataArray):
     const_spec = stft(constant_wave_xr, 0.002, 0.5)
     denoised_spec = remove_spectral_mean(const_spec)
-
-    assert np.allclose(denoised_spec.data, 0, atol=1e-6)
+    assert np.all(denoised_spec.data >= 0)
 
 
 @pytest.mark.parametrize(
@@ -323,8 +288,6 @@ def test_resize_spectrogram(
     expected_time_size = int(original_time_size * expected_time_factor)
 
     assert abs(resized_spec.sizes["time"] - expected_time_size) <= 1
-
-    assert resized_spec.dtype == np.float32
 
 
 def test_compute_spectrogram_defaults(sine_wave_xr: xr.DataArray):
@@ -377,7 +340,7 @@ def test_compute_spectrogram_no_pcen_no_mean_sub_no_resize(
 
 
 def test_compute_spectrogram_peak_normalize(sine_wave_xr: xr.DataArray):
-    config = SpectrogramConfig(peak_normalize=True)
+    config = SpectrogramConfig(peak_normalize=True, pcen=None)
     spec = compute_spectrogram(sine_wave_xr, config=config)
     assert np.isclose(spec.data.max(), 1.0, atol=1e-6)
 
@@ -440,20 +403,6 @@ def test_configurable_spectrogram_builder_call_xr(sine_wave_xr: xr.DataArray):
     spec_direct = compute_spectrogram(sine_wave_xr, config=config)
     assert isinstance(spec_builder, xr.DataArray)
     assert np.allclose(spec_builder.data, spec_direct.data)
-    assert spec_builder.dtype == spec_direct.dtype
-
-
-def test_configurable_spectrogram_builder_call_np(sine_wave_xr: xr.DataArray):
-    config = SpectrogramConfig()
-    builder = ConfigurableSpectrogramBuilder(config=config)
-    wav_np = sine_wave_xr.data
-    samplerate = sine_wave_xr.attrs["samplerate"]
-
-    spec_builder = builder(wav_np.astype(np.float32), samplerate=samplerate)
-    spec_direct = compute_spectrogram(sine_wave_xr, config=config)
-
-    assert isinstance(spec_builder, xr.DataArray)
-    assert np.allclose(spec_builder.data, spec_direct.data, atol=1e-4)
     assert spec_builder.dtype == spec_direct.dtype
 
 

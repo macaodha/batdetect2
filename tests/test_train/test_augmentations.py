@@ -116,14 +116,15 @@ def test_selected_random_subclip_has_the_correct_width(
     recording1 = create_recording()
     clip1 = data.Clip(recording=recording1, start_time=0.2, end_time=0.7)
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
+
     original = generate_train_example(
         clip_annotation_1,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
-    subclip = select_subclip(original, start=0, span=100)
 
-    assert subclip["spectrogram"].shape[1] == 100
+    subclip = select_subclip(original, start=0, span=0.513)
+    assert subclip["spectrogram"].shape[1] == 512
 
 
 def test_add_echo_after_subclip(
@@ -142,7 +143,7 @@ def test_add_echo_after_subclip(
 
     assert original.sizes["time"] > 512
 
-    subclip = select_subclip(original, start=0, span=512)
+    subclip = select_subclip(original, start=0, span=0.513)
     with_echo = add_echo(subclip, preprocessor=sample_preprocessor)
 
     assert with_echo.sizes["time"] == 512

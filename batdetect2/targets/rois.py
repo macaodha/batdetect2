@@ -93,13 +93,21 @@ class ROITargetMapper(Protocol):
 
     dimension_names: List[str]
 
-    def get_roi_position(self, geom: data.Geometry) -> tuple[float, float]:
+    def get_roi_position(
+        self,
+        geom: data.Geometry,
+        position: Optional[Positions] = None,
+    ) -> tuple[float, float]:
         """Extract the reference position from a geometry.
 
         Parameters
         ----------
         geom : soundevent.data.Geometry
             The input geometry (e.g., BoundingBox, Polygon).
+        position : Positions, optional
+            Overrides the default `position` configured for the mapper.
+            If provided, this position will be used instead of the mapper's
+            internal default.
 
         Returns
         -------
@@ -141,7 +149,10 @@ class ROITargetMapper(Protocol):
         ...
 
     def recover_roi(
-        self, pos: tuple[float, float], dims: np.ndarray
+        self,
+        pos: tuple[float, float],
+        dims: np.ndarray,
+        position: Optional[Positions] = None,
     ) -> data.Geometry:
         """Recover an approximate ROI from a position and target dimensions.
 
@@ -153,8 +164,12 @@ class ROITargetMapper(Protocol):
         pos : Tuple[float, float]
             The reference position (time, frequency).
         dims : np.ndarray
-            The NumPy array containing the dimensions, matching the order
+            NumPy array containing the dimensions, matching the order
             specified by `dimension_names`.
+        position : Positions, optional
+            Overrides the default `position` configured for the mapper.
+            If provided, this position will be used instead of the mapper's
+            internal default when reconstructing the roi geometry.
 
         Returns
         -------
@@ -240,7 +255,11 @@ class BBoxEncoder(ROITargetMapper):
         self.time_scale = time_scale
         self.frequency_scale = frequency_scale
 
-    def get_roi_position(self, geom: data.Geometry) -> Tuple[float, float]:
+    def get_roi_position(
+        self,
+        geom: data.Geometry,
+        position: Optional[Positions] = None,
+    ) -> Tuple[float, float]:
         """Extract the configured reference position from the geometry.
 
         Uses `soundevent.geometry.get_geometry_point`.
@@ -249,6 +268,9 @@ class BBoxEncoder(ROITargetMapper):
         ----------
         geom : soundevent.data.Geometry
             Input geometry (e.g., BoundingBox).
+        position : Positions, optional
+            Overrides the default `position` configured for the encoder.
+            If provided, this position will be used instead of `self.position`.
 
         Returns
         -------
@@ -257,7 +279,8 @@ class BBoxEncoder(ROITargetMapper):
         """
         from soundevent import geometry
 
-        return geometry.get_geometry_point(geom, position=self.position)
+        position = position or self.position
+        return geometry.get_geometry_point(geom, position=position)
 
     def get_roi_size(self, geom: data.Geometry) -> np.ndarray:
         """Calculate the scaled [width, height] from the geometry's bounds.
@@ -291,6 +314,7 @@ class BBoxEncoder(ROITargetMapper):
         self,
         pos: tuple[float, float],
         dims: np.ndarray,
+        position: Optional[Positions] = None,
     ) -> data.Geometry:
         """Recover a BoundingBox from a position and scaled dimensions.
 
@@ -305,6 +329,10 @@ class BBoxEncoder(ROITargetMapper):
         dims : np.ndarray
             NumPy array containing the *scaled* dimensions, expected order is
             [scaled_width, scaled_height].
+        position : Positions, optional
+            Overrides the default `position` configured for the encoder.
+            If provided, this position will be used instead of `self.position`
+            when reconstructing the bounding box.
 
         Returns
         -------
@@ -316,6 +344,8 @@ class BBoxEncoder(ROITargetMapper):
         ValueError
             If `dims` does not have the expected shape (length 2).
         """
+        position = position or self.position
+
         if dims.ndim != 1 or dims.shape[0] != 2:
             raise ValueError(
                 "Dimension array does not have the expected shape. "
