@@ -65,8 +65,12 @@ build-backend = "hatchling.build"
 [project.scripts]
 batdetect2 = "batdetect2.cli:cli"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+jupyter = ["ipywidgets>=8.1.5", "jupyter>=1.1.1"]
+marimo = [
+    "marimo>=0.12.2",
+]
+dev = [
   "debugpy>=1.8.8",
   "hypothesis>=6.118.7",
   "pytest>=7.2.2",
@@ -98,25 +102,16 @@ select = ["E4", "E7", "E9", "F", "B", "Q", "I", "NPY201"]
 convention = "numpy"
 
 [tool.pyright]
-include = ["batdetect2", "tests"]
+include = ["src", "tests"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
 exclude = [
-  "batdetect2/detector/",
-  "batdetect2/finetune",
-  "batdetect2/utils",
-  "batdetect2/plotting",
-  "batdetect2/plot",
-  "batdetect2/api",
-  "batdetect2/evaluate/legacy",
-  "batdetect2/train/legacy",
-]
-
-[dependency-groups]
-jupyter = [
-    "ipywidgets>=8.1.5",
-    "jupyter>=1.1.1",
-]
-marimo = [
-    "marimo>=0.12.2",
+  "src/batdetect2/detector/",
+  "src/batdetect2/finetune",
+  "src/batdetect2/utils",
+  "src/batdetect2/plotting",
+  "src/batdetect2/plot",
+  "src/batdetect2/api",
+  "src/batdetect2/evaluate/legacy",
+  "src/batdetect2/train/legacy",
 ]
