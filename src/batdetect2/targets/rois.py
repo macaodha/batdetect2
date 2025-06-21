@@ -324,7 +324,7 @@ class PeakEnergyBBoxMapperConfig(BaseConfig):
         Scaling factor applied to the frequency dimensions.
     """
 
-    name: Literal["peak_energy_bbox"]
+    name: Literal["peak_energy_bbox"] = "peak_energy_bbox"
     preprocessing: PreprocessingConfig = Field(
         default_factory=PreprocessingConfig
     )
@@ -515,7 +515,7 @@ def build_roi_mapper(config: ROIMapperConfig) -> ROITargetMapper:
         )
 
     raise NotImplementedError(
-        f"No ROI mapper of name {config.name} is implemented"
+        f"No ROI mapper of name '{config.name}' is implemented"
     )
 
 
