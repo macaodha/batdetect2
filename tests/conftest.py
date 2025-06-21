@@ -5,6 +5,7 @@ from typing import Callable, List, Optional
 import numpy as np
 import pytest
 import soundfile as sf
+from scipy import signal
 from soundevent import data, terms
 
 from batdetect2.data import DatasetConfig, load_dataset
@@ -123,6 +124,43 @@ def create_recording(wav_factory: Callable[..., Path]):
             time_expansion=time_expansion,
             tags=tags or [],
         )
+
+    return factory
+
+
+@pytest.fixture
+def generate_whistle(tmp_path: Path):
+    """
+    Pytest fixture that provides a factory for generating WAV audio files.
+
+    The factory creates a recording containing a "whistle" (a short,
+    frequency-specific pulse) positioned at a precise time, suitable for
+    testing audio analysis functions.
+    """
+
+    def factory(
+        time: float,
+        frequency: int,
+        path: Optional[Path] = None,
+        duration: float = 0.3,
+        samplerate: int = 441_000,
+        whistle_duration: float = 0.1,
+    ) -> Path:
+        path = path or tmp_path / f"{uuid.uuid4()}.wav"
+        frames = int(samplerate * duration)
+
+        offset = int((time - duration / 2) * samplerate)
+        t = np.linspace(-duration / 2, duration / 2, frames, endpoint=False)
+        data = signal.gausspulse(
+            t,
+            fc=frequency,
+            bw=2 / (frequency * whistle_duration),
+        )
+        wave = (np.roll(data, offset) * np.iinfo(np.int16).max).astype(
+            np.int16
+        )
+        sf.write(str(path), wave, samplerate, subtype="PCM_16")
+        return path
 
     return factory
 
