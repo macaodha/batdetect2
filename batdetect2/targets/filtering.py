@@ -10,7 +10,7 @@ from batdetect2.targets.terms import (
     TagInfo,
     TermRegistry,
     get_tag_from_info,
-    term_registry,
+    default_term_registry,
 )
 
 __all__ = [
@@ -156,7 +156,7 @@ def equal_tags(
 
 def build_filter_from_rule(
     rule: FilterRule,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventFilter:
     """Creates a callable filter function from a single FilterRule.
 
@@ -243,7 +243,7 @@ class FilterConfig(BaseConfig):
 
 def build_sound_event_filter(
     config: FilterConfig,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventFilter:
     """Builds a merged filter function from a FilterConfig object.
 
@@ -291,7 +291,7 @@ def load_filter_config(
 def load_filter_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventFilter:
     """Loads filter configuration from a file and builds the filter function.
 

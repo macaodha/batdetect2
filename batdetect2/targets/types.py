@@ -19,7 +19,15 @@ from soundevent import data
 
 __all__ = [
     "TargetProtocol",
+    "Position",
+    "Size",
 ]
+
+Position = tuple[float, float]
+"""A tuple representing (time, frequency) coordinates."""
+
+Size = np.ndarray
+"""A NumPy array representing the size dimensions of a target."""
 
 
 class TargetProtocol(Protocol):
@@ -102,7 +110,7 @@ class TargetProtocol(Protocol):
         """
         ...
 
-    def encode(
+    def encode_class(
         self,
         sound_event: data.SoundEventAnnotation,
     ) -> Optional[str]:
@@ -123,7 +131,7 @@ class TargetProtocol(Protocol):
         """
         ...
 
-    def decode(self, class_label: str) -> List[data.Tag]:
+    def decode_class(self, class_label: str) -> List[data.Tag]:
         """Decode a predicted class name back into representative tags.
 
         Parameters
@@ -147,9 +155,9 @@ class TargetProtocol(Protocol):
         """
         ...
 
-    def get_position(
+    def encode_roi(
         self, sound_event: data.SoundEventAnnotation
-    ) -> tuple[float, float]:
+    ) -> tuple[Position, Size]:
         """Extract the target reference position from the annotation's geometry.
 
         Calculates the `(time, frequency)` coordinate representing the primary
@@ -173,37 +181,7 @@ class TargetProtocol(Protocol):
         """
         ...
 
-    def get_size(self, sound_event: data.SoundEventAnnotation) -> np.ndarray:
-        """Calculate the target size dimensions from the annotation's geometry.
-
-        Computes the relevant physical size (e.g., duration/width,
-        bandwidth/height from a bounding box) to produce
-        the numerical target values expected by the model.
-
-        Parameters
-        ----------
-        sound_event : data.SoundEventAnnotation
-            The annotation containing the geometry (ROI) to process.
-
-        Returns
-        -------
-        np.ndarray
-            A NumPy array containing the size dimensions, matching the
-            order specified by the `dimension_names` attribute (e.g.,
-            `[width, height]`).
-
-        Raises
-        ------
-        ValueError
-            If the annotation lacks geometry or if the size cannot be computed.
-        TypeError
-            If geometry type is unsupported.
-        """
-        ...
-
-    def recover_roi(
-        self, pos: tuple[float, float], dims: np.ndarray
-    ) -> data.Geometry:
+    def decode_roi(self, position: Position, size: Size) -> data.Geometry:
         """Recover the ROI geometry from a position and dimensions.
 
         Performs the inverse mapping of `get_position` and `get_size`. It takes

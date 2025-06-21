@@ -72,7 +72,7 @@ def iterate_over_sound_events(
                     sound_event_annotation
                 )
 
-            class_name = targets.encode(sound_event_annotation)
+            class_name = targets.encode_class(sound_event_annotation)
             if class_name is None and exclude_generic:
                 continue
 

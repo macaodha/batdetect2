@@ -11,7 +11,7 @@ from batdetect2.targets.terms import (
     TagInfo,
     TermRegistry,
     get_tag_from_info,
-    term_registry,
+    default_term_registry,
 )
 
 __all__ = [
@@ -339,7 +339,7 @@ def _encode_with_multiple_classifiers(
 
 def build_sound_event_encoder(
     config: ClassesConfig,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventEncoder:
     """Build a sound event encoder function from the classes configuration.
 
@@ -433,7 +433,7 @@ def _decode_class(
 
 def build_sound_event_decoder(
     config: ClassesConfig,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
     raise_on_unmapped: bool = False,
 ) -> SoundEventDecoder:
     """Build a sound event decoder function from the classes configuration.
@@ -488,7 +488,7 @@ def build_sound_event_decoder(
 
 def build_generic_class_tags(
     config: ClassesConfig,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> List[data.Tag]:
     """Extract and build the list of tags for the generic class from config.
 
@@ -553,7 +553,7 @@ def load_classes_config(
 def load_encoder_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventEncoder:
     """Load a class encoder function directly from a configuration file.
 
@@ -594,7 +594,7 @@ def load_encoder_from_config(
 def load_decoder_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = term_registry,
+    term_registry: TermRegistry = default_term_registry,
     raise_on_unmapped: bool = False,
 ) -> SoundEventDecoder:
     """Load a class decoder function directly from a configuration file.

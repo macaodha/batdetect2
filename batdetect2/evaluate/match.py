@@ -40,7 +40,7 @@ def match_sound_events_and_raw_predictions(
 
         gt_uuid = target.uuid if target is not None else None
         gt_det = target is not None
-        gt_class = targets.encode(target) if target is not None else None
+        gt_class = targets.encode_class(target) if target is not None else None
 
         pred_score = float(prediction.detection_score) if prediction else 0
 

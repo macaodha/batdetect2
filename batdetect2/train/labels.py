@@ -138,7 +138,7 @@ def generate_clip_label(
     logger.debug(
         "Will generate heatmaps for clip annotation {uuid} with {num} annotated sound events",
         uuid=clip_annotation.uuid,
-        num=len(clip_annotation.sound_events)
+        num=len(clip_annotation.sound_events),
     )
 
     sound_events = []
@@ -260,7 +260,7 @@ def generate_heatmaps(
             continue
 
         # Get the position of the sound event
-        time, frequency = targets.get_position(sound_event_annotation)
+        (time, frequency), size = targets.encode_roi(sound_event_annotation)
 
         # Set 1.0 at the position of the sound event in the detection heatmap
         try:
@@ -280,8 +280,6 @@ def generate_heatmaps(
             )
             continue
 
-        size = targets.get_size(sound_event_annotation)
-
         size_heatmap = arrays.set_value_at_pos(
             size_heatmap,
             size,
@@ -291,7 +289,7 @@ def generate_heatmaps(
 
         # Get the class name of the sound event
         try:
-            class_name = targets.encode(sound_event_annotation)
+            class_name = targets.encode_class(sound_event_annotation)
         except ValueError as e:
             logger.warning(
                 "Skipping annotation %s: Unexpected error while encoding "

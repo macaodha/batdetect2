@@ -97,7 +97,7 @@ def _is_in_subclip(
     start_time: float,
     end_time: float,
 ) -> bool:
-    time, _ = targets.get_position(sound_event_annotation)
+    time, _ = targets.encode_roi(sound_event_annotation)
     return start_time <= time <= end_time
 
 

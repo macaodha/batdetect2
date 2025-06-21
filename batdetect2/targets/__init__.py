@@ -23,7 +23,6 @@ object is via the `build_targets` or `load_targets` functions.
 
 from typing import List, Optional
 
-import numpy as np
 from pydantic import Field
 from soundevent import data
 
@@ -63,7 +62,7 @@ from batdetect2.targets.terms import (
     get_term_from_key,
     individual,
     register_term,
-    term_registry,
+    default_term_registry,
 )
 from batdetect2.targets.transform import (
     DerivationRegistry,
@@ -73,13 +72,13 @@ from batdetect2.targets.transform import (
     SoundEventTransformation,
     TransformConfig,
     build_transformation_from_config,
-    derivation_registry,
+    default_derivation_registry,
     get_derivation,
     load_transformation_config,
     load_transformation_from_config,
     register_derivation,
 )
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import Position, Size, TargetProtocol
 
 __all__ = [
     "ClassesConfig",
@@ -291,7 +290,9 @@ class Targets(TargetProtocol):
             return True
         return self._filter_fn(sound_event)
 
-    def encode(self, sound_event: data.SoundEventAnnotation) -> Optional[str]:
+    def encode_class(
+        self, sound_event: data.SoundEventAnnotation
+    ) -> Optional[str]:
         """Encode a sound event annotation to its target class name.
 
         Applies the configured class definition rules (including priority)
@@ -312,7 +313,7 @@ class Targets(TargetProtocol):
         """
         return self._encode_fn(sound_event)
 
-    def decode(self, class_label: str) -> List[data.Tag]:
+    def decode_class(self, class_label: str) -> List[data.Tag]:
         """Decode a predicted class name back into representative tags.
 
         Uses the configured mapping (based on `TargetClass.output_tags` or
@@ -352,9 +353,9 @@ class Targets(TargetProtocol):
             return self._transform_fn(sound_event)
         return sound_event
 
-    def get_position(
+    def encode_roi(
         self, sound_event: data.SoundEventAnnotation
-    ) -> tuple[float, float]:
+    ) -> tuple[Position, Size]:
         """Extract the target reference position from the annotation's roi.
 
         Delegates to the internal ROI mapper's `get_roi_position` method.
@@ -374,37 +375,9 @@ class Targets(TargetProtocol):
         ValueError
             If the annotation lacks geometry.
         """
-        return self._roi_mapper.encode_position(sound_event.sound_event)
+        return self._roi_mapper.encode(sound_event.sound_event)
 
-    def get_size(self, sound_event: data.SoundEventAnnotation) -> np.ndarray:
-        """Calculate the target size dimensions from the annotation's geometry.
-
-        Delegates to the internal ROI mapper's `get_roi_size` method, which
-        applies configured scaling factors.
-
-        Parameters
-        ----------
-        sound_event : data.SoundEventAnnotation
-            The annotation containing the geometry (ROI).
-
-        Returns
-        -------
-        np.ndarray
-            NumPy array containing the size dimensions, matching the
-            order in `self.dimension_names` (e.g., `[width, height]`).
-
-        Raises
-        ------
-        ValueError
-            If the annotation lacks geometry.
-        """
-        return self._roi_mapper.encode_size(sound_event.sound_event)
-
-    def recover_roi(
-        self,
-        pos: tuple[float, float],
-        dims: np.ndarray,
-    ) -> data.Geometry:
+    def decode_roi(self, position: Position, size: Size) -> data.Geometry:
         """Recover an approximate geometric ROI from a position and dimensions.
 
         Delegates to the internal ROI mapper's `recover_roi` method, which
@@ -424,7 +397,7 @@ class Targets(TargetProtocol):
         data.Geometry
             The reconstructed geometry (typically `BoundingBox`).
         """
-        return self._roi_mapper.decode(pos, dims)
+        return self._roi_mapper.decode(position, size)
 
 
 DEFAULT_CLASSES = [
@@ -528,8 +501,8 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
 
 def build_targets(
     config: Optional[TargetConfig] = None,
-    term_registry: TermRegistry = term_registry,
-    derivation_registry: DerivationRegistry = derivation_registry,
+    term_registry: TermRegistry = default_term_registry,
+    derivation_registry: DerivationRegistry = default_derivation_registry,
 ) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
 
@@ -613,8 +586,8 @@ def build_targets(
 def load_targets(
     config_path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = term_registry,
-    derivation_registry: DerivationRegistry = derivation_registry,
+    term_registry: TermRegistry = default_term_registry,
+    derivation_registry: DerivationRegistry = default_derivation_registry,
 ) -> Targets:
     """Load a Targets object directly from a configuration file.
 

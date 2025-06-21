@@ -21,9 +21,6 @@ from batdetect2.targets.terms import (
     get_tag_from_info,
     get_term_from_key,
 )
-from batdetect2.targets.terms import (
-    term_registry as default_term_registry,
-)
 
 __all__ = [
     "DerivationRegistry",
@@ -34,7 +31,7 @@ __all__ = [
     "TransformConfig",
     "build_transform_from_rule",
     "build_transformation_from_config",
-    "derivation_registry",
+    "default_derivation_registry",
     "get_derivation",
     "load_transformation_config",
     "load_transformation_from_config",
@@ -398,7 +395,7 @@ class DerivationRegistry(Mapping[str, Derivation]):
         return list(self._derivations.values())
 
 
-derivation_registry = DerivationRegistry()
+default_derivation_registry = DerivationRegistry()
 """Global instance of the DerivationRegistry.
 
 Register custom derivation functions here to make them available by key
@@ -409,7 +406,7 @@ in `DeriveTagRule` configuration.
 def get_derivation(
     key: str,
     import_derivation: bool = False,
-    registry: DerivationRegistry = derivation_registry,
+    registry: Optional[DerivationRegistry] = None,
 ):
     """Retrieve a derivation function by key, optionally importing it.
 
@@ -443,6 +440,8 @@ def get_derivation(
     AttributeError
         If dynamic import fails because the function name isn't in the module.
     """
+    registry = registry or default_derivation_registry
+
     if not import_derivation or key in registry:
         return registry.get_derivation(key)
 
@@ -458,10 +457,16 @@ def get_derivation(
         ) from err
 
 
+TranformationRule = Annotated[
+    Union[ReplaceRule, MapValueRule, DeriveTagRule],
+    Field(discriminator="rule_type"),
+]
+
+
 def build_transform_from_rule(
-    rule: Union[ReplaceRule, MapValueRule, DeriveTagRule],
-    derivation_registry: DerivationRegistry = derivation_registry,
-    term_registry: TermRegistry = default_term_registry,
+    rule: TranformationRule,
+    derivation_registry: Optional[DerivationRegistry] = None,
+    term_registry: Optional[TermRegistry] = None,
 ) -> SoundEventTransformation:
     """Build a specific SoundEventTransformation function from a rule config.
 
@@ -559,8 +564,8 @@ def build_transform_from_rule(
 
 def build_transformation_from_config(
     config: TransformConfig,
-    derivation_registry: DerivationRegistry = derivation_registry,
-    term_registry: TermRegistry = default_term_registry,
+    derivation_registry: Optional[DerivationRegistry] = None,
+    term_registry: Optional[TermRegistry] = None,
 ) -> SoundEventTransformation:
     """Build a composite transformation function from a TransformConfig.
 
@@ -581,6 +586,7 @@ def build_transformation_from_config(
     SoundEventTransformation
         A single function that applies all configured transformations in order.
     """
+
     transforms = [
         build_transform_from_rule(
             rule,
@@ -590,14 +596,16 @@ def build_transformation_from_config(
         for rule in config.rules
     ]
 
-    def transformation(
-        sound_event_annotation: data.SoundEventAnnotation,
-    ) -> data.SoundEventAnnotation:
-        for transform in transforms:
-            sound_event_annotation = transform(sound_event_annotation)
-        return sound_event_annotation
+    return partial(apply_sequence_of_transforms, transforms=transforms)
 
-    return transformation
+
+def apply_sequence_of_transforms(
+    sound_event_annotation: data.SoundEventAnnotation,
+    transforms: list[SoundEventTransformation],
+) -> data.SoundEventAnnotation:
+    for transform in transforms:
+        sound_event_annotation = transform(sound_event_annotation)
+    return sound_event_annotation
 
 
 def load_transformation_config(
@@ -631,8 +639,8 @@ def load_transformation_config(
 def load_transformation_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    derivation_registry: DerivationRegistry = derivation_registry,
-    term_registry: TermRegistry = default_term_registry,
+    derivation_registry: Optional[DerivationRegistry] = None,
+    term_registry: Optional[TermRegistry] = None,
 ) -> SoundEventTransformation:
     """Load transformation config from a file and build the final function.
 
@@ -677,7 +685,7 @@ def load_transformation_from_config(
 def register_derivation(
     key: str,
     derivation: Derivation,
-    derivation_registry: DerivationRegistry = derivation_registry,
+    derivation_registry: Optional[DerivationRegistry] = None,
 ) -> None:
     """Register a new derivation function in the global registry.
 
@@ -696,4 +704,5 @@ def register_derivation(
     KeyError
         If a derivation function with the same key is already registered.
     """
+    derivation_registry = derivation_registry or default_derivation_registry
     derivation_registry.register(key, derivation)

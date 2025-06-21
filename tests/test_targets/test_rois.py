@@ -3,8 +3,8 @@ import pytest
 from soundevent import data
 
 from batdetect2.targets.rois import (
-    DEFAULT_FREQUENCY_SCALE,
     DEFAULT_ANCHOR,
+    DEFAULT_FREQUENCY_SCALE,
     DEFAULT_TIME_SCALE,
     SIZE_HEIGHT,
     SIZE_WIDTH,
@@ -12,7 +12,6 @@ from batdetect2.targets.rois import (
     BBoxAnchorMapperConfig,
     _build_bounding_box,
     build_roi_mapper,
-    load_roi_mapper,
 )
 
 
@@ -23,13 +22,29 @@ def sample_bbox() -> data.BoundingBox:
 
 
 @pytest.fixture
+def sample_recording(create_recording) -> data.Recording:
+    return create_recording(duration=30, samplerate=4_000)
+
+
+@pytest.fixture
+def sample_sound_event(sample_bbox, sample_recording) -> data.SoundEvent:
+    return data.SoundEvent(geometry=sample_bbox, recording=sample_recording)
+
+
+@pytest.fixture
 def zero_bbox() -> data.BoundingBox:
     """A bounding box with zero duration and bandwidth."""
     return data.BoundingBox(coordinates=[15.0, 150.0, 15.0, 150.0])
 
 
 @pytest.fixture
-def default_encoder() -> AnchorBBoxMapper:
+def zero_sound_event(zero_bbox, sample_recording) -> data.SoundEvent:
+    """A sample sound event with a zero-sized bounding box."""
+    return data.SoundEvent(geometry=zero_bbox, recording=sample_recording)
+
+
+@pytest.fixture
+def default_mapper() -> AnchorBBoxMapper:
     """A BBoxEncoder with default settings."""
     return AnchorBBoxMapper()
 
@@ -37,36 +52,30 @@ def default_encoder() -> AnchorBBoxMapper:
 @pytest.fixture
 def custom_encoder() -> AnchorBBoxMapper:
     """A BBoxEncoder with custom settings."""
-    return AnchorBBoxMapper(anchor="center", time_scale=1.0, frequency_scale=10.0)
+    return AnchorBBoxMapper(
+        anchor="center", time_scale=1.0, frequency_scale=10.0
+    )
 
 
-def test_roi_config_defaults():
-    """Test ROIConfig default values."""
-    config = BBoxAnchorMapperConfig()
-    assert config.anchor == DEFAULT_ANCHOR
-    assert config.time_scale == DEFAULT_TIME_SCALE
-    assert config.frequency_scale == DEFAULT_FREQUENCY_SCALE
+@pytest.fixture
+def custom_mapper() -> AnchorBBoxMapper:
+    """An AnchorBBoxMapper with custom settings."""
+    return AnchorBBoxMapper(
+        anchor="center", time_scale=1.0, frequency_scale=10.0
+    )
 
 
-def test_roi_config_custom():
-    """Test creating ROIConfig with custom values."""
-    config = BBoxAnchorMapperConfig(anchor="center", time_scale=1.0, frequency_scale=10.0)
-    assert config.anchor == "center"
-    assert config.time_scale == 1.0
-    assert config.frequency_scale == 10.0
-
-
-def test_bbox_encoder_init_defaults(default_encoder):
+def test_bbox_encoder_init_defaults(default_mapper):
     """Test BBoxEncoder initialization with default arguments."""
-    assert default_encoder.position == DEFAULT_ANCHOR
-    assert default_encoder.time_scale == DEFAULT_TIME_SCALE
-    assert default_encoder.frequency_scale == DEFAULT_FREQUENCY_SCALE
-    assert default_encoder.dimension_names == [SIZE_WIDTH, SIZE_HEIGHT]
+    assert default_mapper.anchor == DEFAULT_ANCHOR
+    assert default_mapper.time_scale == DEFAULT_TIME_SCALE
+    assert default_mapper.frequency_scale == DEFAULT_FREQUENCY_SCALE
+    assert default_mapper.dimension_names == [SIZE_WIDTH, SIZE_HEIGHT]
 
 
 def test_bbox_encoder_init_custom(custom_encoder):
     """Test BBoxEncoder initialization with custom arguments."""
-    assert custom_encoder.position == "center"
+    assert custom_encoder.anchor == "center"
     assert custom_encoder.time_scale == 1.0
     assert custom_encoder.frequency_scale == 10.0
     assert custom_encoder.dimension_names == [SIZE_WIDTH, SIZE_HEIGHT]
@@ -87,52 +96,50 @@ POSITION_TEST_CASES = [
 ]
 
 
-@pytest.mark.parametrize("position_type, expected_pos", POSITION_TEST_CASES)
-def test_bbox_encoder_get_roi_position(
-    sample_bbox, position_type, expected_pos
+@pytest.mark.parametrize("anchor, expected_pos", POSITION_TEST_CASES)
+def test_anchor_bbox_mapper_encode_position(
+    sample_sound_event, anchor, expected_pos
 ):
-    """Test get_roi_position for various position types."""
-    encoder = AnchorBBoxMapper(anchor=position_type)
-    actual_pos = encoder.encode_position(sample_bbox)
+    """Test encode returns the correct position for various anchors."""
+    encoder = AnchorBBoxMapper(anchor=anchor)
+    actual_pos, _ = encoder.encode(sample_sound_event)
     assert actual_pos == pytest.approx(expected_pos)
 
 
-def test_bbox_encoder_get_roi_position_zero_box(zero_bbox):
-    """Test get_roi_position for a zero-sized box."""
-    encoder = AnchorBBoxMapper(anchor="center")
-    assert encoder.encode_position(zero_bbox) == pytest.approx((15.0, 150.0))
-
-
-def test_bbox_encoder_get_roi_size_defaults(sample_bbox, default_encoder):
-    """Test get_roi_size with default scaling."""
+def test_anchor_bbox_mapper_encode_defaults(
+    sample_sound_event, default_mapper
+):
+    """Test encode with default settings returns correct position and size."""
+    expected_pos = (10.0, 100.0)  # bottom-left
     expected_size = np.array(
         [
             10.0 * DEFAULT_TIME_SCALE,
             100.0 * DEFAULT_FREQUENCY_SCALE,
         ]
     )
-    actual_size = default_encoder.get_roi_size(sample_bbox)
+    actual_pos, actual_size = default_mapper.encode(sample_sound_event)
+    assert actual_pos == pytest.approx(expected_pos)
     np.testing.assert_allclose(actual_size, expected_size)
     assert actual_size.shape == (2,)
 
 
-def test_bbox_encoder_get_roi_size_custom(sample_bbox, custom_encoder):
-    """Test get_roi_size with custom scaling."""
-    expected_size = np.array(
-        [
-            10.0 * 1.0,
-            100.0 * 10.0,
-        ]
-    )
-    actual_size = custom_encoder.get_roi_size(sample_bbox)
+def test_anchor_bbox_mapper_encode_custom(sample_sound_event, custom_mapper):
+    """Test encode with custom settings returns correct position and size."""
+    expected_pos = (15.0, 150.0)  # center
+    expected_size = np.array([10.0 * 1.0, 100.0 * 10.0])
+
+    actual_pos, actual_size = custom_mapper.encode(sample_sound_event)
+    assert actual_pos == pytest.approx(expected_pos)
     np.testing.assert_allclose(actual_size, expected_size)
     assert actual_size.shape == (2,)
 
 
-def test_bbox_encoder_get_roi_size_zero_box(zero_bbox, default_encoder):
-    """Test get_roi_size for a zero-sized box."""
+def test_anchor_bbox_mapper_encode_zero_box(zero_sound_event, default_mapper):
+    """Test encode for a zero-sized box."""
+    expected_pos = (15.0, 150.0)
     expected_size = np.array([0.0, 0.0])
-    actual_size = default_encoder.get_roi_size(zero_bbox)
+    actual_pos, actual_size = default_mapper.encode(zero_sound_event)
+    assert actual_pos == pytest.approx(expected_pos)
     np.testing.assert_allclose(actual_size, expected_size)
 
 
@@ -166,9 +173,9 @@ def test_build_bounding_box(position_type, expected_coords):
     np.testing.assert_allclose(bbox.coordinates, expected_coords)
 
 
-def test_build_bounding_box_invalid_position():
+def test_build_bounding_box_invalid_anchor():
     """Test _build_bounding_box raises error for invalid position."""
-    with pytest.raises(ValueError, match="Invalid position"):
+    with pytest.raises(ValueError, match="Invalid anchor"):
         _build_bounding_box(
             (0, 0),
             1,
@@ -177,26 +184,16 @@ def test_build_bounding_box_invalid_position():
         )
 
 
-@pytest.mark.parametrize("position_type, ref_pos", POSITION_TEST_CASES)
-def test_bbox_encoder_recover_roi(sample_bbox, position_type, ref_pos):
-    """Test recover_roi correctly reconstructs the original bbox."""
-    encoder = AnchorBBoxMapper(anchor=position_type)
-    scaled_dims = encoder.encode_size(sample_bbox)
-
-    recovered_bbox = encoder.decode(ref_pos, scaled_dims)
-
-    assert isinstance(recovered_bbox, data.BoundingBox)
-    np.testing.assert_allclose(
-        recovered_bbox.coordinates, sample_bbox.coordinates, atol=1e-6
-    )
-
-
-def test_bbox_encoder_recover_roi_custom_scale(sample_bbox, custom_encoder):
-    """Test recover_roi with custom scaling factors."""
-    ref_pos = custom_encoder.get_roi_position(sample_bbox)
-    scaled_dims = custom_encoder.get_roi_size(sample_bbox)
-
-    recovered_bbox = custom_encoder.recover_roi(ref_pos, scaled_dims)
+@pytest.mark.parametrize(
+    "anchor", [anchor for anchor, _ in POSITION_TEST_CASES]
+)
+def test_anchor_bbox_mapper_encode_decode_roundtrip(
+    sample_sound_event, sample_bbox, anchor
+):
+    """Test encode-decode roundtrip reconstructs the original bbox."""
+    mapper = AnchorBBoxMapper(anchor=anchor)
+    position, size = mapper.encode(sample_sound_event)
+    recovered_bbox = mapper.decode(position, size)
 
     assert isinstance(recovered_bbox, data.BoundingBox)
     np.testing.assert_allclose(
@@ -204,25 +201,39 @@ def test_bbox_encoder_recover_roi_custom_scale(sample_bbox, custom_encoder):
     )
 
 
-def test_bbox_encoder_recover_roi_zero_box(zero_bbox, default_encoder):
-    """Test recover_roi for a zero-sized box."""
-    ref_pos = default_encoder.get_roi_position(zero_bbox)
-    scaled_dims = default_encoder.get_roi_size(zero_bbox)
-    recovered_bbox = default_encoder.recover_roi(ref_pos, scaled_dims)
+def test_anchor_bbox_mapper_roundtrip_custom_scale(
+    sample_sound_event, sample_bbox, custom_mapper
+):
+    """Test encode-decode roundtrip with custom scaling factors."""
+    position, size = custom_mapper.encode(sample_sound_event)
+    recovered_bbox = custom_mapper.decode(position, size)
+
+    assert isinstance(recovered_bbox, data.BoundingBox)
+    np.testing.assert_allclose(
+        recovered_bbox.coordinates, sample_bbox.coordinates, atol=1e-6
+    )
+
+
+def test_anchor_bbox_mapper_roundtrip_zero_box(
+    zero_sound_event, zero_bbox, default_mapper
+):
+    """Test encode-decode roundtrip for a zero-sized box."""
+    position, size = default_mapper.encode(zero_sound_event)
+    recovered_bbox = default_mapper.decode(position, size)
     np.testing.assert_allclose(
         recovered_bbox.coordinates, zero_bbox.coordinates, atol=1e-6
     )
 
 
-def test_bbox_encoder_recover_roi_invalid_dims_shape(default_encoder):
-    """Test recover_roi raises ValueError for incorrect dims shape."""
+def test_anchor_bbox_mapper_decode_invalid_size_shape(default_mapper):
+    """Test decode raises ValueError for incorrect size shape."""
     ref_pos = (10, 100)
-    with pytest.raises(ValueError):
-        default_encoder.recover_roi(ref_pos, np.array([1.0]))
-    with pytest.raises(ValueError):
-        default_encoder.recover_roi(ref_pos, np.array([1.0, 2.0, 3.0]))
-    with pytest.raises(ValueError):
-        default_encoder.recover_roi(ref_pos, np.array([[1.0], [2.0]]))
+    with pytest.raises(ValueError, match="does not have the expected shape"):
+        default_mapper.decode(ref_pos, np.array([1.0]))
+    with pytest.raises(ValueError, match="does not have the expected shape"):
+        default_mapper.decode(ref_pos, np.array([1.0, 2.0, 3.0]))
+    with pytest.raises(ValueError, match="does not have the expected shape"):
+        default_mapper.decode(ref_pos, np.array([[1.0], [2.0]]))
 
 
 def test_build_roi_mapper():
@@ -236,69 +247,3 @@ def test_build_roi_mapper():
     assert mapper.anchor == config.anchor
     assert mapper.time_scale == config.time_scale
     assert mapper.frequency_scale == config.frequency_scale
-
-
-@pytest.fixture
-def sample_config_yaml_content() -> str:
-    """YAML content for a sample ROIConfig."""
-    return f"""
-position: center
-time_scale: 500.0
-frequency_scale: {1 / 1000.0}
-"""
-
-
-@pytest.fixture
-def nested_config_yaml_content() -> str:
-    """YAML content with ROIConfig nested under a field."""
-    return f"""
-model_settings:
-  preprocessing:
-    whatever: true
-  roi_mapping:
-    position: bottom-right
-    time_scale: {DEFAULT_TIME_SCALE}
-    frequency_scale: 0.01
-other_stuff: 123
-"""
-
-
-def test_load_roi_mapper_simple(tmp_path, sample_config_yaml_content):
-    """Test loading a simple ROIConfig from YAML."""
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(sample_config_yaml_content)
-
-    mapper = load_roi_mapper(config_path)
-
-    assert isinstance(mapper, AnchorBBoxMapper)
-    assert mapper.anchor == "center"
-    assert mapper.time_scale == 500.0
-    assert mapper.frequency_scale == pytest.approx(1 / 1000.0)
-
-
-def test_load_roi_mapper_nested(tmp_path, nested_config_yaml_content):
-    """Test loading a nested ROIConfig from YAML using 'field'."""
-    config_path = tmp_path / "nested_config.yaml"
-    config_path.write_text(nested_config_yaml_content)
-
-    mapper = load_roi_mapper(config_path, field="model_settings.roi_mapping")
-
-    assert isinstance(mapper, AnchorBBoxMapper)
-    assert mapper.anchor == "bottom-right"
-    assert mapper.time_scale == DEFAULT_TIME_SCALE
-    assert mapper.frequency_scale == 0.01
-
-
-def test_load_roi_mapper_file_not_found(tmp_path):
-    """Test load_roi_mapper raises error if file doesn't exist."""
-    non_existent_path = tmp_path / "not_real.yaml"
-    with pytest.raises(FileNotFoundError):
-        load_roi_mapper(non_existent_path)
-
-
-def test_load_roi_mapper_invalid_field(tmp_path, sample_config_yaml_content):
-    """Test load_roi_mapper raises error for invalid field."""
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(sample_config_yaml_content)
-    with pytest.raises(KeyError):
-        load_roi_mapper(config_path, field="invalid.path")

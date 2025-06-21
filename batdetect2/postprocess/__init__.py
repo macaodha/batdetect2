@@ -526,7 +526,7 @@ class Postprocessor(PostprocessorProtocol):
         return [
             convert_xr_dataset_to_raw_prediction(
                 dataset,
-                self.targets.recover_roi,
+                self.targets.decode_roi,
             )
             for dataset in detection_datasets
         ]
@@ -558,7 +558,7 @@ class Postprocessor(PostprocessorProtocol):
             convert_raw_predictions_to_clip_prediction(
                 prediction,
                 clip,
-                sound_event_decoder=self.targets.decode,
+                sound_event_decoder=self.targets.decode_class,
                 generic_class_tags=self.targets.generic_class_tags,
                 classification_threshold=self.config.classification_threshold,
             )
