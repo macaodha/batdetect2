@@ -50,7 +50,7 @@ from batdetect2.targets.filtering import (
     load_filter_from_config,
 )
 from batdetect2.targets.rois import (
-    ROIConfig,
+    BBoxAnchorMapperConfig,
     ROITargetMapper,
     build_roi_mapper,
 )
@@ -88,7 +88,7 @@ __all__ = [
     "FilterConfig",
     "FilterRule",
     "MapValueRule",
-    "ROIConfig",
+    "BBoxAnchorMapperConfig",
     "ROITargetMapper",
     "ReplaceRule",
     "SoundEventDecoder",
@@ -156,12 +156,12 @@ class TargetConfig(BaseConfig):
         omitted, default ROI mapping settings are used.
     """
 
-    filtering: Optional[FilterConfig] = None
-    transforms: Optional[TransformConfig] = None
+    filtering: FilterConfig = Field(default_factory=FilterConfig)
+    transforms: TransformConfig = Field(default_factory=TransformConfig)
     classes: ClassesConfig = Field(
         default_factory=lambda: DEFAULT_CLASSES_CONFIG
     )
-    roi: Optional[ROIConfig] = None
+    roi: Optional[BBoxAnchorMapperConfig] = None
 
 
 def load_target_config(
@@ -374,14 +374,7 @@ class Targets(TargetProtocol):
         ValueError
             If the annotation lacks geometry.
         """
-        geom = sound_event.sound_event.geometry
-
-        if geom is None:
-            raise ValueError(
-                "Sound event has no geometry, cannot get its position."
-            )
-
-        return self._roi_mapper.get_roi_position(geom)
+        return self._roi_mapper.encode_position(sound_event.sound_event)
 
     def get_size(self, sound_event: data.SoundEventAnnotation) -> np.ndarray:
         """Calculate the target size dimensions from the annotation's geometry.
@@ -405,14 +398,7 @@ class Targets(TargetProtocol):
         ValueError
             If the annotation lacks geometry.
         """
-        geom = sound_event.sound_event.geometry
-
-        if geom is None:
-            raise ValueError(
-                "Sound event has no geometry, cannot get its size."
-            )
-
-        return self._roi_mapper.get_roi_size(geom)
+        return self._roi_mapper.encode_size(sound_event.sound_event)
 
     def recover_roi(
         self,
@@ -438,7 +424,7 @@ class Targets(TargetProtocol):
         data.Geometry
             The reconstructed geometry (typically `BoundingBox`).
         """
-        return self._roi_mapper.recover_roi(pos, dims)
+        return self._roi_mapper.decode(pos, dims)
 
 
 DEFAULT_CLASSES = [
@@ -606,7 +592,7 @@ def build_targets(
         if config.transforms
         else None
     )
-    roi_mapper = build_roi_mapper(config.roi or ROIConfig())
+    roi_mapper = build_roi_mapper(config.roi or BBoxAnchorMapperConfig())
     class_names = get_class_names_from_config(config.classes)
     generic_class_tags = build_generic_class_tags(
         config.classes,

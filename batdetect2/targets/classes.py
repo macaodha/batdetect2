@@ -27,7 +27,28 @@ __all__ = [
     "build_generic_class_tags",
     "get_class_names_from_config",
     "DEFAULT_SPECIES_LIST",
+    "PositionMethod",
+    "CornerPosition",
+    "SizeMethod",
+    "BoundingBoxSize",
 ]
+
+class PositionMethod(BaseConfig):
+    """Base class for defining how to select a position from a geometry."""
+    method_type: str
+
+class CornerPosition(PositionMethod):
+    """Selects a position based on a corner or center of the bounding box."""
+    method_type: Literal["corner"] = "corner"
+    corner: Literal["upper_left", "lower_left", "center"] = "lower_left"
+
+class SizeMethod(BaseConfig):
+    """Base class for defining how to select a size from a geometry."""
+    method_type: str
+
+class BoundingBoxSize(SizeMethod):
+    """Uses the width and height of the bounding box as the size."""
+    method_type: Literal["bounding_box"] = "bounding_box"
 
 SoundEventEncoder = Callable[[data.SoundEventAnnotation], Optional[str]]
 """Type alias for a sound event class encoder function.
@@ -113,6 +134,8 @@ class TargetClass(BaseConfig):
     tags: List[TagInfo] = Field(min_length=1)
     match_type: Literal["all", "any"] = Field(default="all")
     output_tags: Optional[List[TagInfo]] = None
+    position_method: PositionMethod = Field(default_factory=lambda: CornerPosition(corner="lower_left"))
+    size_method: SizeMethod = Field(default_factory=BoundingBoxSize)
 
 
 def _get_default_classes() -> List[TargetClass]:

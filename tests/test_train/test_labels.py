@@ -5,7 +5,7 @@ import xarray as xr
 from soundevent import data
 
 from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
-from batdetect2.targets.rois import ROIConfig
+from batdetect2.targets.rois import BBoxAnchorMapperConfig
 from batdetect2.targets.terms import TagInfo, TermRegistry
 from batdetect2.train.labels import generate_heatmaps
 
@@ -85,7 +85,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
 ):
     config = sample_target_config.model_copy(
         update=dict(
-            roi=ROIConfig(
+            roi=BBoxAnchorMapperConfig(
                 time_scale=1,
                 frequency_scale=1,
             )

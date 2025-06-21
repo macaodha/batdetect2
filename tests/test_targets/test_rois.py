@@ -4,12 +4,12 @@ from soundevent import data
 
 from batdetect2.targets.rois import (
     DEFAULT_FREQUENCY_SCALE,
-    DEFAULT_POSITION,
+    DEFAULT_ANCHOR,
     DEFAULT_TIME_SCALE,
     SIZE_HEIGHT,
     SIZE_WIDTH,
-    BBoxEncoder,
-    ROIConfig,
+    AnchorBBoxMapper,
+    BBoxAnchorMapperConfig,
     _build_bounding_box,
     build_roi_mapper,
     load_roi_mapper,
@@ -29,36 +29,36 @@ def zero_bbox() -> data.BoundingBox:
 
 
 @pytest.fixture
-def default_encoder() -> BBoxEncoder:
+def default_encoder() -> AnchorBBoxMapper:
     """A BBoxEncoder with default settings."""
-    return BBoxEncoder()
+    return AnchorBBoxMapper()
 
 
 @pytest.fixture
-def custom_encoder() -> BBoxEncoder:
+def custom_encoder() -> AnchorBBoxMapper:
     """A BBoxEncoder with custom settings."""
-    return BBoxEncoder(position="center", time_scale=1.0, frequency_scale=10.0)
+    return AnchorBBoxMapper(anchor="center", time_scale=1.0, frequency_scale=10.0)
 
 
 def test_roi_config_defaults():
     """Test ROIConfig default values."""
-    config = ROIConfig()
-    assert config.position == DEFAULT_POSITION
+    config = BBoxAnchorMapperConfig()
+    assert config.anchor == DEFAULT_ANCHOR
     assert config.time_scale == DEFAULT_TIME_SCALE
     assert config.frequency_scale == DEFAULT_FREQUENCY_SCALE
 
 
 def test_roi_config_custom():
     """Test creating ROIConfig with custom values."""
-    config = ROIConfig(position="center", time_scale=1.0, frequency_scale=10.0)
-    assert config.position == "center"
+    config = BBoxAnchorMapperConfig(anchor="center", time_scale=1.0, frequency_scale=10.0)
+    assert config.anchor == "center"
     assert config.time_scale == 1.0
     assert config.frequency_scale == 10.0
 
 
 def test_bbox_encoder_init_defaults(default_encoder):
     """Test BBoxEncoder initialization with default arguments."""
-    assert default_encoder.position == DEFAULT_POSITION
+    assert default_encoder.position == DEFAULT_ANCHOR
     assert default_encoder.time_scale == DEFAULT_TIME_SCALE
     assert default_encoder.frequency_scale == DEFAULT_FREQUENCY_SCALE
     assert default_encoder.dimension_names == [SIZE_WIDTH, SIZE_HEIGHT]
@@ -92,15 +92,15 @@ def test_bbox_encoder_get_roi_position(
     sample_bbox, position_type, expected_pos
 ):
     """Test get_roi_position for various position types."""
-    encoder = BBoxEncoder(position=position_type)
-    actual_pos = encoder.get_roi_position(sample_bbox)
+    encoder = AnchorBBoxMapper(anchor=position_type)
+    actual_pos = encoder.encode_position(sample_bbox)
     assert actual_pos == pytest.approx(expected_pos)
 
 
 def test_bbox_encoder_get_roi_position_zero_box(zero_bbox):
     """Test get_roi_position for a zero-sized box."""
-    encoder = BBoxEncoder(position="center")
-    assert encoder.get_roi_position(zero_bbox) == pytest.approx((15.0, 150.0))
+    encoder = AnchorBBoxMapper(anchor="center")
+    assert encoder.encode_position(zero_bbox) == pytest.approx((15.0, 150.0))
 
 
 def test_bbox_encoder_get_roi_size_defaults(sample_bbox, default_encoder):
@@ -160,7 +160,7 @@ def test_build_bounding_box(position_type, expected_coords):
     duration = 10.0
     bandwidth = 100.0
     bbox = _build_bounding_box(
-        ref_pos, duration, bandwidth, position=position_type
+        ref_pos, duration, bandwidth, anchor=position_type
     )
     assert isinstance(bbox, data.BoundingBox)
     np.testing.assert_allclose(bbox.coordinates, expected_coords)
@@ -173,17 +173,17 @@ def test_build_bounding_box_invalid_position():
             (0, 0),
             1,
             1,
-            position="invalid-spot",  # type: ignore
+            anchor="invalid-spot",  # type: ignore
         )
 
 
 @pytest.mark.parametrize("position_type, ref_pos", POSITION_TEST_CASES)
 def test_bbox_encoder_recover_roi(sample_bbox, position_type, ref_pos):
     """Test recover_roi correctly reconstructs the original bbox."""
-    encoder = BBoxEncoder(position=position_type)
-    scaled_dims = encoder.get_roi_size(sample_bbox)
+    encoder = AnchorBBoxMapper(anchor=position_type)
+    scaled_dims = encoder.encode_size(sample_bbox)
 
-    recovered_bbox = encoder.recover_roi(ref_pos, scaled_dims)
+    recovered_bbox = encoder.decode(ref_pos, scaled_dims)
 
     assert isinstance(recovered_bbox, data.BoundingBox)
     np.testing.assert_allclose(
@@ -227,13 +227,13 @@ def test_bbox_encoder_recover_roi_invalid_dims_shape(default_encoder):
 
 def test_build_roi_mapper():
     """Test build_roi_mapper creates a configured BBoxEncoder."""
-    config = ROIConfig(
-        position="top-right", time_scale=2.0, frequency_scale=20.0
+    config = BBoxAnchorMapperConfig(
+        anchor="top-right", time_scale=2.0, frequency_scale=20.0
     )
     mapper = build_roi_mapper(config)
 
-    assert isinstance(mapper, BBoxEncoder)
-    assert mapper.position == config.position
+    assert isinstance(mapper, AnchorBBoxMapper)
+    assert mapper.anchor == config.anchor
     assert mapper.time_scale == config.time_scale
     assert mapper.frequency_scale == config.frequency_scale
 
@@ -270,8 +270,8 @@ def test_load_roi_mapper_simple(tmp_path, sample_config_yaml_content):
 
     mapper = load_roi_mapper(config_path)
 
-    assert isinstance(mapper, BBoxEncoder)
-    assert mapper.position == "center"
+    assert isinstance(mapper, AnchorBBoxMapper)
+    assert mapper.anchor == "center"
     assert mapper.time_scale == 500.0
     assert mapper.frequency_scale == pytest.approx(1 / 1000.0)
 
@@ -283,8 +283,8 @@ def test_load_roi_mapper_nested(tmp_path, nested_config_yaml_content):
 
     mapper = load_roi_mapper(config_path, field="model_settings.roi_mapping")
 
-    assert isinstance(mapper, BBoxEncoder)
-    assert mapper.position == "bottom-right"
+    assert isinstance(mapper, AnchorBBoxMapper)
+    assert mapper.anchor == "bottom-right"
     assert mapper.time_scale == DEFAULT_TIME_SCALE
     assert mapper.frequency_scale == 0.01
 
