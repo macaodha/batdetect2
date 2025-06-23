@@ -1,7 +1,7 @@
 # Variables
-SOURCE_DIR = batdetect2
+SOURCE_DIR = src
 TESTS_DIR = tests
-PYTHON_DIRS = batdetect2 tests
+PYTHON_DIRS = src tests
 DOCS_SOURCE = docs/source
 DOCS_BUILD = docs/build
 HTML_COVERAGE_DIR = htmlcov
