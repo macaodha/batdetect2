@@ -11,30 +11,37 @@ modularity and consistent interaction between different parts of the BatDetect2
 system that deal with model predictions.
 """
 
-from typing import Callable, List, NamedTuple, Protocol
+from typing import List, NamedTuple, Optional, Protocol
 
-import numpy as np
 import xarray as xr
 from soundevent import data
 
 from batdetect2.models.types import ModelOutput
+from batdetect2.targets.types import Position, Size
 
 __all__ = [
     "RawPrediction",
     "PostprocessorProtocol",
-    "GeometryBuilder",
+    "GeometryDecoder",
 ]
 
 
-GeometryBuilder = Callable[[tuple[float, float], np.ndarray], data.Geometry]
-"""Type alias for a function that recovers geometry from position and size.
+# TODO: update the docstring
+class GeometryDecoder(Protocol):
+    """Type alias for a function that recovers geometry from position and size.
 
-This callable takes:
-1.  A position tuple `(time, frequency)`.
-2.  A NumPy array of size dimensions (e.g., `[width, height]`).
-It should return the reconstructed `soundevent.data.Geometry` (typically a
-`BoundingBox`).
-"""
+    This callable takes:
+    1.  A position tuple `(time, frequency)`.
+    2.  A NumPy array of size dimensions (e.g., `[width, height]`).
+    3.  Optionally a class name of the highest scoring class. This is to accomodate
+        different ways of decoding geometry that depend on the predicted class.
+    It should return the reconstructed `soundevent.data.Geometry` (typically a
+    `BoundingBox`).
+    """
+
+    def __call__(
+        self, position: Position, size: Size, class_name: Optional[str] = None
+    ) -> data.Geometry: ...
 
 
 class RawPrediction(NamedTuple):

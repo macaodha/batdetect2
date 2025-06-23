@@ -1,9 +1,9 @@
 """Extracts associated data for detected points from model output arrays.
 
-This module implements a key step (Step 4) in the BatDetect2 postprocessing
-pipeline. After candidate detection points (time, frequency, score) have been
-identified, this module extracts the corresponding values from other raw model
-output arrays, such as:
+This module implements a Step 4 in the BatDetect2 postprocessing pipeline.
+After candidate detection points (time, frequency, score) have been identified,
+this module extracts the corresponding values from other raw model output
+arrays, such as:
 
 - Predicted bounding box sizes (width, height).
 - Class probability scores for each defined target class.

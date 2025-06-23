@@ -235,6 +235,7 @@ default_term_registry = TermRegistry(
         [
             *getmembers(terms, lambda x: isinstance(x, data.Term)),
             ("event", call_type),
+            ("species", terms.scientific_name),
             ("individual", individual),
             ("data_source", data_source),
             (GENERIC_CLASS_KEY, generic_class),

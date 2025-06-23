@@ -12,11 +12,11 @@ from batdetect2.targets.classes import (
     TargetClass,
     _get_default_class_name,
     _get_default_classes,
-    _is_target_class,
     build_generic_class_tags,
     build_sound_event_decoder,
     build_sound_event_encoder,
     get_class_names_from_config,
+    is_target_class,
     load_classes_config,
     load_decoder_from_config,
     load_encoder_from_config,
@@ -145,7 +145,7 @@ def test_is_target_class_match_all(
         ),
         data.Tag(term=sample_term_registry["quality"], value="Good"),
     }
-    assert _is_target_class(sample_annotation, tags, match_all=True) is True
+    assert is_target_class(sample_annotation, tags, match_all=True) is True
 
     tags = {
         data.Tag(
@@ -153,14 +153,14 @@ def test_is_target_class_match_all(
             value="Pipistrellus pipistrellus",
         )
     }
-    assert _is_target_class(sample_annotation, tags, match_all=True) is True
+    assert is_target_class(sample_annotation, tags, match_all=True) is True
 
     tags = {
         data.Tag(
             term=sample_term_registry["species"], value="Myotis daubentonii"
         )
     }
-    assert _is_target_class(sample_annotation, tags, match_all=True) is False
+    assert is_target_class(sample_annotation, tags, match_all=True) is False
 
 
 def test_is_target_class_match_any(
@@ -174,7 +174,7 @@ def test_is_target_class_match_any(
         ),
         data.Tag(term=sample_term_registry["quality"], value="Good"),
     }
-    assert _is_target_class(sample_annotation, tags, match_all=False) is True
+    assert is_target_class(sample_annotation, tags, match_all=False) is True
 
     tags = {
         data.Tag(
@@ -182,14 +182,14 @@ def test_is_target_class_match_any(
             value="Pipistrellus pipistrellus",
         )
     }
-    assert _is_target_class(sample_annotation, tags, match_all=False) is True
+    assert is_target_class(sample_annotation, tags, match_all=False) is True
 
     tags = {
         data.Tag(
             term=sample_term_registry["species"], value="Myotis daubentonii"
         )
     }
-    assert _is_target_class(sample_annotation, tags, match_all=False) is False
+    assert is_target_class(sample_annotation, tags, match_all=False) is False
 
 
 def test_get_class_names_from_config():

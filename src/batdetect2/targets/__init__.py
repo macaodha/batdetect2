@@ -23,6 +23,7 @@ object is via the `build_targets` or `load_targets` functions.
 
 from typing import List, Optional
 
+from loguru import logger
 from pydantic import Field
 from soundevent import data
 
@@ -49,7 +50,8 @@ from batdetect2.targets.filtering import (
     load_filter_from_config,
 )
 from batdetect2.targets.rois import (
-    BBoxAnchorMapperConfig,
+    AnchorBBoxMapperConfig,
+    ROIMapperConfig,
     ROITargetMapper,
     build_roi_mapper,
 )
@@ -58,11 +60,11 @@ from batdetect2.targets.terms import (
     TermInfo,
     TermRegistry,
     call_type,
+    default_term_registry,
     get_tag_from_info,
     get_term_from_key,
     individual,
     register_term,
-    default_term_registry,
 )
 from batdetect2.targets.transform import (
     DerivationRegistry,
@@ -87,7 +89,7 @@ __all__ = [
     "FilterConfig",
     "FilterRule",
     "MapValueRule",
-    "BBoxAnchorMapperConfig",
+    "AnchorBBoxMapperConfig",
     "ROITargetMapper",
     "ReplaceRule",
     "SoundEventDecoder",
@@ -160,7 +162,7 @@ class TargetConfig(BaseConfig):
     classes: ClassesConfig = Field(
         default_factory=lambda: DEFAULT_CLASSES_CONFIG
     )
-    roi: Optional[BBoxAnchorMapperConfig] = None
+    roi: ROIMapperConfig = Field(default_factory=AnchorBBoxMapperConfig)
 
 
 def load_target_config(
@@ -239,6 +241,7 @@ class Targets(TargetProtocol):
         generic_class_tags: List[data.Tag],
         filter_fn: Optional[SoundEventFilter] = None,
         transform_fn: Optional[SoundEventTransformation] = None,
+        roi_mapper_overrides: Optional[dict[str, ROITargetMapper]] = None,
     ):
         """Initialize the Targets object.
 
@@ -271,6 +274,16 @@ class Targets(TargetProtocol):
         self._encode_fn = encode_fn
         self._decode_fn = decode_fn
         self._transform_fn = transform_fn
+        self._roi_mapper_overrides = roi_mapper_overrides or {}
+
+        for class_name in self._roi_mapper_overrides:
+            if class_name not in self.class_names:
+                # TODO: improve this warning
+                logger.warning(
+                    "The ROI mapper overrides contains a class ({class_name}) "
+                    "not present in the class names.",
+                    class_name=class_name,
+                )
 
     def filter(self, sound_event: data.SoundEventAnnotation) -> bool:
         """Apply the configured filter to a sound event annotation.
@@ -375,9 +388,21 @@ class Targets(TargetProtocol):
         ValueError
             If the annotation lacks geometry.
         """
+        class_name = self.encode_class(sound_event)
+
+        if class_name in self._roi_mapper_overrides:
+            return self._roi_mapper_overrides[class_name].encode(
+                sound_event.sound_event
+            )
+
         return self._roi_mapper.encode(sound_event.sound_event)
 
-    def decode_roi(self, position: Position, size: Size) -> data.Geometry:
+    def decode_roi(
+        self,
+        position: Position,
+        size: Size,
+        class_name: Optional[str] = None,
+    ) -> data.Geometry:
         """Recover an approximate geometric ROI from a position and dimensions.
 
         Delegates to the internal ROI mapper's `recover_roi` method, which
@@ -397,6 +422,13 @@ class Targets(TargetProtocol):
         data.Geometry
             The reconstructed geometry (typically `BoundingBox`).
         """
+        print(class_name)
+        if class_name in self._roi_mapper_overrides:
+            return self._roi_mapper_overrides[class_name].decode(
+                position,
+                size,
+            )
+
         return self._roi_mapper.decode(position, size)
 
 
@@ -452,10 +484,12 @@ DEFAULT_CLASSES = [
     TargetClass(
         tags=[TagInfo(value="Nyctalus leisleri")],
         name="nyclei",
+        roi=AnchorBBoxMapperConfig(anchor="top-left"),
     ),
     TargetClass(
         tags=[TagInfo(value="Rhinolophus ferrumequinum")],
         name="rhifer",
+        roi=AnchorBBoxMapperConfig(anchor="top-left"),
     ),
     TargetClass(
         tags=[TagInfo(value="Plecotus auritus")],
@@ -496,6 +530,7 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
         ]
     ),
     classes=DEFAULT_CLASSES_CONFIG,
+    roi=AnchorBBoxMapperConfig(),
 )
 
 
@@ -565,12 +600,17 @@ def build_targets(
         if config.transforms
         else None
     )
-    roi_mapper = build_roi_mapper(config.roi or BBoxAnchorMapperConfig())
+    roi_mapper = build_roi_mapper(config.roi)
     class_names = get_class_names_from_config(config.classes)
     generic_class_tags = build_generic_class_tags(
         config.classes,
         term_registry=term_registry,
     )
+    roi_overrides = {
+        class_config.name: build_roi_mapper(class_config.roi)
+        for class_config in config.classes.classes
+        if class_config.roi is not None
+    }
 
     return Targets(
         filter_fn=filter_fn,
@@ -580,6 +620,7 @@ def build_targets(
         roi_mapper=roi_mapper,
         generic_class_tags=generic_class_tags,
         transform_fn=transform_fn,
+        roi_mapper_overrides=roi_overrides,
     )
 
 

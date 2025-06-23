@@ -1,6 +1,6 @@
 """Extracts candidate detection points from a model output heatmap.
 
-This module implements a specific step within the BatDetect2 postprocessing
+This module implements Step 3 within the BatDetect2 postprocessing
 pipeline. Its primary function is to identify potential sound event locations
 by finding peaks (local maxima or high-scoring points) in the detection heatmap
 produced by the neural network (usually after Non-Maximum Suppression and

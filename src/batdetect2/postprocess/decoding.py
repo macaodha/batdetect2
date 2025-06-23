@@ -4,8 +4,7 @@ This module handles the final stages of the BatDetect2 postprocessing pipeline.
 It takes the structured detection data extracted by the `extraction` module
 (typically an `xarray.Dataset` containing scores, positions, predicted sizes,
  class probabilities, and features for each detection point) and converts it
-into meaningful, standardized prediction objects based on the `soundevent` data
-model.
+into standardized prediction objects based on the `soundevent` data model.
 
 The process involves:
 1.  Converting the `xarray.Dataset` into a list of intermediate `RawPrediction`
@@ -33,7 +32,7 @@ import numpy as np
 import xarray as xr
 from soundevent import data
 
-from batdetect2.postprocess.types import GeometryBuilder, RawPrediction
+from batdetect2.postprocess.types import GeometryDecoder, RawPrediction
 from batdetect2.targets.classes import SoundEventDecoder
 from batdetect2.utils.arrays import iterate_over_array
 
@@ -55,7 +54,7 @@ decoding.
 
 def convert_xr_dataset_to_raw_prediction(
     detection_dataset: xr.Dataset,
-    geometry_builder: GeometryBuilder,
+    geometry_decoder: GeometryDecoder,
 ) -> List[RawPrediction]:
     """Convert an xarray.Dataset of detections to RawPrediction objects.
 
@@ -72,7 +71,7 @@ def convert_xr_dataset_to_raw_prediction(
         output by `extract_detection_xr_dataset`. Expected variables include
         'scores' (with time/freq coords), 'dimensions', 'classes', 'features'.
         Must have a 'detection' dimension.
-    geometry_builder : GeometryBuilder
+    geometry_decoder : GeometryDecoder
         A function that takes a position tuple `(time, freq)` and a NumPy array
         of dimensions, and returns the corresponding reconstructed
         `soundevent.data.Geometry`.
@@ -96,14 +95,20 @@ def convert_xr_dataset_to_raw_prediction(
     for det_num in range(detection_dataset.sizes["detection"]):
         det_info = detection_dataset.sel(detection=det_num)
 
-        geom = geometry_builder(
+        # TODO: Maybe clean this up
+        highest_scoring_class = det_info.coords["category"][
+            det_info["classes"].argmax()
+        ].item()
+
+        geom = geometry_decoder(
             (det_info.time, det_info.frequency),
             det_info.dimensions,
+            class_name=highest_scoring_class,
         )
 
         detections.append(
             RawPrediction(
-                detection_score=det_info.score,
+                detection_score=det_info.scores,
                 geometry=geom,
                 class_scores=det_info.classes,
                 features=det_info.features,

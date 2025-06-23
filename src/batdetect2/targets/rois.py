@@ -34,7 +34,7 @@ from batdetect2.targets.types import Position, Size
 __all__ = [
     "Anchor",
     "AnchorBBoxMapper",
-    "BBoxAnchorMapperConfig",
+    "AnchorBBoxMapperConfig",
     "DEFAULT_ANCHOR",
     "DEFAULT_FREQUENCY_SCALE",
     "DEFAULT_TIME_SCALE",
@@ -148,7 +148,7 @@ class ROITargetMapper(Protocol):
         ...
 
 
-class BBoxAnchorMapperConfig(BaseConfig):
+class AnchorBBoxMapperConfig(BaseConfig):
     """Configuration for `AnchorBBoxMapper`.
 
     Defines parameters for converting ROIs into targets using a fixed anchor
@@ -470,7 +470,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
 
 ROIMapperConfig = Annotated[
-    Union[BBoxAnchorMapperConfig, PeakEnergyBBoxMapperConfig],
+    Union[AnchorBBoxMapperConfig, PeakEnergyBBoxMapperConfig],
     Field(discriminator="name"),
 ]
 """A discriminated union of all supported ROI mapper configurations.
@@ -480,7 +480,9 @@ implementations by using the `name` field as a discriminator.
 """
 
 
-def build_roi_mapper(config: ROIMapperConfig) -> ROITargetMapper:
+def build_roi_mapper(
+    config: Optional[ROIMapperConfig] = None,
+) -> ROITargetMapper:
     """Factory function to create an ROITargetMapper from a config object.
 
     Parameters
@@ -498,6 +500,8 @@ def build_roi_mapper(config: ROIMapperConfig) -> ROITargetMapper:
     NotImplementedError
         If the `name` in the config does not correspond to a known mapper.
     """
+    config = config or AnchorBBoxMapperConfig()
+
     if config.name == "anchor_bbox":
         return AnchorBBoxMapper(
             anchor=config.anchor,

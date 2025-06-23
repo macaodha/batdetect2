@@ -181,7 +181,13 @@ class TargetProtocol(Protocol):
         """
         ...
 
-    def decode_roi(self, position: Position, size: Size) -> data.Geometry:
+    # TODO: Update docstrings
+    def decode_roi(
+        self,
+        position: Position,
+        size: Size,
+        class_name: Optional[str] = None,
+    ) -> data.Geometry:
         """Recover the ROI geometry from a position and dimensions.
 
         Performs the inverse mapping of `get_position` and `get_size`. It takes
@@ -195,6 +201,8 @@ class TargetProtocol(Protocol):
         dims : np.ndarray
             The NumPy array containing the dimensions (e.g., predicted
             by the model), corresponding to the order in `dimension_names`.
+        class_name: str
+            class
 
         Returns
         -------

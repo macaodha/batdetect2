@@ -7,8 +7,8 @@ containing detected sound events with associated class tags and geometry.
 
 The pipeline involves several configurable steps, implemented in submodules:
 1.  Non-Maximum Suppression (`.nms`): Isolates distinct detection peaks.
-2.  Coordinate Remapping (`.remapping`): Adds real-world time/frequency
-    coordinates to raw model output arrays.
+2.  Coordinate Remapping (`.remapping`): Adds time/frequency coordinates to raw
+    model output arrays.
 3.  Detection Extraction (`.detection`): Identifies candidate detection points
     (location and score) based on thresholds and score ranking (top-k).
 4.  Data Extraction (`.extraction`): Gathers associated model outputs (size,

@@ -157,4 +157,4 @@ def load_config(
     if field:
         config = get_object_field(config, field)
 
-    return schema.model_validate(config)
+    return schema.model_validate(config or {})

@@ -11,7 +11,7 @@ from batdetect2.targets.rois import (
     SIZE_HEIGHT,
     SIZE_WIDTH,
     AnchorBBoxMapper,
-    BBoxAnchorMapperConfig,
+    AnchorBBoxMapperConfig,
     PeakEnergyBBoxMapper,
     PeakEnergyBBoxMapperConfig,
     _build_bounding_box,
@@ -243,7 +243,7 @@ def test_anchor_bbox_mapper_decode_invalid_size_shape(default_mapper):
 
 def test_build_roi_mapper():
     """Test build_roi_mapper creates a configured BBoxEncoder."""
-    config = BBoxAnchorMapperConfig(
+    config = AnchorBBoxMapperConfig(
         anchor="top-right", time_scale=2.0, frequency_scale=20.0
     )
     mapper = build_roi_mapper(config)
@@ -571,7 +571,7 @@ def test_peak_energy_bbox_mapper_encode_decode_roundtrip(generate_whistle):
 
 def test_build_roi_mapper_for_anchor_bbox():
     # Given
-    config = BBoxAnchorMapperConfig(
+    config = AnchorBBoxMapperConfig(
         anchor="center",
         time_scale=123.0,
         frequency_scale=456.0,

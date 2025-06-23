@@ -6,49 +6,26 @@ from pydantic import Field, field_validator
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
+from batdetect2.targets.rois import ROIMapperConfig
 from batdetect2.targets.terms import (
     GENERIC_CLASS_KEY,
     TagInfo,
     TermRegistry,
-    get_tag_from_info,
     default_term_registry,
+    get_tag_from_info,
 )
 
 __all__ = [
-    "SoundEventEncoder",
-    "SoundEventDecoder",
-    "TargetClass",
-    "ClassesConfig",
-    "load_classes_config",
-    "load_encoder_from_config",
-    "load_decoder_from_config",
-    "build_sound_event_encoder",
-    "build_sound_event_decoder",
-    "build_generic_class_tags",
-    "get_class_names_from_config",
     "DEFAULT_SPECIES_LIST",
-    "PositionMethod",
-    "CornerPosition",
-    "SizeMethod",
-    "BoundingBoxSize",
+    "build_generic_class_tags",
+    "build_sound_event_decoder",
+    "build_sound_event_encoder",
+    "get_class_names_from_config",
+    "load_classes_config",
+    "load_decoder_from_config",
+    "load_encoder_from_config",
 ]
 
-class PositionMethod(BaseConfig):
-    """Base class for defining how to select a position from a geometry."""
-    method_type: str
-
-class CornerPosition(PositionMethod):
-    """Selects a position based on a corner or center of the bounding box."""
-    method_type: Literal["corner"] = "corner"
-    corner: Literal["upper_left", "lower_left", "center"] = "lower_left"
-
-class SizeMethod(BaseConfig):
-    """Base class for defining how to select a size from a geometry."""
-    method_type: str
-
-class BoundingBoxSize(SizeMethod):
-    """Uses the width and height of the bounding box as the size."""
-    method_type: Literal["bounding_box"] = "bounding_box"
 
 SoundEventEncoder = Callable[[data.SoundEventAnnotation], Optional[str]]
 """Type alias for a sound event class encoder function.
@@ -134,8 +111,7 @@ class TargetClass(BaseConfig):
     tags: List[TagInfo] = Field(min_length=1)
     match_type: Literal["all", "any"] = Field(default="all")
     output_tags: Optional[List[TagInfo]] = None
-    position_method: PositionMethod = Field(default_factory=lambda: CornerPosition(corner="lower_left"))
-    size_method: SizeMethod = Field(default_factory=BoundingBoxSize)
+    roi: Optional[ROIMapperConfig] = None
 
 
 def _get_default_classes() -> List[TargetClass]:
@@ -258,7 +234,7 @@ class ClassesConfig(BaseConfig):
         return v
 
 
-def _is_target_class(
+def is_target_class(
     sound_event_annotation: data.SoundEventAnnotation,
     tags: Set[data.Tag],
     match_all: bool = True,
@@ -373,7 +349,7 @@ def build_sound_event_encoder(
         (
             class_info.name,
             partial(
-                _is_target_class,
+                is_target_class,
                 tags={
                     get_tag_from_info(tag_info, term_registry=term_registry)
                     for tag_info in class_info.tags

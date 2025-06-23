@@ -1,6 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Callable, List, Optional
+from uuid import uuid4
 
 import numpy as np
 import pytest
@@ -447,3 +448,15 @@ def example_annotations(
     annotations = load_dataset(example_dataset)
     assert len(annotations) == 3
     return annotations
+
+
+@pytest.fixture
+def create_temp_yaml(tmp_path: Path) -> Callable[[str], Path]:
+    """Create a temporary YAML file with the given content."""
+
+    def factory(content: str) -> Path:
+        temp_file = tmp_path / f"{uuid4()}.yaml"
+        temp_file.write_text(content)
+        return temp_file
+
+    return factory
