@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pytest
@@ -25,6 +25,7 @@ def dummy_geometry_builder():
     def _builder(
         position: Tuple[float, float],
         dimensions: xr.DataArray,
+        class_name: Optional[str] = None,
     ) -> data.BoundingBox:
         time, freq = position
         width = dimensions.sel(dimension="width").item()
@@ -106,7 +107,7 @@ def sample_detection_dataset() -> xr.Dataset:
         scores_data,
         coords=detection_coords,
         dims=["detection"],
-        name="score",
+        name="scores",
     )
 
     dimensions_data = np.array([[7.0, 16.0], [3.0, 12.0]], dtype=np.float32)
@@ -140,7 +141,7 @@ def sample_detection_dataset() -> xr.Dataset:
 
     ds = xr.Dataset(
         {
-            "score": scores,
+            "scores": scores,
             "dimensions": dimensions,
             "classes": classes,
             "features": features,

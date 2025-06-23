@@ -109,6 +109,7 @@ def test_get_tag_from_info_key_not_found():
 
 
 def test_load_terms_from_config(tmp_path):
+    term_registry = TermRegistry()
     config_data = {
         "terms": [
             {
@@ -127,7 +128,10 @@ def test_load_terms_from_config(tmp_path):
     with open(config_file, "w") as f:
         yaml.dump(config_data, f)
 
-    loaded_terms = load_terms_from_config(config_file)
+    loaded_terms = load_terms_from_config(
+        config_file,
+        term_registry=term_registry,
+    )
     assert "species" in loaded_terms
     assert "my_custom_term" in loaded_terms
     assert loaded_terms["species"].name == "dwc:scientificName"
