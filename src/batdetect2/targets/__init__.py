@@ -422,7 +422,6 @@ class Targets(TargetProtocol):
         data.Geometry
             The reconstructed geometry (typically `BoundingBox`).
         """
-        print(class_name)
         if class_name in self._roi_mapper_overrides:
             return self._roi_mapper_overrides[class_name].decode(
                 position,
