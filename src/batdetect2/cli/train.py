@@ -189,8 +189,7 @@ def train_command(
             config=postprocess_config_loaded,
         )
         logger.debug(
-            "Loaded postprocessor from file {path}",
-            path=train_config,
+            "Loaded postprocessor from file {path}", path=postprocess_config
         )
     except IOError:
         logger.debug(
