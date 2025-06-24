@@ -161,6 +161,11 @@ def insert_source_tag(
     )
 
 
+# TODO: add documentation
+def load_dataset_config(path: data.PathLike, field: Optional[str] = None):
+    return load_config(path=path, schema=DatasetConfig, field=field)
+
+
 def load_dataset_from_config(
     path: data.PathLike,
     field: Optional[str] = None,

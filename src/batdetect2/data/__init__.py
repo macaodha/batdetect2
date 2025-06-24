@@ -8,6 +8,7 @@ from batdetect2.data.annotations import (
 from batdetect2.data.datasets import (
     DatasetConfig,
     load_dataset,
+    load_dataset_config,
     load_dataset_from_config,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "DatasetConfig",
     "load_annotated_dataset",
     "load_dataset",
+    "load_dataset_config",
     "load_dataset_from_config",
 ]
