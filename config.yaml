@@ -79,12 +79,36 @@ labels:
   sigma: 3
 
 model:
-  name: Net2DFast
   input_height: 128
-  encoder_channels: [1, 32, 64, 128]
-  bottleneck_channels: 256
-  decoder_channels: [256, 64, 32, 32]
+  in_channels: 1
   out_channels: 32
+  encoder:
+    layers:
+      - block_type: FreqCoordConvDown
+        out_channels: 32
+      - block_type: FreqCoordConvDown
+        out_channels: 64
+      - block_type: LayerGroup
+        layers:
+          - block_type: FreqCoordConvDown
+            out_channels: 128
+          - block_type: ConvBlock
+            out_channels: 256
+  bottleneck:
+    channels: 256
+    self_attention: true
+  decoder:
+    layers:
+      - block_type: FreqCoordConvUp
+        out_channels: 64
+      - block_type: FreqCoordConvUp
+        out_channels: 32
+      - block_type: LayerGroup
+        layers:
+          - block_type: FreqCoordConvUp
+            out_channels: 32
+          - block_type: ConvBlock
+            out_channels: 32
 
 train:
   batch_size: 8
@@ -104,29 +128,31 @@ train:
   optimizer:
     learning_rate: 0.001
     t_max: 100
+  logger:
+    logger_type: dvclive
   augmentations:
     steps:
-      - augmentation_type: mix
+      - augmentation_type: mix_audio
         probability: 0.2
         min_weight: 0.3
         max_weight: 0.7
-      - agumentation_type: echo
+      - augmentation_type: add_echo
         probability: 0.2
         max_delay: 0.005
         min_weight: 0.0
         max_weight: 1.0
-      - augmentation_type: volume
+      - augmentation_type: scale_volume
         probability: 0.2
         min_scaling: 0.0
         max_scaling: 2.0
       - augmentation_type: warp
         probability: 0.2
         delta: 0.04
-      - augmentation_type: time_mask
+      - augmentation_type: mask_time
         probability: 0.2
         max_perc: 0.05
         max_masks: 3
-      - augmentation_type: frequency_mask
+      - augmentation_type: mask_freq
         probability: 0.2
         max_perc: 0.10
         max_masks: 3
