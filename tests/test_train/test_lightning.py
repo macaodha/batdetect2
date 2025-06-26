@@ -1,31 +1,16 @@
 from pathlib import Path
 
 import lightning as L
+import pytest
 import torch
 import xarray as xr
 from soundevent import data
 
-from batdetect2.models import build_model
-from batdetect2.postprocess import build_postprocessor
-from batdetect2.preprocess import build_preprocessor
-from batdetect2.targets import build_targets
-from batdetect2.train.lightning import TrainingModule
-from batdetect2.train.losses import build_loss
+from batdetect2.train import FullTrainingConfig, TrainingModule
 
 
 def build_default_module():
-    loss = build_loss()
-    targets = build_targets()
-    detector = build_model(num_classes=len(targets.class_names))
-    preprocessor = build_preprocessor()
-    postprocessor = build_postprocessor(targets)
-    return TrainingModule(
-        detector=detector,
-        loss=loss,
-        targets=targets,
-        preprocessor=preprocessor,
-        postprocessor=postprocessor,
-    )
+    return TrainingModule(FullTrainingConfig())
 
 
 def test_can_initialize_default_module():

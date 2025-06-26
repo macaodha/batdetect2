@@ -3,28 +3,22 @@ from typing import List, Optional
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback
-from pydantic import Field
 from soundevent import data
 from torch.utils.data import DataLoader
 
-from batdetect2.configs import BaseConfig, load_config
 from batdetect2.evaluate.metrics import (
     ClassificationAccuracy,
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
-from batdetect2.models import BackboneConfig, build_model
-from batdetect2.postprocess import PostprocessConfig, build_postprocessor
 from batdetect2.preprocess import (
-    PreprocessingConfig,
     PreprocessorProtocol,
-    build_preprocessor,
 )
-from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
+from batdetect2.targets import TargetProtocol
 from batdetect2.train.augmentations import build_augmentations
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
-from batdetect2.train.config import TrainingConfig
+from batdetect2.train.config import FullTrainingConfig, TrainingConfig
 from batdetect2.train.dataset import (
     LabeledDataset,
     RandomExampleSource,
@@ -32,39 +26,15 @@ from batdetect2.train.dataset import (
 )
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
-from batdetect2.train.losses import build_loss
 
 __all__ = [
-    "FullTrainingConfig",
     "build_train_dataset",
     "build_train_loader",
     "build_trainer",
-    "build_training_module",
     "build_val_dataset",
     "build_val_loader",
-    "load_full_training_config",
     "train",
 ]
-
-
-class FullTrainingConfig(BaseConfig):
-    """Full training configuration."""
-
-    train: TrainingConfig = Field(default_factory=TrainingConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
-    model: BackboneConfig = Field(default_factory=BackboneConfig)
-    preprocess: PreprocessingConfig = Field(
-        default_factory=PreprocessingConfig
-    )
-    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
-
-
-def load_full_training_config(
-    path: data.PathLike,
-    field: Optional[str] = None,
-) -> FullTrainingConfig:
-    """Load the full training configuration."""
-    return load_config(path, schema=FullTrainingConfig, field=field)
 
 
 def train(
@@ -80,7 +50,7 @@ def train(
     if model_path is not None:
         module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
     else:
-        module = build_training_module(conf)
+        module = TrainingModule(conf)
 
     trainer = build_trainer(conf, targets=module.targets)
 
@@ -105,35 +75,6 @@ def train(
         module,
         train_dataloaders=train_dataloader,
         val_dataloaders=val_dataloader,
-    )
-
-
-def build_training_module(conf: FullTrainingConfig) -> TrainingModule:
-    preprocessor = build_preprocessor(conf.preprocess)
-
-    targets = build_targets(conf.targets)
-
-    postprocessor = build_postprocessor(
-        targets,
-        min_freq=preprocessor.min_freq,
-        max_freq=preprocessor.max_freq,
-    )
-
-    model = build_model(
-        num_classes=len(targets.class_names),
-        config=conf.model,
-    )
-
-    loss = build_loss(conf.train.loss)
-
-    return TrainingModule(
-        detector=model,
-        loss=loss,
-        targets=targets,
-        preprocessor=preprocessor,
-        postprocessor=postprocessor,
-        learning_rate=conf.train.learning_rate,
-        t_max=conf.train.t_max,
     )
 
 

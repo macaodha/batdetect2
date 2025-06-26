@@ -3,15 +3,13 @@ import torch
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from batdetect2.models import (
-    DetectionModel,
-    ModelOutput,
-)
-from batdetect2.postprocess.types import PostprocessorProtocol
-from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.models import ModelOutput, build_model
+from batdetect2.postprocess import build_postprocessor
+from batdetect2.preprocess import build_preprocessor
+from batdetect2.targets import build_targets
 from batdetect2.train import TrainExample
-from batdetect2.train.types import LossProtocol
+from batdetect2.train.config import FullTrainingConfig
+from batdetect2.train.losses import build_loss
 
 __all__ = [
     "TrainingModule",
@@ -19,26 +17,25 @@ __all__ = [
 
 
 class TrainingModule(L.LightningModule):
-    def __init__(
-        self,
-        detector: DetectionModel,
-        loss: LossProtocol,
-        targets: TargetProtocol,
-        preprocessor: PreprocessorProtocol,
-        postprocessor: PostprocessorProtocol,
-        learning_rate: float = 0.001,
-        t_max: int = 100,
-    ):
+    def __init__(self, config: FullTrainingConfig):
         super().__init__()
 
-        self.loss = loss
-        self.detector = detector
-        self.preprocessor = preprocessor
-        self.targets = targets
-        self.postprocessor = postprocessor
+        self.save_hyperparameters()
 
-        self.learning_rate = learning_rate
-        self.t_max = t_max
+        self.loss = build_loss(config.train.loss)
+        self.targets = build_targets(config.targets)
+        self.detector = build_model(
+            num_classes=len(self.targets.class_names),
+            config=config.model,
+        )
+        self.preprocessor = build_preprocessor(config.preprocess)
+        self.postprocessor = build_postprocessor(
+            self.targets,
+            min_freq=self.preprocessor.min_freq,
+            max_freq=self.preprocessor.max_freq,
+        )
+
+        self.config = config
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:
         return self.detector(spec)
@@ -68,6 +65,6 @@ class TrainingModule(L.LightningModule):
         return outputs
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = CosineAnnealingLR(optimizer, T_max=self.t_max)
+        optimizer = Adam(self.parameters(), lr=self.config.train.learning_rate)
+        scheduler = CosineAnnealingLR(optimizer, T_max=self.config.train.t_max)
         return [optimizer], [scheduler]
