@@ -27,9 +27,23 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.models.blocks import ConvBlock
-from batdetect2.models.bottleneck import BottleneckConfig, build_bottleneck
-from batdetect2.models.decoder import Decoder, DecoderConfig, build_decoder
-from batdetect2.models.encoder import Encoder, EncoderConfig, build_encoder
+from batdetect2.models.bottleneck import (
+    DEFAULT_BOTTLENECK_CONFIG,
+    BottleneckConfig,
+    build_bottleneck,
+)
+from batdetect2.models.decoder import (
+    DEFAULT_DECODER_CONFIG,
+    Decoder,
+    DecoderConfig,
+    build_decoder,
+)
+from batdetect2.models.encoder import (
+    DEFAULT_ENCODER_CONFIG,
+    Encoder,
+    EncoderConfig,
+    build_encoder,
+)
 from batdetect2.models.types import BackboneModel
 
 __all__ = [
@@ -186,9 +200,9 @@ class BackboneConfig(BaseConfig):
 
     input_height: int = 128
     in_channels: int = 1
-    encoder: Optional[EncoderConfig] = None
-    bottleneck: Optional[BottleneckConfig] = None
-    decoder: Optional[DecoderConfig] = None
+    encoder: EncoderConfig = DEFAULT_ENCODER_CONFIG
+    bottleneck: BottleneckConfig = DEFAULT_BOTTLENECK_CONFIG
+    decoder: DecoderConfig = DEFAULT_DECODER_CONFIG
     out_channels: int = 32
 
 

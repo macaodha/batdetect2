@@ -38,7 +38,7 @@ from batdetect2.configs import BaseConfig
 
 __all__ = [
     "ConvBlock",
-    "BlockGroupConfig",
+    "LayerGroupConfig",
     "VerticalConv",
     "FreqCoordConvDownBlock",
     "StandardConvDownBlock",
@@ -654,16 +654,16 @@ LayerConfig = Annotated[
         StandardConvDownConfig,
         FreqCoordConvUpConfig,
         StandardConvUpConfig,
-        "BlockGroupConfig",
+        "LayerGroupConfig",
     ],
     Field(discriminator="block_type"),
 ]
 """Type alias for the discriminated union of block configuration models."""
 
 
-class BlockGroupConfig(BaseConfig):
-    block_type: Literal["group"] = "group"
-    blocks: List[LayerConfig]
+class LayerGroupConfig(BaseConfig):
+    block_type: Literal["LayerGroup"] = "LayerGroup"
+    layers: List[LayerConfig]
 
 
 def build_layer_from_config(
@@ -769,13 +769,13 @@ def build_layer_from_config(
             input_height * 2,
         )
 
-    if config.block_type == "group":
+    if config.block_type == "LayerGroup":
         current_channels = in_channels
         current_height = input_height
 
         blocks = []
 
-        for block_config in config.blocks:
+        for block_config in config.layers:
             block, current_channels, current_height = build_layer_from_config(
                 input_height=current_height,
                 in_channels=current_channels,

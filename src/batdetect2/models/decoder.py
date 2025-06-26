@@ -26,7 +26,7 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
-    BlockGroupConfig,
+    LayerGroupConfig,
     ConvConfig,
     FreqCoordConvUpConfig,
     StandardConvUpConfig,
@@ -45,7 +45,7 @@ DecoderLayerConfig = Annotated[
         ConvConfig,
         FreqCoordConvUpConfig,
         StandardConvUpConfig,
-        BlockGroupConfig,
+        LayerGroupConfig,
     ],
     Field(discriminator="block_type"),
 ]
@@ -197,8 +197,8 @@ DEFAULT_DECODER_CONFIG: DecoderConfig = DecoderConfig(
     layers=[
         FreqCoordConvUpConfig(out_channels=64),
         FreqCoordConvUpConfig(out_channels=32),
-        BlockGroupConfig(
-            blocks=[
+        LayerGroupConfig(
+            layers=[
                 FreqCoordConvUpConfig(out_channels=32),
                 ConvConfig(out_channels=32),
             ]

@@ -2,9 +2,8 @@ from typing import Annotated, Literal, Optional, Union
 
 from lightning.pytorch.loggers import Logger
 from pydantic import Field
-from soundevent.data import PathLike
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.configs import BaseConfig
 
 DEFAULT_LOGS_DIR: str = "logs"
 
