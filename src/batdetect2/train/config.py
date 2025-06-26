@@ -13,18 +13,12 @@ from batdetect2.train.logging import CSVLoggerConfig, LoggerConfig
 from batdetect2.train.losses import LossConfig
 
 __all__ = [
-    "OptimizerConfig",
     "TrainingConfig",
     "load_train_config",
 ]
 
 
-class OptimizerConfig(BaseConfig):
-    learning_rate: float = 1e-3
-    t_max: int = 100
-
-
-class TrainerConfig(BaseConfig):
+class PLTrainerConfig(BaseConfig):
     accelerator: str = "auto"
     accumulate_grad_batches: int = 1
     deterministic: bool = True
@@ -45,15 +39,16 @@ class TrainerConfig(BaseConfig):
     val_check_interval: Optional[Union[int, float]] = None
 
 
-class TrainingConfig(BaseConfig):
+class TrainingConfig(PLTrainerConfig):
     batch_size: int = 8
+    learning_rate: float = 1e-3
+    t_max: int = 100
     loss: LossConfig = Field(default_factory=LossConfig)
-    optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
     augmentations: AugmentationsConfig = Field(
         default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG
     )
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)
-    trainer: TrainerConfig = Field(default_factory=TrainerConfig)
+    trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 
