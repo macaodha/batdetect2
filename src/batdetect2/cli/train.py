@@ -18,7 +18,7 @@ __all__ = [
 
 
 @cli.command(name="train")
-@click.option("--train-dir", type=click.Path(exists=True), required=True)
+@click.argument("train_dir", type=click.Path(exists=True))
 @click.option("--val-dir", type=click.Path(exists=True))
 @click.option("--model-path", type=click.Path(exists=True))
 @click.option("--config", type=click.Path(exists=True))

@@ -93,7 +93,7 @@ clean: clean-build clean-pyc clean-test clean-docs
 
 # Examples
 # Preprocess example data.
-example-preprocess OPTIONS:
+example-preprocess OPTIONS="":
     batdetect2 preprocess \
         --base-dir . \
         --dataset-field datasets.train \
@@ -102,16 +102,9 @@ example-preprocess OPTIONS:
         example_data/datasets.yaml example_data/preprocessed
 
 # Train on example data.
-example-train:
+example-train OPTIONS="":
     batdetect2 train \
-        --train-examples example_data/preprocessed \
-        --train-config config.yaml \
-        --train-config-field train \
-        --preprocess-config config.yaml \
-        --preprocess-config-field preprocessing \
-        --target-config config.yaml \
-        --target-config-field targets \
-        --postprocess-config config.yaml \
-        --postprocess-config-field postprocessing \
-        --model-config config.yaml \
-        --model-config-field model
+        --val-dir example_data/preprocessed \
+        --config example_data/config.yaml \
+        {{OPTIONS}} \
+        example_data/preprocessed
