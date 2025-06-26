@@ -23,6 +23,7 @@ from batdetect2.train.dataset import (
     collate_fn,
 )
 from batdetect2.train.lightning import TrainingModule
+from batdetect2.train.logging import build_logger
 from batdetect2.train.losses import build_loss
 
 __all__ = [
@@ -47,6 +48,7 @@ def train(
     **trainer_kwargs,
 ) -> None:
     config = config or TrainingConfig()
+
     if model_path is None:
         if preprocessor is None:
             preprocessor = build_preprocessor()
@@ -81,9 +83,12 @@ def train(
         config=config,
     )
 
+    logger = build_logger(config.logger)
+
     trainer = Trainer(
-        **config.trainer.model_dump(exclude_none=True),
+        **config.trainer.model_dump(exclude_none=True, exclude={"logger"}),
         callbacks=callbacks,
+        logger=logger,
         **trainer_kwargs,
     )
 

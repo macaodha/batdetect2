@@ -9,6 +9,7 @@ from batdetect2.train.augmentations import (
     AugmentationsConfig,
 )
 from batdetect2.train.clips import ClipingConfig
+from batdetect2.train.logging import CSVLoggerConfig, LoggerConfig
 from batdetect2.train.losses import LossConfig
 
 __all__ = [
@@ -58,6 +59,8 @@ class TrainingConfig(BaseConfig):
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)
 
     trainer: TrainerConfig = Field(default_factory=TrainerConfig)
+
+    logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 
 def load_train_config(
