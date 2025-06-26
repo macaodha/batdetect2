@@ -85,6 +85,10 @@ dev = [
   "sphinx-book-theme>=1.1.4",
   "autodoc-pydantic>=2.2.0",
   "pytest-cov>=6.1.1",
+  "ty>=0.0.1a12",
+]
+dvclive = [
+    "dvclive>=3.48.2",
 ]
 
 [tool.ruff]
