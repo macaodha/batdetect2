@@ -114,3 +114,5 @@ experiments/*
 notebooks/lightning_logs
 example_data/preprocessed
 .aider*
+DvcLiveLogger/checkpoints
+logs
