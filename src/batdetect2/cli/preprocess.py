@@ -1,7 +1,9 @@
+import sys
 from pathlib import Path
 from typing import Optional
 
 import click
+import yaml
 from loguru import logger
 
 from batdetect2.cli.base import cli
@@ -83,6 +85,12 @@ __all__ = ["preprocess"]
         "the program will use all available cores."
     ),
 )
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase verbosity. -v for INFO, -vv for DEBUG.",
+)
 def preprocess(
     dataset_config: Path,
     output: Path,
@@ -92,7 +100,17 @@ def preprocess(
     force: bool = False,
     num_workers: Optional[int] = None,
     dataset_field: Optional[str] = None,
+    verbose: int = 0,
 ):
+    logger.remove()
+    if verbose == 0:
+        log_level = "WARNING"
+    elif verbose == 1:
+        log_level = "INFO"
+    else:
+        log_level = "DEBUG"
+    logger.add(sys.stderr, level=log_level)
+
     logger.info("Starting preprocessing.")
 
     output = Path(output)
@@ -101,10 +119,19 @@ def preprocess(
     base_dir = base_dir or Path.cwd()
     logger.debug("Current working directory: {base_dir}", base_dir=base_dir)
 
+    if config:
+        logger.info(
+            "Loading preprocessing config from: {config}", config=config
+        )
+
     conf = (
         load_train_preprocessing_config(config, field=config_field)
         if config is not None
         else TrainPreprocessConfig()
+    )
+    logger.debug(
+        "Preprocessing config:\n{conf}",
+        conf=yaml.dump(conf.model_dump()),
     )
 
     dataset = load_dataset_from_config(

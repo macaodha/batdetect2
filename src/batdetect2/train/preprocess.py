@@ -256,7 +256,16 @@ def preprocess_annotations(
     output_dir = Path(output_dir)
 
     if not output_dir.is_dir():
+        logger.info(
+            "Creating output directory: {output_dir}", output_dir=output_dir
+        )
         output_dir.mkdir(parents=True)
+
+    logger.info(
+        "Starting preprocessing of {num_annotations} annotations with {max_workers} workers.",
+        num_annotations=len(clip_annotations),
+        max_workers=max_workers or "all available",
+    )
 
     with Pool(max_workers) as pool:
         list(
@@ -273,8 +282,10 @@ def preprocess_annotations(
                     clip_annotations,
                 ),
                 total=len(clip_annotations),
+                desc="Preprocessing annotations",
             )
         )
+    logger.info("Finished preprocessing.")
 
 
 def preprocess_single_annotation(
@@ -313,10 +324,14 @@ def preprocess_single_annotation(
     path = output_dir / filename
 
     if path.is_file() and not replace:
+        logger.debug("Skipping existing file: {path}", path=path)
         return
 
     if path.is_file() and replace:
+        logger.debug("Removing existing file: {path}", path=path)
         path.unlink()
+
+    logger.debug("Processing annotation {uuid}", uuid=clip_annotation.uuid)
 
     try:
         sample = generate_train_example(
@@ -326,8 +341,9 @@ def preprocess_single_annotation(
         )
     except Exception as error:
         logger.error(
-            "Failed to process annotation: {uuid}. Error {error}",
+            "Failed to process annotation {uuid} to {path}. Error: {error}",
             uuid=clip_annotation.uuid,
+            path=path,
             error=error,
         )
         return

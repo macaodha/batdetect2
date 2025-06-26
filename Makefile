@@ -98,6 +98,8 @@ example-preprocess:
 		--base-dir . \
 		--dataset-field datasets.train \
 		--config config.yaml \
+		--force \
+		-vv \
 		config.yaml example_data/preprocessed
 
 example-train:
