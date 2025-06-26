@@ -8,3 +8,125 @@ datasets:
         description: Examples included for testing batdetect2
         annotations_dir: example_data/anns
         audio_dir: example_data/audio
+
+targets:
+  classes:
+    classes:
+      - name: myomys
+        tags:
+          - value: Myotis mystacinus
+      - name: pippip
+        tags:
+          - value: Pipistrellus pipistrellus
+      - name: eptser
+        tags:
+          - value: Eptesicus serotinus
+      - name: rhifer
+        tags:
+          - value: Rhinolophus ferrumequinum
+    generic_class:
+      - key: class
+        value: Bat
+
+  filtering:
+    rules:
+      - match_type: all
+        tags:
+          - key: event
+            value: Echolocation
+      - match_type: exclude
+        tags:
+          - key: class
+            value: Unknown
+
+preprocess:
+  audio:
+    resample:
+      samplerate: 256000
+      method: "poly"
+    scale: false
+    center: true
+    duration: null
+
+  spectrogram:
+    stft:
+      window_duration: 0.002
+      window_overlap: 0.75
+      window_fn: hann
+    frequencies:
+      max_freq: 120000
+      min_freq: 10000
+    pcen:
+      time_constant: 0.4
+      gain: 0.98
+      bias: 2
+      power: 0.5
+    scale: "amplitude"
+    size:
+      height: 128
+      resize_factor: 0.5
+    spectral_mean_substraction: true
+    peak_normalize: false
+
+postprocess:
+  nms_kernel_size: 9
+  detection_threshold: 0.01
+  min_freq: 10000
+  max_freq: 120000
+  top_k_per_sec: 200
+
+labels:
+  sigma: 3
+
+model:
+  name: Net2DFast
+  input_height: 128
+  encoder_channels: [1, 32, 64, 128]
+  bottleneck_channels: 256
+  decoder_channels: [256, 64, 32, 32]
+  out_channels: 32
+
+train:
+  batch_size: 8
+  loss:
+    detection:
+      weight: 1.0
+      focal:
+        beta: 4
+        alpha: 2
+    classification:
+      weight: 2.0
+      focal:
+        beta: 4
+        alpha: 2
+    size:
+      weight: 0.1
+  optimizer:
+    learning_rate: 0.001
+    t_max: 100
+  augmentations:
+    steps:
+      - augmentation_type: mix
+        probability: 0.2
+        min_weight: 0.3
+        max_weight: 0.7
+      - agumentation_type: echo
+        probability: 0.2
+        max_delay: 0.005
+        min_weight: 0.0
+        max_weight: 1.0
+      - augmentation_type: volume
+        probability: 0.2
+        min_scaling: 0.0
+        max_scaling: 2.0
+      - augmentation_type: warp
+        probability: 0.2
+        delta: 0.04
+      - augmentation_type: time_mask
+        probability: 0.2
+        max_perc: 0.05
+        max_masks: 3
+      - augmentation_type: frequency_mask
+        probability: 0.2
+        max_perc: 0.10
+        max_masks: 3
