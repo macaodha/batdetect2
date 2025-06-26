@@ -27,20 +27,69 @@ from typing import Callable, Optional, Sequence
 
 import xarray as xr
 from loguru import logger
+from pydantic import Field
 from soundevent import data
 from tqdm.auto import tqdm
 
+from batdetect2.configs import BaseConfig, load_config
+from batdetect2.data.datasets import Dataset
+from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets import TargetConfig, build_targets
+from batdetect2.train.labels import LabelConfig, build_clip_labeler
 from batdetect2.train.types import ClipLabeller
 
 __all__ = [
     "preprocess_annotations",
     "preprocess_single_annotation",
     "generate_train_example",
+    "preprocess_dataset",
+    "TrainPreprocessConfig",
+    "load_train_preprocessing_config",
 ]
 
 FilenameFn = Callable[[data.ClipAnnotation], str]
 """Type alias for a function that generates an output filename."""
+
+
+class TrainPreprocessConfig(BaseConfig):
+    preprocess: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+    targets: TargetConfig = Field(default_factory=TargetConfig)
+    labels: LabelConfig = Field(default_factory=LabelConfig)
+
+
+def load_train_preprocessing_config(
+    path: data.PathLike,
+    field: Optional[str] = None,
+) -> TrainPreprocessConfig:
+    return load_config(path=path, schema=TrainPreprocessConfig, field=field)
+
+
+def preprocess_dataset(
+    dataset: Dataset,
+    config: TrainPreprocessConfig,
+    output: Path,
+    force: bool = False,
+    max_workers: Optional[int] = None,
+) -> None:
+    targets = build_targets(config=config.targets)
+    preprocessor = build_preprocessor(config=config.preprocess)
+    labeller = build_clip_labeler(targets, config=config.labels)
+
+    if not output.exists():
+        logger.debug("Creating directory {directory}", directory=output)
+        output.mkdir(parents=True)
+
+    preprocess_annotations(
+        dataset,
+        output_dir=output,
+        preprocessor=preprocessor,
+        labeller=labeller,
+        replace=force,
+        max_workers=max_workers,
+    )
 
 
 def generate_train_example(

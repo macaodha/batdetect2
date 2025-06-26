@@ -97,12 +97,7 @@ example-preprocess:
 	batdetect2 preprocess \
 		--base-dir . \
 		--dataset-field datasets.train \
-		--preprocess-config config.yaml \
-		--preprocess-config-field preprocessing \
-		--label-config config.yaml \
-		--label-config-field labels \
-		--target-config config.yaml \
-		--target-config-field targets \
+		--config config.yaml \
 		config.yaml example_data/preprocessed
 
 example-train:

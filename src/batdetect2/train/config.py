@@ -47,19 +47,13 @@ class TrainerConfig(BaseConfig):
 
 class TrainingConfig(BaseConfig):
     batch_size: int = 8
-
     loss: LossConfig = Field(default_factory=LossConfig)
-
     optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
-
     augmentations: AugmentationsConfig = Field(
         default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG
     )
-
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)
-
     trainer: TrainerConfig = Field(default_factory=TrainerConfig)
-
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 

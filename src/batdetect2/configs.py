@@ -38,7 +38,7 @@ class BaseConfig(BaseModel):
         Pydantic model configuration dictionary. Set to forbid extra fields.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
 
 
 T = TypeVar("T", bound=BaseModel)
