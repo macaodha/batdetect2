@@ -86,6 +86,7 @@ dev = [
   "autodoc-pydantic>=2.2.0",
   "pytest-cov>=6.1.1",
   "ty>=0.0.1a12",
+  "rust-just>=1.40.0",
 ]
 dvclive = [
     "dvclive>=3.48.2",
