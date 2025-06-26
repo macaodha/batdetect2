@@ -104,3 +104,17 @@ example-preprocess:
 		--target-config config.yaml \
 		--target-config-field targets \
 		config.yaml example_data/preprocessed
+
+example-train:
+	batdetect2 train \
+		--train-examples example_data/preprocessed \
+		--train-config config.yaml \
+		--train-config-field train \
+		--preprocess-config config.yaml \
+		--preprocess-config-field preprocessing \
+		--target-config config.yaml \
+		--target-config-field targets \
+		--postprocess-config config.yaml \
+		--postprocess-config-field postprocessing \
+		--model-config config.yaml \
+		--model-config-field model
