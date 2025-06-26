@@ -84,6 +84,8 @@ def train(
     )
 
     logger = build_logger(config.logger)
+    if logger and hasattr(logger, 'log_hyperparams'):
+        logger.log_hyperparams(config.model_dump(exclude_none=True))
 
     trainer = Trainer(
         **config.trainer.model_dump(exclude_none=True, exclude={"logger"}),
