@@ -101,8 +101,7 @@ def build_trainer(
     targets: TargetProtocol,
 ) -> Trainer:
     trainer_conf = PLTrainerConfig.model_validate(
-        conf.train,
-        from_attributes=True,
+        conf.train.model_dump(mode="python")
     )
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
