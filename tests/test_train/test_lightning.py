@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import lightning as L
-import pytest
 import torch
 import xarray as xr
 from soundevent import data
