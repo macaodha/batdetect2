@@ -101,6 +101,8 @@ model:
 
 train:
   batch_size: 8
+  learning_rate: 0.001
+  t_max: 100
   loss:
     detection:
       weight: 1.0
@@ -114,9 +116,6 @@ train:
         alpha: 2
     size:
       weight: 0.1
-  optimizer:
-    learning_rate: 0.001
-    t_max: 100
   logger:
     logger_type: dvclive
   augmentations:
