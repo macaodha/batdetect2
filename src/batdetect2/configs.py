@@ -25,17 +25,6 @@ class BaseConfig(BaseModel):
 
     Inherits from Pydantic's `BaseModel` to provide data validation, parsing,
     and serialization capabilities.
-
-    It sets `extra='forbid'` in its model configuration, meaning that any
-    fields provided in a configuration file that are *not* explicitly defined
-    in the specific configuration schema will raise a validation error. This
-    helps catch typos and ensures configurations strictly adhere to the expected
-    structure.
-
-    Attributes
-    ----------
-    model_config : ConfigDict
-        Pydantic model configuration dictionary. Set to forbid extra fields.
     """
 
     model_config = ConfigDict(extra="ignore")
