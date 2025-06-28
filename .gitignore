@@ -116,3 +116,4 @@ example_data/preprocessed
 .aider*
 DvcLiveLogger/checkpoints
 logs
+mlruns/
