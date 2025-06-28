@@ -99,6 +99,11 @@ plots/*
 
 # Model experiments
 experiments/*
+DvcLiveLogger/checkpoints
+logs/
+mlruns/
+outputs/
+notebooks/lightning_logs
 
 # Jupiter notebooks
 .virtual_documents
@@ -111,9 +116,7 @@ experiments/*
 !tests/data/*.wav
 !notebooks/*.ipynb
 !tests/data/**/*.wav
-notebooks/lightning_logs
-example_data/preprocessed
 .aider*
-DvcLiveLogger/checkpoints
-logs
-mlruns/
+
+# Intermediate artifacts
+example_data/preprocessed
