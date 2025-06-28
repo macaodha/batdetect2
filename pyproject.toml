@@ -21,7 +21,6 @@ dependencies = [
   "click>=8.1.7",
   "netcdf4>=1.6.5",
   "tqdm>=4.66.2",
-  "pytorch-lightning>=2.2.2",
   "cf-xarray>=0.9.0",
   "onnx>=1.16.0",
   "lightning[extra]>=2.2.2",

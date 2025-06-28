@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import yaml
 from lightning import Trainer
-from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader
@@ -89,6 +89,11 @@ def train(
 
 def build_trainer_callbacks(targets: TargetProtocol) -> List[Callback]:
     return [
+        ModelCheckpoint(
+            dirpath="outputs/checkpoints",
+            save_top_k=1,
+            monitor="total_loss/val",
+        ),
         ValidationMetrics(
             metrics=[
                 DetectionAveragePrecision(),
@@ -97,7 +102,7 @@ def build_trainer_callbacks(targets: TargetProtocol) -> List[Callback]:
                 ),
                 ClassificationAccuracy(class_names=targets.class_names),
             ]
-        )
+        ),
     ]
 
 

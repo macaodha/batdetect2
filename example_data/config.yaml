@@ -118,7 +118,12 @@ train:
       weight: 0.1
   logger:
     logger_type: mlflow
+    experiment_name: batdetect2
     tracking_uri: http://localhost:5000
+    log_model: true
+    save_dir: outputs/log/
+    artifact_location: outputs/artifacts/
+    checkpoint_path_prefix: outputs/checkpoints/
   augmentations:
     steps:
       - augmentation_type: mix_audio
