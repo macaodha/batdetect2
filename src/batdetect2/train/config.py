@@ -50,7 +50,7 @@ class TrainingConfig(PLTrainerConfig):
     learning_rate: float = 1e-3
     t_max: int = 100
     loss: LossConfig = Field(default_factory=LossConfig)
-    augmentations: AugmentationsConfig = Field(
+    augmentations: Optional[AugmentationsConfig] = Field(
         default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG
     )
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)

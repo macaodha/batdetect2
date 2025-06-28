@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +26,12 @@ __all__ = [
 @click.option("--config-field", type=str)
 @click.option("--train-workers", type=int, default=0)
 @click.option("--val-workers", type=int, default=0)
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase verbosity. -v for INFO, -vv for DEBUG.",
+)
 def train_command(
     train_dir: Path,
     val_dir: Optional[Path] = None,
@@ -33,7 +40,17 @@ def train_command(
     config_field: Optional[str] = None,
     train_workers: int = 0,
     val_workers: int = 0,
+    verbose: int = 0,
 ):
+    logger.remove()
+    if verbose == 0:
+        log_level = "WARNING"
+    elif verbose == 1:
+        log_level = "INFO"
+    else:
+        log_level = "DEBUG"
+    logger.add(sys.stderr, level=log_level)
+
     logger.info("Starting training!")
 
     conf = (

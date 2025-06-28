@@ -164,10 +164,17 @@ def build_train_dataset(
         clipper=clipper,
     )
 
-    augmentations = build_augmentations(
-        preprocessor,
-        config=config.augmentations,
-        example_source=random_example_source,
+    logger.debug(
+        "Augmentations config: {}.", config.augmentations
+    )
+    augmentations = (
+        build_augmentations(
+            preprocessor,
+            config=config.augmentations,
+            example_source=random_example_source,
+        )
+        if config.augmentations
+        else None
     )
 
     return LabeledDataset(
