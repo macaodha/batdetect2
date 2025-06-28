@@ -32,6 +32,7 @@ from typing import Optional, Union
 
 import numpy as np
 import xarray as xr
+from loguru import logger
 from pydantic import Field
 from soundevent import data
 
@@ -429,6 +430,10 @@ def build_preprocessor(
         according to the configuration.
     """
     config = config or PreprocessingConfig()
+    logger.opt(lazy=True).debug(
+        "Building preprocessor with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
 
     default_samplerate = (
         config.audio.resample.samplerate

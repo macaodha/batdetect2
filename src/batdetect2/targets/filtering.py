@@ -9,8 +9,8 @@ from batdetect2.configs import BaseConfig, load_config
 from batdetect2.targets.terms import (
     TagInfo,
     TermRegistry,
-    get_tag_from_info,
     default_term_registry,
+    get_tag_from_info,
 )
 
 __all__ = [

@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
+from loguru import logger
 from soundevent import arrays
 
 from batdetect2.configs import BaseConfig
@@ -74,6 +75,10 @@ def build_clipper(
     random: Optional[bool] = None,
 ) -> ClipperProtocol:
     config = config or ClipingConfig()
+    logger.opt(lazy=True).debug(
+        "Building clipper with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
     return Clipper(
         duration=config.duration,
         max_empty=config.max_empty,

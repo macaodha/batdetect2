@@ -26,9 +26,9 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
-    LayerGroupConfig,
     ConvConfig,
     FreqCoordConvUpConfig,
+    LayerGroupConfig,
     StandardConvUpConfig,
     build_layer_from_config,
 )

@@ -28,6 +28,7 @@ from typing import Annotated, Callable, List, Literal, Optional, Union
 
 import numpy as np
 import xarray as xr
+from loguru import logger
 from pydantic import Field
 from soundevent import arrays, data
 
@@ -850,6 +851,11 @@ def build_augmentations(
         If an unknown `augmentation_type` is encountered in `config.steps`.
     """
     config = config or DEFAULT_AUGMENTATION_CONFIG
+
+    logger.opt(lazy=True).debug(
+        "Building augmentations with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
 
     augmentations = []
 

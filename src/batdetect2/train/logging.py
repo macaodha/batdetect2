@@ -1,6 +1,7 @@
 from typing import Annotated, Any, Literal, Optional, Union
 
 from lightning.pytorch.loggers import Logger
+from loguru import logger
 from pydantic import Field
 
 from batdetect2.configs import BaseConfig
@@ -129,6 +130,10 @@ def build_logger(config: LoggerConfig) -> Logger:
     """
     Creates a logger instance from a validated Pydantic config object.
     """
+    logger.opt(lazy=True).debug(
+        "Building logger with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
     logger_type = config.logger_type
 
     if logger_type not in LOGGER_FACTORY:
@@ -137,4 +142,3 @@ def build_logger(config: LoggerConfig) -> Logger:
     creation_func = LOGGER_FACTORY[logger_type]
 
     return creation_func(config)
-

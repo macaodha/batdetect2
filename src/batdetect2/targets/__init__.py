@@ -573,6 +573,10 @@ def build_targets(
         If dynamic import of a derivation function fails (when configured).
     """
     config = config or DEFAULT_TARGET_CONFIG
+    logger.opt(lazy=True).debug(
+        "Building targets with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
 
     filter_fn = (
         build_sound_event_filter(

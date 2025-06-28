@@ -28,6 +28,8 @@ provided here.
 
 from typing import Optional
 
+from loguru import logger
+
 from batdetect2.models.backbones import (
     Backbone,
     BackboneConfig,
@@ -131,5 +133,10 @@ def build_model(
         construction of the backbone or detector components (e.g., incompatible
         configurations, invalid parameters).
     """
-    backbone = build_backbone(config or BackboneConfig())
+    config = config or BackboneConfig()
+    logger.opt(lazy=True).debug(
+        "Building model with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
+    backbone = build_backbone(config)
     return build_detector(num_classes, backbone)

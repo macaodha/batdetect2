@@ -29,6 +29,36 @@ class BaseConfig(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+    def to_yaml_string(
+        self,
+        exclude_none: bool = False,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+    ) -> str:
+        """Converts the Pydantic model instance to a YAML string.
+
+        Parameters
+        ----------
+        exclude_none : bool, default=False
+            Whether to exclude fields whose value is `None`.
+        exclude_unset : bool, default=False
+            Whether to exclude fields that were not explicitly set.
+        exclude_defaults : bool, default=False
+            Whether to exclude fields whose value is the default value.
+
+        Returns
+        -------
+        str
+            A YAML string representation of the model.
+        """
+        return yaml.dump(
+            self.model_dump(
+                exclude_none=exclude_none,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+            )
+        )
+
 
 T = TypeVar("T", bound=BaseModel)
 

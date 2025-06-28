@@ -13,9 +13,7 @@ from batdetect2.train import (
 )
 from batdetect2.train.dataset import list_preprocessed_files
 
-__all__ = [
-    "train_command",
-]
+__all__ = ["train_command"]
 
 
 @cli.command(name="train")
@@ -51,19 +49,35 @@ def train_command(
         log_level = "DEBUG"
     logger.add(sys.stderr, level=log_level)
 
-    logger.info("Starting training!")
+    logger.info("Initiating training process...")
 
+    logger.info("Loading training configuration...")
     conf = (
         load_full_training_config(config, field=config_field)
         if config is not None
         else FullTrainingConfig()
     )
 
+    logger.info("Scanning for training and validation data...")
     train_examples = list_preprocessed_files(train_dir)
-    val_examples = (
-        list_preprocessed_files(val_dir) if val_dir is not None else None
+    logger.debug(
+        "Found {num_files} training examples in {path}",
+        num_files=len(train_examples),
+        path=train_dir,
     )
 
+    val_examples = None
+    if val_dir is not None:
+        val_examples = list_preprocessed_files(val_dir)
+        logger.debug(
+            "Found {num_files} validation examples in {path}",
+            num_files=len(val_examples),
+            path=val_dir,
+        )
+    else:
+        logger.debug("No validation directory provided.")
+
+    logger.info("Configuration and data loaded. Starting training...")
     train(
         train_examples=train_examples,
         val_examples=val_examples,

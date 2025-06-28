@@ -1,8 +1,10 @@
 from collections.abc import Sequence
 from typing import List, Optional
 
+import yaml
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback
+from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader
 
@@ -52,6 +54,7 @@ def train(
     conf = config or FullTrainingConfig()
 
     if model_path is not None:
+        logger.debug("Loading model from: {path}", path=model_path)
         module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
     else:
         module = TrainingModule(conf)
@@ -75,11 +78,13 @@ def train(
         else None
     )
 
+    logger.info("Starting main training loop...")
     trainer.fit(
         module,
         train_dataloaders=train_dataloader,
         val_dataloaders=val_dataloader,
     )
+    logger.info("Training complete.")
 
 
 def build_trainer_callbacks(targets: TargetProtocol) -> List[Callback]:
@@ -103,6 +108,10 @@ def build_trainer(
     trainer_conf = PLTrainerConfig.model_validate(
         conf.train.model_dump(mode="python")
     )
+    logger.opt(lazy=True).debug(
+        "Building trainer with config: \n{config}",
+        config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
+    )
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
         val_check_interval=conf.train.val_check_interval,
@@ -117,12 +126,23 @@ def build_train_loader(
     config: TrainingConfig,
     num_workers: Optional[int] = None,
 ) -> DataLoader:
+    logger.info("Building training data loader...")
     train_dataset = build_train_dataset(
         train_examples,
         preprocessor=preprocessor,
         config=config,
     )
-
+    logger.opt(lazy=True).debug(
+        "Training data loader config: \n{}",
+        lambda: yaml.dump(
+            {
+                "batch_size": config.batch_size,
+                "shuffle": True,
+                "num_workers": num_workers or 0,
+                "collate_fn": str(collate_fn),
+            }
+        ),
+    )
     return DataLoader(
         train_dataset,
         batch_size=config.batch_size,
@@ -137,9 +157,21 @@ def build_val_loader(
     config: TrainingConfig,
     num_workers: Optional[int] = None,
 ):
+    logger.info("Building validation data loader...")
     val_dataset = build_val_dataset(
         val_examples,
         config=config,
+    )
+    logger.opt(lazy=True).debug(
+        "Validation data loader config: \n{}",
+        lambda: yaml.dump(
+            {
+                "batch_size": config.batch_size,
+                "shuffle": False,
+                "num_workers": num_workers or 0,
+                "collate_fn": str(collate_fn),
+            }
+        ),
     )
     return DataLoader(
         val_dataset,
@@ -155,6 +187,7 @@ def build_train_dataset(
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
 ) -> LabeledDataset:
+    logger.info("Building training dataset...")
     config = config or TrainingConfig()
 
     clipper = build_clipper(config.cliping, random=True)
@@ -164,18 +197,15 @@ def build_train_dataset(
         clipper=clipper,
     )
 
-    logger.debug(
-        "Augmentations config: {}.", config.augmentations
-    )
-    augmentations = (
-        build_augmentations(
+    if config.augmentations and config.augmentations.steps:
+        augmentations = build_augmentations(
             preprocessor,
             config=config.augmentations,
             example_source=random_example_source,
         )
-        if config.augmentations
-        else None
-    )
+    else:
+        logger.debug("No augmentations configured for training dataset.")
+        augmentations = None
 
     return LabeledDataset(
         examples,
@@ -189,6 +219,7 @@ def build_val_dataset(
     config: Optional[TrainingConfig] = None,
     train: bool = True,
 ) -> LabeledDataset:
+    logger.info("Building validation dataset...")
     config = config or TrainingConfig()
     clipper = build_clipper(config.cliping, random=train)
     return LabeledDataset(examples, clipper=clipper)

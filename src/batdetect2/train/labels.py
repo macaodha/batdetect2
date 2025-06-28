@@ -93,10 +93,15 @@ def build_clip_labeler(
         A function that accepts a `data.ClipAnnotation` and `xr.DataArray`
         (spectrogram) and returns the generated `Heatmaps`.
     """
+    config = config or LabelConfig()
+    logger.opt(lazy=True).debug(
+        "Building clip labeler with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
     return partial(
         generate_clip_label,
         targets=targets,
-        config=config or LabelConfig(),
+        config=config,
     )
 
 

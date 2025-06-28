@@ -23,6 +23,7 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
+from loguru import logger
 from pydantic import Field
 from torch import nn
 
@@ -451,6 +452,10 @@ def build_loss(
         An initialized `LossFunction` module ready for training.
     """
     config = config or LossConfig()
+    logger.opt(lazy=True).debug(
+        "Building loss with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
 
     class_weights_tensor = (
         torch.tensor(class_weights) if class_weights else None

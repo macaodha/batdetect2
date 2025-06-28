@@ -31,6 +31,7 @@ It also re-exports key components from submodules for convenience.
 from typing import List, Optional
 
 import xarray as xr
+from loguru import logger
 from pydantic import Field
 from soundevent import data
 
@@ -203,9 +204,14 @@ def build_postprocessor(
     PostprocessorProtocol
         An initialized `Postprocessor` instance ready to process model outputs.
     """
+    config = config or PostprocessConfig()
+    logger.opt(lazy=True).debug(
+        "Building postprocessor with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
     return Postprocessor(
         targets=targets,
-        config=config or PostprocessConfig(),
+        config=config,
         min_freq=min_freq,
         max_freq=max_freq,
     )
