@@ -117,7 +117,8 @@ train:
     size:
       weight: 0.1
   logger:
-    logger_type: dvclive
+    logger_type: mlflow
+    tracking_uri: http://localhost:5000
   augmentations:
     steps:
       - augmentation_type: mix_audio
