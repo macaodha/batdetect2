@@ -1,6 +1,9 @@
 # BatDetect2
 <img style="display: block-inline;" width="64" height="64" src="ims/bat_icon.png"> Code for detecting and classifying bat echolocation calls in high frequency audio recordings.
 
+> [!NOTE]
+> We’re actively working to make it easier to train and fine-tune BatDetect2 models using custom data. A major update is coming soon to the main branch—stay tuned! In the meantime, you can follow our progress in the train branch.
+
 ## Getting started
 ### Python Environment
 
