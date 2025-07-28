@@ -537,21 +537,13 @@ def apply_pcen(
     -------
     xr.DataArray
         PCEN-scaled spectrogram.
-
-    Notes
-    -----
-    - The input spectrogram magnitude `spec` is multiplied by `2**31` before
-      being passed to `audio.pcen`. This suggests the underlying implementation
-      might expect values in a range typical of 16-bit or 32-bit signed integers,
-      even though the input here might be float. This scaling factor should be
-      verified against the specific `soundevent.audio.pcen` implementation
-      details.
     """
     samplerate = 1 / spec.time.attrs["step"]
     hop_size = spec.attrs["hop_size"]
 
     hop_length = int(hop_size * samplerate)
     t_frames = time_constant * samplerate / (float(hop_length) * 10)
+
     smoothing_constant = (np.sqrt(1 + 4 * t_frames**2) - 1) / (2 * t_frames**2)
     return audio.pcen(
         spec * (2**31),
