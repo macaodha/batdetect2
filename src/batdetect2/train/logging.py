@@ -32,7 +32,6 @@ class TensorBoardLoggerConfig(BaseConfig):
     name: Optional[str] = "default"
     version: Optional[str] = None
     log_graph: bool = False
-    flush_logs_every_n_steps: Optional[int] = None
 
 
 class MLFlowLoggerConfig(BaseConfig):
