@@ -93,7 +93,6 @@ def create_tensorboard_logger(config: TensorBoardLoggerConfig) -> Logger:
         name=config.name,
         version=config.version,
         log_graph=config.log_graph,
-        flush_logs_every_n_steps=config.flush_logs_every_n_steps,
     )
 
 
