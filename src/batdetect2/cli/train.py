@@ -22,8 +22,8 @@ __all__ = ["train_command"]
 @click.option("--model-path", type=click.Path(exists=True))
 @click.option("--config", type=click.Path(exists=True))
 @click.option("--config-field", type=str)
-@click.option("--train-workers", type=int, default=0)
-@click.option("--val-workers", type=int, default=0)
+@click.option("--train-workers", type=int)
+@click.option("--val-workers", type=int)
 @click.option(
     "-v",
     "--verbose",

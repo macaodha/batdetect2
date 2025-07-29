@@ -45,10 +45,29 @@ class PLTrainerConfig(BaseConfig):
     val_check_interval: Optional[Union[int, float]] = None
 
 
-class TrainingConfig(PLTrainerConfig):
-    batch_size: int = 8
+class DataLoaderConfig(BaseConfig):
+    batch_size: int
+    shuffle: bool
+    num_workers: int = 0
+
+
+DEFAULT_TRAIN_LOADER_CONFIG = DataLoaderConfig(batch_size=8, shuffle=True)
+DEFAULT_VAL_LOADER_CONFIG = DataLoaderConfig(batch_size=8, shuffle=False)
+
+
+class LoadersConfig(BaseConfig):
+    train: DataLoaderConfig = Field(
+        default_factory=lambda: DEFAULT_TRAIN_LOADER_CONFIG.model_copy()
+    )
+    val: DataLoaderConfig = Field(
+        default_factory=lambda: DEFAULT_VAL_LOADER_CONFIG.model_copy()
+    )
+
+
+class TrainingConfig(BaseConfig):
     learning_rate: float = 1e-3
     t_max: int = 100
+    dataloaders: LoadersConfig = Field(default_factory=LoadersConfig)
     loss: LossConfig = Field(default_factory=LossConfig)
     augmentations: Optional[AugmentationsConfig] = Field(
         default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG
