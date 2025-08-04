@@ -68,6 +68,7 @@ batdetect2 = "batdetect2.cli:cli"
 jupyter = ["ipywidgets>=8.1.5", "jupyter>=1.1.1"]
 marimo = [
     "marimo>=0.12.2",
+    "pyarrow>=20.0.0",
 ]
 dev = [
   "debugpy>=1.8.8",
