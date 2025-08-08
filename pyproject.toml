@@ -17,7 +17,7 @@ dependencies = [
   "torch>=1.13.1,<2.5.0",
   "torchaudio>=1.13.1,<2.5.0",
   "torchvision>=0.14.0",
-  "soundevent[audio,geometry,plot]>=2.6.4",
+  "soundevent[audio,geometry,plot]>=2.6.5",
   "click>=8.1.7",
   "netcdf4>=1.6.5",
   "tqdm>=4.66.2",
@@ -66,10 +66,7 @@ batdetect2 = "batdetect2.cli:cli"
 
 [dependency-groups]
 jupyter = ["ipywidgets>=8.1.5", "jupyter>=1.1.1"]
-marimo = [
-    "marimo>=0.12.2",
-    "pyarrow>=20.0.0",
-]
+marimo = ["marimo>=0.12.2", "pyarrow>=20.0.0"]
 dev = [
   "debugpy>=1.8.8",
   "hypothesis>=6.118.7",
@@ -77,7 +74,7 @@ dev = [
   "ruff>=0.7.3",
   "ipykernel>=6.29.4",
   "setuptools>=69.5.1",
-  "pyright>=1.1.399",
+  "basedpyright>=1.31.0",
   "myst-parser>=3.0.1",
   "sphinx-autobuild>=2024.10.3",
   "numpydoc>=1.8.0",
@@ -88,12 +85,8 @@ dev = [
   "ty>=0.0.1a12",
   "rust-just>=1.40.0",
 ]
-dvclive = [
-    "dvclive>=3.48.2",
-]
-mlflow = [
-    "mlflow>=3.1.1",
-]
+dvclive = ["dvclive>=3.48.2"]
+mlflow = ["mlflow>=3.1.1"]
 
 [tool.ruff]
 line-length = 79
