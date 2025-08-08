@@ -1,22 +1,40 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Protocol
-from uuid import UUID
+
+from soundevent import data
 
 __all__ = [
     "MetricsProtocol",
-    "Match",
+    "MatchEvaluation",
 ]
 
 
 @dataclass
-class Match:
-    gt_uuid: Optional[UUID]
+class MatchEvaluation:
+    match: data.Match
+
     gt_det: bool
     gt_class: Optional[str]
+
     pred_score: float
-    affinity: float
-    class_scores: Dict[str, float]
+    pred_class_scores: Dict[str, float]
+
+    @property
+    def pred_class(self) -> Optional[str]:
+        if not self.pred_class_scores:
+            return None
+
+        return max(self.pred_class_scores, key=self.pred_class_scores.get)  # type: ignore
+
+    @property
+    def pred_class_score(self) -> float:
+        pred_class = self.pred_class
+
+        if pred_class is None:
+            return 0
+
+        return self.pred_class_scores[pred_class]
 
 
 class MetricsProtocol(Protocol):
-    def __call__(self, matches: List[Match]) -> Dict[str, float]: ...
+    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]: ...

@@ -4,13 +4,13 @@ import pandas as pd
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
 
-from batdetect2.evaluate.types import Match, MetricsProtocol
+from batdetect2.evaluate.types import MatchEvaluation, MetricsProtocol
 
 __all__ = ["DetectionAveragePrecision"]
 
 
 class DetectionAveragePrecision(MetricsProtocol):
-    def __call__(self, matches: List[Match]) -> Dict[str, float]:
+    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
         y_true, y_score = zip(
             *[(match.gt_det, match.pred_score) for match in matches]
         )
@@ -23,7 +23,7 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
         self.class_names = class_names
         self.per_class = per_class
 
-    def __call__(self, matches: List[Match]) -> Dict[str, float]:
+    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
         y_true = label_binarize(
             [
                 match.gt_class if match.gt_class is not None else "__NONE__"
@@ -34,7 +34,7 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
         y_pred = pd.DataFrame(
             [
                 {
-                    name: match.class_scores.get(name, 0)
+                    name: match.pred_class_scores.get(name, 0)
                     for name in self.class_names
                 }
                 for match in matches
@@ -65,7 +65,7 @@ class ClassificationAccuracy(MetricsProtocol):
     def __init__(self, class_names: List[str]):
         self.class_names = class_names
 
-    def __call__(self, matches: List[Match]) -> Dict[str, float]:
+    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
         y_true = [
             match.gt_class if match.gt_class is not None else "__NONE__"
             for match in matches
@@ -74,7 +74,7 @@ class ClassificationAccuracy(MetricsProtocol):
         y_pred = pd.DataFrame(
             [
                 {
-                    name: match.class_scores.get(name, 0)
+                    name: match.pred_class_scores.get(name, 0)
                     for name in self.class_names
                 }
                 for match in matches
