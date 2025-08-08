@@ -39,6 +39,7 @@ from batdetect2.configs import BaseConfig, load_config
 from batdetect2.models.types import ModelOutput
 from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
+    convert_raw_prediction_to_sound_event_prediction,
     convert_raw_predictions_to_clip_prediction,
     convert_xr_dataset_to_raw_prediction,
 )
@@ -61,7 +62,11 @@ from batdetect2.postprocess.remapping import (
     features_to_xarray,
     sizes_to_xarray,
 )
-from batdetect2.postprocess.types import PostprocessorProtocol, RawPrediction
+from batdetect2.postprocess.types import (
+    BatDetect2Prediction,
+    PostprocessorProtocol,
+    RawPrediction,
+)
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
 from batdetect2.targets.types import TargetProtocol
 
@@ -535,6 +540,27 @@ class Postprocessor(PostprocessorProtocol):
                 self.targets.decode_roi,
             )
             for dataset in detection_datasets
+        ]
+
+    def get_sound_event_predictions(
+        self, output: ModelOutput, clips: List[data.Clip]
+    ) -> List[List[BatDetect2Prediction]]:
+        raw_predictions = self.get_raw_predictions(output, clips)
+        return [
+            [
+                BatDetect2Prediction(
+                    raw=raw,
+                    sound_event_prediction=convert_raw_prediction_to_sound_event_prediction(
+                        raw,
+                        recording=clip.recording,
+                        sound_event_decoder=self.targets.decode_class,
+                        generic_class_tags=self.targets.generic_class_tags,
+                        classification_threshold=self.config.classification_threshold,
+                    ),
+                )
+                for raw in predictions
+            ]
+            for predictions, clip in zip(raw_predictions, clips)
         ]
 
     def get_predictions(

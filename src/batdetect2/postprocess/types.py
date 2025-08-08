@@ -11,6 +11,7 @@ modularity and consistent interaction between different parts of the BatDetect2
 system that deal with model predictions.
 """
 
+from dataclasses import dataclass
 from typing import List, NamedTuple, Optional, Protocol
 
 import xarray as xr
@@ -73,6 +74,12 @@ class RawPrediction(NamedTuple):
     detection_score: float
     class_scores: xr.DataArray
     features: xr.DataArray
+
+
+@dataclass
+class BatDetect2Prediction:
+    raw: RawPrediction
+    sound_event_prediction: data.SoundEventPrediction
 
 
 class PostprocessorProtocol(Protocol):
@@ -253,6 +260,10 @@ class PostprocessorProtocol(Protocol):
             corresponding input clip.
         """
         ...
+
+    def get_sound_event_predictions(
+        self, output: ModelOutput, clips: List[data.Clip]
+    ) -> List[List[BatDetect2Prediction]]: ...
 
     def get_predictions(
         self,

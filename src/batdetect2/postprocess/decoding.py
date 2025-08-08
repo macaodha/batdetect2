@@ -95,7 +95,6 @@ def convert_xr_dataset_to_raw_prediction(
     for det_num in range(detection_dataset.sizes["detection"]):
         det_info = detection_dataset.sel(detection=det_num)
 
-        # TODO: Maybe clean this up
         highest_scoring_class = det_info.coords["category"][
             det_info["classes"].argmax()
         ].item()
