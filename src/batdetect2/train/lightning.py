@@ -48,20 +48,19 @@ class TrainingModule(L.LightningModule):
     def training_step(self, batch: TrainExample):
         outputs = self.forward(batch.spec)
         losses = self.loss(outputs, batch)
-
         self.log("total_loss/train", losses.total, prog_bar=True, logger=True)
         self.log("detection_loss/train", losses.total, logger=True)
         self.log("size_loss/train", losses.total, logger=True)
         self.log("classification_loss/train", losses.total, logger=True)
-
         return losses.total
 
     def validation_step(  # type: ignore
-        self, batch: TrainExample, batch_idx: int
+        self,
+        batch: TrainExample,
+        batch_idx: int,
     ) -> ModelOutput:
         outputs = self.forward(batch.spec)
         losses = self.loss(outputs, batch)
-
         self.log("total_loss/val", losses.total, prog_bar=True, logger=True)
         self.log("detection_loss/val", losses.total, logger=True)
         self.log("size_loss/val", losses.total, logger=True)
