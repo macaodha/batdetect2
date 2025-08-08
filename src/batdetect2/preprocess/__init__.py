@@ -86,6 +86,7 @@ __all__ = [
     "build_spectrogram_builder",
     "get_spectrogram_resolution",
     "load_preprocessing_config",
+    "get_default_preprocessor",
 ]
 
 
@@ -451,3 +452,7 @@ def build_preprocessor(
         min_freq=min_freq,
         max_freq=max_freq,
     )
+
+
+def get_default_preprocessor():
+    return build_preprocessor()
