@@ -22,6 +22,8 @@ __all__ = [
     "plot_cross_trigger_match",
 ]
 
+
+DEFAULT_DURATION = 0.05
 DEFAULT_FALSE_POSITIVE_COLOR = "orange"
 DEFAULT_FALSE_NEGATIVE_COLOR = "red"
 DEFAULT_TRUE_POSITIVE_COLOR = "green"
@@ -119,9 +121,6 @@ def plot_matches(
     return ax
 
 
-DEFAULT_DURATION = 0.05
-
-
 def plot_false_positive_match(
     match: MatchEvaluation,
     preprocessor: Optional[PreprocessorProtocol] = None,
@@ -149,7 +148,8 @@ def plot_false_positive_match(
     clip = data.Clip(
         start_time=max(start_time - duration / 2, 0),
         end_time=min(
-            start_time + duration / 2, sound_event.recording.duration
+            start_time + duration / 2,
+            sound_event.recording.duration,
         ),
         recording=sound_event.recording,
     )

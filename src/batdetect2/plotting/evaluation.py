@@ -93,39 +93,51 @@ def plot_class_examples(
 
     for index, match in enumerate(true_positives):
         ax = plt.subplot(4, n_examples, index + 1)
-        plotting.plot_true_positive_match(
-            match,
-            ax=ax,
-            preprocessor=preprocessor,
-            duration=duration,
-        )
+        try:
+            plotting.plot_true_positive_match(
+                match,
+                ax=ax,
+                preprocessor=preprocessor,
+                duration=duration,
+            )
+        except ValueError:
+            continue
 
     for index, match in enumerate(false_positives):
         ax = plt.subplot(4, n_examples, n_examples + index + 1)
-        plotting.plot_false_positive_match(
-            match,
-            ax=ax,
-            preprocessor=preprocessor,
-            duration=duration,
-        )
+        try:
+            plotting.plot_false_positive_match(
+                match,
+                ax=ax,
+                preprocessor=preprocessor,
+                duration=duration,
+            )
+        except ValueError:
+            continue
 
     for index, match in enumerate(false_negatives):
         ax = plt.subplot(4, n_examples, 2 * n_examples + index + 1)
-        plotting.plot_false_negative_match(
-            match,
-            ax=ax,
-            preprocessor=preprocessor,
-            duration=duration,
-        )
+        try:
+            plotting.plot_false_negative_match(
+                match,
+                ax=ax,
+                preprocessor=preprocessor,
+                duration=duration,
+            )
+        except ValueError:
+            continue
 
     for index, match in enumerate(cross_triggers):
         ax = plt.subplot(4, n_examples, 4 * n_examples + index + 1)
-        plotting.plot_cross_trigger_match(
-            match,
-            ax=ax,
-            preprocessor=preprocessor,
-            duration=duration,
-        )
+        try:
+            plotting.plot_cross_trigger_match(
+                match,
+                ax=ax,
+                preprocessor=preprocessor,
+                duration=duration,
+            )
+        except ValueError:
+            continue
 
     return fig
 
