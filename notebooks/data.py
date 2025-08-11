@@ -12,8 +12,20 @@ def _():
 
 @app.cell
 def _():
-    from batdetect2.data import load_dataset_config, load_dataset
-    return load_dataset, load_dataset_config
+    from batdetect2.data import (
+        load_dataset_config,
+        load_dataset,
+        extract_recordings_df,
+        extract_sound_events_df,
+        compute_class_summary,
+    )
+    return (
+        compute_class_summary,
+        extract_recordings_df,
+        extract_sound_events_df,
+        load_dataset,
+        load_dataset_config,
+    )
 
 
 @app.cell
@@ -72,183 +84,50 @@ def _(build_targets, targets_config):
 def _():
     import pandas as pd
     from soundevent.geometry import compute_bounds
-    return compute_bounds, pd
+    return
 
 
 @app.cell
-def _(dataset, pd):
-    def get_recording_df(dataset):
-        recordings = []
-
-        for clip_annotation in dataset:
-            recordings.append(
-                {
-                    "recording_id": clip_annotation.clip.recording.uuid,
-                    "duration": clip_annotation.clip.duration,
-                    "clip_annotation_id": clip_annotation.uuid,
-                    "samplerate": clip_annotation.clip.recording.samplerate,
-                    "path": clip_annotation.clip.recording.path.name,
-                }
-            )
-
-        return pd.DataFrame(recordings)
-
-
-    recordings = get_recording_df(dataset)
+def _(dataset, extract_recordings_df):
+    recordings = extract_recordings_df(dataset)
     recordings
-    return (recordings,)
+    return
 
 
 @app.cell
-def _(compute_bounds, dataset, pd, targets):
-    def get_sound_event_df(dataset):
-        sound_events = []
-
-        for clip_annotation in dataset:
-            for sound_event in clip_annotation.sound_events:
-                if not targets.filter(sound_event):
-                    continue
-
-                if sound_event.sound_event.geometry is None:
-                    continue
-
-                class_name = targets.encode_class(sound_event)
-
-                if class_name is None:
-                    continue
-
-                start_time, low_freq, end_time, high_freq = compute_bounds(
-                    sound_event.sound_event.geometry
-                )
-
-                sound_events.append(
-                    {
-                        "clip_annotation_id": clip_annotation.uuid,
-                        "sound_event_id": sound_event.uuid,
-                        "class_name": class_name,
-                        "start_time": start_time,
-                        "end_time": end_time,
-                        "low_freq": low_freq,
-                        "high_freq": high_freq,
-                    }
-                )
-
-        return pd.DataFrame(sound_events)
-
-
-    sound_events = get_sound_event_df(dataset)
+def _(dataset, extract_sound_events_df, targets):
+    sound_events = extract_sound_events_df(dataset, targets)
     sound_events
-    return get_sound_event_df, sound_events
+    return
 
 
 @app.cell
-def _(recordings, sound_events):
-    def produce_summary(sound_events):
-        num_calls = (
-            sound_events.groupby("class_name")
-            .size()
-            .sort_values(ascending=False)
-            .rename("num calls")
-        )
-        num_recs = (
-            sound_events.groupby("class_name")["clip_annotation_id"]
-            .nunique()
-            .sort_values(ascending=False)
-            .rename("num recordings")
-        )
-        durations = (
-            sound_events.groupby("class_name")
-            .apply(
-                lambda group: recordings[
-                    recordings["clip_annotation_id"].isin(
-                        group["clip_annotation_id"]
-                    )
-                ]["duration"].sum(),
-                include_groups=False,
-            )
-            .sort_values(ascending=False)
-            .rename("duration")
-        )
-        return (
-            num_calls.to_frame()
-            .join(num_recs)
-            .join(durations)
-            .sort_values("num calls", ascending=False)
-            .assign(call_rate=lambda df: df["num calls"] / df["duration"])
-        )
-
-
-    produce_summary(sound_events)
-    return (produce_summary,)
-
-
-@app.cell
-def _(sound_events):
-    majority_class = (
-        sound_events.groupby("clip_annotation_id")
-        .apply(
-            lambda group: group["class_name"]
-            .value_counts()
-            .sort_values(ascending=False)
-            .index[0],
-            include_groups=False,
-        )
-        .rename("class_name")
-        .to_frame()
-        .reset_index()
-    )
-    return (majority_class,)
-
-
-@app.cell
-def _(majority_class):
-    majority_class
+def _(compute_class_summary, dataset, targets):
+    compute_class_summary(dataset, targets)
     return
 
 
 @app.cell
 def _():
-    from sklearn.model_selection import train_test_split
-    return (train_test_split,)
+    from batdetect2.data.split import split_dataset_by_recordings
+    return (split_dataset_by_recordings,)
 
 
 @app.cell
-def _(majority_class, train_test_split):
-    train, val = train_test_split(
-        majority_class["clip_annotation_id"],
-        stratify=majority_class["class_name"],
-    )
-    return train, val
-
-
-@app.cell
-def _(dataset, train, val):
-    train_dataset = [
-        clip_annotation
-        for clip_annotation in dataset
-        if clip_annotation.uuid in set(train.values)
-    ]
-    val_dataset = [
-        clip_annotation
-        for clip_annotation in dataset
-        if clip_annotation.uuid in set(val.values)
-    ]
+def _(dataset, split_dataset_by_recordings, targets):
+    train_dataset, val_dataset = split_dataset_by_recordings(dataset, targets, random_state=42)
     return train_dataset, val_dataset
 
 
 @app.cell
-def _(get_sound_event_df, produce_summary, train_dataset):
-    train_sound_events = get_sound_event_df(train_dataset)
-    train_summary = produce_summary(train_sound_events)
-    train_summary
+def _(compute_class_summary, targets, train_dataset):
+    compute_class_summary(train_dataset, targets)
     return
 
 
 @app.cell
-def _(get_sound_event_df, produce_summary, val_dataset):
-    val_sound_events = get_sound_event_df(val_dataset)
-    val_summary = produce_summary(val_sound_events)
-    val_summary
+def _(compute_class_summary, targets, val_dataset):
+    compute_class_summary(val_dataset, targets)
     return
 
 
@@ -291,6 +170,18 @@ def _(Path, data, io, val_dataset):
 def _(load_dataset, load_dataset_config):
     config = load_dataset_config("../paper/conf/datasets/train/uk_tune.yaml")
     rec = load_dataset(config, base_dir="../paper/")
+    return (rec,)
+
+
+@app.cell
+def _(rec):
+    dict(rec[0].sound_events[0].tags[0].term)
+    return
+
+
+@app.cell
+def _(compute_class_summary, rec, targets):
+    compute_class_summary(rec,targets)
     return
 
 
