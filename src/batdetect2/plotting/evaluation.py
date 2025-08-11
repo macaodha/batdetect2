@@ -154,7 +154,7 @@ def get_binned_sample(matches: List[MatchEvaluation], n_examples: int = 5):
         ]
     )
 
-    bins = pd.qcut(pred_scores, q=n_examples, labels=False)
+    bins = pd.qcut(pred_scores, q=n_examples, labels=False, duplicates="drop")
     df = pd.DataFrame({"indices": indices, "bins": bins})
     sample = df.groupby("bins").apply(lambda x: x.sample(1))
     return [matches[ind] for ind in sample["indices"]]
