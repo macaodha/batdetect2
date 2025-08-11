@@ -128,7 +128,7 @@ def plot_class_examples(
             continue
 
     for index, match in enumerate(cross_triggers[:n_examples]):
-        ax = plt.subplot(4, n_examples, 4 * n_examples + index + 1)
+        ax = plt.subplot(4, n_examples, 3 * n_examples + index + 1)
         try:
             plotting.plot_cross_trigger_match(
                 match,
