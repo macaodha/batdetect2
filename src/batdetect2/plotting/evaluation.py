@@ -100,7 +100,7 @@ def plot_class_examples(
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except ValueError:
+        except (ValueError, AssertionError):
             continue
 
     for index, match in enumerate(false_positives[:n_examples]):
@@ -112,7 +112,7 @@ def plot_class_examples(
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except ValueError:
+        except (ValueError, AssertionError):
             continue
 
     for index, match in enumerate(false_negatives[:n_examples]):
@@ -124,7 +124,7 @@ def plot_class_examples(
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except ValueError:
+        except (ValueError, AssertionError):
             continue
 
     for index, match in enumerate(cross_triggers[:n_examples]):
@@ -136,7 +136,7 @@ def plot_class_examples(
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except ValueError:
+        except (ValueError, AssertionError):
             continue
 
     return fig
