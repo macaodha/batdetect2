@@ -19,7 +19,7 @@ class ClassExamples:
     cross_triggers: List[MatchEvaluation] = field(default_factory=list)
 
 
-def plot_examples(
+def plot_example_gallery(
     matches: List[MatchEvaluation],
     preprocessor: PreprocessorProtocol,
     n_examples: int = 5,

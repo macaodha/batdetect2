@@ -1,14 +1,21 @@
-from typing import List
+from functools import partial
+from multiprocessing import Pool
+from typing import List, Optional, Tuple
 
 from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import TensorBoardLogger
+from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader
 
-from batdetect2.evaluate.match import match_sound_events_and_raw_predictions
+from batdetect2.evaluate.match import (
+    MatchConfig,
+    match_sound_events_and_raw_predictions,
+)
 from batdetect2.evaluate.types import MatchEvaluation, MetricsProtocol
-from batdetect2.plotting.evaluation import plot_examples
+from batdetect2.plotting.evaluation import plot_example_gallery
+from batdetect2.postprocess.types import BatDetect2Prediction
 from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.dataset import LabeledDataset, TrainExample
 from batdetect2.train.lightning import TrainingModule
@@ -16,15 +23,24 @@ from batdetect2.train.types import ModelOutput
 
 
 class ValidationMetrics(Callback):
-    def __init__(self, metrics: List[MetricsProtocol], plot: bool = True):
+    def __init__(
+        self,
+        metrics: List[MetricsProtocol],
+        plot: bool = True,
+        match_config: Optional[MatchConfig] = None,
+    ):
         super().__init__()
 
         if len(metrics) == 0:
             raise ValueError("At least one metric needs to be provided")
 
-        self.matches: List[MatchEvaluation] = []
+        self.match_config = match_config
         self.metrics = metrics
         self.plot = plot
+
+        self._matches: List[
+            Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]
+        ] = []
 
     def get_dataset(self, trainer: Trainer) -> LabeledDataset:
         dataloaders = trainer.val_dataloaders
@@ -33,25 +49,33 @@ class ValidationMetrics(Callback):
         assert isinstance(dataset, LabeledDataset)
         return dataset
 
-    def plot_examples(self, pl_module: LightningModule):
+    def plot_examples(
+        self,
+        pl_module: LightningModule,
+        matches: List[MatchEvaluation],
+    ):
         if not isinstance(pl_module.logger, TensorBoardLogger):
             return
 
-        for class_name, fig in plot_examples(
-            self.matches,
+        for class_name, fig in plot_example_gallery(
+            matches,
             preprocessor=pl_module.preprocessor,
             n_examples=5,
         ):
             pl_module.logger.experiment.add_figure(
-                f"{class_name}/examples",
+                f"images/{class_name}_examples",
                 fig,
                 pl_module.global_step,
             )
 
-    def log_metrics(self, pl_module: LightningModule):
+    def log_metrics(
+        self,
+        pl_module: LightningModule,
+        matches: List[MatchEvaluation],
+    ):
         metrics = {}
         for metric in self.metrics:
-            metrics.update(metric(self.matches).items())
+            metrics.update(metric(matches).items())
 
         pl_module.log_dict(metrics)
 
@@ -60,10 +84,16 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        self.log_metrics(pl_module)
+        matches = _match_all_collected_examples(
+            self._matches,
+            pl_module.targets,
+            config=self.match_config,
+        )
+
+        self.log_metrics(pl_module, matches)
 
         if self.plot:
-            self.plot_examples(pl_module)
+            self.plot_examples(pl_module, matches)
 
         return super().on_validation_epoch_end(trainer, pl_module)
 
@@ -72,7 +102,7 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        self.matches = []
+        self._matches = []
         return super().on_validation_epoch_start(trainer, pl_module)
 
     def on_validation_batch_end(  # type: ignore
@@ -110,13 +140,26 @@ class ValidationMetrics(Callback):
         for clip_annotation, clip_predictions in zip(
             clip_annotations, raw_predictions
         ):
-            self.matches.extend(
-                match_sound_events_and_raw_predictions(
-                    clip_annotation=clip_annotation,
-                    raw_predictions=clip_predictions,
-                    targets=pl_module.targets,
-                )
-            )
+            self._matches.append((clip_annotation, clip_predictions))
+
+
+def _match_all_collected_examples(
+    pre_matches: List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]],
+    targets: TargetProtocol,
+    config: Optional[MatchConfig] = None,
+) -> List[MatchEvaluation]:
+    logger.info("Matching all annotations and predictions")
+
+    with Pool() as p:
+        matches = p.starmap(
+            partial(
+                match_sound_events_and_raw_predictions,
+                targets=targets,
+                config=config,
+            ),
+            pre_matches,
+        )
+    return [match for clip_matches in matches for match in clip_matches]
 
 
 def _is_in_subclip(

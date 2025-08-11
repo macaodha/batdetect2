@@ -4,6 +4,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
+from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.models import BackboneConfig
 from batdetect2.postprocess import PostprocessConfig
 from batdetect2.preprocess import PreprocessingConfig
@@ -94,6 +95,7 @@ class FullTrainingConfig(BaseConfig):
         default_factory=PreprocessingConfig
     )
     postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
+    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
 
 
 def load_full_training_config(

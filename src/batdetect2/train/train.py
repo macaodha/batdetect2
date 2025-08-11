@@ -7,6 +7,7 @@ from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader
 
+from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.metrics import (
     ClassificationAccuracy,
     ClassificationMeanAveragePrecision,
@@ -82,7 +83,9 @@ def train(
     logger.info("Training complete.")
 
 
-def build_trainer_callbacks(targets: TargetProtocol) -> List[Callback]:
+def build_trainer_callbacks(
+    targets: TargetProtocol, config: EvaluationConfig
+) -> List[Callback]:
     return [
         ModelCheckpoint(
             dirpath="outputs/checkpoints",
@@ -96,7 +99,8 @@ def build_trainer_callbacks(targets: TargetProtocol) -> List[Callback]:
                     class_names=targets.class_names
                 ),
                 ClassificationAccuracy(class_names=targets.class_names),
-            ]
+            ],
+            match_config=config.match,
         ),
     ]
 
@@ -113,7 +117,7 @@ def build_trainer(
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
         logger=build_logger(conf.train.logger),
-        callbacks=build_trainer_callbacks(targets),
+        callbacks=build_trainer_callbacks(targets, config=conf.evaluation),
     )
 
 

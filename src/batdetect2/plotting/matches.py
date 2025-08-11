@@ -179,7 +179,7 @@ def plot_false_positive_match(
     plt.text(
         start_time,
         high_freq,
-        f"False Positive \nScore: {match.pred_score} \nTop Class: {match.pred_class} \nTop Class Score: {match.pred_class_score} ",
+        f"False Positive \nScore: {match.pred_score} \nTop Class: {match.pred_class} \nTop Class Score: {match.pred_class_score:.2f} ",
         va="top",
         ha="right",
         color=color,
@@ -326,7 +326,7 @@ def plot_true_positive_match(
     plt.text(
         start_time,
         high_freq,
-        f"True Positive \nClass: {match.gt_class} \nDet Score: {match.pred_score} \nTop Class Score: {match.pred_class_score} ",
+        f"True Positive \nClass: {match.gt_class} \nDet Score: {match.pred_score:.2f} \nTop Class Score: {match.pred_class_score:.2f} ",
         va="top",
         ha="right",
         color=color,
@@ -407,7 +407,7 @@ def plot_cross_trigger_match(
     plt.text(
         start_time,
         high_freq,
-        f"Cross Trigger \nTrue Class: {match.gt_class} \nPred Class: {match.pred_class} \nDet Score: {match.pred_score} \nTop Class Score: {match.pred_class_score} ",
+        f"Cross Trigger \nTrue Class: {match.gt_class} \nPred Class: {match.pred_class} \nDet Score: {match.pred_score:.2f} \nTop Class Score: {match.pred_class_score:.2f} ",
         va="top",
         ha="right",
         color=color,
