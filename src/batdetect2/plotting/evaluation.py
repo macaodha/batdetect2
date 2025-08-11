@@ -91,7 +91,7 @@ def plot_class_examples(
 ):
     fig = plt.figure(figsize=(20, 20))
 
-    for index, match in enumerate(true_positives):
+    for index, match in enumerate(true_positives[:n_examples]):
         ax = plt.subplot(4, n_examples, index + 1)
         try:
             plotting.plot_true_positive_match(
@@ -103,7 +103,7 @@ def plot_class_examples(
         except ValueError:
             continue
 
-    for index, match in enumerate(false_positives):
+    for index, match in enumerate(false_positives[:n_examples]):
         ax = plt.subplot(4, n_examples, n_examples + index + 1)
         try:
             plotting.plot_false_positive_match(
@@ -115,7 +115,7 @@ def plot_class_examples(
         except ValueError:
             continue
 
-    for index, match in enumerate(false_negatives):
+    for index, match in enumerate(false_negatives[:n_examples]):
         ax = plt.subplot(4, n_examples, 2 * n_examples + index + 1)
         try:
             plotting.plot_false_negative_match(
@@ -127,7 +127,7 @@ def plot_class_examples(
         except ValueError:
             continue
 
-    for index, match in enumerate(cross_triggers):
+    for index, match in enumerate(cross_triggers[:n_examples]):
         ax = plt.subplot(4, n_examples, 4 * n_examples + index + 1)
         try:
             plotting.plot_cross_trigger_match(
