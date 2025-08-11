@@ -45,7 +45,6 @@ data_source = data.Term(
     ),
 )
 
-
 call_type = data.Term(
     name="soundevent:call_type",
     label="Call Type",
@@ -78,6 +77,24 @@ generic_class = data.Term(
     ),
 )
 """Generic term representing a classification model's output class label."""
+
+terms.register_term_set(
+    terms.TermSet(
+        terms=[
+            generic_class,
+            individual,
+            call_type,
+            data_source,
+        ],
+        aliases={
+            "class": generic_class.name,
+            "individual": individual.name,
+            "event": call_type.name,
+            "source": data_source.name,
+        },
+    ),
+    override_existing=True,
+)
 
 
 class TermRegistry(Mapping[str, data.Term]):
@@ -278,6 +295,11 @@ def get_term_from_key(
     KeyError
         If the key is not found in the specified registry.
     """
+    term = terms.get_term(key)
+
+    if term:
+        return term
+
     term_registry = term_registry or default_term_registry
     return term_registry.get_term(key)
 

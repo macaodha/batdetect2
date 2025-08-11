@@ -17,7 +17,7 @@ dependencies = [
   "torch>=1.13.1,<2.5.0",
   "torchaudio>=1.13.1,<2.5.0",
   "torchvision>=0.14.0",
-  "soundevent[audio,geometry,plot]>=2.6.5",
+  "soundevent[audio,geometry,plot]>=2.7.0",
   "click>=8.1.7",
   "netcdf4>=1.6.5",
   "tqdm>=4.66.2",
@@ -84,6 +84,7 @@ dev = [
   "pytest-cov>=6.1.1",
   "ty>=0.0.1a12",
   "rust-just>=1.40.0",
+  "pandas-stubs>=2.2.2.240807",
 ]
 dvclive = ["dvclive>=3.48.2"]
 mlflow = ["mlflow>=3.1.1"]
