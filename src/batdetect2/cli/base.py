@@ -1,6 +1,7 @@
 """BatDetect2 command line interface."""
 
 import click
+from loguru import logger
 
 # from batdetect2.cli.ascii import BATDETECT_ASCII_ART
 
@@ -21,4 +22,5 @@ BatDetect2 - Detection and Classification
 def cli():
     """BatDetect2 - Bat Call Detection and Classification."""
     click.echo(INFO_STR)
+    logger.enable("batdetect2")
     # click.echo(BATDETECT_ASCII_ART)
