@@ -172,8 +172,7 @@ def _match_all_collected_examples(
 ) -> List[MatchEvaluation]:
     logger.info("Matching all annotations and predictions")
 
-    cpu_count = os.cpu_count() or 1
-    with Pool(processes=min(cpu_count, 4)) as p:
+    with Pool() as p:
         matches = p.starmap(
             partial(
                 match_sound_events_and_raw_predictions,
@@ -182,6 +181,7 @@ def _match_all_collected_examples(
             ),
             pre_matches,
         )
+
     return [match for clip_matches in matches for match in clip_matches]
 
 

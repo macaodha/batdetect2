@@ -9,7 +9,6 @@ from batdetect2.configs import BaseConfig
 from batdetect2.evaluate.types import MatchEvaluation
 from batdetect2.postprocess.types import BatDetect2Prediction
 from batdetect2.targets.types import TargetProtocol
-from batdetect2.utils.arrays import iterate_over_array
 
 
 class BBoxMatchConfig(BaseConfig):
@@ -126,8 +125,9 @@ def match_sound_events_and_raw_predictions(
         class_scores = (
             {
                 str(class_name): float(score)
-                for class_name, score in iterate_over_array(
-                    prediction.raw.class_scores
+                for class_name, score in zip(
+                    targets.class_names,
+                    prediction.raw.class_scores,
                 )
             }
             if prediction is not None
