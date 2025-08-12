@@ -91,6 +91,7 @@ terms.register_term_set(
             "individual": individual.name,
             "event": call_type.name,
             "source": data_source.name,
+            "call_type": call_type.name,
         },
     ),
     override_existing=True,
