@@ -80,7 +80,6 @@ def test_generated_heatmaps_have_correct_dimensions(
 
 def test_generated_heatmap_are_non_zero_at_correct_positions(
     sample_target_config: TargetConfig,
-    sample_term_registry: TermRegistry,
     pippip_tag: TagInfo,
 ):
     config = sample_target_config.model_copy(
@@ -92,7 +91,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
         )
     )
 
-    targets = build_targets(config, term_registry=sample_term_registry)
+    targets = build_targets(config)
 
     spec = xr.DataArray(
         data=np.random.rand(100, 100),
@@ -113,12 +112,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
                         coordinates=[10, 10, 20, 20],
                     ),
                 ),
-                tags=[
-                    data.Tag(
-                        term=sample_term_registry[pippip_tag.key],
-                        value=pippip_tag.value,
-                    )
-                ],
+                tags=[data.Tag(key=pippip_tag.key, value=pippip_tag.value)],  # type: ignore
             )
         ],
     )

@@ -2,12 +2,12 @@ import pytest
 import torch
 import xarray as xr
 from soundevent import data
+from soundevent.terms import get_term
 
 from batdetect2.models.types import ModelOutput
 from batdetect2.postprocess import build_postprocessor, load_postprocess_config
 from batdetect2.preprocess import build_preprocessor, load_preprocessing_config
 from batdetect2.targets import build_targets, load_target_config
-from batdetect2.targets.terms import get_term_from_key
 from batdetect2.train.labels import build_clip_labeler, load_label_config
 from batdetect2.train.preprocess import generate_train_example
 
@@ -15,7 +15,6 @@ from batdetect2.train.preprocess import generate_train_example
 @pytest.fixture
 def build_from_config(
     create_temp_yaml,
-    sample_term_registry,
 ):
     def build(yaml_content):
         config_path = create_temp_yaml(yaml_content)
@@ -31,9 +30,7 @@ def build_from_config(
             field="postprocessing",
         )
 
-        targets = build_targets(
-            targets_config, term_registry=sample_term_registry
-        )
+        targets = build_targets(targets_config)
         preprocessor = build_preprocessor(preprocessing_config)
         labeller = build_clip_labeler(
             targets=targets,
@@ -54,7 +51,6 @@ def build_from_config(
 # TODO: better name
 def test_generated_train_example_has_expected_outputs(
     build_from_config,
-    sample_term_registry,
     recording,
 ):
     yaml_content = """
@@ -78,10 +74,11 @@ def test_generated_train_example_has_expected_outputs(
     _, preprocessor, labeller, _ = build_from_config(yaml_content)
 
     geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
-    species = get_term_from_key("species", term_registry=sample_term_registry)
     se1 = data.SoundEventAnnotation(
         sound_event=data.SoundEvent(recording=recording, geometry=geometry),
-        tags=[data.Tag(term=species, value="Pipistrellus pipistrellus")],
+        tags=[
+            data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
+        ],
     )
     clip_annotation = data.ClipAnnotation(
         clip=data.Clip(start_time=0, end_time=0.5, recording=recording),
@@ -108,7 +105,6 @@ def test_generated_train_example_has_expected_outputs(
 
 def test_encoding_decoding_roundtrip_recovers_object(
     build_from_config,
-    sample_term_registry,
     recording,
 ):
     yaml_content = """
@@ -131,10 +127,11 @@ def test_encoding_decoding_roundtrip_recovers_object(
     _, preprocessor, labeller, postprocessor = build_from_config(yaml_content)
 
     geometry = data.BoundingBox(coordinates=[0.1, 40_000, 0.2, 80_000])
-    species = get_term_from_key("species", term_registry=sample_term_registry)
     se1 = data.SoundEventAnnotation(
         sound_event=data.SoundEvent(recording=recording, geometry=geometry),
-        tags=[data.Tag(term=species, value="Pipistrellus pipistrellus")],
+        tags=[
+            data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
+        ],
     )
     clip = data.Clip(start_time=0, end_time=0.5, recording=recording)
     clip_annotation = data.ClipAnnotation(clip=clip, sound_events=[se1])
@@ -171,14 +168,16 @@ def test_encoding_decoding_roundtrip_recovers_object(
     assert len(recovered.tags) == 2
 
     predicted_species_tag = next(
-        iter(t for t in recovered.tags if t.tag.term == species), None
+        iter(t for t in recovered.tags if t.tag.term == get_term("species")),
+        None,
     )
     assert predicted_species_tag is not None
     assert predicted_species_tag.score == 1
     assert predicted_species_tag.tag.value == "Pipistrellus pipistrellus"
 
     predicted_order_tag = next(
-        iter(t for t in recovered.tags if t.tag.term.label == "order"), None
+        iter(t for t in recovered.tags if t.tag.term == get_term("order")),
+        None,
     )
     assert predicted_order_tag is not None
     assert predicted_order_tag.score == 1
@@ -187,7 +186,6 @@ def test_encoding_decoding_roundtrip_recovers_object(
 
 def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
     build_from_config,
-    sample_term_registry,
     recording,
 ):
     yaml_content = """
@@ -217,10 +215,9 @@ def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
     _, preprocessor, labeller, postprocessor = build_from_config(yaml_content)
 
     geometry = data.BoundingBox(coordinates=[0.1, 40_000, 0.2, 80_000])
-    species = get_term_from_key("species", term_registry=sample_term_registry)
     se1 = data.SoundEventAnnotation(
         sound_event=data.SoundEvent(recording=recording, geometry=geometry),
-        tags=[data.Tag(term=species, value="Myotis myotis")],
+        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
     )
     clip = data.Clip(start_time=0, end_time=0.5, recording=recording)
     clip_annotation = data.ClipAnnotation(clip=clip, sound_events=[se1])
@@ -257,14 +254,16 @@ def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
     assert len(recovered.tags) == 2
 
     predicted_species_tag = next(
-        iter(t for t in recovered.tags if t.tag.term == species), None
+        iter(t for t in recovered.tags if t.tag.term == get_term("species")),
+        None,
     )
     assert predicted_species_tag is not None
     assert predicted_species_tag.score == 1
     assert predicted_species_tag.tag.value == "Myotis myotis"
 
     predicted_order_tag = next(
-        iter(t for t in recovered.tags if t.tag.term.label == "order"), None
+        iter(t for t in recovered.tags if t.tag.term == get_term("order")),
+        None,
     )
     assert predicted_order_tag is not None
     assert predicted_order_tag.score == 1

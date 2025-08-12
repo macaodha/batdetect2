@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 from soundevent import data
+from soundevent.terms import get_term
 
 from batdetect2.targets.classes import (
     DEFAULT_SPECIES_LIST,
@@ -21,26 +22,19 @@ from batdetect2.targets.classes import (
     load_decoder_from_config,
     load_encoder_from_config,
 )
-from batdetect2.targets.terms import TagInfo, TermRegistry
+from batdetect2.targets.terms import TagInfo
 
 
 @pytest.fixture
 def sample_annotation(
     sound_event: data.SoundEvent,
-    sample_term_registry: TermRegistry,
 ) -> data.SoundEventAnnotation:
     """Fixture for a sample SoundEventAnnotation."""
     return data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(
-                term=sample_term_registry.get_term("species"),
-                value="Pipistrellus pipistrellus",
-            ),
-            data.Tag(
-                term=sample_term_registry.get_term("quality"),
-                value="Good",
-            ),
+            data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
+            data.Tag(key="quality", value="Good"),  # type: ignore
         ],
     )
 
@@ -136,59 +130,33 @@ def test_load_classes_config_invalid(create_temp_yaml: Callable[[str], Path]):
 
 def test_is_target_class_match_all(
     sample_annotation: data.SoundEventAnnotation,
-    sample_term_registry: TermRegistry,
 ):
     tags = {
-        data.Tag(
-            term=sample_term_registry["species"],
-            value="Pipistrellus pipistrellus",
-        ),
-        data.Tag(term=sample_term_registry["quality"], value="Good"),
+        data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
+        data.Tag(key="quality", value="Good"),  # type: ignore
     }
     assert is_target_class(sample_annotation, tags, match_all=True) is True
 
-    tags = {
-        data.Tag(
-            term=sample_term_registry["species"],
-            value="Pipistrellus pipistrellus",
-        )
-    }
+    tags = {data.Tag(key="species", value="Pipistrellus pipistrellus")}  # type: ignore
     assert is_target_class(sample_annotation, tags, match_all=True) is True
 
-    tags = {
-        data.Tag(
-            term=sample_term_registry["species"], value="Myotis daubentonii"
-        )
-    }
+    tags = {data.Tag(key="species", value="Myotis daubentonii")}  # type: ignore
     assert is_target_class(sample_annotation, tags, match_all=True) is False
 
 
 def test_is_target_class_match_any(
     sample_annotation: data.SoundEventAnnotation,
-    sample_term_registry: TermRegistry,
 ):
     tags = {
-        data.Tag(
-            term=sample_term_registry["species"],
-            value="Pipistrellus pipistrellus",
-        ),
-        data.Tag(term=sample_term_registry["quality"], value="Good"),
+        data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
+        data.Tag(key="quality", value="Good"),  # type: ignore
     }
     assert is_target_class(sample_annotation, tags, match_all=False) is True
 
-    tags = {
-        data.Tag(
-            term=sample_term_registry["species"],
-            value="Pipistrellus pipistrellus",
-        )
-    }
+    tags = {data.Tag(key="species", value="Pipistrellus pipistrellus")}  # type: ignore
     assert is_target_class(sample_annotation, tags, match_all=False) is True
 
-    tags = {
-        data.Tag(
-            term=sample_term_registry["species"], value="Myotis daubentonii"
-        )
-    }
+    tags = {data.Tag(key="species", value="Myotis daubentonii")}  # type: ignore
     assert is_target_class(sample_annotation, tags, match_all=False) is False
 
 
@@ -208,7 +176,6 @@ def test_get_class_names_from_config():
 
 def test_build_encoder_from_config(
     sample_annotation: data.SoundEventAnnotation,
-    sample_term_registry: TermRegistry,
 ):
     config = ClassesConfig(
         classes=[
@@ -220,25 +187,18 @@ def test_build_encoder_from_config(
             )
         ]
     )
-    encoder = build_sound_event_encoder(
-        config,
-        term_registry=sample_term_registry,
-    )
+    encoder = build_sound_event_encoder(config)
     result = encoder(sample_annotation)
     assert result == "pippip"
 
     config = ClassesConfig(classes=[])
-    encoder = build_sound_event_encoder(
-        config,
-        term_registry=sample_term_registry,
-    )
+    encoder = build_sound_event_encoder(config)
     result = encoder(sample_annotation)
     assert result is None
 
 
 def test_load_encoder_from_config_valid(
     sample_annotation: data.SoundEventAnnotation,
-    sample_term_registry: TermRegistry,
     create_temp_yaml: Callable[[str], Path],
 ):
     yaml_content = """
@@ -249,10 +209,7 @@ def test_load_encoder_from_config_valid(
             value: Pipistrellus pipistrellus
     """
     temp_yaml_path = create_temp_yaml(yaml_content)
-    encoder = load_encoder_from_config(
-        temp_yaml_path,
-        term_registry=sample_term_registry,
-    )
+    encoder = load_encoder_from_config(temp_yaml_path)
     # We cannot directly compare the function, so we test it.
     result = encoder(sample_annotation)  # type: ignore
     assert result == "pippip"
@@ -260,7 +217,6 @@ def test_load_encoder_from_config_valid(
 
 def test_load_encoder_from_config_invalid(
     create_temp_yaml: Callable[[str], Path],
-    sample_term_registry: TermRegistry,
 ):
     yaml_content = """
     classes:
@@ -271,10 +227,7 @@ def test_load_encoder_from_config_invalid(
     """
     temp_yaml_path = create_temp_yaml(yaml_content)
     with pytest.raises(KeyError):
-        load_encoder_from_config(
-            temp_yaml_path,
-            term_registry=sample_term_registry,
-        )
+        load_encoder_from_config(temp_yaml_path)
 
 
 def test_get_default_class_name():
@@ -291,7 +244,7 @@ def test_get_default_classes():
     assert first_class.tags[0].value == DEFAULT_SPECIES_LIST[0]
 
 
-def test_build_decoder_from_config(sample_term_registry: TermRegistry):
+def test_build_decoder_from_config():
     config = ClassesConfig(
         classes=[
             TargetClass(
@@ -304,12 +257,10 @@ def test_build_decoder_from_config(sample_term_registry: TermRegistry):
         ],
         generic_class=[TagInfo(key="order", value="Chiroptera")],
     )
-    decoder = build_sound_event_decoder(
-        config, term_registry=sample_term_registry
-    )
+    decoder = build_sound_event_decoder(config)
     tags = decoder("pippip")
     assert len(tags) == 1
-    assert tags[0].term == sample_term_registry["call_type"]
+    assert tags[0].term == get_term("event")
     assert tags[0].value == "Echolocation"
 
     # Test when output_tags is None, should fall back to tags
@@ -324,32 +275,25 @@ def test_build_decoder_from_config(sample_term_registry: TermRegistry):
         ],
         generic_class=[TagInfo(key="order", value="Chiroptera")],
     )
-    decoder = build_sound_event_decoder(
-        config, term_registry=sample_term_registry
-    )
+    decoder = build_sound_event_decoder(config)
     tags = decoder("pippip")
     assert len(tags) == 1
-    assert tags[0].term == sample_term_registry["species"]
+    assert tags[0].term == get_term("species")
     assert tags[0].value == "Pipistrellus pipistrellus"
 
     # Test raise_on_unmapped=True
-    decoder = build_sound_event_decoder(
-        config, term_registry=sample_term_registry, raise_on_unmapped=True
-    )
+    decoder = build_sound_event_decoder(config, raise_on_unmapped=True)
     with pytest.raises(ValueError):
         decoder("unknown_class")
 
     # Test raise_on_unmapped=False
-    decoder = build_sound_event_decoder(
-        config, term_registry=sample_term_registry, raise_on_unmapped=False
-    )
+    decoder = build_sound_event_decoder(config, raise_on_unmapped=False)
     tags = decoder("unknown_class")
     assert len(tags) == 0
 
 
 def test_load_decoder_from_config_valid(
     create_temp_yaml: Callable[[str], Path],
-    sample_term_registry: TermRegistry,
 ):
     yaml_content = """
     classes:
@@ -366,17 +310,15 @@ def test_load_decoder_from_config_valid(
     """
     temp_yaml_path = create_temp_yaml(yaml_content)
     decoder = load_decoder_from_config(
-        temp_yaml_path, term_registry=sample_term_registry
+        temp_yaml_path,
     )
     tags = decoder("pippip")
     assert len(tags) == 1
-    assert tags[0].term == sample_term_registry["call_type"]
+    assert tags[0].term == get_term("call_type")
     assert tags[0].value == "Echolocation"
 
 
-def test_build_generic_class_tags_from_config(
-    sample_term_registry: TermRegistry,
-):
+def test_build_generic_class_tags_from_config():
     config = ClassesConfig(
         classes=[
             TargetClass(
@@ -391,11 +333,9 @@ def test_build_generic_class_tags_from_config(
             TagInfo(key="call_type", value="Echolocation"),
         ],
     )
-    generic_tags = build_generic_class_tags(
-        config, term_registry=sample_term_registry
-    )
+    generic_tags = build_generic_class_tags(config)
     assert len(generic_tags) == 2
-    assert generic_tags[0].term == sample_term_registry["order"]
+    assert generic_tags[0].term == get_term("order")
     assert generic_tags[0].value == "Chiroptera"
-    assert generic_tags[1].term == sample_term_registry["call_type"]
+    assert generic_tags[1].term == get_term("call_type")
     assert generic_tags[1].value == "Echolocation"

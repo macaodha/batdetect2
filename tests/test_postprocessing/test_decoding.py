@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 import pytest
@@ -16,35 +16,11 @@ from batdetect2.postprocess.decoding import (
     get_prediction_features,
 )
 from batdetect2.postprocess.types import RawPrediction
+from batdetect2.targets.types import TargetProtocol
 
 
 @pytest.fixture
-def dummy_geometry_builder():
-    """A simple GeometryBuilder that creates a BBox around the point."""
-
-    def _builder(
-        position: Tuple[float, float],
-        dimensions: xr.DataArray,
-        class_name: Optional[str] = None,
-    ) -> data.BoundingBox:
-        time, freq = position
-        width = dimensions.sel(dimension="width").item()
-        height = dimensions.sel(dimension="height").item()
-        return data.BoundingBox(
-            coordinates=[
-                time - width / 2,
-                freq - height / 2,
-                time + width / 2,
-                freq + height / 2,
-            ]
-        )
-
-    return _builder
-
-
-@pytest.fixture
-def dummy_sound_event_decoder():
-    """A simple SoundEventDecoder mapping names to tags."""
+def dummy_targets() -> TargetProtocol:
     tag_map = {
         "bat": [
             data.Tag(term=data.term_from_key(key="species"), value="Myotis")
@@ -57,18 +33,56 @@ def dummy_sound_event_decoder():
         ],
     }
 
-    def _decoder(class_name: str) -> List[data.Tag]:
-        return tag_map.get(class_name.lower(), [])
+    class DummyTargets(TargetProtocol):
+        class_names = [
+            "bat",
+            "noise",
+            "unknown",
+        ]
 
-    return _decoder
+        dimension_names = ["width", "height"]
 
+        generic_class_tags = [
+            data.Tag(
+                term=data.term_from_key(key="detector"), value="batdetect2"
+            )
+        ]
 
-@pytest.fixture
-def generic_tags() -> List[data.Tag]:
-    """Sample generic tags."""
-    return [
-        data.Tag(term=data.term_from_key(key="detector"), value="batdetect2")
-    ]
+        def filter(self, sound_event: data.SoundEventAnnotation):
+            return True
+
+        def transform(self, sound_event: data.SoundEventAnnotation):
+            return sound_event
+
+        def encode_class(
+            self, sound_event: data.SoundEventAnnotation
+        ) -> Optional[str]:
+            return "bat"
+
+        def decode_class(self, class_label: str) -> List[data.Tag]:
+            return tag_map.get(class_label.lower(), [])
+
+        def encode_roi(self, sound_event: data.SoundEventAnnotation):
+            return np.array([0.0, 0.0]), np.array([0.0, 0.0])
+
+        def decode_roi(
+            self,
+            position,
+            size: np.ndarray,
+            class_name: Optional[str] = None,
+        ):
+            time, freq = position
+            width, height = size
+            return data.BoundingBox(
+                coordinates=[
+                    time - width / 2,
+                    freq - height / 2,
+                    time + width / 2,
+                    freq + height / 2,
+                ]
+            )
+
+    return DummyTargets()
 
 
 @pytest.fixture
@@ -156,7 +170,7 @@ def empty_detection_dataset() -> xr.Dataset:
     """Creates an empty detection dataset with correct structure."""
     detection_coords = {
         "time": ("detection", np.array([], dtype=np.float64)),
-        "freq": ("detection", np.array([], dtype=np.float64)),
+        "frequency": ("detection", np.array([], dtype=np.float64)),
     }
     scores = xr.DataArray(
         np.array([], dtype=np.float64),
@@ -184,7 +198,7 @@ def empty_detection_dataset() -> xr.Dataset:
     )
     return xr.Dataset(
         {
-            "score": scores,
+            "scores": scores,
             "dimensions": dimensions,
             "classes": classes,
             "features": features,
@@ -215,8 +229,8 @@ def sample_raw_predictions() -> List[RawPrediction]:
                 300 + 16 / 2,
             ]
         ),
-        class_scores=pred1_classes,
-        features=pred1_features,
+        class_scores=pred1_classes.values,
+        features=pred1_features.values,
     )
 
     pred2_classes = xr.DataArray(
@@ -237,8 +251,8 @@ def sample_raw_predictions() -> List[RawPrediction]:
                 200 + 12 / 2,
             ]
         ),
-        class_scores=pred2_classes,
-        features=pred2_features,
+        class_scores=pred2_classes.values,
+        features=pred2_features.values,
     )
 
     pred3_classes = xr.DataArray(
@@ -259,18 +273,17 @@ def sample_raw_predictions() -> List[RawPrediction]:
                 60.0,
             ]
         ),
-        class_scores=pred3_classes,
-        features=pred3_features,
+        class_scores=pred3_classes.values,
+        features=pred3_features.values,
     )
     return [pred1, pred2, pred3]
 
 
-def test_convert_xr_dataset_basic(
-    sample_detection_dataset, dummy_geometry_builder
-):
+def test_convert_xr_dataset_basic(sample_detection_dataset, dummy_targets):
     """Test basic conversion of a dataset to RawPrediction list."""
     raw_predictions = convert_xr_dataset_to_raw_prediction(
-        sample_detection_dataset, dummy_geometry_builder
+        sample_detection_dataset,
+        dummy_targets.decode_roi,
     )
 
     assert isinstance(raw_predictions, list)
@@ -286,11 +299,11 @@ def test_convert_xr_dataset_basic(
         20 + 7 / 2,
         300 + 16 / 2,
     ]
-    xr.testing.assert_allclose(
+    np.testing.assert_allclose(
         pred1.class_scores,
         sample_detection_dataset["classes"].sel(detection=0),
     )
-    xr.testing.assert_allclose(
+    np.testing.assert_allclose(
         pred1.features, sample_detection_dataset["features"].sel(detection=0)
     )
 
@@ -304,21 +317,20 @@ def test_convert_xr_dataset_basic(
         10 + 3 / 2,
         200 + 12 / 2,
     ]
-    xr.testing.assert_allclose(
+    np.testing.assert_allclose(
         pred2.class_scores,
         sample_detection_dataset["classes"].sel(detection=1),
     )
-    xr.testing.assert_allclose(
+    np.testing.assert_allclose(
         pred2.features, sample_detection_dataset["features"].sel(detection=1)
     )
 
 
-def test_convert_xr_dataset_empty(
-    empty_detection_dataset, dummy_geometry_builder
-):
+def test_convert_xr_dataset_empty(empty_detection_dataset, dummy_targets):
     """Test conversion of an empty dataset."""
     raw_predictions = convert_xr_dataset_to_raw_prediction(
-        empty_detection_dataset, dummy_geometry_builder
+        empty_detection_dataset,
+        dummy_targets.decode_roi,
     )
     assert isinstance(raw_predictions, list)
     assert len(raw_predictions) == 0
@@ -327,8 +339,7 @@ def test_convert_xr_dataset_empty(
 def test_convert_raw_to_sound_event_basic(
     sample_raw_predictions,
     sample_recording,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test basic conversion, default threshold, multi-label."""
 
@@ -337,8 +348,7 @@ def test_convert_raw_to_sound_event_basic(
     se_pred = convert_raw_prediction_to_sound_event_prediction(
         raw_prediction=raw_pred,
         recording=sample_recording,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
     )
 
     assert isinstance(se_pred, data.SoundEventPrediction)
@@ -357,10 +367,11 @@ def test_convert_raw_to_sound_event_basic(
     )
     assert feat_dict["batdetect2:f0"] == 7.0
 
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
-        ("soundevent:category", "noise", 0.85),
-        ("soundevent:species", "Myotis", 0.43),
+        ("category", "noise", 0.85),
+        ("dwc:scientificName", "Myotis", 0.43),
     }
     actual_tags = {
         (pt.tag.term.name, pt.tag.value, pt.score) for pt in se_pred.tags
@@ -369,10 +380,7 @@ def test_convert_raw_to_sound_event_basic(
 
 
 def test_convert_raw_to_sound_event_thresholding(
-    sample_raw_predictions,
-    sample_recording,
-    dummy_sound_event_decoder,
-    generic_tags,
+    sample_raw_predictions, sample_recording, dummy_targets
 ):
     """Test effect of classification threshold."""
     raw_pred = sample_raw_predictions[0]
@@ -381,15 +389,15 @@ def test_convert_raw_to_sound_event_thresholding(
     se_pred = convert_raw_prediction_to_sound_event_prediction(
         raw_prediction=raw_pred,
         recording=sample_recording,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=high_threshold,
         top_class_only=False,
     )
 
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
-        ("soundevent:category", "noise", 0.85),
+        ("category", "noise", 0.85),
     }
     actual_tags = {
         (pt.tag.term.name, pt.tag.value, pt.score) for pt in se_pred.tags
@@ -400,8 +408,7 @@ def test_convert_raw_to_sound_event_thresholding(
 def test_convert_raw_to_sound_event_no_threshold(
     sample_raw_predictions,
     sample_recording,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test when classification_threshold is None."""
     raw_pred = sample_raw_predictions[2]
@@ -409,16 +416,16 @@ def test_convert_raw_to_sound_event_no_threshold(
     se_pred = convert_raw_prediction_to_sound_event_prediction(
         raw_prediction=raw_pred,
         recording=sample_recording,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=None,
         top_class_only=False,
     )
 
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
-        ("soundevent:species", "Myotis", 0.05),
-        ("soundevent:category", "noise", 0.02),
+        ("dwc:scientificName", "Myotis", 0.05),
+        ("category", "noise", 0.02),
     }
     actual_tags = {
         (pt.tag.term.name, pt.tag.value, pt.score) for pt in se_pred.tags
@@ -429,8 +436,7 @@ def test_convert_raw_to_sound_event_no_threshold(
 def test_convert_raw_to_sound_event_top_class(
     sample_raw_predictions,
     sample_recording,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test top_class_only=True behavior."""
     raw_pred = sample_raw_predictions[0]
@@ -438,15 +444,15 @@ def test_convert_raw_to_sound_event_top_class(
     se_pred = convert_raw_prediction_to_sound_event_prediction(
         raw_prediction=raw_pred,
         recording=sample_recording,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=DEFAULT_CLASSIFICATION_THRESHOLD,
         top_class_only=True,
     )
 
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
-        ("soundevent:category", "noise", 0.85),
+        ("category", "noise", 0.85),
     }
     actual_tags = {
         (pt.tag.term.name, pt.tag.value, pt.score) for pt in se_pred.tags
@@ -457,8 +463,7 @@ def test_convert_raw_to_sound_event_top_class(
 def test_convert_raw_to_sound_event_all_below_threshold(
     sample_raw_predictions,
     sample_recording,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test when all class scores are below the default threshold."""
     raw_pred = sample_raw_predictions[2]
@@ -466,12 +471,12 @@ def test_convert_raw_to_sound_event_all_below_threshold(
     se_pred = convert_raw_prediction_to_sound_event_prediction(
         raw_prediction=raw_pred,
         recording=sample_recording,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=DEFAULT_CLASSIFICATION_THRESHOLD,
         top_class_only=False,
     )
 
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
     }
@@ -484,15 +489,13 @@ def test_convert_raw_to_sound_event_all_below_threshold(
 def test_convert_raw_list_to_clip_basic(
     sample_raw_predictions,
     sample_clip,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test converting a list of RawPredictions to a ClipPrediction."""
     clip_pred = convert_raw_predictions_to_clip_prediction(
         raw_predictions=sample_raw_predictions,
         clip=sample_clip,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=DEFAULT_CLASSIFICATION_THRESHOLD,
         top_class_only=False,
     )
@@ -515,23 +518,19 @@ def test_convert_raw_list_to_clip_basic(
         (pt.tag.term.name, pt.tag.value, pt.score)
         for pt in clip_pred.sound_events[2].tags
     }
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags3 = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
     }
     assert se_pred3_tags == expected_tags3
 
 
-def test_convert_raw_list_to_clip_empty(
-    sample_clip,
-    dummy_sound_event_decoder,
-    generic_tags,
-):
+def test_convert_raw_list_to_clip_empty(sample_clip, dummy_targets):
     """Test converting an empty list of RawPredictions."""
     clip_pred = convert_raw_predictions_to_clip_prediction(
         raw_predictions=[],
         clip=sample_clip,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
     )
 
     assert isinstance(clip_pred, data.ClipPrediction)
@@ -542,16 +541,14 @@ def test_convert_raw_list_to_clip_empty(
 def test_convert_raw_list_to_clip_passes_args(
     sample_raw_predictions,
     sample_clip,
-    dummy_sound_event_decoder,
-    generic_tags,
+    dummy_targets,
 ):
     """Test that arguments like top_class_only are passed through."""
 
     clip_pred = convert_raw_predictions_to_clip_prediction(
         raw_predictions=sample_raw_predictions,
         clip=sample_clip,
-        sound_event_decoder=dummy_sound_event_decoder,
-        generic_class_tags=generic_tags,
+        targets=dummy_targets,
         classification_threshold=DEFAULT_CLASSIFICATION_THRESHOLD,
         top_class_only=True,
     )
@@ -562,16 +559,18 @@ def test_convert_raw_list_to_clip_passes_args(
         (pt.tag.term.name, pt.tag.value, pt.score)
         for pt in clip_pred.sound_events[0].tags
     }
+    generic_tags = dummy_targets.generic_class_tags
     expected_tags1 = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
-        ("soundevent:category", "noise", 0.85),
+        ("category", "noise", 0.85),
     }
     assert se_pred1_tags == expected_tags1
 
 
-def test_get_generic_tags_basic(generic_tags):
+def test_get_generic_tags_basic(dummy_targets):
     """Test creation of generic tags with score."""
     detection_score = 0.75
+    generic_tags = dummy_targets.generic_class_tags
     predicted_tags = get_generic_tags(
         detection_score=detection_score, generic_class_tags=generic_tags
     )
@@ -589,17 +588,19 @@ def test_get_prediction_features_basic():
         coords={"feature": ["feat1", "feat2", "feat3"]},
         dims=["feature"],
     )
-    features = get_prediction_features(feature_data)
+    features = get_prediction_features(feature_data.values)
     assert len(features) == 3
     for feature, feat_name, feat_value in zip(
-        features, ["feat1", "feat2", "feat3"], [1.1, 2.2, 3.3]
+        features,
+        ["f0", "f1", "f2"],
+        [1.1, 2.2, 3.3],
     ):
         assert isinstance(feature, data.Feature)
         assert feature.term.name == f"batdetect2:{feat_name}"
         assert feature.value == feat_value
 
 
-def test_get_class_tags_basic(dummy_sound_event_decoder):
+def test_get_class_tags_basic(dummy_targets):
     """Test creation of class tags based on scores and decoder."""
     class_scores = xr.DataArray(
         [0.6, 0.2, 0.9],
@@ -607,8 +608,8 @@ def test_get_class_tags_basic(dummy_sound_event_decoder):
         dims=["category"],
     )
     predicted_tags = get_class_tags(
-        class_scores=class_scores,
-        sound_event_decoder=dummy_sound_event_decoder,
+        class_scores=class_scores.values,
+        targets=dummy_targets,
     )
     assert len(predicted_tags) == 3
     tag_values = [pt.tag.value for pt in predicted_tags]
@@ -622,7 +623,7 @@ def test_get_class_tags_basic(dummy_sound_event_decoder):
     assert 0.9 in tag_scores
 
 
-def test_get_class_tags_thresholding(dummy_sound_event_decoder):
+def test_get_class_tags_thresholding(dummy_targets):
     """Test class tag creation with a threshold."""
     class_scores = xr.DataArray(
         [0.6, 0.2, 0.9],
@@ -631,8 +632,8 @@ def test_get_class_tags_thresholding(dummy_sound_event_decoder):
     )
     threshold = 0.5
     predicted_tags = get_class_tags(
-        class_scores=class_scores,
-        sound_event_decoder=dummy_sound_event_decoder,
+        class_scores=class_scores.values,
+        targets=dummy_targets,
         threshold=threshold,
     )
 
@@ -643,7 +644,7 @@ def test_get_class_tags_thresholding(dummy_sound_event_decoder):
     assert "uncertain" in tag_values
 
 
-def test_get_class_tags_top_class_only(dummy_sound_event_decoder):
+def test_get_class_tags_top_class_only(dummy_targets):
     """Test class tag creation with top_class_only."""
     class_scores = xr.DataArray(
         [0.6, 0.2, 0.9],
@@ -651,8 +652,8 @@ def test_get_class_tags_top_class_only(dummy_sound_event_decoder):
         dims=["category"],
     )
     predicted_tags = get_class_tags(
-        class_scores=class_scores,
-        sound_event_decoder=dummy_sound_event_decoder,
+        class_scores=class_scores.values,
+        targets=dummy_targets,
         top_class_only=True,
     )
 
@@ -661,11 +662,11 @@ def test_get_class_tags_top_class_only(dummy_sound_event_decoder):
     assert predicted_tags[0].score == 0.9
 
 
-def test_get_class_tags_empty(dummy_sound_event_decoder):
+def test_get_class_tags_empty(dummy_targets):
     """Test with empty class scores."""
     class_scores = xr.DataArray([], coords={"category": []}, dims=["category"])
     predicted_tags = get_class_tags(
-        class_scores=class_scores,
-        sound_event_decoder=dummy_sound_event_decoder,
+        class_scores=class_scores.values,
+        targets=dummy_targets,
     )
     assert len(predicted_tags) == 0
