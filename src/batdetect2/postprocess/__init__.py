@@ -543,7 +543,9 @@ class Postprocessor(PostprocessorProtocol):
         ]
 
     def get_sound_event_predictions(
-        self, output: ModelOutput, clips: List[data.Clip]
+        self,
+        output: ModelOutput,
+        clips: List[data.Clip],
     ) -> List[List[BatDetect2Prediction]]:
         raw_predictions = self.get_raw_predictions(output, clips)
         return [
@@ -553,8 +555,7 @@ class Postprocessor(PostprocessorProtocol):
                     sound_event_prediction=convert_raw_prediction_to_sound_event_prediction(
                         raw,
                         recording=clip.recording,
-                        sound_event_decoder=self.targets.decode_class,
-                        generic_class_tags=self.targets.generic_class_tags,
+                        targets=self.targets,
                         classification_threshold=self.config.classification_threshold,
                     ),
                 )
@@ -590,8 +591,7 @@ class Postprocessor(PostprocessorProtocol):
             convert_raw_predictions_to_clip_prediction(
                 prediction,
                 clip,
-                sound_event_decoder=self.targets.decode_class,
-                generic_class_tags=self.targets.generic_class_tags,
+                targets=self.targets,
                 classification_threshold=self.config.classification_threshold,
             )
             for prediction, clip in zip(raw_predictions, clips)

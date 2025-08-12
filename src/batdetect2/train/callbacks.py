@@ -15,7 +15,10 @@ from batdetect2.evaluate.match import (
 )
 from batdetect2.evaluate.types import MatchEvaluation, MetricsProtocol
 from batdetect2.plotting.evaluation import plot_example_gallery
-from batdetect2.postprocess.types import BatDetect2Prediction
+from batdetect2.postprocess.types import (
+    BatDetect2Prediction,
+    PostprocessorProtocol,
+)
 from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.dataset import LabeledDataset, TrainExample
 from batdetect2.train.lightning import TrainingModule
@@ -114,33 +117,51 @@ class ValidationMetrics(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        dataset = self.get_dataset(trainer)
-
-        clip_annotations = [
-            _get_subclip(
-                dataset.get_clip_annotation(example_id),
-                start_time=start_time.item(),
-                end_time=end_time.item(),
+        self._matches.extend(
+            _get_batch_clips_and_predictions(
+                batch,
+                outputs,
+                dataset=self.get_dataset(trainer),
+                postprocessor=pl_module.postprocessor,
                 targets=pl_module.targets,
             )
-            for example_id, start_time, end_time in zip(
-                batch.idx,
-                batch.start_time,
-                batch.end_time,
-            )
-        ]
-
-        clips = [clip_annotation.clip for clip_annotation in clip_annotations]
-
-        raw_predictions = pl_module.postprocessor.get_sound_event_predictions(
-            outputs,
-            clips,
         )
 
+
+def _get_batch_clips_and_predictions(
+    batch: TrainExample,
+    outputs: ModelOutput,
+    dataset: LabeledDataset,
+    postprocessor: PostprocessorProtocol,
+    targets: TargetProtocol,
+) -> List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]]:
+    clip_annotations = [
+        _get_subclip(
+            dataset.get_clip_annotation(example_id),
+            start_time=start_time.item(),
+            end_time=end_time.item(),
+            targets=targets,
+        )
+        for example_id, start_time, end_time in zip(
+            batch.idx,
+            batch.start_time,
+            batch.end_time,
+        )
+    ]
+
+    clips = [clip_annotation.clip for clip_annotation in clip_annotations]
+
+    raw_predictions = postprocessor.get_sound_event_predictions(
+        outputs,
+        clips,
+    )
+
+    return [
+        (clip_annotation, clip_predictions)
         for clip_annotation, clip_predictions in zip(
             clip_annotations, raw_predictions
-        ):
-            self._matches.append((clip_annotation, clip_predictions))
+        )
+    ]
 
 
 def _match_all_collected_examples(

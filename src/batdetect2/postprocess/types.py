@@ -14,6 +14,7 @@ system that deal with model predictions.
 from dataclasses import dataclass
 from typing import List, NamedTuple, Optional, Protocol
 
+import numpy as np
 import xarray as xr
 from soundevent import data
 
@@ -72,8 +73,8 @@ class RawPrediction(NamedTuple):
 
     geometry: data.Geometry
     detection_score: float
-    class_scores: xr.DataArray
-    features: xr.DataArray
+    class_scores: np.ndarray
+    features: np.ndarray
 
 
 @dataclass
