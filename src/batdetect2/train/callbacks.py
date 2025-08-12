@@ -1,3 +1,4 @@
+import os
 from functools import partial
 from multiprocessing import Pool
 from typing import List, Optional, Tuple
@@ -171,7 +172,8 @@ def _match_all_collected_examples(
 ) -> List[MatchEvaluation]:
     logger.info("Matching all annotations and predictions")
 
-    with Pool() as p:
+    cpu_count = os.cpu_count() or 1
+    with Pool(processes=min(cpu_count, 4)) as p:
         matches = p.starmap(
             partial(
                 match_sound_events_and_raw_predictions,
