@@ -136,7 +136,7 @@ def build_train_loader(
     loader_conf = config.dataloaders.train
     logger.opt(lazy=True).debug(
         "Training data loader config: \n{config}",
-        config=loader_conf.to_yaml_string(exclude_none=True),
+        config=lambda: loader_conf.to_yaml_string(exclude_none=True),
     )
     num_workers = num_workers or loader_conf.num_workers
     return DataLoader(
