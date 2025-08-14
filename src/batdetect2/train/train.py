@@ -161,7 +161,7 @@ def build_val_loader(
     loader_conf = config.dataloaders.val
     logger.opt(lazy=True).debug(
         "Validation data loader config: \n{config}",
-        config=loader_conf.to_yaml_string(exclude_none=True),
+        config=lambda: loader_conf.to_yaml_string(exclude_none=True),
     )
     num_workers = num_workers or loader_conf.num_workers
     return DataLoader(
