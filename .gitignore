@@ -120,3 +120,6 @@ notebooks/lightning_logs
 
 # Intermediate artifacts
 example_data/preprocessed
+
+# Dev notebooks
+notebooks/tmp
