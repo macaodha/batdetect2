@@ -177,7 +177,10 @@ def _match_all_collected_examples(
         match
         for clip_annotation, raw_predictions in pre_matches
         for match in match_sound_events_and_raw_predictions(
-            clip_annotation, raw_predictions, targets=targets, config=config
+            clip_annotation,
+            raw_predictions,
+            targets=targets,
+            config=config,
         )
     ]
 

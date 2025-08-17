@@ -4,7 +4,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.evaluate.match import DEFAULT_MATCH_CONFIG, MatchConfig
+from batdetect2.evaluate.match import MatchConfig
 
 __all__ = [
     "EvaluationConfig",
@@ -13,9 +13,7 @@ __all__ = [
 
 
 class EvaluationConfig(BaseConfig):
-    match: MatchConfig = Field(
-        default_factory=lambda: DEFAULT_MATCH_CONFIG.model_copy(),
-    )
+    match: MatchConfig = Field(default_factory=MatchConfig)
 
 
 def load_evaluation_config(
