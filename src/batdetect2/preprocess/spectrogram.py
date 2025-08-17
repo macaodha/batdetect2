@@ -25,6 +25,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import DTypeLike
 from pydantic import Field
+from scipy import signal
 from soundevent import arrays, audio
 from soundevent.arrays import operations as ops
 
@@ -135,7 +136,7 @@ class PcenConfig(BaseConfig):
         Exponent (r). Controls the compression characteristic.
     """
 
-    time_constant: float = 0.4
+    time_constant: float = 0.01
     gain: float = 0.98
     bias: float = 2
     power: float = 0.5
@@ -513,6 +514,7 @@ def apply_pcen(
     time_constant: float = 0.4,
     gain: float = 0.98,
     bias: float = 2,
+    eps: float = 1e-6,
     power: float = 0.5,
 ) -> xr.DataArray:
     """Apply Per-Channel Energy Normalization (PCEN) to a spectrogram.
@@ -538,20 +540,45 @@ def apply_pcen(
     xr.DataArray
         PCEN-scaled spectrogram.
     """
+    spec = spec * (2**31)
     samplerate = 1 / spec.time.attrs["step"]
     hop_size = spec.attrs["hop_size"]
 
     hop_length = int(hop_size * samplerate)
-    t_frames = time_constant * samplerate / (float(hop_length) * 10)
+
+    t_frames = time_constant * samplerate / hop_length
 
     smoothing_constant = (np.sqrt(1 + 4 * t_frames**2) - 1) / (2 * t_frames**2)
-    return audio.pcen(
-        spec * (2**31),
-        smooth=smoothing_constant,
-        gain=gain,
-        bias=bias,
-        power=power,
-    ).astype(spec.dtype)
+
+    axis = spec.get_axis_num("time")
+
+    shape = tuple([1] * spec.ndim)
+    zi = np.empty(shape)
+    zi[:] = signal.lfilter_zi(
+        [smoothing_constant],
+        [1, smoothing_constant - 1],
+    )[:]
+
+    # Smooth the input array along the given axis
+    smoothed, _ = signal.lfilter(
+        [smoothing_constant],
+        [1, smoothing_constant - 1],
+        spec.data,
+        zi=zi,
+        axis=axis,  # type: ignore
+    )
+
+    smooth = np.exp(-gain * (np.log(eps) + np.log1p(smoothed / eps)))
+    data = (bias**power) * np.expm1(
+        power * np.log1p(spec.data * smooth / bias)
+    )
+
+    return xr.DataArray(
+        data,
+        dims=spec.dims,
+        coords=spec.coords,
+        attrs=spec.attrs,
+    )
 
 
 def scale_log(

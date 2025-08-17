@@ -109,7 +109,7 @@ class AudioConfig(BaseConfig):
 
     resample: Optional[ResampleConfig] = Field(default_factory=ResampleConfig)
     scale: bool = SCALE_RAW_AUDIO
-    center: bool = True
+    center: bool = False
     duration: Optional[float] = DEFAULT_DURATION
 
 
