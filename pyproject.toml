@@ -88,7 +88,9 @@ dev = [
   "python-lsp-server>=1.13.0",
 ]
 dvclive = ["dvclive>=3.48.2"]
-mlflow = ["mlflow>=3.1.1"]
+mlflow = [
+    "mlflow>=3.1.1",
+]
 
 [tool.ruff]
 line-length = 79

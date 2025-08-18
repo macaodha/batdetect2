@@ -232,7 +232,12 @@ def _get_image_plotter(logger: Logger):
 
         def plot_figure(name, figure, step):
             image = _convert_figure_to_image(figure)
-            return logger.experiment.log_image(image, key=name, step=step)
+            return logger.experiment.log_image(
+                run_id=logger.run_id,
+                image=image,
+                key=name,
+                step=step,
+            )
 
         return plot_figure
 
