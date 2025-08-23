@@ -6,10 +6,12 @@ import xarray as xr
 from soundevent import data
 
 from batdetect2.train import FullTrainingConfig, TrainingModule
+from batdetect2.train.train import build_training_module
 
 
 def build_default_module():
-    return TrainingModule(FullTrainingConfig())
+    config = FullTrainingConfig()
+    return build_training_module(config)
 
 
 def test_can_initialize_default_module():

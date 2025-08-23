@@ -13,10 +13,13 @@ from batdetect2.evaluate.metrics import (
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
+from batdetect2.models import build_model
+from batdetect2.postprocess import build_postprocessor
 from batdetect2.preprocess import (
     PreprocessorProtocol,
+    build_preprocessor,
 )
-from batdetect2.targets import TargetProtocol
+from batdetect2.targets import TargetProtocol, build_targets
 from batdetect2.train.augmentations import build_augmentations
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
@@ -28,6 +31,7 @@ from batdetect2.train.dataset import (
 )
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
+from batdetect2.train.losses import build_loss
 
 __all__ = [
     "build_train_dataset",
@@ -47,27 +51,27 @@ def train(
     train_workers: Optional[int] = None,
     val_workers: Optional[int] = None,
 ):
-    conf = config or FullTrainingConfig()
+    config = config or FullTrainingConfig()
 
     if model_path is not None:
         logger.debug("Loading model from: {path}", path=model_path)
         module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
     else:
-        module = TrainingModule(conf)
+        module = build_training_module(config)
 
-    trainer = build_trainer(conf, targets=module.targets)
+    trainer = build_trainer(config, targets=module.targets)
 
     train_dataloader = build_train_loader(
         train_examples,
         preprocessor=module.preprocessor,
-        config=conf.train,
+        config=config.train,
         num_workers=train_workers,
     )
 
     val_dataloader = (
         build_val_loader(
             val_examples,
-            config=conf.train,
+            config=config.train,
             num_workers=val_workers,
         )
         if val_examples is not None
@@ -81,6 +85,31 @@ def train(
         val_dataloaders=val_dataloader,
     )
     logger.info("Training complete.")
+
+
+def build_training_module(config: FullTrainingConfig) -> TrainingModule:
+    targets = build_targets(config=config.targets)
+    loss = build_loss(config=config.train.loss)
+    preprocessor = build_preprocessor(config.preprocess)
+    postprocessor = build_postprocessor(
+        targets,
+        config=config.postprocess,
+        max_freq=preprocessor.max_freq,
+        min_freq=preprocessor.min_freq,
+    )
+    model = build_model(
+        num_classes=len(targets.class_names),
+        config=config.model,
+    )
+    return TrainingModule(
+        detector=model,
+        loss=loss,
+        preprocessor=preprocessor,
+        postprocessor=postprocessor,
+        targets=targets,
+        learning_rate=config.train.learning_rate,
+        t_max=config.train.t_max,
+    )
 
 
 def build_trainer_callbacks(
@@ -114,9 +143,13 @@ def build_trainer(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
+    train_logger = build_logger(conf.train.logger)
+
+    train_logger.log_hyperparams(conf.model_dump(mode="json"))
+
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
-        logger=build_logger(conf.train.logger),
+        logger=train_logger,
         callbacks=build_trainer_callbacks(targets, config=conf.evaluation),
     )
 
