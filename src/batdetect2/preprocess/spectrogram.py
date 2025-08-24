@@ -31,7 +31,7 @@ from soundevent.arrays import operations as ops
 
 from batdetect2.configs import BaseConfig
 from batdetect2.preprocess.audio import convert_to_xr
-from batdetect2.preprocess.types import SpectrogramBuilder
+from batdetect2.typing.preprocess import SpectrogramBuilder
 
 __all__ = [
     "STFTConfig",
@@ -540,7 +540,6 @@ def apply_pcen(
     xr.DataArray
         PCEN-scaled spectrogram.
     """
-    spec = spec * (2**31)
     samplerate = 1 / spec.time.attrs["step"]
     hop_size = spec.attrs["hop_size"]
 
@@ -559,22 +558,24 @@ def apply_pcen(
         [1, smoothing_constant - 1],
     )[:]
 
+    spec_data = spec.data * (2**31)
+
     # Smooth the input array along the given axis
     smoothed, _ = signal.lfilter(
         [smoothing_constant],
         [1, smoothing_constant - 1],
-        spec.data,
+        spec_data,
         zi=zi,
         axis=axis,  # type: ignore
     )
 
     smooth = np.exp(-gain * (np.log(eps) + np.log1p(smoothed / eps)))
     data = (bias**power) * np.expm1(
-        power * np.log1p(spec.data * smooth / bias)
+        power * np.log1p(spec_data * smooth / bias)
     )
 
     return xr.DataArray(
-        data,
+        data.astype(spec.dtype),
         dims=spec.dims,
         coords=spec.coords,
         attrs=spec.attrs,

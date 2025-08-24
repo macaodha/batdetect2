@@ -4,13 +4,15 @@ import torch
 import xarray as xr
 from soundevent import data
 
-from batdetect2.models import ModelOutput
+from batdetect2.typing.models import ModelOutput
 
 __all__ = [
-    "Heatmaps",
-    "ClipLabeller",
     "Augmentation",
+    "ClipLabeller",
+    "ClipperProtocol",
+    "Heatmaps",
     "LossProtocol",
+    "Losses",
     "TrainExample",
 ]
 

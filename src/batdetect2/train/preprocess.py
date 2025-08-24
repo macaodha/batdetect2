@@ -34,10 +34,9 @@ from tqdm.auto import tqdm
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.data.datasets import Dataset
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import TargetConfig, build_targets
 from batdetect2.train.labels import LabelConfig, build_clip_labeler
-from batdetect2.train.types import ClipLabeller
+from batdetect2.typing import ClipLabeller, PreprocessorProtocol
 
 __all__ = [
     "preprocess_annotations",

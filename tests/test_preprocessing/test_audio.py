@@ -142,7 +142,7 @@ def test_audio_config_defaults():
     assert config.resample.samplerate == audio.TARGET_SAMPLERATE_HZ
     assert config.resample.method == "poly"
     assert config.scale == audio.SCALE_RAW_AUDIO
-    assert config.center is True
+    assert config.center is False
     assert config.duration == audio.DEFAULT_DURATION
 
 

@@ -34,10 +34,10 @@ from scipy.ndimage import gaussian_filter
 from soundevent import arrays, data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.targets.types import TargetProtocol
-from batdetect2.train.types import (
+from batdetect2.typing import (
     ClipLabeller,
     Heatmaps,
+    TargetProtocol,
 )
 
 __all__ = [

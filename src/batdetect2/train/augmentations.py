@@ -33,8 +33,7 @@ from pydantic import Field
 from soundevent import arrays, data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.preprocess import PreprocessorProtocol
-from batdetect2.train.types import Augmentation
+from batdetect2.typing import Augmentation, PreprocessorProtocol
 from batdetect2.utils.arrays import adjust_width
 
 __all__ = [

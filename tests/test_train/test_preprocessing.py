@@ -4,12 +4,12 @@ import xarray as xr
 from soundevent import data
 from soundevent.terms import get_term
 
-from batdetect2.models.types import ModelOutput
 from batdetect2.postprocess import build_postprocessor, load_postprocess_config
 from batdetect2.preprocess import build_preprocessor, load_preprocessing_config
 from batdetect2.targets import build_targets, load_target_config
 from batdetect2.train.labels import build_clip_labeler, load_label_config
 from batdetect2.train.preprocess import generate_train_example
+from batdetect2.typing import ModelOutput
 
 
 @pytest.fixture

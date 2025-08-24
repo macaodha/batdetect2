@@ -32,7 +32,7 @@ from soundevent.arrays import operations as ops
 from soundfile import LibsndfileError
 
 from batdetect2.configs import BaseConfig
-from batdetect2.preprocess.types import AudioLoader
+from batdetect2.typing.preprocess import AudioLoader
 
 __all__ = [
     "ResampleConfig",

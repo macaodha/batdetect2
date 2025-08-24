@@ -7,7 +7,7 @@ from batdetect2.data.summary import (
     extract_recordings_df,
     extract_sound_events_df,
 )
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.typing.targets import TargetProtocol
 
 
 def split_dataset_by_recordings(

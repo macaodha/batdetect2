@@ -6,7 +6,7 @@ from soundevent import data
 
 from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
 from batdetect2.targets.rois import AnchorBBoxMapperConfig
-from batdetect2.targets.terms import TagInfo, TermRegistry
+from batdetect2.targets.terms import TagInfo
 from batdetect2.train.labels import generate_heatmaps
 
 recording = data.Recording(

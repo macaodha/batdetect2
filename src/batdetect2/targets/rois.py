@@ -28,8 +28,8 @@ from soundevent import data
 
 from batdetect2.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.types import Position, Size
+from batdetect2.typing.preprocess import PreprocessorProtocol
+from batdetect2.typing.targets import Position, Size
 
 __all__ = [
     "Anchor",

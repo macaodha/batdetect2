@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from batdetect2 import plotting
-from batdetect2.evaluate.types import MatchEvaluation
-from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.typing.evaluate import MatchEvaluation
+from batdetect2.typing.preprocess import PreprocessorProtocol
 
 
 @dataclass

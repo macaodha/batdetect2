@@ -8,18 +8,25 @@ classifying them.
 
 The primary components are:
 - `Detector`: The `torch.nn.Module` subclass representing the complete model.
-- `build_detector`: A factory function to conveniently construct a standard
-  `Detector` instance given a backbone and the number of target classes.
 
 This module focuses purely on the neural network architecture definition. The
 logic for preprocessing inputs and postprocessing/decoding outputs resides in
 the `batdetect2.preprocess` and `batdetect2.postprocess` packages, respectively.
 """
 
-import torch
+from typing import Optional
 
+import torch
+from loguru import logger
+
+from batdetect2.models.backbones import BackboneConfig, build_backbone
 from batdetect2.models.heads import BBoxHead, ClassifierHead
-from batdetect2.models.types import BackboneModel, DetectionModel, ModelOutput
+from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
+
+__all__ = [
+    "Detector",
+    "build_detector",
+]
 
 
 class Detector(DetectionModel):
@@ -119,36 +126,41 @@ class Detector(DetectionModel):
         )
 
 
-def build_detector(num_classes: int, backbone: BackboneModel) -> Detector:
-    """Factory function to build a standard Detector model instance.
-
-    Creates the standard prediction heads (`ClassifierHead`, `DetectorHead`,
-    `BBoxHead`) configured appropriately based on the output channels of the
-    provided `backbone` and the specified `num_classes`. It then assembles
-    these components into a `Detector` model.
+def build_detector(
+    num_classes: int, config: Optional[BackboneConfig] = None
+) -> DetectionModel:
+    """Build the complete BatDetect2 detection model.
 
     Parameters
     ----------
     num_classes : int
-        The number of specific target classes for the classification head
-        (excluding any implicit background class). Must be positive.
-    backbone : BackboneModel
-        An initialized feature extraction backbone module instance. The number
-        of output channels from this backbone (`backbone.out_channels`) is used
-        to configure the input channels for the prediction heads.
+        The number of specific target classes the model should predict
+        (required for the `ClassifierHead`). Must be positive.
+    config : BackboneConfig, optional
+        Configuration object specifying the architecture of the backbone
+        (encoder, bottleneck, decoder). If None, default configurations defined
+        within the respective builder functions (`build_encoder`, etc.) will be
+        used to construct a default backbone architecture.
 
     Returns
     -------
-    Detector
+    DetectionModel
         An initialized `Detector` model instance.
 
     Raises
     ------
     ValueError
-        If `num_classes` is not positive.
-    AttributeError
-        If `backbone` does not have the required `out_channels` attribute.
+        If `num_classes` is not positive, or if errors occur during the
+        construction of the backbone or detector components (e.g., incompatible
+        configurations, invalid parameters).
     """
+    config = config or BackboneConfig()
+
+    logger.opt(lazy=True).debug(
+        "Building model with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
+    backbone = build_backbone(config=config)
     classifier_head = ClassifierHead(
         num_classes=num_classes,
         in_channels=backbone.out_channels,

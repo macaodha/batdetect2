@@ -4,15 +4,15 @@ from typing import List, Literal, Optional, Tuple
 import numpy as np
 from soundevent import data
 from soundevent.evaluation import compute_affinity
-from soundevent.evaluation import (
-    match_geometries as optimal_match,
-)
+from soundevent.evaluation import match_geometries as optimal_match
 from soundevent.geometry import compute_bounds
 
 from batdetect2.configs import BaseConfig
-from batdetect2.evaluate.types import MatchEvaluation
-from batdetect2.postprocess.types import BatDetect2Prediction
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.typing import (
+    BatDetect2Prediction,
+    MatchEvaluation,
+    TargetProtocol,
+)
 
 MatchingStrategy = Literal["greedy", "optimal"]
 """The type of matching algorithm to use: 'greedy' or 'optimal'."""

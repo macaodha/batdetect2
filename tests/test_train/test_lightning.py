@@ -28,8 +28,8 @@ def test_can_save_checkpoint(tmp_path: Path, clip: data.Clip):
 
     recovered = TrainingModule.load_from_checkpoint(path)
 
-    spec1 = module.preprocessor.preprocess_clip(clip)
-    spec2 = recovered.preprocessor.preprocess_clip(clip)
+    spec1 = module.model.preprocessor.preprocess_clip(clip)
+    spec2 = recovered.model.preprocessor.preprocess_clip(clip)
 
     xr.testing.assert_equal(spec1, spec2)
 

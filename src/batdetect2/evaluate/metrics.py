@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
 
-from batdetect2.evaluate.types import MatchEvaluation, MetricsProtocol
+from batdetect2.typing import MatchEvaluation, MetricsProtocol
 
 __all__ = ["DetectionAveragePrecision"]
 

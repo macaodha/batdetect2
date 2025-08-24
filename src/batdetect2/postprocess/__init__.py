@@ -36,7 +36,6 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.models.types import ModelOutput
 from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
     convert_raw_prediction_to_sound_event_prediction,
@@ -62,13 +61,14 @@ from batdetect2.postprocess.remapping import (
     features_to_xarray,
     sizes_to_xarray,
 )
-from batdetect2.postprocess.types import (
+from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
+from batdetect2.typing.models import ModelOutput
+from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
     PostprocessorProtocol,
     RawPrediction,
 )
-from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "DEFAULT_CLASSIFICATION_THRESHOLD",
@@ -79,8 +79,6 @@ __all__ = [
     "NMS_KERNEL_SIZE",
     "PostprocessConfig",
     "Postprocessor",
-    "PostprocessorProtocol",
-    "RawPrediction",
     "TOP_K_PER_SEC",
     "build_postprocessor",
     "classification_to_xarray",

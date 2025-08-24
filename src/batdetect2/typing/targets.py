@@ -12,6 +12,7 @@ that components responsible for these tasks can be interacted with consistently
 throughout BatDetect2.
 """
 
+from collections.abc import Callable
 from typing import List, Optional, Protocol
 
 import numpy as np
@@ -19,9 +20,39 @@ from soundevent import data
 
 __all__ = [
     "TargetProtocol",
+    "SoundEventEncoder",
+    "SoundEventDecoder",
+    "SoundEventFilter",
     "Position",
     "Size",
 ]
+
+SoundEventEncoder = Callable[[data.SoundEventAnnotation], Optional[str]]
+"""Type alias for a sound event class encoder function.
+
+An encoder function takes a sound event annotation and returns the string name
+of the target class it belongs to, based on a predefined set of rules.
+If the annotation does not match any defined target class according to the
+rules, the function returns None.
+"""
+
+
+SoundEventDecoder = Callable[[str], List[data.Tag]]
+"""Type alias for a sound event class decoder function.
+
+A decoder function takes a class name string (as predicted by the model or
+assigned during encoding) and returns a list of `soundevent.data.Tag` objects
+that represent that class according to the configuration. This is used to
+translate model outputs back into meaningful annotations.
+"""
+
+SoundEventFilter = Callable[[data.SoundEventAnnotation], bool]
+"""Type alias for a filter function.
+
+A filter function accepts a soundevent.data.SoundEventAnnotation object
+and returns True if the annotation should be kept based on the filter's
+criteria, or False if it should be discarded.
+"""
 
 Position = tuple[float, float]
 """A tuple representing (time, frequency) coordinates."""

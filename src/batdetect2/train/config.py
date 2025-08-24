@@ -4,11 +4,8 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.evaluate.config import EvaluationConfig
-from batdetect2.models import BackboneConfig
-from batdetect2.postprocess import PostprocessConfig
-from batdetect2.preprocess import PreprocessingConfig
-from batdetect2.targets import TargetConfig
+from batdetect2.evaluate import EvaluationConfig
+from batdetect2.models import ModelConfig
 from batdetect2.train.augmentations import (
     DEFAULT_AUGMENTATION_CONFIG,
     AugmentationsConfig,
@@ -85,16 +82,10 @@ def load_train_config(
     return load_config(path, schema=TrainingConfig, field=field)
 
 
-class FullTrainingConfig(BaseConfig):
+class FullTrainingConfig(ModelConfig):
     """Full training configuration."""
 
     train: TrainingConfig = Field(default_factory=TrainingConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
-    model: BackboneConfig = Field(default_factory=BackboneConfig)
-    preprocess: PreprocessingConfig = Field(
-        default_factory=PreprocessingConfig
-    )
-    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
 
 

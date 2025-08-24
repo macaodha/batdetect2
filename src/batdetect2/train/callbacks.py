@@ -14,16 +14,18 @@ from batdetect2.evaluate.match import (
     MatchConfig,
     match_sound_events_and_raw_predictions,
 )
-from batdetect2.evaluate.types import MatchEvaluation, MetricsProtocol
 from batdetect2.plotting.evaluation import plot_example_gallery
-from batdetect2.postprocess.types import (
-    BatDetect2Prediction,
-    PostprocessorProtocol,
-)
-from batdetect2.targets.types import TargetProtocol
-from batdetect2.train.dataset import LabeledDataset, TrainExample
+from batdetect2.train.dataset import LabeledDataset
 from batdetect2.train.lightning import TrainingModule
-from batdetect2.train.types import ModelOutput
+from batdetect2.typing import (
+    BatDetect2Prediction,
+    MatchEvaluation,
+    MetricsProtocol,
+    ModelOutput,
+    PostprocessorProtocol,
+    TargetProtocol,
+    TrainExample,
+)
 
 
 class ValidationMetrics(Callback):

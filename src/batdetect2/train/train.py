@@ -14,12 +14,6 @@ from batdetect2.evaluate.metrics import (
     DetectionAveragePrecision,
 )
 from batdetect2.models import build_model
-from batdetect2.postprocess import build_postprocessor
-from batdetect2.preprocess import (
-    PreprocessorProtocol,
-    build_preprocessor,
-)
-from batdetect2.targets import TargetProtocol, build_targets
 from batdetect2.train.augmentations import build_augmentations
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
@@ -32,6 +26,7 @@ from batdetect2.train.dataset import (
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
 from batdetect2.train.losses import build_loss
+from batdetect2.typing import PreprocessorProtocol, TargetProtocol
 
 __all__ = [
     "build_train_dataset",
@@ -88,25 +83,11 @@ def train(
 
 
 def build_training_module(config: FullTrainingConfig) -> TrainingModule:
-    targets = build_targets(config=config.targets)
+    model = build_model(config=config)
     loss = build_loss(config=config.train.loss)
-    preprocessor = build_preprocessor(config.preprocess)
-    postprocessor = build_postprocessor(
-        targets,
-        config=config.postprocess,
-        max_freq=preprocessor.max_freq,
-        min_freq=preprocessor.min_freq,
-    )
-    model = build_model(
-        num_classes=len(targets.class_names),
-        config=config.model,
-    )
     return TrainingModule(
-        detector=model,
+        model=model,
         loss=loss,
-        preprocessor=preprocessor,
-        postprocessor=postprocessor,
-        targets=targets,
         learning_rate=config.train.learning_rate,
         t_max=config.train.t_max,
     )

@@ -80,7 +80,7 @@ from batdetect2.targets.transform import (
     load_transformation_from_config,
     register_derivation,
 )
-from batdetect2.targets.types import Position, Size, TargetProtocol
+from batdetect2.typing.targets import Position, Size, TargetProtocol
 
 __all__ = [
     "ClassesConfig",
@@ -99,7 +99,6 @@ __all__ = [
     "TagInfo",
     "TargetClass",
     "TargetConfig",
-    "TargetProtocol",
     "Targets",
     "TermInfo",
     "TransformConfig",

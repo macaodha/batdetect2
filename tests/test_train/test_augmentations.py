@@ -5,14 +5,13 @@ import pytest
 import xarray as xr
 from soundevent import arrays, data
 
-from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.train.augmentations import (
     add_echo,
     mix_examples,
 )
 from batdetect2.train.clips import select_subclip
 from batdetect2.train.preprocess import generate_train_example
-from batdetect2.train.types import ClipLabeller
+from batdetect2.typing import ClipLabeller, PreprocessorProtocol
 
 
 def test_mix_examples(

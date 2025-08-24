@@ -19,7 +19,6 @@ from abc import ABC, abstractmethod
 from typing import NamedTuple
 
 import torch
-import torch.nn as nn
 
 __all__ = [
     "ModelOutput",
@@ -65,7 +64,7 @@ class ModelOutput(NamedTuple):
     features: torch.Tensor
 
 
-class BackboneModel(ABC, nn.Module):
+class BackboneModel(ABC, torch.nn.Module):
     """Abstract Base Class for generic feature extraction backbone models.
 
     Defines the minimal interface for a feature extractor network within a
@@ -191,7 +190,7 @@ class EncoderDecoderModel(BackboneModel):
         ...
 
 
-class DetectionModel(ABC, nn.Module):
+class DetectionModel(ABC, torch.nn.Module):
     """Abstract Base Class for complete BatDetect2 detection models.
 
     Defines the interface for the overall model that takes an input spectrogram

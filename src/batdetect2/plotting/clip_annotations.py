@@ -4,7 +4,7 @@ from matplotlib.axes import Axes
 from soundevent import data, plot
 
 from batdetect2.plotting.clips import plot_clip
-from batdetect2.preprocess import PreprocessorProtocol
+from batdetect2.typing.preprocess import PreprocessorProtocol
 
 __all__ = [
     "plot_clip_annotation",

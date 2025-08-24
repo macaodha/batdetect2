@@ -6,7 +6,7 @@ from loguru import logger
 from soundevent import arrays
 
 from batdetect2.configs import BaseConfig
-from batdetect2.train.types import ClipperProtocol
+from batdetect2.typing import ClipperProtocol
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.513
 DEFAULT_MAX_EMPTY_CLIP = 0.1

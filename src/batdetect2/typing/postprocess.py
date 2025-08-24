@@ -18,8 +18,8 @@ import numpy as np
 import xarray as xr
 from soundevent import data
 
-from batdetect2.models.types import ModelOutput
-from batdetect2.targets.types import Position, Size
+from batdetect2.typing.models import ModelOutput
+from batdetect2.typing.targets import Position, Size
 
 __all__ = [
     "RawPrediction",

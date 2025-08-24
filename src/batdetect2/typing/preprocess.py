@@ -16,6 +16,12 @@ import numpy as np
 import xarray as xr
 from soundevent import data
 
+__all__ = [
+    "AudioLoader",
+    "SpectrogramBuilder",
+    "PreprocessorProtocol",
+]
+
 
 class AudioLoader(Protocol):
     """Defines the interface for an audio loading and processing component.

@@ -6,13 +6,13 @@ from soundevent import data, plot
 from soundevent.geometry import compute_bounds
 from soundevent.plot.tags import TagColorMapper
 
-from batdetect2.evaluate.types import MatchEvaluation
 from batdetect2.plotting.clip_predictions import plot_prediction
 from batdetect2.plotting.clips import plot_clip
 from batdetect2.preprocess import (
     PreprocessorProtocol,
     get_default_preprocessor,
 )
+from batdetect2.typing.evaluate import MatchEvaluation
 
 __all__ = [
     "plot_matches",

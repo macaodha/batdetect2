@@ -12,7 +12,6 @@ from soundevent import data, terms
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
-from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import (
     TargetConfig,
     TermRegistry,
@@ -22,9 +21,12 @@ from batdetect2.targets import (
 from batdetect2.targets.classes import ClassesConfig, TargetClass
 from batdetect2.targets.filtering import FilterConfig, FilterRule
 from batdetect2.targets.terms import TagInfo
-from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.labels import build_clip_labeler
-from batdetect2.train.types import ClipLabeller
+from batdetect2.typing import (
+    ClipLabeller,
+    PreprocessorProtocol,
+    TargetProtocol,
+)
 
 
 @pytest.fixture

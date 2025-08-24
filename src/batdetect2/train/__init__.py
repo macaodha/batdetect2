@@ -24,7 +24,6 @@ from batdetect2.train.config import (
 from batdetect2.train.dataset import (
     LabeledDataset,
     RandomExampleSource,
-    TrainExample,
     list_preprocessed_files,
 )
 from batdetect2.train.labels import build_clip_labeler, load_label_config
@@ -64,7 +63,6 @@ __all__ = [
     "RandomExampleSource",
     "SizeLossConfig",
     "TimeMaskAugmentationConfig",
-    "TrainExample",
     "TrainingConfig",
     "TrainingModule",
     "VolumeAugmentationConfig",

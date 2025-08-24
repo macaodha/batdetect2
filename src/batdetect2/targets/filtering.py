@@ -1,6 +1,6 @@
 import logging
 from functools import partial
-from typing import Callable, List, Literal, Optional, Set
+from typing import List, Literal, Optional, Set
 
 from pydantic import Field
 from soundevent import data
@@ -12,25 +12,17 @@ from batdetect2.targets.terms import (
     default_term_registry,
     get_tag_from_info,
 )
+from batdetect2.typing.targets import SoundEventFilter
 
 __all__ = [
     "FilterConfig",
     "FilterRule",
-    "SoundEventFilter",
     "build_sound_event_filter",
     "build_filter_from_rule",
     "load_filter_config",
     "load_filter_from_config",
 ]
 
-
-SoundEventFilter = Callable[[data.SoundEventAnnotation], bool]
-"""Type alias for a filter function.
-
-A filter function accepts a soundevent.data.SoundEventAnnotation object
-and returns True if the annotation should be kept based on the filter's
-criteria, or False if it should be discarded.
-"""
 
 logger = logging.getLogger(__name__)
 

@@ -108,7 +108,7 @@ def test_spec_size_config_defaults():
 
 def test_pcen_config_defaults():
     config = PcenConfig()
-    assert config.time_constant == 0.4
+    assert config.time_constant == 0.01
     assert config.gain == 0.98
     assert config.bias == 2
     assert config.power == 0.5
@@ -202,13 +202,6 @@ def test_crop_spectrogram_full_range(sample_spec: xr.DataArray):
 
 
 def test_apply_pcen(sample_spec: xr.DataArray):
-    if "original_samplerate" not in sample_spec.attrs:
-        sample_spec.attrs["original_samplerate"] = SAMPLERATE
-    if "nfft" not in sample_spec.attrs:
-        sample_spec.attrs["nfft"] = int(0.002 * SAMPLERATE)
-    if "noverlap" not in sample_spec.attrs:
-        sample_spec.attrs["noverlap"] = int(0.5 * sample_spec.attrs["nfft"])
-
     pcen_config = PcenConfig()
     pcen_spec = apply_pcen(
         sample_spec,

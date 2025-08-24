@@ -8,7 +8,7 @@ from soundevent import data
 from torch.utils.data import Dataset
 
 from batdetect2.train.augmentations import Augmentation
-from batdetect2.train.types import ClipperProtocol, TrainExample
+from batdetect2.typing import ClipperProtocol, TrainExample
 from batdetect2.utils.tensors import adjust_width
 
 __all__ = [

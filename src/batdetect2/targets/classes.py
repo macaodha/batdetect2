@@ -14,6 +14,7 @@ from batdetect2.targets.terms import (
     default_term_registry,
     get_tag_from_info,
 )
+from batdetect2.typing.targets import SoundEventDecoder, SoundEventEncoder
 
 __all__ = [
     "DEFAULT_SPECIES_LIST",
@@ -26,25 +27,6 @@ __all__ = [
     "load_encoder_from_config",
 ]
 
-
-SoundEventEncoder = Callable[[data.SoundEventAnnotation], Optional[str]]
-"""Type alias for a sound event class encoder function.
-
-An encoder function takes a sound event annotation and returns the string name
-of the target class it belongs to, based on a predefined set of rules.
-If the annotation does not match any defined target class according to the
-rules, the function returns None.
-"""
-
-
-SoundEventDecoder = Callable[[str], List[data.Tag]]
-"""Type alias for a sound event class decoder function.
-
-A decoder function takes a class name string (as predicted by the model or
-assigned during encoding) and returns a list of `soundevent.data.Tag` objects
-that represent that class according to the configuration. This is used to
-translate model outputs back into meaningful annotations.
-"""
 
 DEFAULT_SPECIES_LIST = [
     "Barbastella barbastellus",

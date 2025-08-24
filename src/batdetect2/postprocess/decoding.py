@@ -32,8 +32,8 @@ import numpy as np
 import xarray as xr
 from soundevent import data
 
-from batdetect2.postprocess.types import GeometryDecoder, RawPrediction
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.typing.postprocess import GeometryDecoder, RawPrediction
+from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "convert_xr_dataset_to_raw_prediction",

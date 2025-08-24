@@ -57,7 +57,7 @@ from batdetect2.preprocess.spectrogram import (
     build_spectrogram_builder,
     get_spectrogram_resolution,
 )
-from batdetect2.preprocess.types import (
+from batdetect2.typing.preprocess import (
     AudioLoader,
     PreprocessorProtocol,
     SpectrogramBuilder,
@@ -65,7 +65,6 @@ from batdetect2.preprocess.types import (
 
 __all__ = [
     "AudioConfig",
-    "AudioLoader",
     "ConfigurableSpectrogramBuilder",
     "DEFAULT_DURATION",
     "FrequencyConfig",
@@ -77,7 +76,6 @@ __all__ = [
     "SCALE_RAW_AUDIO",
     "STFTConfig",
     "SpecSizeConfig",
-    "SpectrogramBuilder",
     "SpectrogramConfig",
     "StandardPreprocessor",
     "TARGET_SAMPLERATE_HZ",
