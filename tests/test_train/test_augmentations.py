@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
+import torch
 import xarray as xr
 from soundevent import arrays, data
 
@@ -42,12 +43,17 @@ def test_mix_examples(
         labeller=sample_labeller,
     )
 
-    mixed = mix_examples(example1, example2, preprocessor=sample_preprocessor)
+    mixed = mix_examples(
+        example1,
+        example2,
+        weight=0.3,
+        preprocessor=sample_preprocessor,
+    )
 
-    assert mixed["spectrogram"].shape == example1["spectrogram"].shape
-    assert mixed["detection"].shape == example1["detection"].shape
-    assert mixed["size"].shape == example1["size"].shape
-    assert mixed["class"].shape == example1["class"].shape
+    assert mixed.spectrogram.shape == example1.spectrogram.shape
+    assert mixed.detection_heatmap.shape == example1.detection_heatmap.shape
+    assert mixed.size_heatmap.shape == example1.size_heatmap.shape
+    assert mixed.class_heatmap.shape == example1.class_heatmap.shape
 
 
 @pytest.mark.parametrize("duration1", [0.1, 0.4, 0.7])
@@ -82,13 +88,17 @@ def test_mix_examples_of_different_durations(
         labeller=sample_labeller,
     )
 
-    mixed = mix_examples(example1, example2, preprocessor=sample_preprocessor)
+    mixed = mix_examples(
+        example1,
+        example2,
+        weight=0.3,
+        preprocessor=sample_preprocessor,
+    )
 
-    # Check the spectrogram has the expected duration
-    step = arrays.get_dim_step(mixed["spectrogram"], "time")
-    start, stop = arrays.get_dim_range(mixed["spectrogram"], "time")
-    assert start == 0
-    assert np.isclose(stop + step, duration1, atol=2 * step)
+    assert mixed.spectrogram.shape == example1.spectrogram.shape
+    assert mixed.detection_heatmap.shape == example1.detection_heatmap.shape
+    assert mixed.size_heatmap.shape == example1.size_heatmap.shape
+    assert mixed.class_heatmap.shape == example1.class_heatmap.shape
 
 
 def test_add_echo(
@@ -107,12 +117,32 @@ def test_add_echo(
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
-    with_echo = add_echo(original, preprocessor=sample_preprocessor)
+    with_echo = add_echo(
+        original,
+        preprocessor=sample_preprocessor,
+        delay=0.1,
+        weight=0.3,
+    )
 
-    assert with_echo["spectrogram"].shape == original["spectrogram"].shape
-    xr.testing.assert_identical(with_echo["size"], original["size"])
-    xr.testing.assert_identical(with_echo["class"], original["class"])
-    xr.testing.assert_identical(with_echo["detection"], original["detection"])
+    assert with_echo.spectrogram.shape == original.spectrogram.shape
+    torch.testing.assert_close(
+        with_echo.size_heatmap,
+        original.size_heatmap,
+        atol=0,
+        rtol=0,
+    )
+    torch.testing.assert_close(
+        with_echo.class_heatmap,
+        original.class_heatmap,
+        atol=0,
+        rtol=0,
+    )
+    torch.testing.assert_close(
+        with_echo.detection_heatmap,
+        original.detection_heatmap,
+        atol=0,
+        rtol=0,
+    )
 
 
 def test_selected_random_subclip_has_the_correct_width(

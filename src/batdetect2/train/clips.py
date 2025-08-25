@@ -1,12 +1,12 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
-import xarray as xr
 from loguru import logger
-from soundevent import arrays
 
 from batdetect2.configs import BaseConfig
 from batdetect2.typing import ClipperProtocol
+from batdetect2.typing.train import PreprocessedExample
+from batdetect2.utils.arrays import adjust_width
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.513
 DEFAULT_MAX_EMPTY_CLIP = 0.1
@@ -32,40 +32,23 @@ class Clipper(ClipperProtocol):
         self.max_empty = max_empty
 
     def extract_clip(
-        self, example: xr.Dataset
-    ) -> Tuple[xr.Dataset, float, float]:
-        step = arrays.get_dim_step(
-            example.spectrogram,
-            dim=arrays.Dimensions.time.value,
-        )
-        duration = (
-            arrays.get_dim_width(
-                example.spectrogram,
-                dim=arrays.Dimensions.time.value,
-            )
-            + step
-        )
-
+        self, example: PreprocessedExample
+    ) -> Tuple[PreprocessedExample, float, float]:
         start_time = 0
+        duration = example.audio.shape[-1] / self.samplerate
+
         if self.random:
             start_time = np.random.uniform(
                 -self.max_empty,
                 duration - self.duration + self.max_empty,
             )
 
-        subclip = select_subclip(
-            example,
-            start=start_time,
-            span=self.duration,
-            dim="time",
-        )
-
         return (
             select_subclip(
-                subclip,
+                example,
                 start=start_time,
-                span=self.duration,
-                dim="audio_time",
+                duration=self.duration,
+                samplerate=self.samplerate,
             ),
             start_time,
             start_time + self.duration,
@@ -73,6 +56,7 @@ class Clipper(ClipperProtocol):
 
 
 def build_clipper(
+    samplerate: int,
     config: Optional[ClipingConfig] = None,
     random: Optional[bool] = None,
 ) -> ClipperProtocol:
@@ -82,6 +66,7 @@ def build_clipper(
         lambda: config.to_yaml_string(),
     )
     return Clipper(
+        samplerate=samplerate,
         duration=config.duration,
         max_empty=config.max_empty,
         random=config.random if random else False,
@@ -89,106 +74,43 @@ def build_clipper(
 
 
 def select_subclip(
-    dataset: xr.Dataset,
-    span: float,
+    example: PreprocessedExample,
     start: float,
-    fill_value: float = 0,
-    dim: str = "time",
-) -> xr.Dataset:
-    width = _compute_expected_width(
-        dataset,  # type: ignore
-        span,
-        dim=dim,
-    )
-
-    coord = dataset.coords[dim]
-
-    if len(coord) == width:
-        return dataset
-
-    new_coords, start_pad, end_pad, dim_slice = _extract_coordinate(
-        coord, start, span
-    )
-
-    data_vars = {}
-    for name, data_array in dataset.data_vars.items():
-        if dim not in data_array.dims:
-            data_vars[name] = data_array
-            continue
-
-        if width == data_array.sizes[dim]:
-            data_vars[name] = data_array
-            continue
-
-        sliced = data_array.isel({dim: dim_slice}).data
-
-        if start_pad > 0 or end_pad > 0:
-            padding = [
-                [0, 0] if other_dim != dim else [start_pad, end_pad]
-                for other_dim in data_array.dims
-            ]
-            sliced = np.pad(sliced, padding, constant_values=fill_value)
-
-        data_vars[name] = xr.DataArray(
-            data=sliced,
-            dims=data_array.dims,
-            coords={**data_array.coords, dim: new_coords},
-            attrs=data_array.attrs,
-        )
-
-    return xr.Dataset(data_vars=data_vars, attrs=dataset.attrs)
-
-
-def _extract_coordinate(
-    coord: xr.DataArray,
-    start: float,
-    span: float,
-) -> Tuple[xr.Variable, int, int, slice]:
-    step = arrays.get_dim_step(coord, str(coord.name))
-
-    current_width = len(coord)
-    expected_width = int(np.floor(span / step))
-
-    coord_start = float(coord[0])
-    offset = start - coord_start
-
-    start_index = int(np.floor(offset / step))
-    end_index = start_index + expected_width
-
-    if start_index > current_width:
-        raise ValueError("Requested span does not overlap with current range")
-
-    if end_index < 0:
-        raise ValueError("Requested span does not overlap with current range")
-
-    corrected_start = float(start_index * step)
-    corrected_end = float(end_index * step)
-
-    start_index_offset = max(0, -start_index)
-    end_index_offset = max(0, end_index - current_width)
-
-    sl = slice(
-        start_index if start_index >= 0 else None,
-        end_index if end_index < current_width else None,
-    )
-
-    return (
-        arrays.create_range_dim(
-            str(coord.name),
-            start=corrected_start,
-            stop=corrected_end,
-            step=step,
-        ),
-        start_index_offset,
-        end_index_offset,
-        sl,
-    )
-
-
-def _compute_expected_width(
-    array: Union[xr.DataArray, xr.Dataset],
     duration: float,
-    dim: str,
-) -> int:
-    step = arrays.get_dim_step(array, dim)  # type: ignore
-    return int(np.floor(duration / step))
+    samplerate: float,
+    fill_value: float = 0,
+) -> PreprocessedExample:
+    audio_width = int(np.floor(duration * samplerate))
+    audio_start = int(np.floor(start * samplerate))
+
+    audio = adjust_width(
+        example.audio[audio_start : audio_start + audio_width],
+        audio_width,
+        value=fill_value,
+    )
+
+    audio_duration = example.audio.shape[-1] / samplerate
+    spec_sr = example.spectrogram.shape[-1] / audio_duration
+
+    spec_start = int(np.floor(start * spec_sr))
+    spec_width = int(np.floor(duration * spec_sr))
+
+    return PreprocessedExample(
+        audio=audio,
+        spectrogram=adjust_width(
+            example.spectrogram[:, spec_start : spec_start + spec_width],
+            spec_width,
+        ),
+        class_heatmap=adjust_width(
+            example.class_heatmap[:, :, spec_start : spec_start + spec_width],
+            spec_width,
+        ),
+        detection_heatmap=adjust_width(
+            example.detection_heatmap[:, spec_start : spec_start + spec_width],
+            spec_width,
+        ),
+        size_heatmap=adjust_width(
+            example.size_heatmap[:, :, spec_start : spec_start + spec_width],
+            spec_width,
+        ),
+    )

@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import xarray as xr
 
 
@@ -35,77 +36,40 @@ def spec_to_xarray(
     )
 
 
-def audio_to_xarray(
-    wav: np.ndarray,
-    start_time: float,
-    end_time: float,
-    time_axis: str = "time",
-) -> xr.DataArray:
-    if wav.ndim != 1:
-        raise ValueError("Input numpy audio array should be 1-dimensional")
-
-    return xr.DataArray(
-        data=wav,
-        dims=[time_axis],
-        coords={
-            time_axis: np.linspace(
-                start_time,
-                end_time,
-                len(wav),
-                endpoint=False,
-            ),
-        },
-    )
-
-
 def extend_width(
-    array: np.ndarray,
+    tensor: torch.Tensor,
     extra: int,
     axis: int = -1,
     value: float = 0,
-) -> np.ndarray:
-    dims = len(array.shape)
-    axis = axis % dims
-    pad = [[0, 0] if index != axis else [0, extra] for index in range(dims)]
-    return np.pad(
-        array,
+) -> torch.Tensor:
+    dims = len(tensor.shape)
+    axis = dims - axis % dims - 1
+    pad = [0 for _ in range(2 * dims)]
+    pad[2 * axis + 1] = extra
+    return torch.nn.functional.pad(
+        tensor,
         pad,
         mode="constant",
-        constant_values=value,
+        value=value,
     )
 
 
-def make_width_divisible(
-    array: np.ndarray,
-    factor: int,
-    axis: int = -1,
-    value: float = 0,
-) -> np.ndarray:
-    width = array.shape[axis]
-
-    if width % factor == 0:
-        return array
-
-    extra = (-width) % factor
-    return extend_width(array, extra, axis=axis, value=value)
-
-
 def adjust_width(
-    array: np.ndarray,
+    tensor: torch.Tensor,
     width: int,
     axis: int = -1,
     value: float = 0,
-) -> np.ndarray:
-    dims = len(array.shape)
+) -> torch.Tensor:
+    dims = len(tensor.shape)
     axis = axis % dims
-    current_width = array.shape[axis]
+    current_width = tensor.shape[axis]
 
     if current_width == width:
-        return array
+        return tensor
 
     if current_width < width:
         return extend_width(
-            array,
+            tensor,
             extra=width - current_width,
             axis=axis,
             value=value,
@@ -115,11 +79,4 @@ def adjust_width(
         slice(None, None) if index != axis else slice(None, width)
         for index in range(dims)
     ]
-    return array[tuple(slices)]
-
-
-def iterate_over_array(array: xr.DataArray):
-    dim_name = array.dims[0]
-    coords = array.coords[dim_name]
-    for value, coord in zip(array.values, coords.values):
-        yield coord, float(value)
+    return tensor[tuple(slices)]

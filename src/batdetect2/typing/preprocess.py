@@ -148,6 +148,8 @@ class PreprocessorProtocol(Protocol):
 
     min_freq: float
 
+    samplerate: int
+
     audio_pipeline: AudioPipeline
 
     spectrogram_pipeline: SpectrogramPipeline
@@ -155,4 +157,4 @@ class PreprocessorProtocol(Protocol):
     def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
 
     def process_numpy(self, wav: np.ndarray) -> np.ndarray:
-        return self(torch.tensor(wav)).numpy()[0, 0]
+        return self(torch.tensor(wav)).numpy()

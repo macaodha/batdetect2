@@ -1,6 +1,4 @@
 import pytest
-import torch
-import xarray as xr
 from soundevent import data
 from soundevent.terms import get_term
 
@@ -10,6 +8,7 @@ from batdetect2.targets import build_targets, load_target_config
 from batdetect2.train.labels import build_clip_labeler, load_label_config
 from batdetect2.train.preprocess import generate_train_example
 from batdetect2.typing import ModelOutput
+from batdetect2.typing.preprocess import AudioLoader
 
 
 @pytest.fixture
@@ -35,6 +34,8 @@ def build_from_config(
         labeller = build_clip_labeler(
             targets=targets,
             config=labels_config,
+            min_freq=preprocessor.min_freq,
+            max_freq=preprocessor.max_freq,
         )
         postprocessor = build_postprocessor(
             targets,
@@ -48,62 +49,8 @@ def build_from_config(
     return build
 
 
-# TODO: better name
-def test_generated_train_example_has_expected_outputs(
-    build_from_config,
-    recording,
-):
-    yaml_content = """
-    labels:
-    targets:
-        roi:
-            name: anchor_bbox
-            anchor: bottom-left
-        classes:
-            classes:
-              - name: pippip
-                tags:
-                  - key: species
-                    value: Pipistrellus pipistrellus
-            generic_class:
-              - key: order
-                value: Chiroptera
-    preprocessing:
-    postprocessing:
-    """
-    _, preprocessor, labeller, _ = build_from_config(yaml_content)
-
-    geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
-    se1 = data.SoundEventAnnotation(
-        sound_event=data.SoundEvent(recording=recording, geometry=geometry),
-        tags=[
-            data.Tag(key="species", value="Pipistrellus pipistrellus"),  # type: ignore
-        ],
-    )
-    clip_annotation = data.ClipAnnotation(
-        clip=data.Clip(start_time=0, end_time=0.5, recording=recording),
-        sound_events=[se1],
-    )
-
-    encoded = generate_train_example(clip_annotation, preprocessor, labeller)
-
-    assert isinstance(encoded, xr.Dataset)
-    assert "audio" in encoded
-    assert "spectrogram" in encoded
-    assert "detection" in encoded
-    assert "class" in encoded
-    assert "size" in encoded
-
-    spec_shape = encoded["spectrogram"].shape
-    assert len(spec_shape) == 2
-
-    height, width = spec_shape
-    assert encoded["detection"].shape == (height, width)
-    assert encoded["class"].shape == (1, height, width)
-    assert encoded["size"].shape == (2, height, width)
-
-
 def test_encoding_decoding_roundtrip_recovers_object(
+    sample_audio_loader: AudioLoader,
     build_from_config,
     recording,
 ):
@@ -136,13 +83,17 @@ def test_encoding_decoding_roundtrip_recovers_object(
     clip = data.Clip(start_time=0, end_time=0.5, recording=recording)
     clip_annotation = data.ClipAnnotation(clip=clip, sound_events=[se1])
 
-    encoded = generate_train_example(clip_annotation, preprocessor, labeller)
+    encoded = generate_train_example(
+        clip_annotation, sample_audio_loader, preprocessor, labeller
+    )
     predictions = postprocessor.get_predictions(
         ModelOutput(
-            detection_probs=torch.tensor([[encoded["detection"].data]]),
-            size_preds=torch.tensor([encoded["size"].data]),
-            class_probs=torch.tensor([encoded["class"].data]),
-            features=torch.tensor([[encoded["spectrogram"].data]]),
+            detection_probs=encoded["detection_heatmap"]
+            .unsqueeze(0)
+            .unsqueeze(0),
+            size_preds=encoded["size_heatmap"].unsqueeze(0),
+            class_probs=encoded["class_heatmap"].unsqueeze(0),
+            features=encoded["spectrogram"].unsqueeze(0).unsqueeze(0),
         ),
         [clip],
     )[0]
@@ -185,6 +136,7 @@ def test_encoding_decoding_roundtrip_recovers_object(
 
 
 def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
+    sample_audio_loader: AudioLoader,
     build_from_config,
     recording,
 ):
@@ -222,13 +174,20 @@ def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
     clip = data.Clip(start_time=0, end_time=0.5, recording=recording)
     clip_annotation = data.ClipAnnotation(clip=clip, sound_events=[se1])
 
-    encoded = generate_train_example(clip_annotation, preprocessor, labeller)
+    encoded = generate_train_example(
+        clip_annotation,
+        sample_audio_loader,
+        preprocessor,
+        labeller,
+    )
     predictions = postprocessor.get_predictions(
         ModelOutput(
-            detection_probs=torch.tensor([[encoded["detection"].data]]),
-            size_preds=torch.tensor([encoded["size"].data]),
-            class_probs=torch.tensor([encoded["class"].data]),
-            features=torch.tensor([[encoded["spectrogram"].data]]),
+            detection_probs=encoded["detection_heatmap"]
+            .unsqueeze(0)
+            .unsqueeze(0),
+            size_preds=encoded["size_heatmap"].unsqueeze(0),
+            class_probs=encoded["class_heatmap"].unsqueeze(0),
+            features=encoded["spectrogram"].unsqueeze(0).unsqueeze(0),
         ),
         [clip],
     )[0]

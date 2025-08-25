@@ -431,8 +431,13 @@ def sample_targets(
 @pytest.fixture
 def sample_labeller(
     sample_targets: TargetProtocol,
+    sample_preprocessor: PreprocessorProtocol,
 ) -> ClipLabeller:
-    return build_clip_labeler(sample_targets)
+    return build_clip_labeler(
+        sample_targets,
+        min_freq=sample_preprocessor.min_freq,
+        max_freq=sample_preprocessor.max_freq,
+    )
 
 
 @pytest.fixture

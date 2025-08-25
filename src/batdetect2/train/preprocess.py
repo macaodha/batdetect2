@@ -22,7 +22,7 @@ includes utilities for parallel processing using `multiprocessing`.
 
 import os
 from pathlib import Path
-from typing import Callable, Dict, Optional, Sequence
+from typing import Callable, Optional, Sequence, TypedDict
 
 import numpy as np
 import torch
@@ -98,17 +98,25 @@ def preprocess_dataset(
     )
 
 
+class Example(TypedDict):
+    audio: torch.Tensor
+    spectrogram: torch.Tensor
+    detection_heatmap: torch.Tensor
+    class_heatmap: torch.Tensor
+    size_heatmap: torch.Tensor
+
+
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
     audio_loader: AudioLoader,
     preprocessor: PreprocessorProtocol,
     labeller: ClipLabeller,
-) -> Dict[str, torch.Tensor]:
+) -> PreprocessedExample:
     """Generate a complete training example for one annotation."""
     wave = torch.tensor(audio_loader.load_clip(clip_annotation.clip))
     spectrogram = preprocessor(wave)
     heatmaps = labeller(clip_annotation, spectrogram)
-    return dict(
+    return PreprocessedExample(
         audio=wave,
         spectrogram=spectrogram,
         detection_heatmap=heatmaps.detection,
@@ -138,8 +146,14 @@ class PreprocessingDataset(torch.utils.data.Dataset):
             preprocessor=self.preprocessor,
             labeller=self.labeller,
         )
-        example["idx"] = idx
-        return example
+        return {
+            "idx": idx,
+            "spectrogram": example.spectrogram,
+            "audio": example.audio,
+            "class_heatmap": example.class_heatmap,
+            "size_heatmap": example.size_heatmap,
+            "detection_heatmap": example.detection_heatmap,
+        }
 
     def __len__(self) -> int:
         return len(self.clips)
@@ -147,16 +161,17 @@ class PreprocessingDataset(torch.utils.data.Dataset):
 
 def _save_example_to_file(
     example: PreprocessedExample,
+    clip_annotation: data.ClipAnnotation,
     path: data.PathLike,
 ) -> None:
     np.savez_compressed(
         path,
-        audio=example.audio,
-        spectrogram=example.spectrogram,
-        detection_heatmap=example.detection_heatmap,
-        class_heatmap=example.class_heatmap,
-        size_heatmap=example.size_heatmap,
-        clip_annotation=example.clip_annotation,
+        audio=example.audio.numpy(),
+        spectrogram=example.spectrogram.numpy(),
+        detection_heatmap=example.detection_heatmap.numpy(),
+        class_heatmap=example.class_heatmap.numpy(),
+        size_heatmap=example.size_heatmap.numpy(),
+        clip_annotation=clip_annotation,
     )
 
 
@@ -211,11 +226,10 @@ def preprocess_annotations(
         filename = filename_fn(clip_annotation)
         path = output_dir / filename
         example = PreprocessedExample(
-            clip_annotation=clip_annotation,
-            spectrogram=batch["spectrogram"].numpy(),
-            audio=batch["audio"].numpy(),
-            class_heatmap=batch["class_heatmap"].numpy(),
-            size_heatmap=batch["size_heatmap"].numpy(),
-            detection_heatmap=batch["detection_heatmap"].numpy(),
+            spectrogram=batch["spectrogram"],
+            audio=batch["audio"],
+            class_heatmap=batch["class_heatmap"],
+            size_heatmap=batch["size_heatmap"],
+            detection_heatmap=batch["detection_heatmap"],
         )
-        _save_example_to_file(example, path)
+        _save_example_to_file(example, clip_annotation, path)
