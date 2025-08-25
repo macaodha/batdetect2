@@ -21,7 +21,6 @@ from batdetect2.train.config import FullTrainingConfig, TrainingConfig
 from batdetect2.train.dataset import (
     LabeledDataset,
     RandomExampleSource,
-    collate_fn,
 )
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
@@ -58,7 +57,7 @@ def train(
 
     train_dataloader = build_train_loader(
         train_examples,
-        preprocessor=module.preprocessor,
+        preprocessor=module.model.preprocessor,
         config=config.train,
         num_workers=train_workers,
     )
@@ -66,6 +65,7 @@ def train(
     val_dataloader = (
         build_val_loader(
             val_examples,
+            preprocessor=module.model.preprocessor,
             config=config.train,
             num_workers=val_workers,
         )
@@ -138,9 +138,11 @@ def build_trainer(
 def build_train_loader(
     train_examples: Sequence[data.PathLike],
     preprocessor: PreprocessorProtocol,
-    config: TrainingConfig,
+    config: Optional[TrainingConfig] = None,
     num_workers: Optional[int] = None,
 ) -> DataLoader:
+    config = config or TrainingConfig()
+
     logger.info("Building training data loader...")
     train_dataset = build_train_dataset(
         train_examples,
@@ -158,18 +160,21 @@ def build_train_loader(
         batch_size=loader_conf.batch_size,
         shuffle=loader_conf.shuffle,
         num_workers=num_workers,
-        collate_fn=collate_fn,
     )
 
 
 def build_val_loader(
     val_examples: Sequence[data.PathLike],
-    config: TrainingConfig,
+    preprocessor: PreprocessorProtocol,
+    config: Optional[TrainingConfig] = None,
     num_workers: Optional[int] = None,
 ):
+    config = config or TrainingConfig()
+
     logger.info("Building validation data loader...")
     val_dataset = build_val_dataset(
         val_examples,
+        preprocessor=preprocessor,
         config=config,
     )
     loader_conf = config.dataloaders.val
@@ -183,7 +188,6 @@ def build_val_loader(
         batch_size=loader_conf.batch_size,
         shuffle=loader_conf.shuffle,
         num_workers=num_workers,
-        collate_fn=collate_fn,
     )
 
 
@@ -195,7 +199,11 @@ def build_train_dataset(
     logger.info("Building training dataset...")
     config = config or TrainingConfig()
 
-    clipper = build_clipper(config.cliping, random=True)
+    clipper = build_clipper(
+        samplerate=preprocessor.samplerate,
+        config=config.cliping,
+        random=True,
+    )
 
     random_example_source = RandomExampleSource(
         list(examples),
@@ -221,10 +229,15 @@ def build_train_dataset(
 
 def build_val_dataset(
     examples: Sequence[data.PathLike],
+    preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
     train: bool = True,
 ) -> LabeledDataset:
     logger.info("Building validation dataset...")
     config = config or TrainingConfig()
-    clipper = build_clipper(config.cliping, random=train)
+    clipper = build_clipper(
+        samplerate=preprocessor.samplerate,
+        config=config.cliping,
+        random=train,
+    )
     return LabeledDataset(examples, clipper=clipper)

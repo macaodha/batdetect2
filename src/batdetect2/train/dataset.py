@@ -3,13 +3,12 @@ from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
-import xarray as xr
 from soundevent import data
 from torch.utils.data import Dataset
 
 from batdetect2.train.augmentations import Augmentation
 from batdetect2.typing import ClipperProtocol, TrainExample
-from batdetect2.utils.tensors import adjust_width
+from batdetect2.typing.train import PreprocessedExample
 
 __all__ = [
     "LabeledDataset",
@@ -31,17 +30,18 @@ class LabeledDataset(Dataset):
         return len(self.filenames)
 
     def __getitem__(self, idx) -> TrainExample:
-        dataset = self.get_dataset(idx)
-        dataset, start_time, end_time = self.clipper.extract_clip(dataset)
+        example = self.get_example(idx)
+
+        example, start_time, end_time = self.clipper.extract_clip(example)
 
         if self.augmentation:
-            dataset = self.augmentation(dataset)
+            example = self.augmentation(example)
 
         return TrainExample(
-            spec=self.to_tensor(dataset["spectrogram"]).unsqueeze(0),
-            detection_heatmap=self.to_tensor(dataset["detection"]),
-            class_heatmap=self.to_tensor(dataset["class"]),
-            size_heatmap=self.to_tensor(dataset["size"]),
+            spec=example.spectrogram.unsqueeze(0),
+            detection_heatmap=example.detection_heatmap.unsqueeze(0),
+            class_heatmap=example.class_heatmap,
+            size_heatmap=example.size_heatmap,
             idx=torch.tensor(idx),
             start_time=torch.tensor(start_time),
             end_time=torch.tensor(end_time),
@@ -52,7 +52,7 @@ class LabeledDataset(Dataset):
         cls,
         directory: data.PathLike,
         clipper: ClipperProtocol,
-        extension: str = ".nc",
+        extension: str = ".npz",
         augmentation: Optional[Augmentation] = None,
     ):
         return cls(
@@ -61,55 +61,35 @@ class LabeledDataset(Dataset):
             augmentation=augmentation,
         )
 
-    def get_random_example(self) -> Tuple[xr.Dataset, float, float]:
+    def get_random_example(self) -> Tuple[PreprocessedExample, float, float]:
         idx = np.random.randint(0, len(self))
-        dataset = self.get_dataset(idx)
+        dataset = self.get_example(idx)
 
         dataset, start_time, end_time = self.clipper.extract_clip(dataset)
 
         return dataset, start_time, end_time
 
-    def get_dataset(self, idx) -> xr.Dataset:
-        return xr.open_dataset(self.filenames[idx])
+    def get_example(self, idx) -> PreprocessedExample:
+        return load_preprocessed_example(self.filenames[idx])
 
     def get_clip_annotation(self, idx) -> data.ClipAnnotation:
-        return data.ClipAnnotation.model_validate_json(
-            self.get_dataset(idx).attrs["clip_annotation"]
-        )
-
-    def to_tensor(
-        self,
-        array: xr.DataArray,
-        dtype=np.float32,
-    ) -> torch.Tensor:
-        return torch.nan_to_num(
-            torch.tensor(array.values.astype(dtype)),
-            nan=0,
-        )
+        item = np.load(self.filenames[idx])
+        return item["clip_annotation"]
 
 
-def collate_fn(batch: List[TrainExample]):
-    width = 512
-
-    return TrainExample(
-        spec=torch.stack([adjust_width(x.spec, width) for x in batch]),
-        detection_heatmap=torch.stack(
-            [adjust_width(x.detection_heatmap, width) for x in batch]
-        ),
-        class_heatmap=torch.stack(
-            [adjust_width(x.class_heatmap, width) for x in batch]
-        ),
-        size_heatmap=torch.stack(
-            [adjust_width(x.size_heatmap, width) for x in batch]
-        ),
-        idx=torch.stack([x.idx for x in batch]),
-        start_time=torch.stack([x.start_time for x in batch]),
-        end_time=torch.stack([x.end_time for x in batch]),
+def load_preprocessed_example(path: data.PathLike) -> PreprocessedExample:
+    item = np.load(path)
+    return PreprocessedExample(
+        audio=torch.tensor(item["audio"]),
+        spectrogram=torch.tensor(item["spectrogram"]),
+        size_heatmap=torch.tensor(item["size_heatmap"]),
+        detection_heatmap=torch.tensor(item["detection_heatmap"]),
+        class_heatmap=torch.tensor(item["class_heatmap"]),
     )
 
 
 def list_preprocessed_files(
-    directory: data.PathLike, extension: str = ".nc"
+    directory: data.PathLike, extension: str = ".npz"
 ) -> List[Path]:
     return list(Path(directory).glob(f"*{extension}"))
 
@@ -123,9 +103,9 @@ class RandomExampleSource:
         self.filenames = filenames
         self.clipper = clipper
 
-    def __call__(self):
+    def __call__(self) -> PreprocessedExample:
         index = int(np.random.randint(len(self.filenames)))
         filename = self.filenames[index]
-        dataset = xr.open_dataset(filename)
-        example, _, _ = self.clipper.extract_clip(dataset)
+        example = load_preprocessed_example(filename)
+        example, _, _ = self.clipper.extract_clip(example)
         return example

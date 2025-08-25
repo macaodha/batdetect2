@@ -30,6 +30,7 @@ import torch.utils.data
 from loguru import logger
 from pydantic import Field
 from soundevent import data
+from tqdm import tqdm
 
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.data.datasets import Dataset
@@ -132,34 +133,47 @@ class PreprocessingDataset(torch.utils.data.Dataset):
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         labeller: ClipLabeller,
+        filename_fn: FilenameFn,
+        output_dir: Path,
+        force: bool = False,
     ):
         self.clips = clips
         self.audio_loader = audio_loader
         self.preprocessor = preprocessor
         self.labeller = labeller
+        self.filename_fn = filename_fn
+        self.output_dir = output_dir
+        self.force = force
 
-    def __getitem__(self, idx) -> dict:
+    def __getitem__(self, idx) -> int:
         clip_annotation = self.clips[idx]
+
+        filename = self.filename_fn(clip_annotation)
+
+        path = self.output_dir / filename
+
+        if path.exists() and not self.force:
+            return idx
+
+        if not path.parent.exists():
+            path.parent.mkdir()
+
         example = generate_train_example(
             clip_annotation,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             labeller=self.labeller,
         )
-        return {
-            "idx": idx,
-            "spectrogram": example.spectrogram,
-            "audio": example.audio,
-            "class_heatmap": example.class_heatmap,
-            "size_heatmap": example.size_heatmap,
-            "detection_heatmap": example.detection_heatmap,
-        }
+
+        save_example_to_file(example, clip_annotation, path)
+
+        return idx
 
     def __len__(self) -> int:
         return len(self.clips)
 
 
-def _save_example_to_file(
+def save_example_to_file(
     example: PreprocessedExample,
     clip_annotation: data.ClipAnnotation,
     path: data.PathLike,
@@ -177,7 +191,7 @@ def _save_example_to_file(
 
 def _get_filename(clip_annotation: data.ClipAnnotation) -> str:
     """Generate a default output filename based on the annotation UUID."""
-    return f"{clip_annotation.uuid}.nc"
+    return f"{clip_annotation.uuid}"
 
 
 def preprocess_annotations(
@@ -212,24 +226,17 @@ def preprocess_annotations(
         audio_loader=audio_loader,
         preprocessor=preprocessor,
         labeller=labeller,
+        output_dir=Path(output_dir),
+        filename_fn=filename_fn,
     )
 
     loader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=None,
+        batch_size=1,
         shuffle=False,
         num_workers=max_workers,
+        prefetch_factor=16,
     )
 
-    for batch in loader:
-        clip_annotation = dataset.clips[batch["idx"]]
-        filename = filename_fn(clip_annotation)
-        path = output_dir / filename
-        example = PreprocessedExample(
-            spectrogram=batch["spectrogram"],
-            audio=batch["audio"],
-            class_heatmap=batch["class_heatmap"],
-            size_heatmap=batch["size_heatmap"],
-            detection_heatmap=batch["detection_heatmap"],
-        )
-        _save_example_to_file(example, clip_annotation, path)
+    for _ in tqdm(loader, total=len(dataset)):
+        pass

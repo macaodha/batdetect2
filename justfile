@@ -99,7 +99,7 @@ example-preprocess OPTIONS="":
         --dataset-field datasets.train \
         --config example_data/config.yaml \
         {{OPTIONS}} \
-        example_data/datasets.yaml example_data/preprocessed
+        example_data/config.yaml example_data/preprocessed
 
 # Train on example data.
 example-train OPTIONS="":
