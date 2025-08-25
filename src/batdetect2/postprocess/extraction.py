@@ -47,8 +47,8 @@ def extract_prediction_tensor(
         indexing="ij",
     )
 
-    freqs = freqs.flatten().to(detection_heatmap)
-    times = times.flatten().to(detection_heatmap)
+    freqs = freqs.flatten().to(detection_heatmap.device)
+    times = times.flatten().to(detection_heatmap.device)
 
     output_size_preds = output.size_preds.detach()
     output_features = output.features.detach()
