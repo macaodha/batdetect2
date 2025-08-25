@@ -148,7 +148,7 @@ def add_echo(
     """Add a synthetic echo to the audio waveform."""
 
     audio = example.audio
-    delay_steps = int(preprocessor.samplerate * delay)
+    delay_steps = int(preprocessor.input_samplerate * delay)
     audio_delay = adjust_width(audio[delay_steps:], audio.shape[-1])
 
     audio = audio + weight * audio_delay

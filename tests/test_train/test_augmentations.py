@@ -162,7 +162,8 @@ def test_selected_random_subclip_has_the_correct_width(
 
     subclip = select_subclip(
         original,
-        samplerate=256_000,
+        input_samplerate=256_000,
+        output_samplerate=1000,
         start=0,
         duration=0.512,
     )

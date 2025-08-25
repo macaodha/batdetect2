@@ -39,9 +39,8 @@ def build_from_config(
         )
         postprocessor = build_postprocessor(
             targets,
+            preprocessor=preprocessor,
             config=postprocessing_config,
-            min_freq=preprocessor.min_freq,
-            max_freq=preprocessor.max_freq,
         )
 
         return targets, preprocessor, labeller, postprocessor
@@ -84,7 +83,10 @@ def test_encoding_decoding_roundtrip_recovers_object(
     clip_annotation = data.ClipAnnotation(clip=clip, sound_events=[se1])
 
     encoded = generate_train_example(
-        clip_annotation, sample_audio_loader, preprocessor, labeller
+        clip_annotation,
+        sample_audio_loader,
+        preprocessor,
+        labeller,
     )
     predictions = postprocessor.get_predictions(
         ModelOutput(

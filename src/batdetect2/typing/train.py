@@ -96,6 +96,6 @@ class LossProtocol(Protocol):
 
 
 class ClipperProtocol(Protocol):
-    def extract_clip(
+    def __call__(
         self, example: PreprocessedExample
     ) -> Tuple[PreprocessedExample, float, float]: ...

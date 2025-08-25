@@ -1,36 +1,7 @@
-"""Main entry point for the BatDetect2 Postprocessing pipeline.
-
-This package (`batdetect2.postprocess`) takes the raw outputs from a trained
-BatDetect2 neural network model and transforms them into meaningful, structured
-predictions, typically in the form of `soundevent.data.ClipPrediction` objects
-containing detected sound events with associated class tags and geometry.
-
-The pipeline involves several configurable steps, implemented in submodules:
-1.  Non-Maximum Suppression (`.nms`): Isolates distinct detection peaks.
-2.  Coordinate Remapping (`.remapping`): Adds time/frequency coordinates to raw
-    model output arrays.
-3.  Detection Extraction (`.detection`): Identifies candidate detection points
-    (location and score) based on thresholds and score ranking (top-k).
-4.  Data Extraction (`.extraction`): Gathers associated model outputs (size,
-    class probabilities, features) at the detected locations.
-5.  Decoding & Formatting (`.decoding`): Converts extracted numerical data and
-    class predictions into interpretable `soundevent` objects, including
-    recovering geometry (ROIs) and decoding class names back to standard tags.
-
-This module provides the primary interface:
-- `PostprocessConfig`: A configuration object for postprocessing parameters
-  (thresholds, NMS kernel size, etc.).
-- `load_postprocess_config`: Function to load the configuration from a file.
-- `Postprocessor`: The main class (implementing `PostprocessorProtocol`) that
-  holds the configured pipeline logic.
-- `build_postprocessor`: A factory function to create a `Postprocessor`
-  instance, linking it to the necessary target definitions (`TargetProtocol`).
-It also re-exports key components from submodules for convenience.
-"""
+"""Main entry point for the BatDetect2 Postprocessing pipeline."""
 
 from typing import List, Optional
 
-import xarray as xr
 from loguru import logger
 from pydantic import Field
 from soundevent import data
@@ -38,37 +9,24 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
+    convert_detections_to_raw_predictions,
     convert_raw_prediction_to_sound_event_prediction,
     convert_raw_predictions_to_clip_prediction,
-    convert_xr_dataset_to_raw_prediction,
 )
-from batdetect2.postprocess.detection import (
-    DEFAULT_DETECTION_THRESHOLD,
-    TOP_K_PER_SEC,
-    extract_detections_from_array,
-    get_max_detections,
-)
-from batdetect2.postprocess.extraction import (
-    extract_detection_xr_dataset,
-)
+from batdetect2.postprocess.extraction import extract_prediction_tensor
 from batdetect2.postprocess.nms import (
     NMS_KERNEL_SIZE,
     non_max_suppression,
 )
-from batdetect2.postprocess.remapping import (
-    classification_to_xarray,
-    detection_to_xarray,
-    features_to_xarray,
-    sizes_to_xarray,
-)
+from batdetect2.postprocess.remapping import map_detection_to_clip
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
-from batdetect2.typing.models import ModelOutput
+from batdetect2.typing import ModelOutput, PreprocessorProtocol, TargetProtocol
 from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
+    Detections,
     PostprocessorProtocol,
     RawPrediction,
 )
-from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "DEFAULT_CLASSIFICATION_THRESHOLD",
@@ -81,18 +39,16 @@ __all__ = [
     "Postprocessor",
     "TOP_K_PER_SEC",
     "build_postprocessor",
-    "classification_to_xarray",
     "convert_raw_predictions_to_clip_prediction",
-    "convert_xr_dataset_to_raw_prediction",
-    "detection_to_xarray",
-    "extract_detection_xr_dataset",
-    "extract_detections_from_array",
-    "features_to_xarray",
-    "get_max_detections",
+    "convert_detections_to_raw_predictions",
     "load_postprocess_config",
     "non_max_suppression",
-    "sizes_to_xarray",
 ]
+
+DEFAULT_DETECTION_THRESHOLD = 0.01
+
+
+TOP_K_PER_SEC = 200
 
 
 class PostprocessConfig(BaseConfig):
@@ -173,40 +129,10 @@ def load_postprocess_config(
 
 def build_postprocessor(
     targets: TargetProtocol,
+    preprocessor: PreprocessorProtocol,
     config: Optional[PostprocessConfig] = None,
-    max_freq: float = MAX_FREQ,
-    min_freq: float = MIN_FREQ,
 ) -> PostprocessorProtocol:
-    """Factory function to build the standard postprocessor.
-
-    Creates and initializes the `Postprocessor` instance, providing it with the
-    necessary `targets` object and the `PostprocessConfig`.
-
-    Parameters
-    ----------
-    targets : TargetProtocol
-        An initialized object conforming to the `TargetProtocol`, providing
-        methods like `.decode()` and `.recover_roi()`, and attributes like
-        `.class_names` and `.generic_class_tags`. This links postprocessing
-        to the defined target semantics and geometry mappings.
-    config : PostprocessConfig, optional
-        Configuration object specifying postprocessing parameters (thresholds,
-        NMS kernel size, etc.). If None, default settings defined in
-        `PostprocessConfig` will be used.
-    min_freq : int, default=MIN_FREQ
-        The minimum frequency (Hz) corresponding to the frequency axis of the
-        model outputs. Required for coordinate remapping. Consider setting via
-        `PostprocessConfig` instead for better encapsulation.
-    max_freq : int, default=MAX_FREQ
-        The maximum frequency (Hz) corresponding to the frequency axis of the
-        model outputs. Required for coordinate remapping. Consider setting via
-        `PostprocessConfig`.
-
-    Returns
-    -------
-    PostprocessorProtocol
-        An initialized `Postprocessor` instance ready to process model outputs.
-    """
+    """Factory function to build the standard postprocessor."""
     config = config or PostprocessConfig()
     logger.opt(lazy=True).debug(
         "Building postprocessor with config: \n{}",
@@ -214,303 +140,62 @@ def build_postprocessor(
     )
     return Postprocessor(
         targets=targets,
+        preprocessor=preprocessor,
         config=config,
-        min_freq=min_freq,
-        max_freq=max_freq,
     )
 
 
 class Postprocessor(PostprocessorProtocol):
-    """Standard implementation of the postprocessing pipeline.
-
-    This class orchestrates the steps required to convert raw model outputs
-    into interpretable `soundevent` predictions. It uses configured parameters
-    and leverages functions from the `batdetect2.postprocess` submodules for
-    each stage (NMS, remapping, detection, extraction, decoding).
-
-    It requires a `TargetProtocol` object during initialization to access
-    necessary decoding information (class name to tag mapping,
-    ROI recovery logic) ensuring consistency with the target definitions used
-    during training or specified for inference.
-
-    Instances are typically created using the `build_postprocessor` factory
-    function.
-
-    Attributes
-    ----------
-    targets : TargetProtocol
-        The configured target definition object providing decoding and ROI
-        recovery.
-    config : PostprocessConfig
-        Configuration object holding parameters for NMS, thresholds, etc.
-    min_freq : float
-        Minimum frequency (Hz) assumed for the model output's frequency axis.
-    max_freq : float
-        Maximum frequency (Hz) assumed for the model output's frequency axis.
-    """
+    """Standard implementation of the postprocessing pipeline."""
 
     targets: TargetProtocol
+
+    preprocessor: PreprocessorProtocol
 
     def __init__(
         self,
         targets: TargetProtocol,
+        preprocessor: PreprocessorProtocol,
         config: PostprocessConfig,
-        min_freq: float = MIN_FREQ,
-        max_freq: float = MAX_FREQ,
     ):
-        """Initialize the Postprocessor.
-
-        Parameters
-        ----------
-        targets : TargetProtocol
-            Initialized target definition object.
-        config : PostprocessConfig
-            Configuration for postprocessing parameters.
-        min_freq : int, default=MIN_FREQ
-            Minimum frequency (Hz) for coordinate remapping.
-        max_freq : int, default=MAX_FREQ
-            Maximum frequency (Hz) for coordinate remapping.
-        """
+        """Initialize the Postprocessor."""
         self.targets = targets
+        self.preprocessor = preprocessor
         self.config = config
-        self.min_freq = min_freq
-        self.max_freq = max_freq
 
-    def get_feature_arrays(
+    def get_detections(
         self,
         output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Extract and remap raw feature tensors for a batch.
+        clips: Optional[List[data.Clip]] = None,
+    ) -> List[Detections]:
+        width = output.detection_probs.shape[-1]
+        duration = width / self.preprocessor.output_samplerate
+        max_detections = int(self.config.top_k_per_sec * duration)
 
-        Parameters
-        ----------
-        output : ModelOutput
-            Raw model output containing `output.features` tensor for the batch.
-        clips : List[data.Clip]
-            List of Clip objects corresponding to the batch items.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            List of coordinate-aware feature DataArrays, one per clip.
-
-        Raises
-        ------
-        ValueError
-            If batch sizes of `output.features` and `clips` do not match.
-        """
-        if len(clips) != len(output.features):
-            raise ValueError(
-                "Number of clips and batch size of feature array"
-                "do not match. "
-                f"(clips: {len(clips)}, features: {len(output.features)})"
-            )
-
-        return [
-            features_to_xarray(
-                feats,
-                start_time=clip.start_time,
-                end_time=clip.end_time,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
-            )
-            for feats, clip in zip(output.features, clips)
-        ]
-
-    def get_detection_arrays(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Apply NMS and remap detection heatmaps for a batch.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            Raw model output containing `output.detection_probs` tensor for the
-            batch.
-        clips : List[data.Clip]
-            List of Clip objects corresponding to the batch items.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            List of NMS-applied, coordinate-aware detection heatmaps, one per
-            clip.
-
-        Raises
-        ------
-        ValueError
-            If batch sizes of `output.detection_probs` and `clips` do not match.
-        """
-        detections = output.detection_probs
-
-        if len(clips) != len(output.detection_probs):
-            raise ValueError(
-                "Number of clips and batch size of detection array "
-                "do not match. "
-                f"(clips: {len(clips)}, detection: {len(detections)})"
-            )
-
-        detections = non_max_suppression(
-            detections,
-            kernel_size=self.config.nms_kernel_size,
+        detections = extract_prediction_tensor(
+            output,
+            max_detections=max_detections,
+            threshold=self.config.detection_threshold,
         )
 
-        return [
-            detection_to_xarray(
-                dets,
-                start_time=clip.start_time,
-                end_time=clip.end_time,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
-            )
-            for dets, clip in zip(detections, clips)
-        ]
-
-    def get_classification_arrays(
-        self, output: ModelOutput, clips: List[data.Clip]
-    ) -> List[xr.DataArray]:
-        """Extract and remap raw classification tensors for a batch.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            Raw model output containing `output.class_probs` tensor for the
-            batch.
-        clips : List[data.Clip]
-            List of Clip objects corresponding to the batch items.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            List of coordinate-aware class probability maps, one per clip.
-
-        Raises
-        ------
-        ValueError
-            If batch sizes of `output.class_probs` and `clips` do not match, or
-            if number of classes mismatches `self.targets.class_names`.
-        """
-        classifications = output.class_probs
-
-        if len(clips) != len(classifications):
-            raise ValueError(
-                "Number of clips and batch size of classification array "
-                "do not match. "
-                f"(clips: {len(clips)}, classification: {len(classifications)})"
-            )
+        if clips is None:
+            return detections
 
         return [
-            classification_to_xarray(
-                class_probs,
+            map_detection_to_clip(
+                detection,
                 start_time=clip.start_time,
                 end_time=clip.end_time,
-                class_names=self.targets.class_names,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
+                min_freq=self.preprocessor.min_freq,
+                max_freq=self.preprocessor.max_freq,
             )
-            for class_probs, clip in zip(classifications, clips)
+            for detection, clip in zip(detections, clips)
         ]
-
-    def get_sizes_arrays(
-        self, output: ModelOutput, clips: List[data.Clip]
-    ) -> List[xr.DataArray]:
-        """Extract and remap raw size prediction tensors for a batch.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            Raw model output containing `output.size_preds` tensor for the
-            batch.
-        clips : List[data.Clip]
-            List of Clip objects corresponding to the batch items.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            List of coordinate-aware size prediction maps, one per clip.
-
-        Raises
-        ------
-        ValueError
-            If batch sizes of `output.size_preds` and `clips` do not match.
-        """
-        sizes = output.size_preds
-
-        if len(clips) != len(sizes):
-            raise ValueError(
-                "Number of clips and batch size of sizes array do not match. "
-                f"(clips: {len(clips)}, sizes: {len(sizes)})"
-            )
-
-        return [
-            sizes_to_xarray(
-                size_preds,
-                start_time=clip.start_time,
-                end_time=clip.end_time,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
-            )
-            for size_preds, clip in zip(sizes, clips)
-        ]
-
-    def get_detection_datasets(
-        self, output: ModelOutput, clips: List[data.Clip]
-    ) -> List[xr.Dataset]:
-        """Perform NMS, remapping, detection, and data extraction for a batch.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            Raw output from the neural network model for a batch.
-        clips : List[data.Clip]
-            List of `soundevent.data.Clip` objects corresponding to the batch.
-
-        Returns
-        -------
-        List[xr.Dataset]
-            List of xarray Datasets (one per clip). Each Dataset contains
-            aligned scores, dimensions, class probabilities, and features for
-            detections found in that clip.
-        """
-        detection_arrays = self.get_detection_arrays(output, clips)
-        classification_arrays = self.get_classification_arrays(output, clips)
-        size_arrays = self.get_sizes_arrays(output, clips)
-        features_arrays = self.get_feature_arrays(output, clips)
-
-        datasets = []
-        for det_array, class_array, sizes_array, feats_array in zip(
-            detection_arrays,
-            classification_arrays,
-            size_arrays,
-            features_arrays,
-        ):
-            max_detections = get_max_detections(
-                det_array,
-                top_k_per_sec=self.config.top_k_per_sec,
-            )
-
-            positions = extract_detections_from_array(
-                det_array,
-                max_detections=max_detections,
-                threshold=self.config.detection_threshold,
-            )
-
-            datasets.append(
-                extract_detection_xr_dataset(
-                    positions,
-                    sizes_array,
-                    class_array,
-                    feats_array,
-                )
-            )
-
-        return datasets
 
     def get_raw_predictions(
-        self, output: ModelOutput, clips: List[data.Clip]
+        self,
+        output: ModelOutput,
+        clips: List[data.Clip],
     ) -> List[List[RawPrediction]]:
         """Extract intermediate RawPrediction objects for a batch.
 
@@ -531,13 +216,13 @@ class Postprocessor(PostprocessorProtocol):
             List of lists (one inner list per input clip). Each inner list
             contains `RawPrediction` objects for detections in that clip.
         """
-        detection_datasets = self.get_detection_datasets(output, clips)
+        detections = self.get_detections(output, clips)
         return [
-            convert_xr_dataset_to_raw_prediction(
+            convert_detections_to_raw_predictions(
                 dataset,
-                self.targets.decode_roi,
+                targets=self.targets,
             )
-            for dataset in detection_datasets
+            for dataset in detections
         ]
 
     def get_sound_event_predictions(

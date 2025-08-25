@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import List, NamedTuple, Optional, Protocol
 
 import numpy as np
-import xarray as xr
+import torch
 from soundevent import data
 
 from batdetect2.typing.models import ModelOutput
@@ -77,6 +77,15 @@ class RawPrediction(NamedTuple):
     features: np.ndarray
 
 
+class Detections(NamedTuple):
+    scores: torch.Tensor
+    sizes: torch.Tensor
+    class_scores: torch.Tensor
+    times: torch.Tensor
+    frequencies: torch.Tensor
+    features: torch.Tensor
+
+
 @dataclass
 class BatDetect2Prediction:
     raw: RawPrediction
@@ -84,154 +93,13 @@ class BatDetect2Prediction:
 
 
 class PostprocessorProtocol(Protocol):
-    """Protocol defining the interface for the full postprocessing pipeline.
+    """Protocol defining the interface for the full postprocessing pipeline."""
 
-    This protocol outlines the standard methods for an object that takes raw
-    output from a BatDetect2 model and the corresponding input clip metadata,
-    and processes it through various stages (e.g., coordinate remapping, NMS,
-    detection extraction, data extraction, decoding) to produce interpretable
-    results at different levels of completion.
-
-    Implementations manage the configured logic for all postprocessing steps.
-    """
-
-    def get_feature_arrays(
+    def get_detections(
         self,
         output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Remap feature tensors to coordinate-aware DataArrays.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch, expected
-            to contain the necessary feature tensors.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects, one for each item in the
-            processed batch. This list provides the timing, recording, and
-            other metadata context needed to calculate real-world coordinates
-            (seconds, Hz) for the output arrays. The length of this list must
-            correspond to the batch size of the `output`.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            A list of xarray DataArrays, one for each input clip in the batch,
-            in the same order. Each DataArray contains the feature vectors
-            with dimensions like ('feature', 'time', 'frequency') and
-            corresponding real-world coordinates.
-        """
-        ...
-
-    def get_detection_arrays(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Remap detection tensors to coordinate-aware DataArrays.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch,
-            containing detection heatmaps.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing coordinate context. Must match the batch size of
-            `output`.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            A list of 2D xarray DataArrays (one per input clip, in order),
-            representing the detection heatmap with 'time' and 'frequency'
-            coordinates. Values typically indicate detection confidence.
-        """
-        ...
-
-    def get_classification_arrays(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Remap classification tensors to coordinate-aware DataArrays.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch,
-            containing class probability tensors.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing coordinate context. Must match the batch size of
-            `output`.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            A list of 3D xarray DataArrays (one per input clip, in order),
-            representing class probabilities with 'category', 'time', and
-            'frequency' dimensions and coordinates.
-        """
-        ...
-
-    def get_sizes_arrays(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.DataArray]:
-        """Remap size prediction tensors to coordinate-aware DataArrays.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch,
-            containing predicted size tensors (e.g., width and height).
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing coordinate context. Must match the batch size of
-            `output`.
-
-        Returns
-        -------
-        List[xr.DataArray]
-            A list of 3D xarray DataArrays (one per input clip, in order),
-            representing predicted sizes with 'dimension'
-            (e.g., ['width', 'height']), 'time', and 'frequency' dimensions and
-            coordinates. Values represent estimated detection sizes.
-        """
-        ...
-
-    def get_detection_datasets(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[xr.Dataset]:
-        """Perform remapping, NMS, detection, and data extraction for a batch.
-
-        Processes the raw model output for a batch to identify detection peaks
-        and extract all associated information (score, position, size, class
-        probs, features) at those peak locations, returning a structured
-        dataset for each input clip in the batch.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing context. Must match the batch size of `output`.
-
-        Returns
-        -------
-        List[xr.Dataset]
-            A list of xarray Datasets (one per input clip, in order). Each
-            Dataset contains multiple DataArrays ('scores', 'dimensions',
-            'classes', 'features') sharing a common 'detection' dimension,
-            providing aligned data for each detected event in that clip.
-        """
-        ...
+        clips: Optional[List[data.Clip]] = None,
+    ) -> List[Detections]: ...
 
     def get_raw_predictions(
         self,

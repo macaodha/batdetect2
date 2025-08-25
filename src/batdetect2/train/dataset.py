@@ -32,7 +32,7 @@ class LabeledDataset(Dataset):
     def __getitem__(self, idx) -> TrainExample:
         example = self.get_example(idx)
 
-        example, start_time, end_time = self.clipper.extract_clip(example)
+        example, start_time, end_time = self.clipper(example)
 
         if self.augmentation:
             example = self.augmentation(example)
@@ -64,9 +64,7 @@ class LabeledDataset(Dataset):
     def get_random_example(self) -> Tuple[PreprocessedExample, float, float]:
         idx = np.random.randint(0, len(self))
         dataset = self.get_example(idx)
-
-        dataset, start_time, end_time = self.clipper.extract_clip(dataset)
-
+        dataset, start_time, end_time = self.clipper(dataset)
         return dataset, start_time, end_time
 
     def get_example(self, idx) -> PreprocessedExample:
@@ -107,5 +105,5 @@ class RandomExampleSource:
         index = int(np.random.randint(len(self.filenames)))
         filename = self.filenames[index]
         example = load_preprocessed_example(filename)
-        example, _, _ = self.clipper.extract_clip(example)
+        example, _, _ = self.clipper(example)
         return example

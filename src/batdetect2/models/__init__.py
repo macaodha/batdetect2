@@ -140,9 +140,8 @@ def build_model(config: Optional[ModelConfig] = None):
     preprocessor = build_preprocessor(config=config.preprocess)
     postprocessor = build_postprocessor(
         targets=targets,
+        preprocessor=preprocessor,
         config=config.postprocess,
-        min_freq=preprocessor.min_freq,
-        max_freq=preprocessor.max_freq,
     )
     detector = build_detector(
         num_classes=len(targets.class_names),

@@ -6,7 +6,7 @@ from matplotlib.axes import Axes
 from soundevent import data
 
 from batdetect2.plotting.common import plot_spectrogram
-from batdetect2.preprocess import build_audio_loader, get_default_preprocessor
+from batdetect2.preprocess import build_audio_loader, build_preprocessor
 from batdetect2.typing import AudioLoader, PreprocessorProtocol
 
 __all__ = [
@@ -27,7 +27,7 @@ def plot_clip(
         _, ax = plt.subplots(figsize=figsize)
 
     if preprocessor is None:
-        preprocessor = get_default_preprocessor()
+        preprocessor = build_preprocessor()
 
     if audio_loader is None:
         audio_loader = build_audio_loader()

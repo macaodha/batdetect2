@@ -8,10 +8,7 @@ from soundevent.plot.tags import TagColorMapper
 
 from batdetect2.plotting.clip_predictions import plot_prediction
 from batdetect2.plotting.clips import plot_clip
-from batdetect2.preprocess import (
-    PreprocessorProtocol,
-    get_default_preprocessor,
-)
+from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
 from batdetect2.typing.evaluate import MatchEvaluation
 
 __all__ = [
@@ -50,7 +47,7 @@ def plot_matches(
     prediction_linestyle: str = DEFAULT_PREDICTION_LINE_STYLE,
 ) -> Axes:
     if preprocessor is None:
-        preprocessor = get_default_preprocessor()
+        preprocessor = build_preprocessor()
 
     ax = plot_clip(
         clip,

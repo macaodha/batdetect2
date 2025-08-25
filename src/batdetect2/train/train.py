@@ -229,7 +229,7 @@ def build_train_dataset(
     config = config or TrainingConfig()
 
     clipper = build_clipper(
-        samplerate=preprocessor.samplerate,
+        preprocessor=preprocessor,
         config=config.cliping,
         random=True,
     )
@@ -265,7 +265,7 @@ def build_val_dataset(
     logger.info("Building validation dataset...")
     config = config or TrainingConfig()
     clipper = build_clipper(
-        samplerate=preprocessor.samplerate,
+        preprocessor=preprocessor,
         config=config.cliping,
         random=train,
     )

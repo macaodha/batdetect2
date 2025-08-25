@@ -53,6 +53,7 @@ from batdetect2.preprocess.spectrogram import (
     SpectrogramConfig,
     SpectrogramPipeline,
     STFTConfig,
+    _spec_params_from_config,
     build_spectrogram_builder,
     build_spectrogram_pipeline,
 )
@@ -109,7 +110,9 @@ def load_preprocessing_config(
 class StandardPreprocessor(torch.nn.Module, PreprocessorProtocol):
     """Standard implementation of the `Preprocessor` protocol."""
 
-    samplerate: int
+    input_samplerate: int
+    output_samplerate: float
+
     max_freq: float
     min_freq: float
 
@@ -117,20 +120,31 @@ class StandardPreprocessor(torch.nn.Module, PreprocessorProtocol):
         self,
         audio_pipeline: torch.nn.Module,
         spectrogram_pipeline: SpectrogramPipeline,
-        samplerate: int,
+        input_samplerate: int,
+        output_samplerate: float,
         max_freq: float,
         min_freq: float,
     ) -> None:
         super().__init__()
         self.audio_pipeline = audio_pipeline
         self.spectrogram_pipeline = spectrogram_pipeline
-        self.samplerate = samplerate
+
         self.max_freq = max_freq
         self.min_freq = min_freq
+
+        self.input_samplerate = input_samplerate
+        self.output_samplerate = output_samplerate
 
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         wav = self.audio_pipeline(wav)
         return self.spectrogram_pipeline(wav)
+
+
+def compute_output_samplerate(config: PreprocessingConfig) -> float:
+    samplerate = config.audio.samplerate
+    _, hop_size = _spec_params_from_config(samplerate, config.spectrogram.stft)
+    factor = config.spectrogram.size.resize_factor
+    return samplerate * factor / hop_size
 
 
 def build_preprocessor(
@@ -148,16 +162,15 @@ def build_preprocessor(
     min_freq = config.spectrogram.frequencies.min_freq
     max_freq = config.spectrogram.frequencies.max_freq
 
+    output_samplerate = compute_output_samplerate(config)
+
     return StandardPreprocessor(
         audio_pipeline=build_audio_pipeline(config.audio),
         spectrogram_pipeline=build_spectrogram_pipeline(
             samplerate, config.spectrogram
         ),
-        samplerate=samplerate,
+        input_samplerate=samplerate,
+        output_samplerate=output_samplerate,
         min_freq=min_freq,
         max_freq=max_freq,
     )
-
-
-def get_default_preprocessor():
-    return build_preprocessor()

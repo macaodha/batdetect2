@@ -10,7 +10,6 @@ from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
     convert_raw_prediction_to_sound_event_prediction,
     convert_raw_predictions_to_clip_prediction,
-    convert_xr_dataset_to_raw_prediction,
     get_class_tags,
     get_generic_tags,
     get_prediction_features,
@@ -276,63 +275,6 @@ def sample_raw_predictions() -> List[RawPrediction]:
         features=pred3_features.values,
     )
     return [pred1, pred2, pred3]
-
-
-def test_convert_xr_dataset_basic(sample_detection_dataset, dummy_targets):
-    """Test basic conversion of a dataset to RawPrediction list."""
-    raw_predictions = convert_xr_dataset_to_raw_prediction(
-        sample_detection_dataset,
-        dummy_targets.decode_roi,
-    )
-
-    assert isinstance(raw_predictions, list)
-    assert len(raw_predictions) == 2
-
-    pred1 = raw_predictions[0]
-    assert isinstance(pred1, RawPrediction)
-    assert pred1.detection_score == 0.9
-
-    assert pred1.geometry.coordinates == [
-        20 - 7 / 2,
-        300 - 16 / 2,
-        20 + 7 / 2,
-        300 + 16 / 2,
-    ]
-    np.testing.assert_allclose(
-        pred1.class_scores,
-        sample_detection_dataset["classes"].sel(detection=0),
-    )
-    np.testing.assert_allclose(
-        pred1.features, sample_detection_dataset["features"].sel(detection=0)
-    )
-
-    pred2 = raw_predictions[1]
-    assert isinstance(pred2, RawPrediction)
-    assert pred2.detection_score == 0.8
-
-    assert pred2.geometry.coordinates == [
-        10 - 3 / 2,
-        200 - 12 / 2,
-        10 + 3 / 2,
-        200 + 12 / 2,
-    ]
-    np.testing.assert_allclose(
-        pred2.class_scores,
-        sample_detection_dataset["classes"].sel(detection=1),
-    )
-    np.testing.assert_allclose(
-        pred2.features, sample_detection_dataset["features"].sel(detection=1)
-    )
-
-
-def test_convert_xr_dataset_empty(empty_detection_dataset, dummy_targets):
-    """Test conversion of an empty dataset."""
-    raw_predictions = convert_xr_dataset_to_raw_prediction(
-        empty_detection_dataset,
-        dummy_targets.decode_roi,
-    )
-    assert isinstance(raw_predictions, list)
-    assert len(raw_predictions) == 0
 
 
 def test_convert_raw_to_sound_event_basic(

@@ -1,10 +1,12 @@
 from typing import Optional, Tuple
 
 import numpy as np
+import torch
 from loguru import logger
 
 from batdetect2.configs import BaseConfig
 from batdetect2.typing import ClipperProtocol
+from batdetect2.typing.preprocess import PreprocessorProtocol
 from batdetect2.typing.train import PreprocessedExample
 from batdetect2.utils.arrays import adjust_width
 
@@ -18,24 +20,26 @@ class ClipingConfig(BaseConfig):
     max_empty: float = DEFAULT_MAX_EMPTY_CLIP
 
 
-class Clipper(ClipperProtocol):
+class Clipper(torch.nn.Module):
     def __init__(
         self,
-        samplerate: int,
+        preprocessor: PreprocessorProtocol,
         duration: float = 0.5,
         max_empty: float = 0.2,
         random: bool = True,
     ):
-        self.samplerate = samplerate
+        super().__init__()
+        self.preprocessor = preprocessor
         self.duration = duration
         self.random = random
         self.max_empty = max_empty
 
-    def extract_clip(
-        self, example: PreprocessedExample
+    def forward(
+        self,
+        example: PreprocessedExample,
     ) -> Tuple[PreprocessedExample, float, float]:
         start_time = 0
-        duration = example.audio.shape[-1] / self.samplerate
+        duration = example.audio.shape[-1] / self.preprocessor.input_samplerate
 
         if self.random:
             start_time = np.random.uniform(
@@ -48,7 +52,8 @@ class Clipper(ClipperProtocol):
                 example,
                 start=start_time,
                 duration=self.duration,
-                samplerate=self.samplerate,
+                input_samplerate=self.preprocessor.input_samplerate,
+                output_samplerate=self.preprocessor.output_samplerate,
             ),
             start_time,
             start_time + self.duration,
@@ -56,7 +61,7 @@ class Clipper(ClipperProtocol):
 
 
 def build_clipper(
-    samplerate: int,
+    preprocessor: PreprocessorProtocol,
     config: Optional[ClipingConfig] = None,
     random: Optional[bool] = None,
 ) -> ClipperProtocol:
@@ -66,7 +71,7 @@ def build_clipper(
         lambda: config.to_yaml_string(),
     )
     return Clipper(
-        samplerate=samplerate,
+        preprocessor=preprocessor,
         duration=config.duration,
         max_empty=config.max_empty,
         random=config.random if random else False,
@@ -77,11 +82,12 @@ def select_subclip(
     example: PreprocessedExample,
     start: float,
     duration: float,
-    samplerate: float,
+    input_samplerate: float,
+    output_samplerate: float,
     fill_value: float = 0,
 ) -> PreprocessedExample:
-    audio_width = int(np.floor(duration * samplerate))
-    audio_start = int(np.floor(start * samplerate))
+    audio_width = int(np.floor(duration * input_samplerate))
+    audio_start = int(np.floor(start * input_samplerate))
 
     audio = adjust_width(
         example.audio[audio_start : audio_start + audio_width],
@@ -89,12 +95,8 @@ def select_subclip(
         value=fill_value,
     )
 
-    audio_duration = example.audio.shape[-1] / samplerate
-    spec_sr = example.spectrogram.shape[-1] / audio_duration
-
-    spec_start = int(np.floor(start * spec_sr))
-    spec_width = int(np.floor(duration * spec_sr))
-
+    spec_start = int(np.floor(start * output_samplerate))
+    spec_width = int(np.floor(duration * output_samplerate))
     return PreprocessedExample(
         audio=audio,
         spectrogram=adjust_width(

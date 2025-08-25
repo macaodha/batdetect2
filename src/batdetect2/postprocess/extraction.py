@@ -15,108 +15,73 @@ precise time-frequency location of each detection. The final output aggregates
 all extracted information into a structured `xarray.Dataset`.
 """
 
-import xarray as xr
-from soundevent.arrays import Dimensions
+from typing import List, Optional, Tuple, Union
+
+import torch
+
+from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
+from batdetect2.typing.postprocess import Detections, ModelOutput
 
 __all__ = [
-    "extract_values_at_positions",
-    "extract_detection_xr_dataset",
+    "extract_prediction_tensor",
 ]
 
 
-def extract_values_at_positions(
-    array: xr.DataArray,
-    positions: xr.DataArray,
-) -> xr.DataArray:
-    """Extract values from an array at specified time-frequency positions.
-
-    Uses coordinate-based indexing to retrieve values from a source `array`
-    (e.g., class probabilities, size predictions, features) at the time and
-    frequency coordinates defined in the `positions` array.
-
-    Parameters
-    ----------
-    array : xr.DataArray
-        The source DataArray from which to extract values. Must have 'time'
-        and 'frequency' dimensions and coordinates matching the space of
-        `positions`.
-    positions : xr.DataArray
-        A 1D DataArray whose 'time' and 'frequency' coordinates specify the
-        locations from which to extract values.
-
-    Returns
-    -------
-    xr.DataArray
-        A DataArray containing the values extracted from `array` at the given
-        positions.
-
-    Raises
-    ------
-    ValueError, IndexError, KeyError
-        If dimensions or coordinates are missing or incompatible between
-        `array` and `positions`, or if selection fails.
-    """
-    return array.sel(
-        **{
-            Dimensions.frequency.value: positions.coords[
-                Dimensions.frequency.value
-            ],
-            Dimensions.time.value: positions.coords[Dimensions.time.value],
-        }
-    ).T
-
-
-def extract_detection_xr_dataset(
-    positions: xr.DataArray,
-    sizes: xr.DataArray,
-    classes: xr.DataArray,
-    features: xr.DataArray,
-) -> xr.Dataset:
-    """Combine extracted detection information into a structured xr.Dataset.
-
-    Takes the detection positions/scores and the full model output heatmaps
-    (sizes, classes, optional features), extracts the relevant data at the
-    detection positions, and packages everything into a single `xarray.Dataset`
-    where all variables are indexed by a common 'detection' dimension.
-
-    Parameters
-    ----------
-    positions : xr.DataArray
-        Output from `extract_detections_from_array`, containing detection
-        scores as data and 'time', 'frequency' coordinates along the
-        'detection' dimension.
-    sizes : xr.DataArray
-        The full size prediction heatmap from the model, with dimensions like
-        ('dimension', 'time', 'frequency').
-    classes : xr.DataArray
-        The full class probability heatmap from the model, with dimensions like
-        ('category', 'time', 'frequency').
-    features : xr.DataArray
-        The full feature map from the model, with
-        dimensions like ('feature', 'time', 'frequency').
-
-    Returns
-    -------
-    xr.Dataset
-        An xarray Dataset containing aligned information for each detection:
-        - 'scores': DataArray from `positions` (score data, time/freq coords).
-        - 'dimensions': DataArray with extracted size values
-          (dims: 'detection', 'dimension').
-        - 'classes': DataArray with extracted class probabilities
-          (dims: 'detection', 'category').
-        - 'features': DataArray with extracted feature vectors
-          (dims: 'detection', 'feature'), if `features` was provided. All
-          DataArrays share the 'detection' dimension and associated
-          time/frequency coordinates.
-    """
-    sizes = extract_values_at_positions(sizes, positions)
-    classes = extract_values_at_positions(classes, positions)
-    features = extract_values_at_positions(features, positions)
-    return xr.Dataset(
-        {
-            "scores": positions,
-            "dimensions": sizes,
-            "classes": classes,
-            "features": features,
-        }
+def extract_prediction_tensor(
+    output: ModelOutput,
+    max_detections: int = 200,
+    threshold: Optional[float] = None,
+    nms_kernel_size: Union[int, Tuple[int, int]] = NMS_KERNEL_SIZE,
+) -> List[Detections]:
+    detection_heatmap = non_max_suppression(
+        output.detection_probs,
+        kernel_size=nms_kernel_size,
     )
+
+    height = detection_heatmap.shape[-2]
+    width = detection_heatmap.shape[-1]
+
+    freqs, times = torch.meshgrid(
+        torch.arange(height, dtype=torch.int32),
+        torch.arange(width, dtype=torch.int32),
+        indexing="ij",
+    )
+
+    freqs = freqs.flatten()
+    times = times.flatten()
+
+    predictions = []
+    for idx, item in enumerate(detection_heatmap):
+        item = item.squeeze().flatten()  # Remove channel dim
+        indices = torch.argsort(item, descending=True)[:max_detections]
+
+        detection_scores = item.take(indices)
+        detection_freqs = freqs.take(indices)
+        detection_times = times.take(indices)
+        sizes = output.size_preds[idx, :, detection_freqs, detection_times].T
+        features = output.features[idx, :, detection_freqs, detection_times].T
+        class_scores = output.class_probs[
+            idx, :, detection_freqs, detection_times
+        ].T
+
+        if threshold is not None:
+            mask = detection_scores >= threshold
+            detection_scores = detection_scores[mask]
+            sizes = sizes[mask]
+            detection_times = detection_times[mask]
+            detection_freqs = detection_freqs[mask]
+            features = features[mask]
+            class_scores = class_scores[mask]
+
+        predictions.append(
+            Detections(
+                scores=detection_scores,
+                sizes=sizes,
+                features=features,
+                class_scores=class_scores,
+                times=detection_times.to(torch.float32) / width,
+                frequencies=(detection_freqs.to(torch.float32) / height),
+            )
+        )
+
+    return predictions

@@ -148,7 +148,9 @@ class PreprocessorProtocol(Protocol):
 
     min_freq: float
 
-    samplerate: int
+    input_samplerate: int
+
+    output_samplerate: float
 
     audio_pipeline: AudioPipeline
 
