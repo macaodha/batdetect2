@@ -257,10 +257,14 @@ class ResizeSpec(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         current_length = spec.shape[-1]
         target_length = int(self.time_factor * current_length)
-        return torch.nn.functional.interpolate(
-            spec.unsqueeze(0).unsqueeze(0),
-            size=(self.height, target_length),
-            mode="bilinear",
+        return (
+            torch.nn.functional.interpolate(
+                spec.unsqueeze(0).unsqueeze(0),
+                size=(self.height, target_length),
+                mode="bilinear",
+            )
+            .squeeze(0)
+            .squeeze(0)
         )
 
 

@@ -37,12 +37,12 @@ class Heatmaps(NamedTuple):
         scaled dimensions placed at the event reference points.
     """
 
-    detection: xr.DataArray
-    classes: xr.DataArray
-    size: xr.DataArray
+    detection: torch.Tensor
+    classes: torch.Tensor
+    size: torch.Tensor
 
 
-ClipLabeller = Callable[[data.ClipAnnotation, xr.DataArray], Heatmaps]
+ClipLabeller = Callable[[data.ClipAnnotation, torch.Tensor], Heatmaps]
 """Type alias for the final clip labelling function.
 
 This function takes the complete annotations for a clip and the corresponding
