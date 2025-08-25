@@ -210,6 +210,9 @@ def generate_heatmaps(
         indexing="ij",
     )
 
+    freqs = freqs.to(spec)
+    times = times.to(spec)
+
     for sound_event_annotation in clip_annotation.sound_events:
         geom = sound_event_annotation.sound_event.geometry
         if geom is None:

@@ -47,8 +47,8 @@ def extract_prediction_tensor(
         indexing="ij",
     )
 
-    freqs = freqs.flatten()
-    times = times.flatten()
+    freqs = freqs.flatten().to(detection_heatmap)
+    times = times.flatten().to(detection_heatmap)
 
     output_size_preds = output.size_preds.detach()
     output_features = output.features.detach()
@@ -58,7 +58,6 @@ def extract_prediction_tensor(
     for idx, item in enumerate(detection_heatmap):
         item = item.squeeze().flatten()  # Remove channel dim
         indices = torch.argsort(item, descending=True)[:max_detections]
-        indices.to(detection_heatmap)
 
         detection_scores = item.take(indices)
         detection_freqs = freqs.take(indices)
