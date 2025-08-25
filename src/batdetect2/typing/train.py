@@ -1,5 +1,6 @@
 from typing import Callable, NamedTuple, Protocol, Tuple
 
+import numpy as np
 import torch
 import xarray as xr
 from soundevent import data
@@ -40,6 +41,15 @@ class Heatmaps(NamedTuple):
     detection: torch.Tensor
     classes: torch.Tensor
     size: torch.Tensor
+
+
+class PreprocessedExample(NamedTuple):
+    audio: np.ndarray
+    spectrogram: np.ndarray
+    detection_heatmap: np.ndarray
+    class_heatmap: np.ndarray
+    size_heatmap: np.ndarray
+    clip_annotation: data.ClipAnnotation
 
 
 ClipLabeller = Callable[[data.ClipAnnotation, torch.Tensor], Heatmaps]

@@ -66,16 +66,6 @@ __all__ = ["preprocess"]
     ),
 )
 @click.option(
-    "--force",
-    is_flag=True,
-    help=(
-        "If a preprocessed file already exists, this option tells the "
-        "program to overwrite it with the new preprocessed data. Use "
-        "this if you want to re-do the preprocessing even if the files "
-        "already exist."
-    ),
-)
-@click.option(
     "--num-workers",
     type=int,
     help=(
@@ -97,7 +87,6 @@ def preprocess(
     base_dir: Optional[Path] = None,
     config: Optional[Path] = None,
     config_field: Optional[str] = None,
-    force: bool = False,
     num_workers: Optional[int] = None,
     dataset_field: Optional[str] = None,
     verbose: int = 0,
@@ -149,6 +138,5 @@ def preprocess(
         dataset,
         conf,
         output=output,
-        force=force,
         max_workers=num_workers,
     )
