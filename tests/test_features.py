@@ -192,8 +192,6 @@ def test_compute_max_power_bb(max_power: int):
         "high_freq": high_freq,
     }
 
-    print(prediction)
-
     max_power_bb = feats.compute_max_power_bb(
         prediction,
         spec,

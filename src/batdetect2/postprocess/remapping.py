@@ -39,7 +39,6 @@ def map_detection_to_clip(
 ) -> Detections:
     duration = end_time - start_time
     bandwidth = max_freq - min_freq
-    print(f"{bandwidth=} {min_freq=} {detections.frequencies=}")
     return Detections(
         scores=detections.scores,
         sizes=detections.sizes,
