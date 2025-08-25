@@ -88,12 +88,12 @@ def test_encoding_decoding_roundtrip_recovers_object(
     )
     predictions = postprocessor.get_predictions(
         ModelOutput(
-            detection_probs=encoded["detection_heatmap"]
-            .unsqueeze(0)
-            .unsqueeze(0),
-            size_preds=encoded["size_heatmap"].unsqueeze(0),
-            class_probs=encoded["class_heatmap"].unsqueeze(0),
-            features=encoded["spectrogram"].unsqueeze(0).unsqueeze(0),
+            detection_probs=encoded.detection_heatmap.unsqueeze(0).unsqueeze(
+                0
+            ),
+            size_preds=encoded.size_heatmap.unsqueeze(0),
+            class_probs=encoded.class_heatmap.unsqueeze(0),
+            features=encoded.spectrogram.unsqueeze(0).unsqueeze(0),
         ),
         [clip],
     )[0]
@@ -182,12 +182,12 @@ def test_encoding_decoding_roundtrip_recovers_object_with_roi_override(
     )
     predictions = postprocessor.get_predictions(
         ModelOutput(
-            detection_probs=encoded["detection_heatmap"]
-            .unsqueeze(0)
-            .unsqueeze(0),
-            size_preds=encoded["size_heatmap"].unsqueeze(0),
-            class_probs=encoded["class_heatmap"].unsqueeze(0),
-            features=encoded["spectrogram"].unsqueeze(0).unsqueeze(0),
+            detection_probs=encoded.detection_heatmap.unsqueeze(0).unsqueeze(
+                0
+            ),
+            size_preds=encoded.size_heatmap.unsqueeze(0),
+            class_probs=encoded.class_heatmap.unsqueeze(0),
+            features=encoded.spectrogram.unsqueeze(0).unsqueeze(0),
         ),
         [clip],
     )[0]

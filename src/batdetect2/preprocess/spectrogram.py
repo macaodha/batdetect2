@@ -89,7 +89,7 @@ def build_spectrogram_builder(
         n_fft=n_fft,
         hop_length=hop_length,
         window_fn=get_spectrogram_window(conf.window_fn),
-        center=False,
+        center=True,
         power=1,
     )
 

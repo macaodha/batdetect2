@@ -24,6 +24,9 @@ targets:
       - name: rhifer
         tags:
           - value: Rhinolophus ferrumequinum
+        roi:
+          name: anchor_bbox
+          anchor: top-left
     generic_class:
       - key: class
         value: Bat

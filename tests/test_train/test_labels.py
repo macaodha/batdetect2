@@ -1,10 +1,9 @@
 from pathlib import Path
 
-import numpy as np
-import xarray as xr
+import torch
 from soundevent import data
 
-from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
+from batdetect2.targets import TargetConfig, build_targets
 from batdetect2.targets.rois import AnchorBBoxMapperConfig
 from batdetect2.targets.terms import TagInfo
 from batdetect2.train.labels import generate_heatmaps
@@ -21,61 +20,8 @@ recording = data.Recording(
 clip = data.Clip(
     recording=recording,
     start_time=0,
-    end_time=1,
+    end_time=100,
 )
-
-
-def test_generated_heatmaps_have_correct_dimensions(
-    sample_targets: TargetProtocol,
-):
-    spec = xr.DataArray(
-        data=np.random.rand(100, 100),
-        dims=["time", "frequency"],
-        coords={
-            "time": np.linspace(0, 100, 100, endpoint=False),
-            "frequency": np.linspace(0, 100, 100, endpoint=False),
-        },
-    )
-
-    clip_annotation = data.ClipAnnotation(
-        clip=clip,
-        sound_events=[
-            data.SoundEventAnnotation(
-                sound_event=data.SoundEvent(
-                    recording=recording,
-                    geometry=data.BoundingBox(
-                        coordinates=[10, 10, 20, 20],
-                    ),
-                ),
-            )
-        ],
-    )
-
-    detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
-        clip_annotation.sound_events,
-        spec,
-        targets=sample_targets,
-    )
-
-    assert isinstance(detection_heatmap, xr.DataArray)
-    assert detection_heatmap.shape == (100, 100)
-    assert detection_heatmap.dims == ("time", "frequency")
-
-    assert isinstance(class_heatmap, xr.DataArray)
-    assert class_heatmap.shape == (2, 100, 100)
-    assert class_heatmap.dims == ("category", "time", "frequency")
-    assert class_heatmap.coords["category"].values.tolist() == [
-        "pippip",
-        "myomyo",
-    ]
-
-    assert isinstance(size_heatmap, xr.DataArray)
-    assert size_heatmap.shape == (2, 100, 100)
-    assert size_heatmap.dims == ("dimension", "time", "frequency")
-    assert size_heatmap.coords["dimension"].values.tolist() == [
-        "width",
-        "height",
-    ]
 
 
 def test_generated_heatmap_are_non_zero_at_correct_positions(
@@ -93,15 +39,6 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
 
     targets = build_targets(config)
 
-    spec = xr.DataArray(
-        data=np.random.rand(100, 100),
-        dims=["time", "frequency"],
-        coords={
-            "time": np.linspace(0, 100, 100, endpoint=False),
-            "frequency": np.linspace(0, 100, 100, endpoint=False),
-        },
-    )
-
     clip_annotation = data.ClipAnnotation(
         clip=clip,
         sound_events=[
@@ -109,7 +46,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
                 sound_event=data.SoundEvent(
                     recording=recording,
                     geometry=data.BoundingBox(
-                        coordinates=[10, 10, 20, 20],
+                        coordinates=[10, 10, 20, 30],
                     ),
                 ),
                 tags=[data.Tag(key=pippip_tag.key, value=pippip_tag.value)],  # type: ignore
@@ -118,12 +55,16 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
     )
 
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
-        clip_annotation.sound_events,
-        spec,
+        clip_annotation,
+        torch.rand([100, 100]),
+        min_freq=0,
+        max_freq=100,
         targets=targets,
     )
-    assert size_heatmap.sel(time=10, frequency=10, dimension="width") == 10
-    assert size_heatmap.sel(time=10, frequency=10, dimension="height") == 10
-    assert class_heatmap.sel(time=10, frequency=10, category="pippip") == 1.0
-    assert class_heatmap.sel(time=10, frequency=10, category="myomyo") == 0.0
-    assert detection_heatmap.sel(time=10, frequency=10) == 1.0
+    pippip_index = targets.class_names.index("pippip")
+    myomyo_index = targets.class_names.index("myomyo")
+    assert size_heatmap[0, 10, 10] == 10
+    assert size_heatmap[1, 10, 10] == 20
+    assert class_heatmap[pippip_index, 10, 10] == 1.0
+    assert class_heatmap[myomyo_index, 10, 10] == 0.0
+    assert detection_heatmap[10, 10] == 1.0

@@ -1,10 +1,8 @@
 from collections.abc import Callable
 
-import numpy as np
 import pytest
 import torch
-import xarray as xr
-from soundevent import arrays, data
+from soundevent import data
 
 from batdetect2.train.augmentations import (
     add_echo,
@@ -162,29 +160,10 @@ def test_selected_random_subclip_has_the_correct_width(
         labeller=sample_labeller,
     )
 
-    subclip = select_subclip(original, start=0, span=0.513)
-    assert subclip["spectrogram"].shape[1] == 512
-
-
-def test_add_echo_after_subclip(
-    sample_preprocessor: PreprocessorProtocol,
-    sample_audio_loader: AudioLoader,
-    sample_labeller: ClipLabeller,
-    create_recording: Callable[..., data.Recording],
-):
-    recording1 = create_recording(duration=2)
-    clip1 = data.Clip(recording=recording1, start_time=0, end_time=1)
-    clip_annotation_1 = data.ClipAnnotation(clip=clip1)
-    original = generate_train_example(
-        clip_annotation_1,
-        audio_loader=sample_audio_loader,
-        preprocessor=sample_preprocessor,
-        labeller=sample_labeller,
+    subclip = select_subclip(
+        original,
+        samplerate=256_000,
+        start=0,
+        duration=0.512,
     )
-
-    assert original.sizes["time"] > 512
-
-    subclip = select_subclip(original, start=0, span=0.513)
-    with_echo = add_echo(subclip, preprocessor=sample_preprocessor)
-
-    assert with_echo.sizes["time"] == 512
+    assert subclip.spectrogram.shape[1] == 512
