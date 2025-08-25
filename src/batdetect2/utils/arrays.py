@@ -2,6 +2,62 @@ import numpy as np
 import xarray as xr
 
 
+def spec_to_xarray(
+    spec: np.ndarray,
+    start_time: float,
+    end_time: float,
+    min_freq: float,
+    max_freq: float,
+) -> xr.DataArray:
+    if spec.ndim != 2:
+        raise ValueError(
+            "Input numpy spectrogram array should be 2-dimensional"
+        )
+
+    height, width = spec.shape
+    return xr.DataArray(
+        data=spec,
+        dims=["frequency", "time"],
+        coords={
+            "frequency": np.linspace(
+                min_freq,
+                max_freq,
+                height,
+                endpoint=False,
+            ),
+            "time": np.linspace(
+                start_time,
+                end_time,
+                width,
+                endpoint=False,
+            ),
+        },
+    )
+
+
+def audio_to_xarray(
+    wav: np.ndarray,
+    start_time: float,
+    end_time: float,
+    time_axis: str = "time",
+) -> xr.DataArray:
+    if wav.ndim != 1:
+        raise ValueError("Input numpy audio array should be 1-dimensional")
+
+    return xr.DataArray(
+        data=wav,
+        dims=[time_axis],
+        coords={
+            time_axis: np.linspace(
+                start_time,
+                end_time,
+                len(wav),
+                endpoint=False,
+            ),
+        },
+    )
+
+
 def extend_width(
     array: np.ndarray,
     extra: int,

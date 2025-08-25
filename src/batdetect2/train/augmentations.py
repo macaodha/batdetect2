@@ -129,9 +129,7 @@ def mix_examples(
     with xr.set_options(keep_attrs=True):
         combined = weight * audio1 + (1 - weight) * audio2
 
-    spectrogram = preprocessor.compute_spectrogram(
-        combined.rename({"audio_time": "time"})
-    ).data
+    spectrogram = preprocessor.process_numpy(combined.data)
 
     # NOTE: The subclip's spectrogram might be slightly longer than the
     # spectrogram computed from the subclip's audio. This is due to a
@@ -241,9 +239,7 @@ def add_echo(
     with xr.set_options(keep_attrs=True):
         audio = audio + weight * audio_delay
 
-    spectrogram = preprocessor.compute_spectrogram(
-        audio.rename({"audio_time": "time"}),
-    ).data
+    spectrogram = preprocessor.process_numpy(audio.data)
 
     # NOTE: The subclip's spectrogram might be slightly longer than the
     # spectrogram computed from the subclip's audio. This is due to a

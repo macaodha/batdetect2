@@ -12,6 +12,7 @@ from soundevent import data, terms
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.targets import (
     TargetConfig,
     TermRegistry,
@@ -27,6 +28,7 @@ from batdetect2.typing import (
     PreprocessorProtocol,
     TargetProtocol,
 )
+from batdetect2.typing.preprocess import AudioLoader
 
 
 @pytest.fixture
@@ -366,6 +368,11 @@ def sample_term_registry() -> TermRegistry:
 @pytest.fixture
 def sample_preprocessor() -> PreprocessorProtocol:
     return build_preprocessor()
+
+
+@pytest.fixture
+def sample_audio_loader() -> AudioLoader:
+    return build_audio_loader()
 
 
 @pytest.fixture

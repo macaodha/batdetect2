@@ -28,8 +28,10 @@ from soundevent import data
 
 from batdetect2.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.typing.preprocess import PreprocessorProtocol
+from batdetect2.preprocess.audio import build_audio_loader
+from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
 from batdetect2.typing.targets import Position, Size
+from batdetect2.utils.arrays import spec_to_xarray
 
 __all__ = [
     "Anchor",
@@ -365,6 +367,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
     def __init__(
         self,
         preprocessor: PreprocessorProtocol,
+        audio_loader: AudioLoader,
         time_scale: float = DEFAULT_TIME_SCALE,
         frequency_scale: float = DEFAULT_FREQUENCY_SCALE,
         loading_buffer: float = 0.01,
@@ -383,6 +386,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
             Buffer in seconds to add when loading audio clips.
         """
         self.preprocessor = preprocessor
+        self.audio_loader = audio_loader
         self.time_scale = time_scale
         self.frequency_scale = frequency_scale
         self.loading_buffer = loading_buffer
@@ -422,6 +426,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
         time, freq = get_peak_energy_coordinates(
             recording=sound_event.recording,
+            audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             start_time=start_time,
             end_time=end_time,
@@ -511,8 +516,10 @@ def build_roi_mapper(
 
     if config.name == "peak_energy_bbox":
         preprocessor = build_preprocessor(config.preprocessing)
+        audio_loader = build_audio_loader(config.preprocessing.audio)
         return PeakEnergyBBoxMapper(
             preprocessor=preprocessor,
+            audio_loader=audio_loader,
             time_scale=config.time_scale,
             frequency_scale=config.frequency_scale,
             loading_buffer=config.loading_buffer,
@@ -617,6 +624,7 @@ def _build_bounding_box(
 
 def get_peak_energy_coordinates(
     recording: data.Recording,
+    audio_loader: AudioLoader,
     preprocessor: PreprocessorProtocol,
     start_time: float = 0,
     end_time: Optional[float] = None,
@@ -669,7 +677,15 @@ def get_peak_energy_coordinates(
         end_time=clip_end,
     )
 
-    spec = preprocessor.preprocess_clip(clip)
+    wav = audio_loader.load_clip(clip)
+    spec = preprocessor.process_numpy(wav)
+    spec = spec_to_xarray(
+        spec,
+        clip.start_time,
+        clip.end_time,
+        min_freq=preprocessor.min_freq,
+        max_freq=preprocessor.max_freq,
+    )
     low_freq = max(low_freq, preprocessor.min_freq)
     high_freq = min(high_freq, preprocessor.max_freq)
     selection = spec.sel(

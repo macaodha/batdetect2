@@ -28,13 +28,12 @@ This module provides the primary interface:
 
 """
 
-from typing import Optional, Union
+from typing import Optional
 
-import numpy as np
-import xarray as xr
+import torch
 from loguru import logger
 from pydantic import Field
-from soundevent import data
+from soundevent.data import PathLike
 
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.preprocess.audio import (
@@ -44,28 +43,23 @@ from batdetect2.preprocess.audio import (
     AudioConfig,
     ResampleConfig,
     build_audio_loader,
+    build_audio_pipeline,
 )
 from batdetect2.preprocess.spectrogram import (
     MAX_FREQ,
     MIN_FREQ,
-    ConfigurableSpectrogramBuilder,
     FrequencyConfig,
     PcenConfig,
-    SpecSizeConfig,
     SpectrogramConfig,
+    SpectrogramPipeline,
     STFTConfig,
     build_spectrogram_builder,
-    get_spectrogram_resolution,
+    build_spectrogram_pipeline,
 )
-from batdetect2.typing.preprocess import (
-    AudioLoader,
-    PreprocessorProtocol,
-    SpectrogramBuilder,
-)
+from batdetect2.typing import PreprocessorProtocol
 
 __all__ = [
     "AudioConfig",
-    "ConfigurableSpectrogramBuilder",
     "DEFAULT_DURATION",
     "FrequencyConfig",
     "MAX_FREQ",
@@ -75,16 +69,11 @@ __all__ = [
     "ResampleConfig",
     "SCALE_RAW_AUDIO",
     "STFTConfig",
-    "SpecSizeConfig",
     "SpectrogramConfig",
-    "StandardPreprocessor",
     "TARGET_SAMPLERATE_HZ",
     "build_audio_loader",
-    "build_preprocessor",
     "build_spectrogram_builder",
-    "get_spectrogram_resolution",
     "load_preprocessing_config",
-    "get_default_preprocessor",
 ]
 
 
@@ -110,343 +99,61 @@ class PreprocessingConfig(BaseConfig):
     spectrogram: SpectrogramConfig = Field(default_factory=SpectrogramConfig)
 
 
-class StandardPreprocessor(PreprocessorProtocol):
-    """Standard implementation of the `Preprocessor` protocol.
+def load_preprocessing_config(
+    path: PathLike,
+    field: Optional[str] = None,
+) -> PreprocessingConfig:
+    return load_config(path, schema=PreprocessingConfig, field=field)
 
-    Orchestrates the audio loading and spectrogram generation pipeline using
-    an `AudioLoader` and a `SpectrogramBuilder` internally, which are
-    configured according to a `PreprocessingConfig`.
 
-    This class is typically instantiated using the `build_preprocessor`
-    factory function.
+class StandardPreprocessor(torch.nn.Module, PreprocessorProtocol):
+    """Standard implementation of the `Preprocessor` protocol."""
 
-    Attributes
-    ----------
-    audio_loader : AudioLoader
-        The configured audio loader instance used for waveform loading and
-        initial processing.
-    spectrogram_builder : SpectrogramBuilder
-        The configured spectrogram builder instance used for generating
-        spectrograms from waveforms.
-    default_samplerate : int
-        The sample rate (in Hz) assumed for input waveforms when they are
-        provided as raw NumPy arrays without coordinate information (e.g.,
-        when calling `compute_spectrogram` directly with `np.ndarray`).
-        This value is derived from the `AudioConfig` (target resample rate
-        or default if resampling is off) and also serves as documentation
-        for the pipeline's intended operating sample rate. Note that when
-        processing `xr.DataArray` inputs that have coordinate information
-        (the standard internal workflow), the sample rate embedded in the
-        coordinates takes precedence over this default value during
-        spectrogram calculation.
-    """
-
-    audio_loader: AudioLoader
-    spectrogram_builder: SpectrogramBuilder
-    default_samplerate: int
+    samplerate: int
     max_freq: float
     min_freq: float
 
     def __init__(
         self,
-        audio_loader: AudioLoader,
-        spectrogram_builder: SpectrogramBuilder,
-        default_samplerate: int,
+        audio_pipeline: torch.nn.Module,
+        spectrogram_pipeline: SpectrogramPipeline,
+        samplerate: int,
         max_freq: float,
         min_freq: float,
     ) -> None:
-        """Initialize the StandardPreprocessor.
-
-        Parameters
-        ----------
-        audio_loader : AudioLoader
-            An initialized audio loader conforming to the AudioLoader protocol.
-        spectrogram_builder : SpectrogramBuilder
-            An initialized spectrogram builder conforming to the
-            SpectrogramBuilder protocol.
-        default_samplerate : int
-            The sample rate to assume for NumPy array inputs and potentially
-            reflecting the target rate of the audio config.
-        """
-        self.audio_loader = audio_loader
-        self.spectrogram_builder = spectrogram_builder
-        self.default_samplerate = default_samplerate
+        super().__init__()
+        self.audio_pipeline = audio_pipeline
+        self.spectrogram_pipeline = spectrogram_pipeline
+        self.samplerate = samplerate
         self.max_freq = max_freq
         self.min_freq = min_freq
 
-    def load_file_audio(
-        self,
-        path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform from a file path.
-
-        Delegates to the internal `audio_loader`.
-
-        Parameters
-        ----------
-        path : PathLike
-            Path to the audio file.
-        audio_dir : PathLike, optional
-            A directory prefix if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform (typically first
-            channel).
-        """
-        return self.audio_loader.load_file(
-            path,
-            audio_dir=audio_dir,
-        )
-
-    def load_recording_audio(
-        self,
-        recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform for a Recording.
-
-        Delegates to the internal `audio_loader`.
-
-        Parameters
-        ----------
-        recording : data.Recording
-            The Recording object.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform (typically first
-            channel).
-        """
-        return self.audio_loader.load_recording(
-            recording,
-            audio_dir=audio_dir,
-        )
-
-    def load_clip_audio(
-        self,
-        clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform for a Clip.
-
-        Delegates to the internal `audio_loader`.
-
-        Parameters
-        ----------
-        clip : data.Clip
-            The Clip object defining the segment.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform segment (typically first
-            channel).
-        """
-        return self.audio_loader.load_clip(
-            clip,
-            audio_dir=audio_dir,
-        )
-
-    def preprocess_file(
-        self,
-        path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio from a file and compute the final processed spectrogram.
-
-        Performs the full pipeline:
-
-            Load -> Preprocess Audio -> Compute Spectrogram.
-
-        Parameters
-        ----------
-        path : PathLike
-            Path to the audio file.
-        audio_dir : PathLike, optional
-            A directory prefix if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-        """
-        wav = self.load_file_audio(path, audio_dir=audio_dir)
-        return self.spectrogram_builder(
-            wav,
-            samplerate=self.default_samplerate,
-        )
-
-    def preprocess_recording(
-        self,
-        recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio for a Recording and compute the processed spectrogram.
-
-        Performs the full pipeline for the entire duration of the recording.
-
-        Parameters
-        ----------
-        recording : data.Recording
-            The Recording object.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-        """
-        wav = self.load_recording_audio(recording, audio_dir=audio_dir)
-        return self.spectrogram_builder(
-            wav,
-            samplerate=self.default_samplerate,
-        )
-
-    def preprocess_clip(
-        self,
-        clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio for a Clip and compute the final processed spectrogram.
-
-        Performs the full pipeline for the specified clip segment.
-
-        Parameters
-        ----------
-        clip : data.Clip
-            The Clip object defining the audio segment.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-        """
-        wav = self.load_clip_audio(clip, audio_dir=audio_dir)
-        return self.spectrogram_builder(
-            wav,
-            samplerate=self.default_samplerate,
-        )
-
-    def compute_spectrogram(
-        self, wav: Union[xr.DataArray, np.ndarray]
-    ) -> xr.DataArray:
-        """Compute the spectrogram from a pre-loaded audio waveform.
-
-        Applies the configured spectrogram generation steps
-        (STFT, scaling, etc.) using the internal `spectrogram_builder`.
-
-        If `wav` is a NumPy array, the `default_samplerate` stored in this
-        preprocessor instance will be used. If `wav` is an xarray DataArray
-        with time coordinates, the sample rate derived from those coordinates
-        will take precedence over `default_samplerate`.
-
-        Parameters
-        ----------
-        wav : Union[xr.DataArray, np.ndarray]
-            The input audio waveform. If numpy array, `default_samplerate`
-            stored in this object will be assumed.
-
-        Returns
-        -------
-        xr.DataArray
-            The computed spectrogram.
-        """
-        return self.spectrogram_builder(
-            wav,
-            samplerate=self.default_samplerate,
-        )
-
-
-def load_preprocessing_config(
-    path: data.PathLike,
-    field: Optional[str] = None,
-) -> PreprocessingConfig:
-    """Load the unified preprocessing configuration from a file.
-
-    Reads a configuration file (YAML) and validates it against the
-    `PreprocessingConfig` schema, potentially extracting data from a nested
-    field.
-
-    Parameters
-    ----------
-    path : PathLike
-        Path to the configuration file.
-    field : str, optional
-        Dot-separated path to a nested section within the file containing the
-        preprocessing configuration (e.g., "train.preprocessing"). If None, the
-        entire file content is validated as the PreprocessingConfig.
-
-    Returns
-    -------
-    PreprocessingConfig
-        Loaded and validated preprocessing configuration object.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the config file path does not exist.
-    yaml.YAMLError
-        If the file content is not valid YAML.
-    pydantic.ValidationError
-        If the loaded config data does not conform to PreprocessingConfig.
-    KeyError, TypeError
-        If `field` specifies an invalid path.
-    """
-    return load_config(path, schema=PreprocessingConfig, field=field)
+    def forward(self, wav: torch.Tensor) -> torch.Tensor:
+        wav = self.audio_pipeline(wav)
+        return self.spectrogram_pipeline(wav)
 
 
 def build_preprocessor(
     config: Optional[PreprocessingConfig] = None,
 ) -> PreprocessorProtocol:
-    """Factory function to build the standard preprocessor from configuration.
-
-    Creates instances of the required `AudioLoader` and `SpectrogramBuilder`
-    based on the provided `PreprocessingConfig` (or defaults if config is None),
-    determines the effective default sample rate, and initializes the
-    `StandardPreprocessor`.
-
-    Parameters
-    ----------
-    config : PreprocessingConfig, optional
-        The unified preprocessing configuration object. If None, default
-        configurations for audio and spectrogram processing will be used.
-
-    Returns
-    -------
-    Preprocessor
-        An initialized `StandardPreprocessor` instance ready to process audio
-        according to the configuration.
-    """
+    """Factory function to build the standard preprocessor from configuration."""
     config = config or PreprocessingConfig()
     logger.opt(lazy=True).debug(
         "Building preprocessor with config: \n{}",
         lambda: config.to_yaml_string(),
     )
 
-    default_samplerate = (
-        config.audio.resample.samplerate
-        if config.audio.resample
-        else TARGET_SAMPLERATE_HZ
-    )
+    samplerate = config.audio.samplerate
 
     min_freq = config.spectrogram.frequencies.min_freq
     max_freq = config.spectrogram.frequencies.max_freq
 
     return StandardPreprocessor(
-        audio_loader=build_audio_loader(config.audio),
-        spectrogram_builder=build_spectrogram_builder(config.spectrogram),
-        default_samplerate=default_samplerate,
+        audio_pipeline=build_audio_pipeline(config.audio),
+        spectrogram_pipeline=build_spectrogram_pipeline(
+            samplerate, config.spectrogram
+        ),
+        samplerate=samplerate,
         min_freq=min_freq,
         max_freq=max_freq,
     )

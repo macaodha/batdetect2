@@ -10,10 +10,10 @@ pipeline can interact consistently, regardless of the specific underlying
 implementation (e.g., different libraries or custom configurations).
 """
 
-from typing import Optional, Protocol, Union
+from typing import Optional, Protocol
 
 import numpy as np
-import xarray as xr
+import torch
 from soundevent import data
 
 __all__ = [
@@ -36,7 +36,7 @@ class AudioLoader(Protocol):
         self,
         path: data.PathLike,
         audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
+    ) -> np.ndarray:
         """Load and preprocess audio directly from a file path.
 
         Parameters
@@ -45,12 +45,6 @@ class AudioLoader(Protocol):
             Path to the audio file.
         audio_dir : PathLike, optional
             A directory prefix to prepend to the path if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform as an xarray DataArray
-            with time coordinates. Typically loads only the first channel.
 
         Raises
         ------
@@ -65,7 +59,7 @@ class AudioLoader(Protocol):
         self,
         recording: data.Recording,
         audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
+    ) -> np.ndarray:
         """Load and preprocess the entire audio for a Recording object.
 
         Parameters
@@ -95,7 +89,7 @@ class AudioLoader(Protocol):
         self,
         clip: data.Clip,
         audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
+    ) -> np.ndarray:
         """Load and preprocess the audio segment defined by a Clip object.
 
         Parameters
@@ -124,264 +118,41 @@ class AudioLoader(Protocol):
 
 
 class SpectrogramBuilder(Protocol):
-    """Defines the interface for a spectrogram generation component.
+    """Defines the interface for a spectrogram generation component."""
 
-    A SpectrogramBuilder takes a waveform (as numpy array or xarray DataArray)
-    and produces a spectrogram (as an xarray DataArray) based on its internal
-    configuration or implementation.
-    """
-
-    def __call__(
-        self,
-        wav: Union[np.ndarray, xr.DataArray],
-        samplerate: Optional[int] = None,
-    ) -> xr.DataArray:
-        """Generate a spectrogram from an audio waveform.
-
-        Parameters
-        ----------
-        wav : Union[np.ndarray, xr.DataArray]
-            The input audio waveform. If a numpy array, `samplerate` must
-            also be provided. If an xarray DataArray, it must have a 'time'
-            coordinate from which the sample rate can be inferred.
-        samplerate : int, optional
-            The sample rate of the audio in Hz. Required if `wav` is a
-            numpy array. If `wav` is an xarray DataArray, this parameter is
-            ignored as the sample rate is derived from the coordinates.
-
-        Returns
-        -------
-        xr.DataArray
-            The computed spectrogram as an xarray DataArray with 'time' and
-            'frequency' coordinates.
-
-        Raises
-        ------
-        ValueError
-            If `wav` is a numpy array and `samplerate` is not provided, or
-            if `wav` is an xarray DataArray without a valid 'time' coordinate.
-        """
+    def __call__(self, wav: torch.Tensor) -> torch.Tensor:
+        """Generate a spectrogram from an audio waveform."""
         ...
 
 
-class PreprocessorProtocol(Protocol):
-    """Defines a high-level interface for the complete preprocessing pipeline.
+class AudioPipeline(Protocol):
+    def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
 
-    A Preprocessor combines audio loading and spectrogram generation steps.
-    It provides methods to go directly from source descriptions (file paths,
-    Recording objects, Clip objects) to the final spectrogram representation
-    needed by the model. It may also expose intermediate steps like audio
-    loading or spectrogram computation from a waveform.
-    """
+
+class SpectrogramPipeline(Protocol):
+    def compute_spectrogram(self, wav: torch.Tensor) -> torch.Tensor: ...
+
+    def select_frequencies(self, spec: torch.Tensor) -> torch.Tensor: ...
+
+    def transform_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
+
+    def resize_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
+
+    def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
+
+
+class PreprocessorProtocol(Protocol):
+    """Defines a high-level interface for the complete preprocessing pipeline."""
 
     max_freq: float
 
     min_freq: float
 
-    def preprocess_file(
-        self,
-        path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio from a file and compute the final processed spectrogram.
+    audio_pipeline: AudioPipeline
 
-        Performs the full pipeline:
+    spectrogram_pipeline: SpectrogramPipeline
 
-            Load -> Preprocess Audio -> Compute Spectrogram.
+    def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
 
-        Parameters
-        ----------
-        path : PathLike
-            Path to the audio file.
-        audio_dir : PathLike, optional
-            A directory prefix if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file cannot be found.
-        Exception
-            If any step in the loading or preprocessing fails.
-        """
-        ...
-
-    def preprocess_recording(
-        self,
-        recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio for a Recording and compute the processed spectrogram.
-
-        Performs the full pipeline for the entire duration of the recording.
-
-        Parameters
-        ----------
-        recording : data.Recording
-            The Recording object.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file cannot be found.
-        Exception
-            If any step in the loading or preprocessing fails.
-        """
-        ...
-
-    def preprocess_clip(
-        self,
-        clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load audio for a Clip and compute the final processed spectrogram.
-
-        Performs the full pipeline for the specified clip segment.
-
-        Parameters
-        ----------
-        clip : data.Clip
-            The Clip object defining the audio segment.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The final processed spectrogram.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the audio file cannot be found.
-        Exception
-            If any step in the loading or preprocessing fails.
-        """
-        ...
-
-    def load_file_audio(
-        self,
-        path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform from a file path.
-
-        Performs the initial audio loading and waveform processing steps
-        (like resampling, scaling), but stops *before* spectrogram generation.
-
-        Parameters
-        ----------
-        path : PathLike
-            Path to the audio file.
-        audio_dir : PathLike, optional
-            A directory prefix if `path` is relative.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform.
-
-        Raises
-        ------
-        FileNotFoundError, Exception
-            If audio loading/preprocessing fails.
-        """
-        ...
-
-    def load_recording_audio(
-        self,
-        recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform for a Recording.
-
-        Performs the initial audio loading and waveform processing steps
-        for the entire recording duration.
-
-        Parameters
-        ----------
-        recording : data.Recording
-            The Recording object.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform.
-
-        Raises
-        ------
-        FileNotFoundError, Exception
-            If audio loading/preprocessing fails.
-        """
-        ...
-
-    def load_clip_audio(
-        self,
-        clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
-    ) -> xr.DataArray:
-        """Load and preprocess *only* the audio waveform for a Clip.
-
-        Performs the initial audio loading and waveform processing steps
-        for the specified clip segment.
-
-        Parameters
-        ----------
-        clip : data.Clip
-            The Clip object defining the segment.
-        audio_dir : PathLike, optional
-            Directory containing the audio file.
-
-        Returns
-        -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform segment.
-
-        Raises
-        ------
-        FileNotFoundError, Exception
-            If audio loading/preprocessing fails.
-        """
-        ...
-
-    def compute_spectrogram(
-        self,
-        wav: Union[xr.DataArray, np.ndarray],
-    ) -> xr.DataArray:
-        """Compute the spectrogram from a pre-loaded audio waveform.
-
-        Applies the spectrogram generation steps (STFT, scaling, etc.) defined
-        by the `SpectrogramBuilder` component of the preprocessor to an
-        already loaded (and potentially preprocessed) waveform.
-
-        Parameters
-        ----------
-        wav : Union[xr.DataArray, np.ndarray]
-            The input audio waveform. If numpy array, `samplerate` is required.
-        samplerate : int, optional
-            Sample rate in Hz (required if `wav` is np.ndarray).
-
-        Returns
-        -------
-        xr.DataArray
-            The computed spectrogram.
-
-        Raises
-        ------
-        ValueError, Exception
-            If waveform input is invalid or spectrogram computation fails.
-        """
-        ...
+    def process_numpy(self, wav: np.ndarray) -> np.ndarray:
+        return self(torch.tensor(wav)).numpy()[0, 0]

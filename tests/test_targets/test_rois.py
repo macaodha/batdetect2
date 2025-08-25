@@ -3,7 +3,11 @@ import pytest
 import soundfile as sf
 from soundevent import data
 
-from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
+from batdetect2.preprocess import (
+    PreprocessingConfig,
+    build_preprocessor,
+)
+from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.targets.rois import (
     DEFAULT_ANCHOR,
     DEFAULT_FREQUENCY_SCALE,
@@ -275,6 +279,8 @@ def test_get_peak_energy_coordinates(generate_whistle):
     # Build a preprocessor (default config should be fine for this test)
     preprocessor = build_preprocessor()
 
+    audio_loader = build_audio_loader()
+
     # Define a region of interest that contains the whistle
     start_time = 0.2
     end_time = 0.7
@@ -285,6 +291,7 @@ def test_get_peak_energy_coordinates(generate_whistle):
     peak_time, peak_freq = get_peak_energy_coordinates(
         recording=recording,
         preprocessor=preprocessor,
+        audio_loader=audio_loader,
         start_time=start_time,
         end_time=end_time,
         low_freq=low_freq,
@@ -356,6 +363,7 @@ def test_get_peak_energy_coordinates_with_two_whistles(generate_whistle):
     peak_time, peak_freq = get_peak_energy_coordinates(
         recording=recording,
         preprocessor=preprocessor,
+        audio_loader=build_audio_loader(),
         start_time=start_time,
         end_time=end_time,
         low_freq=low_freq,
@@ -389,6 +397,7 @@ def test_get_peak_energy_coordinates_silent_region(create_recording):
     peak_time, peak_freq = get_peak_energy_coordinates(
         recording=recording,
         preprocessor=preprocessor,
+        audio_loader=build_audio_loader(),
         start_time=start_time,
         end_time=end_time,
         low_freq=low_freq,
@@ -443,17 +452,11 @@ def test_peak_energy_bbox_mapper_encode(generate_whistle):
 
     # Instantiate the mapper with a preprocessor
     preprocessor = build_preprocessor(
-        PreprocessingConfig.model_validate(
-            {
-                "spectrogram": {
-                    "pcen": None,
-                    "spectral_mean_substraction": False,
-                }
-            }
-        )
+        PreprocessingConfig.model_validate({"spectrogram": {"transforms": []}})
     )
     mapper = PeakEnergyBBoxMapper(
         preprocessor=preprocessor,
+        audio_loader=build_audio_loader(),
         time_scale=time_scale,
         frequency_scale=freq_scale,
     )
@@ -493,6 +496,7 @@ def test_peak_energy_bbox_mapper_decode():
 
     mapper = PeakEnergyBBoxMapper(
         preprocessor=build_preprocessor(),
+        audio_loader=build_audio_loader(),
         time_scale=time_scale,
         frequency_scale=freq_scale,
     )
@@ -553,7 +557,11 @@ def test_peak_energy_bbox_mapper_encode_decode_roundtrip(generate_whistle):
             }
         )
     )
-    mapper = PeakEnergyBBoxMapper(preprocessor=preprocessor)
+    audio_loader = build_audio_loader()
+    mapper = PeakEnergyBBoxMapper(
+        preprocessor=preprocessor,
+        audio_loader=audio_loader,
+    )
 
     # When
     # Encode the sound event, then immediately decode the result.

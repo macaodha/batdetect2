@@ -25,6 +25,8 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Callable, Optional, Sequence
 
+import numpy as np
+import torch
 import xarray as xr
 from loguru import logger
 from pydantic import Field
@@ -34,9 +36,12 @@ from tqdm.auto import tqdm
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.data.datasets import Dataset
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
+from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.targets import TargetConfig, build_targets
 from batdetect2.train.labels import LabelConfig, build_clip_labeler
 from batdetect2.typing import ClipLabeller, PreprocessorProtocol
+from batdetect2.typing.preprocess import AudioLoader
+from batdetect2.utils.arrays import audio_to_xarray
 
 __all__ = [
     "preprocess_annotations",
@@ -76,6 +81,7 @@ def preprocess_dataset(
     targets = build_targets(config=config.targets)
     preprocessor = build_preprocessor(config=config.preprocess)
     labeller = build_clip_labeler(targets, config=config.labels)
+    audio_loader = build_audio_loader(config=config.preprocess.audio)
 
     if not output.exists():
         logger.debug("Creating directory {directory}", directory=output)
@@ -84,6 +90,7 @@ def preprocess_dataset(
     preprocess_annotations(
         dataset,
         output_dir=output,
+        audio_loader=audio_loader,
         preprocessor=preprocessor,
         labeller=labeller,
         replace=force,
@@ -93,6 +100,7 @@ def preprocess_dataset(
 
 def generate_train_example(
     clip_annotation: data.ClipAnnotation,
+    audio_loader: AudioLoader,
     preprocessor: PreprocessorProtocol,
     labeller: ClipLabeller,
 ) -> xr.Dataset:
@@ -140,9 +148,15 @@ def generate_train_example(
     - The original `ClipAnnotation` metadata is stored as a JSON string in the
       Dataset's attributes for provenance.
     """
-    wave = preprocessor.load_clip_audio(clip_annotation.clip)
+    wave = audio_loader.load_clip(clip_annotation.clip)
 
-    spectrogram = preprocessor.compute_spectrogram(wave)
+    spectrogram = _spec_to_xr(
+        preprocessor(torch.tensor(wave)),
+        start_time=clip_annotation.clip.start_time,
+        end_time=clip_annotation.clip.end_time,
+        min_freq=preprocessor.min_freq,
+        max_freq=preprocessor.max_freq,
+    )
 
     heatmaps = labeller(clip_annotation, spectrogram)
 
@@ -152,7 +166,12 @@ def generate_train_example(
             # the spectrogram time dimension, otherwise xarray will interpolate
             # the spectrogram and the heatmaps to the same temporal resolution
             # as the waveform.
-            "audio": wave.rename({"time": "audio_time"}),
+            "audio": audio_to_xarray(
+                wave,
+                start_time=clip_annotation.clip.start_time,
+                end_time=clip_annotation.clip.end_time,
+                time_axis="audio_time",
+            ),
             "spectrogram": spectrogram,
             "detection": heatmaps.detection,
             "class": heatmaps.classes,
@@ -167,6 +186,32 @@ def generate_train_example(
             exclude_defaults=True,
             exclude_unset=True,
         ),
+    )
+
+
+def _spec_to_xr(
+    spec: torch.Tensor,
+    start_time: float,
+    end_time: float,
+    min_freq: float,
+    max_freq: float,
+) -> xr.DataArray:
+    data = spec.numpy()[0, 0]
+
+    height, width = data.shape
+
+    return xr.DataArray(
+        data=data,
+        dims=[
+            "frequency",
+            "time",
+        ],
+        coords={
+            "frequency": np.linspace(
+                min_freq, max_freq, height, endpoint=False
+            ),
+            "time": np.linspace(start_time, end_time, width, endpoint=False),
+        },
     )
 
 
@@ -206,6 +251,7 @@ def preprocess_annotations(
     clip_annotations: Sequence[data.ClipAnnotation],
     output_dir: data.PathLike,
     preprocessor: PreprocessorProtocol,
+    audio_loader: AudioLoader,
     labeller: ClipLabeller,
     filename_fn: FilenameFn = _get_filename,
     replace: bool = False,
@@ -275,6 +321,7 @@ def preprocess_annotations(
                         output_dir=output_dir,
                         filename_fn=filename_fn,
                         replace=replace,
+                        audio_loader=audio_loader,
                         preprocessor=preprocessor,
                         labeller=labeller,
                     ),
@@ -290,6 +337,7 @@ def preprocess_annotations(
 def preprocess_single_annotation(
     clip_annotation: data.ClipAnnotation,
     output_dir: data.PathLike,
+    audio_loader: AudioLoader,
     preprocessor: PreprocessorProtocol,
     labeller: ClipLabeller,
     filename_fn: FilenameFn = _get_filename,
@@ -335,6 +383,7 @@ def preprocess_single_annotation(
     try:
         sample = generate_train_example(
             clip_annotation,
+            audio_loader=audio_loader,
             preprocessor=preprocessor,
             labeller=labeller,
         )

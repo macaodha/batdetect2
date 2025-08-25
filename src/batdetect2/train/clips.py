@@ -21,10 +21,12 @@ class ClipingConfig(BaseConfig):
 class Clipper(ClipperProtocol):
     def __init__(
         self,
+        samplerate: int,
         duration: float = 0.5,
         max_empty: float = 0.2,
         random: bool = True,
     ):
+        self.samplerate = samplerate
         self.duration = duration
         self.random = random
         self.max_empty = max_empty

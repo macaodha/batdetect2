@@ -11,11 +11,12 @@ from batdetect2.train.augmentations import (
 )
 from batdetect2.train.clips import select_subclip
 from batdetect2.train.preprocess import generate_train_example
-from batdetect2.typing import ClipLabeller, PreprocessorProtocol
+from batdetect2.typing import AudioLoader, ClipLabeller, PreprocessorProtocol
 
 
 def test_mix_examples(
     sample_preprocessor: PreprocessorProtocol,
+    sample_audio_loader: AudioLoader,
     sample_labeller: ClipLabeller,
     create_recording: Callable[..., data.Recording],
 ):
@@ -30,11 +31,13 @@ def test_mix_examples(
 
     example1 = generate_train_example(
         clip_annotation_1,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
     example2 = generate_train_example(
         clip_annotation_2,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
@@ -51,6 +54,7 @@ def test_mix_examples(
 @pytest.mark.parametrize("duration2", [0.1, 0.4, 0.7])
 def test_mix_examples_of_different_durations(
     sample_preprocessor: PreprocessorProtocol,
+    sample_audio_loader: AudioLoader,
     sample_labeller: ClipLabeller,
     create_recording: Callable[..., data.Recording],
     duration1: float,
@@ -67,11 +71,13 @@ def test_mix_examples_of_different_durations(
 
     example1 = generate_train_example(
         clip_annotation_1,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
     example2 = generate_train_example(
         clip_annotation_2,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
@@ -87,6 +93,7 @@ def test_mix_examples_of_different_durations(
 
 def test_add_echo(
     sample_preprocessor: PreprocessorProtocol,
+    sample_audio_loader: AudioLoader,
     sample_labeller: ClipLabeller,
     create_recording: Callable[..., data.Recording],
 ):
@@ -96,6 +103,7 @@ def test_add_echo(
 
     original = generate_train_example(
         clip_annotation_1,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
@@ -109,6 +117,7 @@ def test_add_echo(
 
 def test_selected_random_subclip_has_the_correct_width(
     sample_preprocessor: PreprocessorProtocol,
+    sample_audio_loader: AudioLoader,
     sample_labeller: ClipLabeller,
     create_recording: Callable[..., data.Recording],
 ):
@@ -118,6 +127,7 @@ def test_selected_random_subclip_has_the_correct_width(
 
     original = generate_train_example(
         clip_annotation_1,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
@@ -128,6 +138,7 @@ def test_selected_random_subclip_has_the_correct_width(
 
 def test_add_echo_after_subclip(
     sample_preprocessor: PreprocessorProtocol,
+    sample_audio_loader: AudioLoader,
     sample_labeller: ClipLabeller,
     create_recording: Callable[..., data.Recording],
 ):
@@ -136,6 +147,7 @@ def test_add_echo_after_subclip(
     clip_annotation_1 = data.ClipAnnotation(clip=clip1)
     original = generate_train_example(
         clip_annotation_1,
+        audio_loader=sample_audio_loader,
         preprocessor=sample_preprocessor,
         labeller=sample_labeller,
     )
