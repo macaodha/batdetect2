@@ -1,24 +1,4 @@
-"""Preprocesses datasets for BatDetect2 model training.
-
-This module provides functions to take a collection of annotated audio clips
-(`soundevent.data.ClipAnnotation`) and process them into the final format
-required for training a BatDetect2 model. This typically involves:
-
-1.  Loading the relevant audio segment for each annotation using a configured
-    `PreprocessorProtocol`.
-2.  Generating the corresponding input spectrogram using the
-    `PreprocessorProtocol`.
-3.  Generating the target heatmaps (detection, classification, size) using a
-    configured `ClipLabeller` (which encapsulates the `TargetProtocol` logic).
-4.  Packaging the input spectrogram, target heatmaps, and potentially the
-    processed audio waveform into an `xarray.Dataset`.
-5.  Saving each processed `xarray.Dataset` to a separate file (typically NetCDF)
-    in an output directory.
-
-This offline preprocessing is often preferred for large datasets as it avoids
-computationally intensive steps during the actual training loop. The module
-includes utilities for parallel processing using `multiprocessing`.
-"""
+"""Preprocesses datasets for BatDetect2 model training."""
 
 import os
 from pathlib import Path

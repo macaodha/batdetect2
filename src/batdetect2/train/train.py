@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import List, Optional
 
+import torch
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from loguru import logger
@@ -25,7 +26,12 @@ from batdetect2.train.dataset import (
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
 from batdetect2.train.losses import build_loss
-from batdetect2.typing import PreprocessorProtocol, TargetProtocol
+from batdetect2.typing import (
+    PreprocessorProtocol,
+    TargetProtocol,
+    TrainExample,
+)
+from batdetect2.utils.arrays import adjust_width
 
 __all__ = [
     "build_train_dataset",
@@ -53,7 +59,7 @@ def train(
     else:
         module = build_training_module(config)
 
-    trainer = build_trainer(config, targets=module.targets)
+    trainer = build_trainer(config, targets=module.model.targets)
 
     train_dataloader = build_train_loader(
         train_examples,
@@ -160,6 +166,7 @@ def build_train_loader(
         batch_size=loader_conf.batch_size,
         shuffle=loader_conf.shuffle,
         num_workers=num_workers,
+        collate_fn=_collate_fn,
     )
 
 
@@ -188,6 +195,28 @@ def build_val_loader(
         batch_size=loader_conf.batch_size,
         shuffle=loader_conf.shuffle,
         num_workers=num_workers,
+        collate_fn=_collate_fn,
+    )
+
+
+def _collate_fn(batch: List[TrainExample]) -> TrainExample:
+    max_width = max(item.spec.shape[-1] for item in batch)
+    return TrainExample(
+        spec=torch.stack(
+            [adjust_width(item.spec, max_width) for item in batch]
+        ),
+        detection_heatmap=torch.stack(
+            [adjust_width(item.detection_heatmap, max_width) for item in batch]
+        ),
+        size_heatmap=torch.stack(
+            [adjust_width(item.size_heatmap, max_width) for item in batch]
+        ),
+        class_heatmap=torch.stack(
+            [adjust_width(item.class_heatmap, max_width) for item in batch]
+        ),
+        idx=torch.stack([item.idx for item in batch]),
+        start_time=torch.stack([item.start_time for item in batch]),
+        end_time=torch.stack([item.end_time for item in batch]),
     )
 
 

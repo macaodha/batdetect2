@@ -73,12 +73,12 @@ class LabeledDataset(Dataset):
         return load_preprocessed_example(self.filenames[idx])
 
     def get_clip_annotation(self, idx) -> data.ClipAnnotation:
-        item = np.load(self.filenames[idx])
-        return item["clip_annotation"]
+        item = np.load(self.filenames[idx], allow_pickle=True, mmap_mode="r+")
+        return item["clip_annotation"].tolist()
 
 
 def load_preprocessed_example(path: data.PathLike) -> PreprocessedExample:
-    item = np.load(path)
+    item = np.load(path, mmap_mode="r+")
     return PreprocessedExample(
         audio=torch.tensor(item["audio"]),
         spectrogram=torch.tensor(item["spectrogram"]),

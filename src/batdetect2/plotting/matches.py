@@ -40,8 +40,6 @@ def plot_matches(
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
     color_mapper: Optional[TagColorMapper] = None,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
@@ -59,8 +57,6 @@ def plot_matches(
         ax=ax,
         figsize=figsize,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 
@@ -128,8 +124,6 @@ def plot_false_positive_match(
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
     duration: float = DEFAULT_DURATION,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
@@ -160,8 +154,6 @@ def plot_false_positive_match(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 
@@ -196,8 +188,6 @@ def plot_false_negative_match(
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
     duration: float = DEFAULT_DURATION,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
@@ -226,8 +216,6 @@ def plot_false_negative_match(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 
@@ -262,8 +250,6 @@ def plot_true_positive_match(
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
     duration: float = DEFAULT_DURATION,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
@@ -294,8 +280,6 @@ def plot_true_positive_match(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 
@@ -343,8 +327,6 @@ def plot_cross_trigger_match(
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
     duration: float = DEFAULT_DURATION,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
@@ -375,8 +357,6 @@ def plot_cross_trigger_match(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 

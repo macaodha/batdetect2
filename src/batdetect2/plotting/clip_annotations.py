@@ -17,8 +17,6 @@ def plot_clip_annotation(
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_points: bool = False,
     cmap: str = "gray",
     alpha: float = 1,
@@ -31,8 +29,6 @@ def plot_clip_annotation(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=cmap,
     )
 

@@ -67,7 +67,7 @@ class ValidationMetrics(Callback):
 
         for class_name, fig in plot_example_gallery(
             matches,
-            preprocessor=pl_module.preprocessor,
+            preprocessor=pl_module.model.preprocessor,
             n_examples=4,
         ):
             plotter(
@@ -94,7 +94,7 @@ class ValidationMetrics(Callback):
     ) -> None:
         matches = _match_all_collected_examples(
             self._matches,
-            pl_module.targets,
+            pl_module.model.targets,
             config=self.match_config,
         )
 
@@ -127,8 +127,8 @@ class ValidationMetrics(Callback):
                 batch,
                 outputs,
                 dataset=self.get_dataset(trainer),
-                postprocessor=pl_module.postprocessor,
-                targets=pl_module.targets,
+                postprocessor=pl_module.model.postprocessor,
+                targets=pl_module.model.targets,
             )
         )
 

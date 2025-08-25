@@ -1,13 +1,13 @@
 from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
+import torch
 from matplotlib.axes import Axes
 from soundevent import data
 
-from batdetect2.preprocess import (
-    PreprocessorProtocol,
-    get_default_preprocessor,
-)
+from batdetect2.plotting.common import plot_spectrogram
+from batdetect2.preprocess import build_audio_loader, get_default_preprocessor
+from batdetect2.typing import AudioLoader, PreprocessorProtocol
 
 __all__ = [
     "plot_clip",
@@ -16,12 +16,11 @@ __all__ = [
 
 def plot_clip(
     clip: data.Clip,
+    audio_loader: Optional[AudioLoader] = None,
     preprocessor: Optional[PreprocessorProtocol] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     spec_cmap: str = "gray",
 ) -> Axes:
     if ax is None:
@@ -30,15 +29,16 @@ def plot_clip(
     if preprocessor is None:
         preprocessor = get_default_preprocessor()
 
-    spec = preprocessor.preprocess_clip(clip, audio_dir=audio_dir)
+    if audio_loader is None:
+        audio_loader = build_audio_loader()
 
-    spec.plot(  # type: ignore
+    wav = torch.tensor(audio_loader.load_clip(clip, audio_dir=audio_dir))
+    spec = preprocessor(wav)
+
+    plot_spectrogram(
+        spec,
         ax=ax,
-        add_colorbar=add_colorbar,
         cmap=spec_cmap,
-        add_labels=add_labels,
-        vmin=spec.min().item(),
-        vmax=spec.max().item(),
     )
 
     return ax

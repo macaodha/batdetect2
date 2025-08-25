@@ -21,8 +21,6 @@ def plot_clip_prediction(
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
-    add_colorbar: bool = False,
-    add_labels: bool = False,
     add_legend: bool = False,
     spec_cmap: str = "gray",
     linewidth: float = 1,
@@ -34,8 +32,6 @@ def plot_clip_prediction(
         figsize=figsize,
         ax=ax,
         audio_dir=audio_dir,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         spec_cmap=spec_cmap,
     )
 

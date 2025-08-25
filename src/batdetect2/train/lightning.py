@@ -12,6 +12,8 @@ __all__ = [
 
 
 class TrainingModule(L.LightningModule):
+    model: Model
+
     def __init__(
         self,
         model: Model,
