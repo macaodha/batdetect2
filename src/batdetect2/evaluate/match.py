@@ -1,4 +1,5 @@
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
 from typing import List, Literal, Optional, Tuple
 
 import numpy as np
@@ -340,3 +341,36 @@ def match_predictions_and_annotations(
         )
 
     return matches
+
+
+@dataclass
+class ClassExamples:
+    false_positives: List[MatchEvaluation] = field(default_factory=list)
+    false_negatives: List[MatchEvaluation] = field(default_factory=list)
+    true_positives: List[MatchEvaluation] = field(default_factory=list)
+    cross_triggers: List[MatchEvaluation] = field(default_factory=list)
+
+
+def group_matches(matches: List[MatchEvaluation]) -> ClassExamples:
+    class_examples = ClassExamples()
+
+    for match in matches:
+        gt_class = match.gt_class
+        pred_class = match.pred_class
+
+        if pred_class is None:
+            class_examples.false_negatives.append(match)
+            continue
+
+        if gt_class is None:
+            class_examples.false_positives.append(match)
+            continue
+
+        if gt_class != pred_class:
+            class_examples.cross_triggers.append(match)
+            class_examples.cross_triggers.append(match)
+            continue
+
+        class_examples.true_positives.append(match)
+
+    return class_examples

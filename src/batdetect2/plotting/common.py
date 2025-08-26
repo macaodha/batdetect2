@@ -3,6 +3,7 @@
 from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from matplotlib import axes
 
@@ -25,10 +26,20 @@ def create_ax(
 
 def plot_spectrogram(
     spec: torch.Tensor,
+    start_time: float,
+    end_time: float,
+    min_freq: float,
+    max_freq: float,
     ax: Optional[axes.Axes] = None,
     figsize: Optional[Tuple[int, int]] = None,
     cmap="gray",
 ) -> axes.Axes:
     ax = create_ax(ax=ax, figsize=figsize)
-    ax.pcolormesh(spec.numpy(), cmap=cmap)
+
+    ax.pcolormesh(
+        np.linspace(start_time, end_time, spec.shape[-1], endpoint=False),
+        np.linspace(min_freq, max_freq, spec.shape[-2], endpoint=False),
+        spec.numpy(),
+        cmap=cmap,
+    )
     return ax

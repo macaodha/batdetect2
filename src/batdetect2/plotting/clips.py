@@ -37,6 +37,10 @@ def plot_clip(
 
     plot_spectrogram(
         spec,
+        start_time=clip.start_time,
+        end_time=clip.end_time,
+        min_freq=preprocessor.min_freq,
+        max_freq=preprocessor.max_freq,
         ax=ax,
         cmap=spec_cmap,
     )
