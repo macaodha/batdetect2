@@ -239,7 +239,7 @@ def build_train_dataset(
         clipper=clipper,
     )
 
-    if config.augmentations and config.augmentations.steps:
+    if config.augmentations.enabled and config.augmentations.steps:
         augmentations = build_augmentations(
             preprocessor,
             config=config.augmentations,

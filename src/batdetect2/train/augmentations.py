@@ -400,6 +400,8 @@ AugmentationConfig = Annotated[
 class AugmentationsConfig(BaseConfig):
     """Configuration for a sequence of data augmentations."""
 
+    enabled: bool = True
+
     steps: List[AugmentationConfig] = Field(default_factory=list)
 
 

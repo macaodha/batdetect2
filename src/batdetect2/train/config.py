@@ -67,8 +67,8 @@ class TrainingConfig(BaseConfig):
     t_max: int = 100
     dataloaders: LoadersConfig = Field(default_factory=LoadersConfig)
     loss: LossConfig = Field(default_factory=LossConfig)
-    augmentations: Optional[AugmentationsConfig] = Field(
-        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG
+    augmentations: AugmentationsConfig = Field(
+        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG.model_copy()
     )
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
