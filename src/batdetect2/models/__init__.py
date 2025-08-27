@@ -26,13 +26,14 @@ for creating a standard BatDetect2 model instance is the `build_model` function
 provided here.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 import torch
 from lightning import LightningModule
 from pydantic import Field
+from soundevent.data import PathLike
 
-from batdetect2.configs import BaseConfig
+from batdetect2.configs import BaseConfig, load_config
 from batdetect2.models.backbones import (
     Backbone,
     BackboneConfig,
@@ -66,8 +67,8 @@ from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
 from batdetect2.postprocess import PostprocessConfig, build_postprocessor
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.targets import TargetConfig, build_targets
-from batdetect2.typing.models import DetectionModel, ModelOutput
-from batdetect2.typing.postprocess import PostprocessorProtocol
+from batdetect2.typing.models import DetectionModel
+from batdetect2.typing.postprocess import Detections, PostprocessorProtocol
 from batdetect2.typing.preprocess import PreprocessorProtocol
 from batdetect2.typing.targets import TargetProtocol
 
@@ -119,9 +120,12 @@ class Model(LightningModule):
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
         self.targets = targets
+        self.save_hyperparameters()
 
-    def forward(self, spec: torch.Tensor) -> ModelOutput:
-        return self.detector(spec)
+    def forward(self, wav: torch.Tensor) -> List[Detections]:
+        spec = self.preprocessor(wav)
+        outputs = self.detector(spec)
+        return self.postprocessor(outputs)
 
 
 class ModelConfig(BaseConfig):
@@ -139,7 +143,6 @@ def build_model(config: Optional[ModelConfig] = None):
     targets = build_targets(config=config.targets)
     preprocessor = build_preprocessor(config=config.preprocess)
     postprocessor = build_postprocessor(
-        targets=targets,
         preprocessor=preprocessor,
         config=config.postprocess,
     )
@@ -153,3 +156,9 @@ def build_model(config: Optional[ModelConfig] = None):
         preprocessor=preprocessor,
         targets=targets,
     )
+
+
+def load_model_config(
+    path: PathLike, field: Optional[str] = None
+) -> ModelConfig:
+    return load_config(path, schema=ModelConfig, field=field)

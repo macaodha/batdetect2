@@ -55,6 +55,12 @@ __all__ = [
 ]
 
 
+class SelfAttentionConfig(BaseConfig):
+    block_type: Literal["SelfAttention"] = "SelfAttention"
+    attention_channels: int
+    temperature: float = 1
+
+
 class SelfAttention(nn.Module):
     """Self-Attention mechanism operating along the time dimension.
 
@@ -115,6 +121,7 @@ class SelfAttention(nn.Module):
         # Note, does not encode position information (absolute or relative)
         self.temperature = temperature
         self.att_dim = attention_channels
+
         self.key_fun = nn.Linear(in_channels, attention_channels)
         self.value_fun = nn.Linear(in_channels, attention_channels)
         self.query_fun = nn.Linear(in_channels, attention_channels)
@@ -654,6 +661,7 @@ LayerConfig = Annotated[
         StandardConvDownConfig,
         FreqCoordConvUpConfig,
         StandardConvUpConfig,
+        SelfAttentionConfig,
         "LayerGroupConfig",
     ],
     Field(discriminator="block_type"),
@@ -767,6 +775,17 @@ def build_layer_from_config(
             ),
             config.out_channels,
             input_height * 2,
+        )
+
+    if config.block_type == "SelfAttention":
+        return (
+            SelfAttention(
+                in_channels=in_channels,
+                attention_channels=config.attention_channels,
+                temperature=config.temperature,
+            ),
+            config.attention_channels,
+            input_height,
         )
 
     if config.block_type == "LayerGroup":

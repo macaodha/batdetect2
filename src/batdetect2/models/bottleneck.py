@@ -14,45 +14,25 @@ A factory function `build_bottleneck` constructs the appropriate bottleneck
 module based on the provided configuration.
 """
 
-from typing import Optional
+from typing import Annotated, List, Optional, Union
 
 import torch
+from pydantic import Field
 from torch import nn
 
 from batdetect2.configs import BaseConfig
-from batdetect2.models.blocks import SelfAttention, VerticalConv
+from batdetect2.models.blocks import (
+    LayerConfig,
+    SelfAttentionConfig,
+    VerticalConv,
+    build_layer_from_config,
+)
 
 __all__ = [
     "BottleneckConfig",
     "Bottleneck",
-    "BottleneckAttn",
     "build_bottleneck",
 ]
-
-
-class BottleneckConfig(BaseConfig):
-    """Configuration for the bottleneck layer(s).
-
-    Defines the number of channels within the bottleneck and whether to include
-    a self-attention mechanism.
-
-    Attributes
-    ----------
-    channels : int
-        The number of output channels produced by the main convolutional layer
-        within the bottleneck. This often matches the number of channels coming
-        from the last encoder stage, but can be different. Must be positive.
-        This also defines the channel dimensions used within the optional
-        `SelfAttention` layer.
-    self_attention : bool
-        If True, includes a `SelfAttention` layer operating on the time
-        dimension after an initial `VerticalConv` layer within the bottleneck.
-        If False, only the initial `VerticalConv` (and height repetition) is
-        performed.
-    """
-
-    channels: int
-    self_attention: bool
 
 
 class Bottleneck(nn.Module):
@@ -99,16 +79,24 @@ class Bottleneck(nn.Module):
         input_height: int,
         in_channels: int,
         out_channels: int,
+        bottleneck_channels: Optional[int] = None,
+        layers: Optional[List[torch.nn.Module]] = None,
     ) -> None:
         """Initialize the base Bottleneck layer."""
         super().__init__()
         self.in_channels = in_channels
         self.input_height = input_height
         self.out_channels = out_channels
+        self.bottleneck_channels = (
+            bottleneck_channels
+            if bottleneck_channels is not None
+            else out_channels
+        )
+        self.layers = nn.ModuleList(layers or [])
 
         self.conv_vert = VerticalConv(
             in_channels=in_channels,
-            out_channels=out_channels,
+            out_channels=self.bottleneck_channels,
             input_height=input_height,
         )
 
@@ -132,73 +120,52 @@ class Bottleneck(nn.Module):
             convolution.
         """
         x = self.conv_vert(x)
+
+        for layer in self.layers:
+            x = layer(x)
+
         return x.repeat([1, 1, self.input_height, 1])
 
 
-class BottleneckAttn(Bottleneck):
-    """Bottleneck module including a Self-Attention layer.
+BottleneckLayerConfig = Annotated[
+    Union[SelfAttentionConfig,],
+    Field(discriminator="block_type"),
+]
+"""Type alias for the discriminated union of block configs usable in Decoder."""
 
-    Extends the base `Bottleneck` by inserting a `SelfAttention` layer after
-    the initial `VerticalConv`. This allows the bottleneck to capture global
-    temporal dependencies in the summarized frequency features before passing
-    them to the decoder.
 
-    Sequence: VerticalConv -> SelfAttention -> Repeat Height.
+class BottleneckConfig(BaseConfig):
+    """Configuration for the bottleneck layer(s).
 
-    Parameters
+    Defines the number of channels within the bottleneck and whether to include
+    a self-attention mechanism.
+
+    Attributes
     ----------
-    input_height : int
-        Height (frequency bins) of the input tensor from the encoder.
-    in_channels : int
-        Number of channels in the input tensor from the encoder.
-    out_channels : int
-        Number of output channels produced by the `VerticalConv` and
-        subsequently processed and output by this bottleneck. Also determines
-        the input/output channels of the internal `SelfAttention` layer.
-    attention : nn.Module
-        An initialized `SelfAttention` module instance.
-
-    Raises
-    ------
-    ValueError
-        If `input_height`, `in_channels`, or `out_channels` are not positive.
+    channels : int
+        The number of output channels produced by the main convolutional layer
+        within the bottleneck. This often matches the number of channels coming
+        from the last encoder stage, but can be different. Must be positive.
+        This also defines the channel dimensions used within the optional
+        `SelfAttention` layer.
+    self_attention : bool
+        If True, includes a `SelfAttention` layer operating on the time
+        dimension after an initial `VerticalConv` layer within the bottleneck.
+        If False, only the initial `VerticalConv` (and height repetition) is
+        performed.
     """
 
-    def __init__(
-        self,
-        input_height: int,
-        in_channels: int,
-        out_channels: int,
-        attention: nn.Module,
-    ) -> None:
-        """Initialize the Bottleneck with Self-Attention."""
-        super().__init__(input_height, in_channels, out_channels)
-        self.attention = attention
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input tensor.
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor from the encoder bottleneck, shape
-            `(B, C_in, H_in, W)`. `C_in` must match `self.in_channels`,
-            `H_in` must match `self.input_height`.
-
-        Returns
-        -------
-        torch.Tensor
-            Output tensor, shape `(B, C_out, H_in, W)`, after applying attention
-            and repeating the height dimension.
-        """
-        x = self.conv_vert(x)
-        x = self.attention(x)
-        return x.repeat([1, 1, self.input_height, 1])
+    channels: int
+    layers: List[BottleneckLayerConfig] = Field(
+        default_factory=list,
+    )
 
 
 DEFAULT_BOTTLENECK_CONFIG: BottleneckConfig = BottleneckConfig(
     channels=256,
-    self_attention=True,
+    layers=[
+        SelfAttentionConfig(attention_channels=256),
+    ],
 )
 
 
@@ -234,21 +201,25 @@ def build_bottleneck(
     """
     config = config or DEFAULT_BOTTLENECK_CONFIG
 
-    if config.self_attention:
-        attention = SelfAttention(
-            in_channels=config.channels,
-            attention_channels=config.channels,
-        )
+    current_channels = in_channels
+    current_height = input_height
 
-        return BottleneckAttn(
-            input_height=input_height,
-            in_channels=in_channels,
-            out_channels=config.channels,
-            attention=attention,
+    layers = []
+
+    for layer_config in config.layers:
+        layer, current_channels, current_height = build_layer_from_config(
+            input_height=current_height,
+            in_channels=current_channels,
+            config=layer_config,
         )
+        assert current_height == input_height, (
+            "Bottleneck layers should not change the spectrogram height"
+        )
+        layers.append(layer)
 
     return Bottleneck(
         input_height=input_height,
         in_channels=in_channels,
         out_channels=config.channels,
+        layers=layers,
     )
