@@ -1,14 +1,3 @@
-datasets:
-  train:
-    name: example dataset
-    description: Only for demonstration purposes
-    sources:
-      - format: batdetect2
-        name: Example Data
-        description: Examples included for testing batdetect2
-        annotations_dir: example_data/anns
-        audio_dir: example_data/audio
-
 targets:
   classes:
     classes:
@@ -114,9 +103,19 @@ model:
             out_channels: 32
 
 train:
-  batch_size: 8
   learning_rate: 0.001
   t_max: 100
+
+  dataloaders:
+    train:
+      batch_size: 8
+      num_workers: 2
+      shuffle: True
+
+    val:
+      batch_size: 8
+      num_workers: 2
+
   loss:
     detection:
       weight: 1.0
@@ -130,14 +129,12 @@ train:
         alpha: 2
     size:
       weight: 0.1
+
   logger:
-    logger_type: mlflow
-    experiment_name: batdetect2
-    tracking_uri: http://localhost:5000
-    log_model: true
+    logger_type: csv
     save_dir: outputs/log/
-    artifact_location: outputs/artifacts/
-    checkpoint_path_prefix: outputs/checkpoints/
+    name: logs
+
   augmentations:
     steps:
       - augmentation_type: mix_audio
