@@ -139,7 +139,21 @@ class FrequencyClip(torch.nn.Module):
         self.high_index = high_index
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
-        return spec[self.low_index : self.high_index]
+        low_index = self.low_index
+        if low_index is None:
+            low_index = 0
+
+        if self.high_index is None:
+            length = spec.shape[-2] - low_index
+        else:
+            length = self.high_index - low_index
+
+        return torch.narrow(
+            spec,
+            dim=-2,
+            start=low_index,
+            length=length,
+        )
 
 
 class PcenConfig(BaseConfig):
@@ -256,15 +270,21 @@ class ResizeSpec(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         current_length = spec.shape[-1]
         target_length = int(self.time_factor * current_length)
-        return (
-            torch.nn.functional.interpolate(
-                spec.unsqueeze(0).unsqueeze(0),
-                size=(self.height, target_length),
-                mode="bilinear",
-            )
-            .squeeze(0)
-            .squeeze(0)
+
+        original_ndim = spec.ndim
+        while spec.ndim < 4:
+            spec = spec.unsqueeze(0)
+
+        resized = torch.nn.functional.interpolate(
+            spec,
+            size=(self.height, target_length),
+            mode="bilinear",
         )
+
+        while resized.ndim != original_ndim:
+            resized = resized.squeeze(0)
+
+        return resized
 
 
 class PeakNormalizeConfig(BaseConfig):

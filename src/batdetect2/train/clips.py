@@ -8,7 +8,7 @@ from batdetect2.configs import BaseConfig
 from batdetect2.typing import ClipperProtocol
 from batdetect2.typing.preprocess import PreprocessorProtocol
 from batdetect2.typing.train import PreprocessedExample
-from batdetect2.utils.arrays import adjust_width
+from batdetect2.utils.arrays import adjust_width, slice_tensor
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.512
 DEFAULT_MAX_EMPTY_CLIP = 0.1
@@ -90,7 +90,12 @@ def select_subclip(
     audio_start = int(np.floor(start * input_samplerate))
 
     audio = adjust_width(
-        example.audio[audio_start : audio_start + audio_width],
+        slice_tensor(
+            example.audio,
+            start=audio_start,
+            end=audio_start + audio_width,
+            dim=-1,
+        ),
         audio_width,
         value=fill_value,
     )
@@ -100,19 +105,39 @@ def select_subclip(
     return PreprocessedExample(
         audio=audio,
         spectrogram=adjust_width(
-            example.spectrogram[:, spec_start : spec_start + spec_width],
+            slice_tensor(
+                example.spectrogram,
+                start=spec_start,
+                end=spec_start + spec_width,
+                dim=-1,
+            ),
             spec_width,
         ),
         class_heatmap=adjust_width(
-            example.class_heatmap[:, :, spec_start : spec_start + spec_width],
+            slice_tensor(
+                example.class_heatmap,
+                start=spec_start,
+                end=spec_start + spec_width,
+                dim=-1,
+            ),
             spec_width,
         ),
         detection_heatmap=adjust_width(
-            example.detection_heatmap[:, spec_start : spec_start + spec_width],
+            slice_tensor(
+                example.detection_heatmap,
+                start=spec_start,
+                end=spec_start + spec_width,
+                dim=-1,
+            ),
             spec_width,
         ),
         size_heatmap=adjust_width(
-            example.size_heatmap[:, :, spec_start : spec_start + spec_width],
+            slice_tensor(
+                example.size_heatmap,
+                start=spec_start,
+                end=spec_start + spec_width,
+                dim=-1,
+            ),
             spec_width,
         ),
     )

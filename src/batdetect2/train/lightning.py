@@ -34,7 +34,7 @@ class TrainingModule(L.LightningModule):
         return self.model(spec)
 
     def training_step(self, batch: TrainExample):
-        outputs = self.model(batch.spec)
+        outputs = self.model.detector(batch.spec)
         losses = self.loss(outputs, batch)
         self.log("total_loss/train", losses.total, prog_bar=True, logger=True)
         self.log("detection_loss/train", losses.total, logger=True)
@@ -47,7 +47,7 @@ class TrainingModule(L.LightningModule):
         batch: TrainExample,
         batch_idx: int,
     ) -> ModelOutput:
-        outputs = self.model(batch.spec)
+        outputs = self.model.detector(batch.spec)
         losses = self.loss(outputs, batch)
         self.log("total_loss/val", losses.total, prog_bar=True, logger=True)
         self.log("detection_loss/val", losses.total, logger=True)

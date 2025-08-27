@@ -41,7 +41,6 @@ from batdetect2.typing import (
 __all__ = [
     "LabelConfig",
     "build_clip_labeler",
-    "generate_clip_label",
     "generate_heatmaps",
     "load_label_config",
 ]
@@ -99,21 +98,26 @@ def build_clip_labeler(
         lambda: config.to_yaml_string(),
     )
     return partial(
-        generate_clip_label,
+        generate_heatmaps,
         targets=targets,
-        config=config,
         min_freq=min_freq,
         max_freq=max_freq,
+        target_sigma=config.sigma,
     )
 
 
-def generate_clip_label(
+def map_to_pixels(x, size, min_val, max_val) -> int:
+    return int(np.interp(x, [min_val, max_val], [0, size]))
+
+
+def generate_heatmaps(
     clip_annotation: data.ClipAnnotation,
     spec: torch.Tensor,
     targets: TargetProtocol,
-    config: LabelConfig,
     min_freq: float,
     max_freq: float,
+    target_sigma: float = 3.0,
+    dtype=torch.float32,
 ) -> Heatmaps:
     """Generate training heatmaps for a single annotated clip.
 
@@ -150,57 +154,14 @@ def generate_clip_label(
         num=len(clip_annotation.sound_events),
     )
 
-    sound_events = []
-
-    for sound_event_annotation in clip_annotation.sound_events:
-        if not targets.filter(sound_event_annotation):
-            logger.debug(
-                "Sound event {sound_event} did not pass the filter. Tags: {tags}",
-                sound_event=sound_event_annotation,
-                tags=sound_event_annotation.tags,
-            )
-            continue
-
-        sound_events.append(targets.transform(sound_event_annotation))
-
-    return generate_heatmaps(
-        clip_annotation.model_copy(update=dict(sound_events=sound_events)),
-        spec=spec,
-        targets=targets,
-        target_sigma=config.sigma,
-        min_freq=min_freq,
-        max_freq=max_freq,
-    )
-
-
-def map_to_pixels(x, size, min_val, max_val) -> int:
-    return int(np.interp(x, [min_val, max_val], [0, size]))
-
-
-def generate_heatmaps(
-    clip_annotation: data.ClipAnnotation,
-    spec: torch.Tensor,
-    targets: TargetProtocol,
-    min_freq: float,
-    max_freq: float,
-    target_sigma: float = 3.0,
-    dtype=torch.float32,
-) -> Heatmaps:
-    if not spec.ndim == 2:
-        raise ValueError(
-            "Expecting a 2-dimensional tensor of shape (H, W), "
-            "H is the height of the spectrogram "
-            "(frequency bins), and W is the width of the spectrogram "
-            f"(temporal bins). Instead got: {spec.shape}"
-        )
-
-    height, width = spec.shape
+    height = spec.shape[-2]
+    width = spec.shape[-1]
     num_classes = len(targets.class_names)
     num_dims = len(targets.dimension_names)
     clip = clip_annotation.clip
 
     # Initialize heatmaps
-    detection_heatmap = torch.zeros([height, width], dtype=dtype)
+    detection_heatmap = torch.zeros([1, height, width], dtype=dtype)
     class_heatmap = torch.zeros([num_classes, height, width], dtype=dtype)
     size_heatmap = torch.zeros([num_dims, height, width], dtype=dtype)
 
@@ -214,6 +175,16 @@ def generate_heatmaps(
     times = times.to(spec.device)
 
     for sound_event_annotation in clip_annotation.sound_events:
+        if not targets.filter(sound_event_annotation):
+            logger.debug(
+                "Sound event {sound_event} did not pass the filter. Tags: {tags}",
+                sound_event=sound_event_annotation,
+                tags=sound_event_annotation.tags,
+            )
+            continue
+
+        sound_event_annotation = targets.transform(sound_event_annotation)
+
         geom = sound_event_annotation.sound_event.geometry
         if geom is None:
             logger.debug(
@@ -245,7 +216,10 @@ def generate_heatmaps(
         distance = (times - time_index) ** 2 + (freqs - freq_index) ** 2
         gaussian_blob = torch.exp(-distance / (2 * target_sigma**2))
 
-        detection_heatmap = torch.maximum(detection_heatmap, gaussian_blob)
+        detection_heatmap[0] = torch.maximum(
+            detection_heatmap[0],
+            gaussian_blob,
+        )
         size_heatmap[:, freq_index, time_index] = torch.tensor(size[:])
 
         # Get the class name of the sound event

@@ -14,7 +14,9 @@ from batdetect2.evaluate.match import (
     MatchConfig,
     match_sound_events_and_raw_predictions,
 )
+from batdetect2.models import Model
 from batdetect2.plotting.evaluation import plot_example_gallery
+from batdetect2.postprocess import get_sound_event_predictions
 from batdetect2.train.dataset import LabeledDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.typing import (
@@ -22,7 +24,6 @@ from batdetect2.typing import (
     MatchEvaluation,
     MetricsProtocol,
     ModelOutput,
-    PostprocessorProtocol,
     TargetProtocol,
     TrainExample,
 )
@@ -127,8 +128,7 @@ class ValidationMetrics(Callback):
                 batch,
                 outputs,
                 dataset=self.get_dataset(trainer),
-                postprocessor=pl_module.model.postprocessor,
-                targets=pl_module.model.targets,
+                model=pl_module.model,
             )
         )
 
@@ -137,15 +137,14 @@ def _get_batch_clips_and_predictions(
     batch: TrainExample,
     outputs: ModelOutput,
     dataset: LabeledDataset,
-    postprocessor: PostprocessorProtocol,
-    targets: TargetProtocol,
+    model: Model,
 ) -> List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]]:
     clip_annotations = [
         _get_subclip(
             dataset.get_clip_annotation(example_id),
             start_time=start_time.item(),
             end_time=end_time.item(),
-            targets=targets,
+            targets=model.targets,
         )
         for example_id, start_time, end_time in zip(
             batch.idx,
@@ -156,9 +155,11 @@ def _get_batch_clips_and_predictions(
 
     clips = [clip_annotation.clip for clip_annotation in clip_annotations]
 
-    raw_predictions = postprocessor.get_sound_event_predictions(
+    raw_predictions = get_sound_event_predictions(
         outputs,
         clips,
+        targets=model.targets,
+        postprocessor=model.postprocessor
     )
 
     return [

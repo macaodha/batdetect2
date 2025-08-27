@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -7,6 +6,10 @@ from soundevent import data
 from torch.utils.data import Dataset
 
 from batdetect2.train.augmentations import Augmentation
+from batdetect2.train.preprocess import (
+    list_preprocessed_files,
+    load_preprocessed_example,
+)
 from batdetect2.typing import ClipperProtocol, TrainExample
 from batdetect2.typing.train import PreprocessedExample
 
@@ -38,8 +41,8 @@ class LabeledDataset(Dataset):
             example = self.augmentation(example)
 
         return TrainExample(
-            spec=example.spectrogram.unsqueeze(0),
-            detection_heatmap=example.detection_heatmap.unsqueeze(0),
+            spec=example.spectrogram,
+            detection_heatmap=example.detection_heatmap,
             class_heatmap=example.class_heatmap,
             size_heatmap=example.size_heatmap,
             idx=torch.tensor(idx),
@@ -73,37 +76,3 @@ class LabeledDataset(Dataset):
     def get_clip_annotation(self, idx) -> data.ClipAnnotation:
         item = np.load(self.filenames[idx], allow_pickle=True, mmap_mode="r+")
         return item["clip_annotation"].tolist()
-
-
-def load_preprocessed_example(path: data.PathLike) -> PreprocessedExample:
-    item = np.load(path, mmap_mode="r+")
-    return PreprocessedExample(
-        audio=torch.tensor(item["audio"]),
-        spectrogram=torch.tensor(item["spectrogram"]),
-        size_heatmap=torch.tensor(item["size_heatmap"]),
-        detection_heatmap=torch.tensor(item["detection_heatmap"]),
-        class_heatmap=torch.tensor(item["class_heatmap"]),
-    )
-
-
-def list_preprocessed_files(
-    directory: data.PathLike, extension: str = ".npz"
-) -> List[Path]:
-    return list(Path(directory).glob(f"*{extension}"))
-
-
-class RandomExampleSource:
-    def __init__(
-        self,
-        filenames: List[data.PathLike],
-        clipper: ClipperProtocol,
-    ):
-        self.filenames = filenames
-        self.clipper = clipper
-
-    def __call__(self) -> PreprocessedExample:
-        index = int(np.random.randint(len(self.filenames)))
-        filename = self.filenames[index]
-        example = load_preprocessed_example(filename)
-        example, _, _ = self.clipper(example)
-        return example

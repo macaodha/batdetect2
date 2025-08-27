@@ -15,13 +15,15 @@ from batdetect2.evaluate.metrics import (
     DetectionAveragePrecision,
 )
 from batdetect2.models import build_model
-from batdetect2.train.augmentations import build_augmentations
+from batdetect2.train.augmentations import (
+    RandomExampleSource,
+    build_augmentations,
+)
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.config import FullTrainingConfig, TrainingConfig
 from batdetect2.train.dataset import (
     LabeledDataset,
-    RandomExampleSource,
 )
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger

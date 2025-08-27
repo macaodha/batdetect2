@@ -1,6 +1,7 @@
 """Applies data augmentation techniques to BatDetect2 training examples."""
 
 import warnings
+from collections.abc import Sequence
 from typing import Annotated, Callable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -10,8 +11,12 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
+from batdetect2.train.preprocess import (
+    list_preprocessed_files,
+    load_preprocessed_example,
+)
 from batdetect2.typing import Augmentation, PreprocessorProtocol
-from batdetect2.typing.train import PreprocessedExample
+from batdetect2.typing.train import ClipperProtocol, PreprocessedExample
 from batdetect2.utils.arrays import adjust_width
 
 __all__ = [
@@ -37,21 +42,6 @@ __all__ = [
 
 ExampleSource = Callable[[], PreprocessedExample]
 """Type alias for a function that returns a training example"""
-
-
-class MixAugmentationConfig(BaseConfig):
-    """Configuration for MixUp augmentation (mixing two examples)."""
-
-    augmentation_type: Literal["mix_audio"] = "mix_audio"
-
-    probability: float = 0.2
-    """Probability of applying this augmentation to an example."""
-
-    min_weight: float = 0.3
-    """Minimum mixing weight (lambda) applied to the primary example."""
-
-    max_weight: float = 0.7
-    """Maximum mixing weight (lambda) applied to the primary example."""
 
 
 def mix_examples(
@@ -149,7 +139,12 @@ def add_echo(
 
     audio = example.audio
     delay_steps = int(preprocessor.input_samplerate * delay)
-    audio_delay = adjust_width(audio[delay_steps:], audio.shape[-1])
+
+    slices = [slice(None)] * audio.ndim
+    slices[-1] = slice(None, -delay_steps)
+    audio_delay = adjust_width(audio[tuple(slices)], audio.shape[-1]).roll(
+        delay_steps, dims=-1
+    )
 
     audio = audio + weight * audio_delay
     spectrogram = preprocessor(audio)
@@ -184,7 +179,7 @@ class VolumeAugmentationConfig(BaseConfig):
 
 
 class ScaleVolume(torch.nn.Module):
-    def __init__(self, min_scaling: float, max_scaling: float):
+    def __init__(self, min_scaling: float = 0.0, max_scaling: float = 2.0):
         super().__init__()
         self.min_scaling = min_scaling
         self.max_scaling = max_scaling
@@ -228,32 +223,22 @@ def warp_spectrogram(
     example: PreprocessedExample, factor: float
 ) -> PreprocessedExample:
     """Apply time warping by resampling the time axis."""
-    target_shape = example.spectrogram.shape
+    width = example.spectrogram.shape[-1]
+    height = example.spectrogram.shape[-2]
+    target_shape = [height, width]
     new_width = int(target_shape[-1] * factor)
 
-    spectrogram = (
-        torch.nn.functional.interpolate(
-            adjust_width(example.spectrogram, new_width)
-            .unsqueeze(0)
-            .unsqueeze(0),
-            size=target_shape,
-            mode="bilinear",
-        )
-        .squeeze(0)
-        .squeeze(0)
-    )
+    spectrogram = torch.nn.functional.interpolate(
+        adjust_width(example.spectrogram, new_width).unsqueeze(0),
+        size=target_shape,
+        mode="bilinear",
+    ).squeeze(0)
 
-    detection = (
-        torch.nn.functional.interpolate(
-            adjust_width(example.detection_heatmap, new_width)
-            .unsqueeze(0)
-            .unsqueeze(0),
-            size=target_shape,
-            mode="nearest",
-        )
-        .squeeze(0)
-        .squeeze(0)
-    )
+    detection = torch.nn.functional.interpolate(
+        adjust_width(example.detection_heatmap, new_width).unsqueeze(0),
+        size=target_shape,
+        mode="nearest",
+    ).squeeze(0)
 
     classification = torch.nn.functional.interpolate(
         adjust_width(example.class_heatmap, new_width).unsqueeze(1),
@@ -284,10 +269,16 @@ class TimeMaskAugmentationConfig(BaseConfig):
 
 
 class MaskTime(torch.nn.Module):
-    def __init__(self, max_perc: float = 0.05, max_masks: int = 3) -> None:
+    def __init__(
+        self,
+        max_perc: float = 0.05,
+        max_masks: int = 3,
+        mask_heatmaps: bool = False,
+    ) -> None:
         super().__init__()
         self.max_perc = max_perc
         self.max_masks = max_masks
+        self.mask_heatmaps = mask_heatmaps
 
     def forward(self, example: PreprocessedExample) -> PreprocessedExample:
         num_masks = np.random.randint(1, self.max_masks + 1)
@@ -306,20 +297,28 @@ class MaskTime(torch.nn.Module):
         masks = [
             (start, start + size) for start, size in zip(mask_start, mask_size)
         ]
-        return mask_time(example, masks)
+        return mask_time(example, masks, mask_heatmaps=self.mask_heatmaps)
 
 
 def mask_time(
     example: PreprocessedExample,
     masks: List[Tuple[int, int]],
+    mask_heatmaps: bool = False,
 ) -> PreprocessedExample:
     """Apply time masking to the spectrogram."""
 
     for start, end in masks:
-        example.spectrogram[:, start:end] = example.spectrogram.mean()
-        example.class_heatmap[:, :, start:end] = 0
-        example.size_heatmap[:, :, start:end] = 0
-        example.detection_heatmap[:, start:end] = 0
+        slices = [slice(None)] * example.spectrogram.ndim
+        slices[-1] = slice(start, end)
+
+        example.spectrogram[tuple(slices)] = 0
+
+        if not mask_heatmaps:
+            continue
+
+        example.class_heatmap[tuple(slices)] = 0
+        example.size_heatmap[tuple(slices)] = 0
+        example.detection_heatmap[tuple(slices)] = 0
 
     return PreprocessedExample(
         audio=example.audio,
@@ -335,13 +334,20 @@ class FrequencyMaskAugmentationConfig(BaseConfig):
     probability: float = 0.2
     max_perc: float = 0.10
     max_masks: int = 3
+    mask_heatmaps: bool = False
 
 
 class MaskFrequency(torch.nn.Module):
-    def __init__(self, max_perc: float = 0.10, max_masks: int = 3) -> None:
+    def __init__(
+        self,
+        max_perc: float = 0.10,
+        max_masks: int = 3,
+        mask_heatmaps: bool = False,
+    ) -> None:
         super().__init__()
         self.max_perc = max_perc
         self.max_masks = max_masks
+        self.mask_heatmaps = mask_heatmaps
 
     def forward(self, example: PreprocessedExample) -> PreprocessedExample:
         num_masks = np.random.randint(1, self.max_masks + 1)
@@ -360,19 +366,26 @@ class MaskFrequency(torch.nn.Module):
         masks = [
             (start, start + size) for start, size in zip(mask_start, mask_size)
         ]
-        return mask_frequency(example, masks)
+        return mask_frequency(example, masks, mask_heatmaps=self.mask_heatmaps)
 
 
 def mask_frequency(
     example: PreprocessedExample,
     masks: List[Tuple[int, int]],
+    mask_heatmaps: bool = False,
 ) -> PreprocessedExample:
     """Apply frequency masking to the spectrogram."""
     for start, end in masks:
-        example.spectrogram[start:end, :] = example.spectrogram.mean()
-        example.class_heatmap[:, start:end, :] = 0
-        example.size_heatmap[:, start:end, :] = 0
-        example.detection_heatmap[start:end, :] = 0
+        slices = [slice(None)] * example.spectrogram.ndim
+        slices[-2] = slice(start, end)
+        example.spectrogram[tuple(slices)] = 0
+
+        if not mask_heatmaps:
+            continue
+
+        example.class_heatmap[tuple(slices)] = 0
+        example.size_heatmap[tuple(slices)] = 0
+        example.detection_heatmap[tuple(slices)] = 0
 
     return PreprocessedExample(
         audio=example.audio,
@@ -381,6 +394,50 @@ def mask_frequency(
         detection_heatmap=example.detection_heatmap,
         spectrogram=example.spectrogram,
     )
+
+
+class MixAugmentationConfig(BaseConfig):
+    """Configuration for MixUp augmentation (mixing two examples)."""
+
+    augmentation_type: Literal["mix_audio"] = "mix_audio"
+
+    probability: float = 0.2
+    """Probability of applying this augmentation to an example."""
+
+    min_weight: float = 0.3
+    """Minimum mixing weight (lambda) applied to the primary example."""
+
+    max_weight: float = 0.7
+    """Maximum mixing weight (lambda) applied to the primary example."""
+
+
+class MixAudio(torch.nn.Module):
+    """Callable class for MixUp augmentation, handling example fetching."""
+
+    def __init__(
+        self,
+        example_source: ExampleSource,
+        preprocessor: PreprocessorProtocol,
+        min_weight: float = 0.3,
+        max_weight: float = 0.7,
+    ):
+        """Initialize the AudioMixer."""
+        super().__init__()
+        self.min_weight = min_weight
+        self.example_source = example_source
+        self.max_weight = max_weight
+        self.preprocessor = preprocessor
+
+    def __call__(self, example: PreprocessedExample) -> PreprocessedExample:
+        """Fetch another example and perform mixup."""
+        other = self.example_source()
+        weight = np.random.uniform(self.min_weight, self.max_weight)
+        return mix_examples(
+            example,
+            other,
+            self.preprocessor,
+            weight=weight,
+        )
 
 
 AugmentationConfig = Annotated[
@@ -445,35 +502,6 @@ class MaybeApply(torch.nn.Module):
         return self.augmentation(example)
 
 
-class AudioMixer(torch.nn.Module):
-    """Callable class for MixUp augmentation, handling example fetching."""
-
-    def __init__(
-        self,
-        min_weight: float,
-        max_weight: float,
-        example_source: ExampleSource,
-        preprocessor: PreprocessorProtocol,
-    ):
-        """Initialize the AudioMixer."""
-        super().__init__()
-        self.min_weight = min_weight
-        self.example_source = example_source
-        self.max_weight = max_weight
-        self.preprocessor = preprocessor
-
-    def __call__(self, example: PreprocessedExample) -> PreprocessedExample:
-        """Fetch another example and perform mixup."""
-        other = self.example_source()
-        weight = np.random.uniform(self.min_weight, self.max_weight)
-        return mix_examples(
-            example,
-            other,
-            self.preprocessor,
-            weight=weight,
-        )
-
-
 def build_augmentation_from_config(
     config: AugmentationConfig,
     preprocessor: PreprocessorProtocol,
@@ -489,7 +517,7 @@ def build_augmentation_from_config(
             )
             return None
 
-        return AudioMixer(
+        return MixAudio(
             example_source=example_source,
             preprocessor=preprocessor,
             min_weight=config.min_weight,
@@ -585,3 +613,25 @@ def load_augmentation_config(
 ) -> AugmentationsConfig:
     """Load the augmentations configuration from a file."""
     return load_config(path, schema=AugmentationsConfig, field=field)
+
+
+class RandomExampleSource:
+    def __init__(
+        self,
+        filenames: Sequence[data.PathLike],
+        clipper: ClipperProtocol,
+    ):
+        self.filenames = filenames
+        self.clipper = clipper
+
+    def __call__(self) -> PreprocessedExample:
+        index = int(np.random.randint(len(self.filenames)))
+        filename = self.filenames[index]
+        example = load_preprocessed_example(filename)
+        example, _, _ = self.clipper(example)
+        return example
+
+    @classmethod
+    def from_directory(cls, path: data.PathLike, clipper: ClipperProtocol):
+        filenames = list_preprocessed_files(path)
+        return cls(filenames, clipper=clipper)

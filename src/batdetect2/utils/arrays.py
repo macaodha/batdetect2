@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import torch
 import xarray as xr
@@ -79,4 +81,15 @@ def adjust_width(
         slice(None, None) if index != axis else slice(None, width)
         for index in range(dims)
     ]
+    return tensor[tuple(slices)]
+
+
+def slice_tensor(
+    tensor: torch.Tensor,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    dim: int = -1,
+) -> torch.Tensor:
+    slices = [slice(None)] * tensor.ndim
+    slices[dim] = slice(start, end)
     return tensor[tuple(slices)]

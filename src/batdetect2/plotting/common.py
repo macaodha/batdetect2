@@ -26,18 +26,31 @@ def create_ax(
 
 def plot_spectrogram(
     spec: Union[torch.Tensor, np.ndarray],
-    start_time: float,
-    end_time: float,
-    min_freq: float,
-    max_freq: float,
+    start_time: Optional[float] = None,
+    end_time: Optional[float] = None,
+    min_freq: Optional[float] = None,
+    max_freq: Optional[float] = None,
     ax: Optional[axes.Axes] = None,
     figsize: Optional[Tuple[int, int]] = None,
     cmap="gray",
 ) -> axes.Axes:
+
     if isinstance(spec, torch.Tensor):
         spec = spec.numpy()
 
     ax = create_ax(ax=ax, figsize=figsize)
+
+    if start_time is None:
+        start_time = 0
+
+    if end_time is None:
+        end_time = spec.shape[-1]
+
+    if min_freq is None:
+        min_freq = 0
+
+    if max_freq is None:
+        max_freq = spec.shape[-2]
 
     ax.pcolormesh(
         np.linspace(start_time, end_time, spec.shape[-1] + 1, endpoint=True),

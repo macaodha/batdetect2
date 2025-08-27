@@ -2,6 +2,7 @@ from batdetect2.train.augmentations import (
     AugmentationsConfig,
     EchoAugmentationConfig,
     FrequencyMaskAugmentationConfig,
+    RandomExampleSource,
     TimeMaskAugmentationConfig,
     VolumeAugmentationConfig,
     WarpAugmentationConfig,
@@ -23,7 +24,6 @@ from batdetect2.train.config import (
 )
 from batdetect2.train.dataset import (
     LabeledDataset,
-    RandomExampleSource,
     list_preprocessed_files,
 )
 from batdetect2.train.labels import build_clip_labeler, load_label_config

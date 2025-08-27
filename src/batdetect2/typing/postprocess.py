@@ -95,69 +95,10 @@ class BatDetect2Prediction:
 class PostprocessorProtocol(Protocol):
     """Protocol defining the interface for the full postprocessing pipeline."""
 
+    def __call__(self, output: ModelOutput) -> List[Detections]: ...
+
     def get_detections(
         self,
         output: ModelOutput,
         clips: Optional[List[data.Clip]] = None,
     ) -> List[Detections]: ...
-
-    def get_raw_predictions(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[List[RawPrediction]]:
-        """Extract intermediate RawPrediction objects for a batch.
-
-        Processes the raw model output for a batch through remapping, NMS,
-        detection, data extraction, and geometry recovery to produce a list of
-        `RawPrediction` objects for each corresponding input clip. This provides
-        a simplified, intermediate representation before final tag decoding.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing context. Must match the batch size of `output`.
-
-        Returns
-        -------
-        List[List[RawPrediction]]
-            A list of lists (one inner list per input clip, in order). Each
-            inner list contains the `RawPrediction` objects extracted for the
-            corresponding input clip.
-        """
-        ...
-
-    def get_sound_event_predictions(
-        self, output: ModelOutput, clips: List[data.Clip]
-    ) -> List[List[BatDetect2Prediction]]: ...
-
-    def get_predictions(
-        self,
-        output: ModelOutput,
-        clips: List[data.Clip],
-    ) -> List[data.ClipPrediction]:
-        """Perform the full postprocessing pipeline for a batch.
-
-        Takes raw model output for a batch and corresponding clips, applies the
-        entire postprocessing chain, and returns the final, interpretable
-        predictions as a list of `soundevent.data.ClipPrediction` objects.
-
-        Parameters
-        ----------
-        output : ModelOutput
-            The raw output from the neural network model for a batch.
-        clips : List[data.Clip]
-            A list of `soundevent.data.Clip` objects corresponding to the batch
-            items, providing context. Must match the batch size of `output`.
-
-        Returns
-        -------
-        List[data.ClipPrediction]
-            A list containing one `ClipPrediction` object for each input clip
-            (in the same order), populated with `SoundEventPrediction` objects
-            representing the final detections with decoded tags and geometry.
-        """
-        ...

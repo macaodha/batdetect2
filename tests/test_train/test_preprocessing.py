@@ -38,7 +38,6 @@ def build_from_config(
             max_freq=preprocessor.max_freq,
         )
         postprocessor = build_postprocessor(
-            targets,
             preprocessor=preprocessor,
             config=postprocessing_config,
         )

@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Callable, Optional, Sequence, TypedDict
+from typing import Callable, List, Optional, Sequence, TypedDict
 
 import numpy as np
 import torch
@@ -28,6 +28,8 @@ __all__ = [
     "preprocess_dataset",
     "TrainPreprocessConfig",
     "load_train_preprocessing_config",
+    "save_preprocessed_example",
+    "load_preprocessed_example",
 ]
 
 FilenameFn = Callable[[data.ClipAnnotation], str]
@@ -94,8 +96,10 @@ def generate_train_example(
     labeller: ClipLabeller,
 ) -> PreprocessedExample:
     """Generate a complete training example for one annotation."""
-    wave = torch.tensor(audio_loader.load_clip(clip_annotation.clip))
-    spectrogram = preprocessor(wave)
+    wave = torch.tensor(
+        audio_loader.load_clip(clip_annotation.clip)
+    ).unsqueeze(0)
+    spectrogram = preprocessor(wave.unsqueeze(0)).squeeze(0)
     heatmaps = labeller(clip_annotation, spectrogram)
     return PreprocessedExample(
         audio=wave,
@@ -145,7 +149,7 @@ class PreprocessingDataset(torch.utils.data.Dataset):
             labeller=self.labeller,
         )
 
-        save_example_to_file(example, clip_annotation, path)
+        save_preprocessed_example(example, clip_annotation, path)
 
         return idx
 
@@ -153,7 +157,7 @@ class PreprocessingDataset(torch.utils.data.Dataset):
         return len(self.clips)
 
 
-def save_example_to_file(
+def save_preprocessed_example(
     example: PreprocessedExample,
     clip_annotation: data.ClipAnnotation,
     path: data.PathLike,
@@ -167,6 +171,23 @@ def save_example_to_file(
         size_heatmap=example.size_heatmap.numpy(),
         clip_annotation=clip_annotation,
     )
+
+
+def load_preprocessed_example(path: data.PathLike) -> PreprocessedExample:
+    item = np.load(path, mmap_mode="r+")
+    return PreprocessedExample(
+        audio=torch.tensor(item["audio"]),
+        spectrogram=torch.tensor(item["spectrogram"]),
+        size_heatmap=torch.tensor(item["size_heatmap"]),
+        detection_heatmap=torch.tensor(item["detection_heatmap"]),
+        class_heatmap=torch.tensor(item["class_heatmap"]),
+    )
+
+
+def list_preprocessed_files(
+    directory: data.PathLike, extension: str = ".npz"
+) -> List[Path]:
+    return list(Path(directory).glob(f"*{extension}"))
 
 
 def _get_filename(clip_annotation: data.ClipAnnotation) -> str:

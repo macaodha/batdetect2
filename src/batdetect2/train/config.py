@@ -44,8 +44,8 @@ class PLTrainerConfig(BaseConfig):
 
 
 class DataLoaderConfig(BaseConfig):
-    batch_size: int
-    shuffle: bool
+    batch_size: int = 8
+    shuffle: bool = False
     num_workers: int = 0
 
 
