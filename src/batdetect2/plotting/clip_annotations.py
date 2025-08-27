@@ -4,7 +4,9 @@ from matplotlib.axes import Axes
 from soundevent import data, plot
 
 from batdetect2.plotting.clips import plot_clip
+from batdetect2.plotting.common import create_ax
 from batdetect2.typing.preprocess import PreprocessorProtocol
+from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "plot_clip_annotation",
@@ -42,4 +44,32 @@ def plot_clip_annotation(
         linewidth=linewidth,
         facecolor="none" if not fill else None,
     )
+    return ax
+
+
+def plot_anchor_points(
+    clip_annotation: data.ClipAnnotation,
+    targets: TargetProtocol,
+    figsize: Optional[Tuple[int, int]] = None,
+    ax: Optional[Axes] = None,
+    size: int = 1,
+    color: str = "red",
+    marker: str = "x",
+    alpha: float = 1,
+) -> Axes:
+    ax = create_ax(ax=ax, figsize=figsize)
+
+    positions = []
+
+    for sound_event in clip_annotation.sound_events:
+        if not targets.filter(sound_event):
+            continue
+
+        sound_event = targets.transform(sound_event)
+
+        position, _ = targets.encode_roi(sound_event)
+        positions.append(position)
+
+    X, Y = zip(*positions)
+    ax.scatter(X, Y, s=size, c=color, marker=marker, alpha=alpha)
     return ax

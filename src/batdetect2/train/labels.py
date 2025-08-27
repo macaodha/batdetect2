@@ -62,7 +62,7 @@ class LabelConfig(BaseConfig):
         diffuse targets.
     """
 
-    sigma: float = 3.0
+    sigma: float = 2.0
 
 
 def build_clip_labeler(
@@ -174,7 +174,7 @@ def generate_clip_label(
 
 
 def map_to_pixels(x, size, min_val, max_val) -> int:
-    return int(np.floor(np.interp(x, [min_val, max_val], [0, size])))
+    return int(np.interp(x, [min_val, max_val], [0, size]))
 
 
 def generate_heatmaps(
