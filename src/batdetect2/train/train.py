@@ -14,7 +14,7 @@ from batdetect2.evaluate.metrics import (
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
-from batdetect2.models import build_model
+from batdetect2.models import Model, build_model
 from batdetect2.train.augmentations import (
     RandomExampleSource,
     build_augmentations,
@@ -55,17 +55,13 @@ def train(
 ):
     config = config or FullTrainingConfig()
 
-    if model_path is not None:
-        logger.debug("Loading model from: {path}", path=model_path)
-        module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
-    else:
-        module = build_training_module(config)
+    model = build_model(config=config)
 
-    trainer = build_trainer(config, targets=module.model.targets)
+    trainer = build_trainer(config, targets=model.targets)
 
     train_dataloader = build_train_loader(
         train_examples,
-        preprocessor=module.model.preprocessor,
+        preprocessor=model.preprocessor,
         config=config.train,
         num_workers=train_workers,
     )
@@ -73,13 +69,23 @@ def train(
     val_dataloader = (
         build_val_loader(
             val_examples,
-            preprocessor=module.model.preprocessor,
+            preprocessor=model.preprocessor,
             config=config.train,
             num_workers=val_workers,
         )
         if val_examples is not None
         else None
     )
+
+    if model_path is not None:
+        logger.debug("Loading model from: {path}", path=model_path)
+        module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
+    else:
+        module = build_training_module(
+            model,
+            config,
+            batches_per_epoch=len(train_dataloader),
+        )
 
     logger.info("Starting main training loop...")
     trainer.fit(
@@ -90,14 +96,17 @@ def train(
     logger.info("Training complete.")
 
 
-def build_training_module(config: FullTrainingConfig) -> TrainingModule:
-    model = build_model(config=config)
+def build_training_module(
+    model: Model,
+    config: FullTrainingConfig,
+    batches_per_epoch: int,
+) -> TrainingModule:
     loss = build_loss(config=config.train.loss)
     return TrainingModule(
         model=model,
         loss=loss,
         learning_rate=config.train.learning_rate,
-        t_max=config.train.t_max,
+        t_max=config.train.t_max * batches_per_epoch,
     )
 
 

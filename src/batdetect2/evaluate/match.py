@@ -1,6 +1,6 @@
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Protocol, Tuple
 
 import numpy as np
 from soundevent import data
@@ -21,6 +21,16 @@ MatchingStrategy = Literal["greedy", "optimal"]
 
 MatchingGeometry = Literal["bbox", "interval", "timestamp"]
 """The geometry representation to use for matching."""
+
+
+class AffinityFunction(Protocol):
+    def __call__(
+        self,
+        geometry1: data.Geometry,
+        geometry2: data.Geometry,
+        time_buffer: float = 0.01,
+        freq_buffer: float = 1000,
+    ) -> float: ...
 
 
 class MatchConfig(BaseConfig):
@@ -74,6 +84,65 @@ _geometry_cast_functions: Mapping[
 }
 
 
+def _timestamp_affinity(
+    geometry1: data.Geometry,
+    geometry2: data.Geometry,
+    time_buffer: float = 0.01,
+    freq_buffer: float = 1000,
+) -> float:
+    assert isinstance(geometry1, data.TimeStamp)
+    assert isinstance(geometry2, data.TimeStamp)
+
+    start_time1 = geometry1.coordinates
+    start_time2 = geometry2.coordinates
+
+    a = min(start_time1, start_time2)
+    b = max(start_time1, start_time2)
+
+    if b - a >= 2 * time_buffer:
+        return 0
+
+    intersection = a - b + 2 * time_buffer
+    union = b - a + 2 * time_buffer
+    return intersection / union
+
+
+def _interval_affinity(
+    geometry1: data.Geometry,
+    geometry2: data.Geometry,
+    time_buffer: float = 0.01,
+    freq_buffer: float = 1000,
+) -> float:
+    assert isinstance(geometry1, data.TimeInterval)
+    assert isinstance(geometry2, data.TimeInterval)
+
+    start_time1, end_time1 = geometry1.coordinates
+    start_time2, end_time2 = geometry1.coordinates
+
+    start_time1 -= time_buffer
+    start_time2 -= time_buffer
+    end_time1 += time_buffer
+    end_time2 += time_buffer
+
+    intersection = max(
+        0, min(end_time1, end_time2) - max(start_time1, start_time2)
+    )
+    union = (
+        (end_time1 - start_time1) + (end_time2 - start_time2) - intersection
+    )
+
+    if union == 0:
+        return 0
+
+    return intersection / union
+
+
+_affinity_functions: Mapping[MatchingGeometry, AffinityFunction] = {
+    "timestamp": _timestamp_affinity,
+    "interval": _interval_affinity,
+}
+
+
 def match_geometries(
     source: List[data.Geometry],
     target: List[data.Geometry],
@@ -81,6 +150,10 @@ def match_geometries(
     scores: Optional[List[float]] = None,
 ) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
     geometry_cast = _geometry_cast_functions[config.geometry]
+    affinity_function = _affinity_functions.get(
+        config.geometry,
+        compute_affinity,
+    )
 
     if config.strategy == "optimal":
         return optimal_match(
@@ -98,6 +171,7 @@ def match_geometries(
             time_buffer=config.time_buffer,
             freq_buffer=config.frequency_buffer,
             affinity_threshold=config.affinity_threshold,
+            affinity_function=affinity_function,
             scores=scores,
         )
 
@@ -111,6 +185,7 @@ def greedy_match(
     target: List[data.Geometry],
     scores: Optional[List[float]] = None,
     affinity_threshold: float = 0.5,
+    affinity_function: AffinityFunction = compute_affinity,
     time_buffer: float = 0.001,
     freq_buffer: float = 1000,
 ) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
@@ -168,7 +243,7 @@ def greedy_match(
 
         affinities = np.array(
             [
-                compute_affinity(
+                affinity_function(
                     source_geometry,
                     target_geometry,
                     time_buffer=time_buffer,
