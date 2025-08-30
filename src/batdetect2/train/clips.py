@@ -10,7 +10,7 @@ from batdetect2.typing.preprocess import PreprocessorProtocol
 from batdetect2.typing.train import PreprocessedExample
 from batdetect2.utils.arrays import adjust_width, slice_tensor
 
-DEFAULT_TRAIN_CLIP_DURATION = 0.512
+DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
 
 

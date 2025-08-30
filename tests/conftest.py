@@ -22,6 +22,7 @@ from batdetect2.targets import (
 from batdetect2.targets.classes import ClassesConfig, TargetClass
 from batdetect2.targets.filtering import FilterConfig, FilterRule
 from batdetect2.targets.terms import TagInfo
+from batdetect2.train.clips import build_clipper
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.typing import (
     ClipLabeller,
@@ -29,6 +30,7 @@ from batdetect2.typing import (
     TargetProtocol,
 )
 from batdetect2.typing.preprocess import AudioLoader
+from batdetect2.typing.train import ClipperProtocol
 
 
 @pytest.fixture
@@ -438,6 +440,13 @@ def sample_labeller(
         min_freq=sample_preprocessor.min_freq,
         max_freq=sample_preprocessor.max_freq,
     )
+
+
+@pytest.fixture
+def sample_clipper(
+    sample_preprocessor: PreprocessorProtocol,
+) -> ClipperProtocol:
+    return build_clipper(preprocessor=sample_preprocessor)
 
 
 @pytest.fixture
