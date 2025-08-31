@@ -24,7 +24,6 @@ from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
 from batdetect2.typing import ModelOutput
 from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
-    DetectionsArray,
     DetectionsTensor,
     PostprocessorProtocol,
     RawPrediction,

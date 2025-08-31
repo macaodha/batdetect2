@@ -96,12 +96,12 @@ class DetectionsTensor(NamedTuple):
 
     def numpy(self) -> DetectionsArray:
         return DetectionsArray(
-            scores=self.scores.detach().numpy(),
-            sizes=self.sizes.detach().numpy(),
-            class_scores=self.class_scores.detach().numpy(),
-            times=self.times.detach().numpy(),
-            frequencies=self.frequencies.detach().numpy(),
-            features=self.features.detach().numpy(),
+            scores=self.scores.detach().cpu().numpy(),
+            sizes=self.sizes.detach().cpu().numpy(),
+            class_scores=self.class_scores.detach().cpu().numpy(),
+            times=self.times.detach().cpu().numpy(),
+            frequencies=self.frequencies.detach().cpu().numpy(),
+            features=self.features.detach().cpu().numpy(),
         )
 
 
