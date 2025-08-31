@@ -9,6 +9,7 @@ from batdetect2.evaluate.match import (
     MatchConfig,
     match_all_predictions,
 )
+from batdetect2.plotting.clips import PreprocessorProtocol
 from batdetect2.plotting.evaluation import plot_example_gallery
 from batdetect2.postprocess import get_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
@@ -27,6 +28,7 @@ class ValidationMetrics(Callback):
     def __init__(
         self,
         metrics: List[MetricsProtocol],
+        preprocessor: PreprocessorProtocol,
         plot: bool = True,
         match_config: Optional[MatchConfig] = None,
     ):
@@ -37,6 +39,7 @@ class ValidationMetrics(Callback):
 
         self.match_config = match_config
         self.metrics = metrics
+        self.preprocessor = preprocessor
         self.plot = plot
 
         self._clip_annotations: List[data.ClipAnnotation] = []
@@ -61,7 +64,7 @@ class ValidationMetrics(Callback):
 
         for class_name, fig in plot_example_gallery(
             matches,
-            preprocessor=pl_module.model.preprocessor,
+            preprocessor=self.preprocessor,
             n_examples=4,
         ):
             plotter(

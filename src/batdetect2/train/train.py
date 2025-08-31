@@ -126,7 +126,9 @@ def build_training_module(
 
 
 def build_trainer_callbacks(
-    targets: TargetProtocol, config: EvaluationConfig
+    targets: TargetProtocol,
+    preprocessor: PreprocessorProtocol,
+    config: EvaluationConfig,
 ) -> List[Callback]:
     return [
         ModelCheckpoint(
@@ -142,6 +144,7 @@ def build_trainer_callbacks(
                 ),
                 ClassificationAccuracy(class_names=targets.class_names),
             ],
+            preprocessor=preprocessor,
             match_config=config.match,
         ),
     ]
@@ -163,7 +166,11 @@ def build_trainer(
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
         logger=train_logger,
-        callbacks=build_trainer_callbacks(targets, config=conf.evaluation),
+        callbacks=build_trainer_callbacks(
+            targets,
+            config=conf.evaluation,
+            preprocessor=build_preprocessor(conf.preprocess),
+        ),
     )
 
 
