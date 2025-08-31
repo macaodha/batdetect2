@@ -16,6 +16,7 @@ from batdetect2.evaluate.metrics import (
 )
 from batdetect2.models import Model, build_model
 from batdetect2.plotting.clips import AudioLoader, build_audio_loader
+from batdetect2.preprocess import build_preprocessor
 from batdetect2.train.augmentations import (
     RandomAudioSource,
     build_augmentations,
@@ -75,7 +76,7 @@ def train(
         train_annotations,
         audio_loader=audio_loader,
         labeller=labeller,
-        preprocessor=model.preprocessor,
+        preprocessor=build_preprocessor(config.preprocess),
         config=config.train,
         num_workers=train_workers,
     )
@@ -85,7 +86,7 @@ def train(
             val_annotations,
             audio_loader=audio_loader,
             labeller=labeller,
-            preprocessor=model.preprocessor,
+            preprocessor=build_preprocessor(config.preprocess),
             config=config.train,
             num_workers=val_workers,
         )
