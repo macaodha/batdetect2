@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import List, Literal, Optional, Protocol, Tuple
 
 import numpy as np
+from loguru import logger
 from soundevent import data
 from soundevent.evaluation import compute_affinity
 from soundevent.evaluation import match_geometries as optimal_match
@@ -10,10 +11,10 @@ from soundevent.geometry import compute_bounds
 
 from batdetect2.configs import BaseConfig
 from batdetect2.typing import (
-    BatDetect2Prediction,
     MatchEvaluation,
     TargetProtocol,
 )
+from batdetect2.typing.postprocess import RawPrediction
 
 MatchingStrategy = Literal["greedy", "optimal"]
 """The type of matching algorithm to use: 'greedy' or 'optimal'."""
@@ -274,7 +275,7 @@ def greedy_match(
 
 def match_sound_events_and_raw_predictions(
     clip_annotation: data.ClipAnnotation,
-    raw_predictions: List[BatDetect2Prediction],
+    raw_predictions: List[RawPrediction],
     targets: TargetProtocol,
     config: Optional[MatchConfig] = None,
 ) -> List[MatchEvaluation]:
@@ -294,12 +295,11 @@ def match_sound_events_and_raw_predictions(
     ]
 
     predicted_geometries = [
-        raw_prediction.raw.geometry for raw_prediction in raw_predictions
+        raw_prediction.geometry for raw_prediction in raw_predictions
     ]
 
     scores = [
-        raw_prediction.raw.detection_score
-        for raw_prediction in raw_predictions
+        raw_prediction.detection_score for raw_prediction in raw_predictions
     ]
 
     matches = []
@@ -320,14 +320,20 @@ def match_sound_events_and_raw_predictions(
         gt_det = target is not None
         gt_class = targets.encode_class(target) if target is not None else None
 
-        pred_score = float(prediction.raw.detection_score) if prediction else 0
+        pred_score = float(prediction.detection_score) if prediction else 0
+
+        pred_geometry = (
+            predicted_geometries[source_idx]
+            if source_idx is not None
+            else None
+        )
 
         class_scores = (
             {
                 str(class_name): float(score)
                 for class_name, score in zip(
                     targets.class_names,
-                    prediction.raw.class_scores,
+                    prediction.class_scores,
                 )
             }
             if prediction is not None
@@ -336,17 +342,14 @@ def match_sound_events_and_raw_predictions(
 
         matches.append(
             MatchEvaluation(
-                match=data.Match(
-                    source=None
-                    if prediction is None
-                    else prediction.sound_event_prediction,
-                    target=target,
-                    affinity=affinity,
-                ),
+                clip=clip_annotation.clip,
+                sound_event_annotation=target,
                 gt_det=gt_det,
                 gt_class=gt_class,
                 pred_score=pred_score,
                 pred_class_scores=class_scores,
+                pred_geometry=pred_geometry,
+                affinity=affinity,
             )
         )
 
@@ -416,6 +419,28 @@ def match_predictions_and_annotations(
         )
 
     return matches
+
+
+def match_all_predictions(
+    clip_annotations: List[data.ClipAnnotation],
+    predictions: List[List[RawPrediction]],
+    targets: TargetProtocol,
+    config: Optional[MatchConfig] = None,
+) -> List[MatchEvaluation]:
+    logger.info("Matching all annotations and predictions...")
+    return [
+        match
+        for clip_annotation, raw_predictions in zip(
+            clip_annotations,
+            predictions,
+        )
+        for match in match_sound_events_and_raw_predictions(
+            clip_annotation,
+            raw_predictions,
+            targets=targets,
+            config=config,
+        )
+    ]
 
 
 @dataclass

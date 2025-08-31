@@ -6,7 +6,10 @@ from torch.utils.data import Dataset
 
 from batdetect2.typing import ClipperProtocol, TrainExample
 from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
-from batdetect2.typing.train import Augmentation, ClipLabeller
+from batdetect2.typing.train import (
+    Augmentation,
+    ClipLabeller,
+)
 
 __all__ = [
     "TrainingDataset",
@@ -63,6 +66,50 @@ class TrainingDataset(Dataset):
                 spectrogram,
                 clip_annotation,
             )
+
+        heatmaps = self.labeller(clip_annotation, spectrogram)
+
+        return TrainExample(
+            spec=spectrogram,
+            detection_heatmap=heatmaps.detection,
+            class_heatmap=heatmaps.classes,
+            size_heatmap=heatmaps.size,
+            idx=torch.tensor(idx),
+            start_time=torch.tensor(clip.start_time),
+            end_time=torch.tensor(clip.end_time),
+        )
+
+
+class ValidationDataset(Dataset):
+    def __init__(
+        self,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        audio_loader: AudioLoader,
+        preprocessor: PreprocessorProtocol,
+        labeller: ClipLabeller,
+        audio_dir: Optional[data.PathLike] = None,
+    ):
+        self.clip_annotations = clip_annotations
+        self.labeller = labeller
+        self.preprocessor = preprocessor
+        self.audio_loader = audio_loader
+        self.audio_dir = audio_dir
+
+    def __len__(self):
+        return len(self.clip_annotations)
+
+    def __getitem__(self, idx) -> TrainExample:
+        clip_annotation = self.clip_annotations[idx]
+        clip = clip_annotation.clip
+
+        wav = self.audio_loader.load_clip(
+            clip_annotation.clip,
+            audio_dir=self.audio_dir,
+        )
+
+        wav_tensor = torch.tensor(wav).unsqueeze(0)
+
+        spectrogram = self.preprocessor(wav_tensor)
 
         heatmaps = self.labeller(clip_annotation, spectrogram)
 

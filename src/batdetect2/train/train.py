@@ -24,9 +24,7 @@ from batdetect2.train.augmentations import (
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.config import FullTrainingConfig, TrainingConfig
-from batdetect2.train.dataset import (
-    TrainingDataset,
-)
+from batdetect2.train.dataset import TrainingDataset, ValidationDataset
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
@@ -304,11 +302,11 @@ def build_val_dataset(
     labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
-) -> TrainingDataset:
+) -> ValidationDataset:
     logger.info("Building validation dataset...")
     config = config or TrainingConfig()
 
-    return TrainingDataset(
+    return ValidationDataset(
         clip_annotations,
         audio_loader=audio_loader,
         labeller=labeller,

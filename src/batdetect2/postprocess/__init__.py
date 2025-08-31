@@ -10,9 +10,9 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
-    convert_detections_to_raw_predictions,
     convert_raw_prediction_to_sound_event_prediction,
     convert_raw_predictions_to_clip_prediction,
+    to_raw_predictions,
 )
 from batdetect2.postprocess.extraction import extract_prediction_tensor
 from batdetect2.postprocess.nms import (
@@ -24,7 +24,8 @@ from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
 from batdetect2.typing import ModelOutput
 from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
-    Detections,
+    DetectionsArray,
+    DetectionsTensor,
     PostprocessorProtocol,
     RawPrediction,
 )
@@ -43,7 +44,7 @@ __all__ = [
     "TOP_K_PER_SEC",
     "build_postprocessor",
     "convert_raw_predictions_to_clip_prediction",
-    "convert_detections_to_raw_predictions",
+    "to_raw_predictions",
     "load_postprocess_config",
     "non_max_suppression",
 ]
@@ -168,7 +169,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         self.top_k_per_sec = top_k_per_sec
         self.detection_threshold = detection_threshold
 
-    def forward(self, output: ModelOutput) -> List[Detections]:
+    def forward(self, output: ModelOutput) -> List[DetectionsTensor]:
         width = output.detection_probs.shape[-1]
         duration = width / self.samplerate
         max_detections = int(self.top_k_per_sec * duration)
@@ -192,7 +193,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         self,
         output: ModelOutput,
         clips: Optional[List[data.Clip]] = None,
-    ) -> List[Detections]:
+    ) -> List[DetectionsTensor]:
         width = output.detection_probs.shape[-1]
         duration = width / self.samplerate
         max_detections = int(self.top_k_per_sec * duration)
@@ -245,11 +246,8 @@ def get_raw_predictions(
     """
     detections = postprocessor.get_detections(output, clips)
     return [
-        convert_detections_to_raw_predictions(
-            dataset,
-            targets=targets,
-        )
-        for dataset in detections
+        to_raw_predictions(detection.numpy(), targets=targets)
+        for detection in detections
     ]
 
 

@@ -20,7 +20,7 @@ import xarray as xr
 from soundevent.arrays import Dimensions
 
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
-from batdetect2.typing.postprocess import Detections
+from batdetect2.typing.postprocess import DetectionsTensor
 
 __all__ = [
     "features_to_xarray",
@@ -31,15 +31,15 @@ __all__ = [
 
 
 def map_detection_to_clip(
-    detections: Detections,
+    detections: DetectionsTensor,
     start_time: float,
     end_time: float,
     min_freq: float,
     max_freq: float,
-) -> Detections:
+) -> DetectionsTensor:
     duration = end_time - start_time
     bandwidth = max_freq - min_freq
-    return Detections(
+    return DetectionsTensor(
         scores=detections.scores,
         sizes=detections.sizes,
         features=detections.features,

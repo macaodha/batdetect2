@@ -77,13 +77,32 @@ class RawPrediction(NamedTuple):
     features: np.ndarray
 
 
-class Detections(NamedTuple):
+class DetectionsArray(NamedTuple):
+    scores: np.ndarray
+    sizes: np.ndarray
+    class_scores: np.ndarray
+    times: np.ndarray
+    frequencies: np.ndarray
+    features: np.ndarray
+
+
+class DetectionsTensor(NamedTuple):
     scores: torch.Tensor
     sizes: torch.Tensor
     class_scores: torch.Tensor
     times: torch.Tensor
     frequencies: torch.Tensor
     features: torch.Tensor
+
+    def numpy(self) -> DetectionsArray:
+        return DetectionsArray(
+            scores=self.scores.detach().numpy(),
+            sizes=self.sizes.detach().numpy(),
+            class_scores=self.class_scores.detach().numpy(),
+            times=self.times.detach().numpy(),
+            frequencies=self.frequencies.detach().numpy(),
+            features=self.features.detach().numpy(),
+        )
 
 
 @dataclass
@@ -95,10 +114,10 @@ class BatDetect2Prediction:
 class PostprocessorProtocol(Protocol):
     """Protocol defining the interface for the full postprocessing pipeline."""
 
-    def __call__(self, output: ModelOutput) -> List[Detections]: ...
+    def __call__(self, output: ModelOutput) -> List[DetectionsTensor]: ...
 
     def get_detections(
         self,
         output: ModelOutput,
         clips: Optional[List[data.Clip]] = None,
-    ) -> List[Detections]: ...
+    ) -> List[DetectionsTensor]: ...

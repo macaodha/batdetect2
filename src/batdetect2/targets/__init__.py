@@ -21,7 +21,7 @@ configured processing steps. The main way to create a functional `Targets`
 object is via the `build_targets` or `load_targets` functions.
 """
 
-from typing import List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 from loguru import logger
 from pydantic import Field
@@ -675,3 +675,24 @@ def load_targets(
         term_registry=term_registry,
         derivation_registry=derivation_registry,
     )
+
+
+def iterate_encoded_sound_events(
+    sound_events: Iterable[data.SoundEventAnnotation],
+    targets: TargetProtocol,
+) -> Iterable[Tuple[Optional[str], Position, Size]]:
+    for sound_event in sound_events:
+        if not targets.filter(sound_event):
+            continue
+
+        geometry = sound_event.sound_event.geometry
+
+        if geometry is None:
+            continue
+
+        sound_event = targets.transform(sound_event)
+
+        class_name = targets.encode_class(sound_event)
+        position, size = targets.encode_roi(sound_event)
+
+        yield class_name, position, size

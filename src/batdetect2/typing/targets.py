@@ -12,8 +12,8 @@ that components responsible for these tasks can be interacted with consistently
 throughout BatDetect2.
 """
 
-from collections.abc import Callable, Iterable
-from typing import List, Optional, Protocol, Tuple
+from collections.abc import Callable
+from typing import List, Optional, Protocol
 
 import numpy as np
 from soundevent import data

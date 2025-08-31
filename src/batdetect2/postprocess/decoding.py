@@ -6,13 +6,13 @@ import numpy as np
 from soundevent import data
 
 from batdetect2.typing.postprocess import (
-    Detections,
+    DetectionsArray,
     RawPrediction,
 )
 from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
-    "convert_detections_to_raw_predictions",
+    "to_raw_predictions",
     "convert_raw_predictions_to_clip_prediction",
     "convert_raw_prediction_to_sound_event_prediction",
     "DEFAULT_CLASSIFICATION_THRESHOLD",
@@ -27,19 +27,19 @@ decoding.
 """
 
 
-def convert_detections_to_raw_predictions(
-    detections: Detections,
+def to_raw_predictions(
+    detections: DetectionsArray,
     targets: TargetProtocol,
 ) -> List[RawPrediction]:
     predictions = []
 
     for score, class_scores, time, freq, dims, feats in zip(
-        detections.scores.cpu().numpy(),
-        detections.class_scores.cpu().numpy(),
-        detections.times.cpu().numpy(),
-        detections.frequencies.cpu().numpy(),
-        detections.sizes.cpu().numpy(),
-        detections.features.cpu().numpy(),
+        detections.scores,
+        detections.class_scores,
+        detections.times,
+        detections.frequencies,
+        detections.sizes,
+        detections.features,
     ):
         highest_scoring_class = targets.class_names[class_scores.argmax()]
 

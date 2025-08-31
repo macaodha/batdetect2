@@ -1,32 +1,26 @@
-import io
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-import numpy as np
 from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
-from lightning.pytorch.loggers import Logger, TensorBoardLogger
-from lightning.pytorch.loggers.mlflow import MLFlowLogger
-from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.match import (
     MatchConfig,
-    match_sound_events_and_raw_predictions,
+    match_all_predictions,
 )
-from batdetect2.models import Model
 from batdetect2.plotting.evaluation import plot_example_gallery
-from batdetect2.postprocess import get_sound_event_predictions
-from batdetect2.train.dataset import TrainingDataset
+from batdetect2.postprocess import get_raw_predictions
+from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
+from batdetect2.train.logging import get_image_plotter
 from batdetect2.typing import (
-    BatDetect2Prediction,
     MatchEvaluation,
     MetricsProtocol,
-    ModelOutput,
-    TargetProtocol,
-    TrainExample,
 )
+from batdetect2.typing.models import ModelOutput
+from batdetect2.typing.postprocess import RawPrediction
+from batdetect2.typing.train import TrainExample
 
 
 class ValidationMetrics(Callback):
@@ -45,15 +39,14 @@ class ValidationMetrics(Callback):
         self.metrics = metrics
         self.plot = plot
 
-        self._matches: List[
-            Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]
-        ] = []
+        self._clip_annotations: List[data.ClipAnnotation] = []
+        self._predictions: List[List[RawPrediction]] = []
 
-    def get_dataset(self, trainer: Trainer) -> TrainingDataset:
+    def get_dataset(self, trainer: Trainer) -> ValidationDataset:
         dataloaders = trainer.val_dataloaders
         assert isinstance(dataloaders, DataLoader)
         dataset = dataloaders.dataset
-        assert isinstance(dataset, TrainingDataset)
+        assert isinstance(dataset, ValidationDataset)
         return dataset
 
     def plot_examples(
@@ -61,7 +54,7 @@ class ValidationMetrics(Callback):
         pl_module: LightningModule,
         matches: List[MatchEvaluation],
     ):
-        plotter = _get_image_plotter(pl_module.logger)  # type: ignore
+        plotter = get_image_plotter(pl_module.logger)  # type: ignore
 
         if plotter is None:
             return
@@ -93,9 +86,10 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        matches = _match_all_collected_examples(
-            self._matches,
-            pl_module.model.targets,
+        matches = match_all_predictions(
+            self._clip_annotations,
+            self._predictions,
+            targets=pl_module.model.targets,
             config=self.match_config,
         )
 
@@ -123,133 +117,23 @@ class ValidationMetrics(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        self._matches.extend(
-            _get_batch_clips_and_predictions(
-                batch,
-                outputs,
-                dataset=self.get_dataset(trainer),
-                model=pl_module.model,
-            )
-        )
+        postprocessor = pl_module.model.postprocessor
+        targets = pl_module.model.targets
+        dataset = self.get_dataset(trainer)
 
+        clip_annotations = [
+            dataset.clip_annotations[int(example_idx)]
+            for example_idx in batch.idx
+        ]
 
-def _get_batch_clips_and_predictions(
-    batch: TrainExample,
-    outputs: ModelOutput,
-    dataset: TrainingDataset,
-    model: Model,
-) -> List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]]:
-    clip_annotations = [
-        _get_subclip(
-            dataset.clip_annotations[int(example_id)],
-            start_time=start_time.item(),
-            end_time=end_time.item(),
-            targets=model.targets,
-        )
-        for example_id, start_time, end_time in zip(
-            batch.idx,
-            batch.start_time,
-            batch.end_time,
-        )
-    ]
-
-    clips = [clip_annotation.clip for clip_annotation in clip_annotations]
-
-    raw_predictions = get_sound_event_predictions(
-        outputs,
-        clips,
-        targets=model.targets,
-        postprocessor=model.postprocessor
-    )
-
-    return [
-        (clip_annotation, clip_predictions)
-        for clip_annotation, clip_predictions in zip(
-            clip_annotations, raw_predictions
-        )
-    ]
-
-
-def _match_all_collected_examples(
-    pre_matches: List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]],
-    targets: TargetProtocol,
-    config: Optional[MatchConfig] = None,
-) -> List[MatchEvaluation]:
-    logger.info("Matching all annotations and predictions...")
-    return [
-        match
-        for clip_annotation, raw_predictions in pre_matches
-        for match in match_sound_events_and_raw_predictions(
-            clip_annotation,
-            raw_predictions,
+        predictions = get_raw_predictions(
+            outputs,
+            clips=[
+                clip_annotation.clip for clip_annotation in clip_annotations
+            ],
             targets=targets,
-            config=config,
+            postprocessor=postprocessor,
         )
-    ]
 
-
-def _is_in_subclip(
-    sound_event_annotation: data.SoundEventAnnotation,
-    targets: TargetProtocol,
-    start_time: float,
-    end_time: float,
-) -> bool:
-    (time, _), _ = targets.encode_roi(sound_event_annotation)
-    return start_time <= time <= end_time
-
-
-def _get_subclip(
-    clip_annotation: data.ClipAnnotation,
-    start_time: float,
-    end_time: float,
-    targets: TargetProtocol,
-) -> data.ClipAnnotation:
-    return data.ClipAnnotation(
-        clip=data.Clip(
-            recording=clip_annotation.clip.recording,
-            start_time=start_time,
-            end_time=end_time,
-        ),
-        sound_events=[
-            sound_event_annotation
-            for sound_event_annotation in clip_annotation.sound_events
-            if _is_in_subclip(
-                sound_event_annotation,
-                targets,
-                start_time=start_time,
-                end_time=end_time,
-            )
-        ],
-    )
-
-
-def _get_image_plotter(logger: Logger):
-    if isinstance(logger, TensorBoardLogger):
-
-        def plot_figure(name, figure, step):
-            return logger.experiment.add_figure(name, figure, step)
-
-        return plot_figure
-
-    if isinstance(logger, MLFlowLogger):
-
-        def plot_figure(name, figure, step):
-            image = _convert_figure_to_image(figure)
-            return logger.experiment.log_image(
-                run_id=logger.run_id,
-                image=image,
-                key=name,
-                step=step,
-            )
-
-        return plot_figure
-
-
-def _convert_figure_to_image(figure):
-    with io.BytesIO() as buff:
-        figure.savefig(buff, format="raw")
-        buff.seek(0)
-        data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
-    w, h = figure.canvas.get_width_height()
-    im = data.reshape((int(h), int(w), -1))
-    return im
+        self._clip_annotations.extend(clip_annotations)
+        self._predictions.extend(predictions)

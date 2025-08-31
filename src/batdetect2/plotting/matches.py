@@ -124,25 +124,21 @@ def plot_false_positive_match(
     add_points: bool = False,
     fill: bool = False,
     spec_cmap: str = "gray",
-    time_offset: float = 0,
     color: str = DEFAULT_FALSE_POSITIVE_COLOR,
     fontsize: Union[float, str] = "small",
 ) -> Axes:
-    assert match.match.source is not None
-    assert match.match.target is None
-    sound_event = match.match.source.sound_event
-    geometry = sound_event.geometry
-    assert geometry is not None
+    assert match.pred_geometry is not None
+    assert match.sound_event_annotation is None
 
-    start_time, _, _, high_freq = compute_bounds(geometry)
+    start_time, _, _, high_freq = compute_bounds(match.pred_geometry)
 
     clip = data.Clip(
         start_time=max(start_time - duration / 2, 0),
         end_time=min(
             start_time + duration / 2,
-            sound_event.recording.duration,
+            match.clip.end_time,
         ),
-        recording=sound_event.recording,
+        recording=match.clip.recording,
     )
 
     ax = plot_clip(
@@ -154,11 +150,9 @@ def plot_false_positive_match(
         spec_cmap=spec_cmap,
     )
 
-    plot_prediction(
-        match.match.source,
+    plot.plot_geometry(
+        match.pred_geometry,
         ax=ax,
-        time_offset=time_offset,
-        freq_offset=2_000,
         add_points=add_points,
         facecolor="none" if not fill else None,
         alpha=1,
@@ -191,9 +185,9 @@ def plot_false_negative_match(
     color: str = DEFAULT_FALSE_NEGATIVE_COLOR,
     fontsize: Union[float, str] = "small",
 ) -> Axes:
-    assert match.match.source is None
-    assert match.match.target is not None
-    sound_event = match.match.target.sound_event
+    assert match.pred_geometry is None
+    assert match.sound_event_annotation is not None
+    sound_event = match.sound_event_annotation.sound_event
     geometry = sound_event.geometry
     assert geometry is not None
 
@@ -217,7 +211,7 @@ def plot_false_negative_match(
     )
 
     plot.plot_annotation(
-        match.match.target,
+        match.sound_event_annotation,
         ax=ax,
         time_offset=0.001,
         freq_offset=2_000,
@@ -255,9 +249,9 @@ def plot_true_positive_match(
     annotation_linestyle: str = DEFAULT_ANNOTATION_LINE_STYLE,
     prediction_linestyle: str = DEFAULT_PREDICTION_LINE_STYLE,
 ) -> Axes:
-    assert match.match.source is not None
-    assert match.match.target is not None
-    sound_event = match.match.target.sound_event
+    assert match.sound_event_annotation is not None
+    assert match.pred_geometry is not None
+    sound_event = match.sound_event_annotation.sound_event
     geometry = sound_event.geometry
     assert geometry is not None
 
@@ -281,7 +275,7 @@ def plot_true_positive_match(
     )
 
     plot.plot_annotation(
-        match.match.target,
+        match.sound_event_annotation,
         ax=ax,
         time_offset=0.001,
         freq_offset=2_000,
@@ -292,11 +286,9 @@ def plot_true_positive_match(
         linestyle=annotation_linestyle,
     )
 
-    plot_prediction(
-        match.match.source,
+    plot.plot_geometry(
+        match.pred_geometry,
         ax=ax,
-        time_offset=0.001,
-        freq_offset=2_000,
         add_points=add_points,
         facecolor="none" if not fill else None,
         alpha=1,
@@ -332,9 +324,9 @@ def plot_cross_trigger_match(
     annotation_linestyle: str = DEFAULT_ANNOTATION_LINE_STYLE,
     prediction_linestyle: str = DEFAULT_PREDICTION_LINE_STYLE,
 ) -> Axes:
-    assert match.match.source is not None
-    assert match.match.target is not None
-    sound_event = match.match.source.sound_event
+    assert match.sound_event_annotation is not None
+    assert match.pred_geometry is not None
+    sound_event = match.sound_event_annotation.sound_event
     geometry = sound_event.geometry
     assert geometry is not None
 
@@ -358,7 +350,7 @@ def plot_cross_trigger_match(
     )
 
     plot.plot_annotation(
-        match.match.target,
+        match.sound_event_annotation,
         ax=ax,
         time_offset=0.001,
         freq_offset=2_000,
@@ -369,11 +361,9 @@ def plot_cross_trigger_match(
         linestyle=annotation_linestyle,
     )
 
-    plot_prediction(
-        match.match.source,
+    plot.plot_geometry(
+        match.pred_geometry,
         ax=ax,
-        time_offset=0.001,
-        freq_offset=2_000,
         add_points=add_points,
         facecolor="none" if not fill else None,
         alpha=1,

@@ -68,7 +68,7 @@ from batdetect2.postprocess import PostprocessConfig, build_postprocessor
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.targets import TargetConfig, build_targets
 from batdetect2.typing.models import DetectionModel
-from batdetect2.typing.postprocess import Detections, PostprocessorProtocol
+from batdetect2.typing.postprocess import DetectionsArray, PostprocessorProtocol
 from batdetect2.typing.preprocess import PreprocessorProtocol
 from batdetect2.typing.targets import TargetProtocol
 
@@ -122,7 +122,7 @@ class Model(LightningModule):
         self.targets = targets
         self.save_hyperparameters()
 
-    def forward(self, wav: torch.Tensor) -> List[Detections]:
+    def forward(self, wav: torch.Tensor) -> List[DetectionsArray]:
         spec = self.preprocessor(wav)
         outputs = self.detector(spec)
         return self.postprocessor(outputs)

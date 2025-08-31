@@ -1,6 +1,8 @@
+import io
 from typing import Annotated, Any, Literal, Optional, Union
 
-from lightning.pytorch.loggers import Logger
+import numpy as np
+from lightning.pytorch.loggers import Logger, MLFlowLogger, TensorBoardLogger
 from loguru import logger
 from pydantic import Field
 
@@ -140,3 +142,35 @@ def build_logger(config: LoggerConfig) -> Logger:
     creation_func = LOGGER_FACTORY[logger_type]
 
     return creation_func(config)
+
+
+def get_image_plotter(logger: Logger):
+    if isinstance(logger, TensorBoardLogger):
+
+        def plot_figure(name, figure, step):
+            return logger.experiment.add_figure(name, figure, step)
+
+        return plot_figure
+
+    if isinstance(logger, MLFlowLogger):
+
+        def plot_figure(name, figure, step):
+            image = _convert_figure_to_image(figure)
+            return logger.experiment.log_image(
+                run_id=logger.run_id,
+                image=image,
+                key=name,
+                step=step,
+            )
+
+        return plot_figure
+
+
+def _convert_figure_to_image(figure):
+    with io.BytesIO() as buff:
+        figure.savefig(buff, format="raw")
+        buff.seek(0)
+        data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
+    w, h = figure.canvas.get_width_height()
+    im = data.reshape((int(h), int(w), -1))
+    return im

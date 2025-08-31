@@ -11,13 +11,17 @@ __all__ = [
 
 @dataclass
 class MatchEvaluation:
-    match: data.Match
+    clip: data.Clip
 
+    sound_event_annotation: Optional[data.SoundEventAnnotation]
     gt_det: bool
     gt_class: Optional[str]
 
     pred_score: float
     pred_class_scores: Dict[str, float]
+    pred_geometry: Optional[data.Geometry]
+
+    affinity: float
 
     @property
     def pred_class(self) -> Optional[str]:

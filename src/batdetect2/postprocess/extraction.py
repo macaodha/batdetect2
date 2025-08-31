@@ -20,7 +20,10 @@ from typing import List, Optional, Tuple, Union
 import torch
 
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
-from batdetect2.typing.postprocess import Detections, ModelOutput
+from batdetect2.typing.postprocess import (
+    DetectionsTensor,
+    ModelOutput,
+)
 
 __all__ = [
     "extract_prediction_tensor",
@@ -32,7 +35,7 @@ def extract_prediction_tensor(
     max_detections: int = 200,
     threshold: Optional[float] = None,
     nms_kernel_size: Union[int, Tuple[int, int]] = NMS_KERNEL_SIZE,
-) -> List[Detections]:
+) -> List[DetectionsTensor]:
     detection_heatmap = non_max_suppression(
         output.detection_probs.detach(),
         kernel_size=nms_kernel_size,
@@ -78,7 +81,7 @@ def extract_prediction_tensor(
             class_scores = class_scores[mask]
 
         predictions.append(
-            Detections(
+            DetectionsTensor(
                 scores=detection_scores,
                 sizes=sizes,
                 features=features,
