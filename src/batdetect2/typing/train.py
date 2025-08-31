@@ -49,7 +49,11 @@ spectrogram, applies all configured filtering, transformation, and encoding
 steps, and returns the final `Heatmaps` used for model training.
 """
 
-Augmentation = Callable[[PreprocessedExample], PreprocessedExample]
+
+Augmentation = Callable[
+    [torch.Tensor, data.ClipAnnotation],
+    Tuple[torch.Tensor, data.ClipAnnotation],
+]
 
 
 class TrainExample(NamedTuple):
@@ -97,5 +101,6 @@ class LossProtocol(Protocol):
 
 class ClipperProtocol(Protocol):
     def __call__(
-        self, example: PreprocessedExample
-    ) -> Tuple[PreprocessedExample, float, float]: ...
+        self,
+        clip_annotation: data.ClipAnnotation,
+    ) -> data.ClipAnnotation: ...

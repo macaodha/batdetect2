@@ -2,7 +2,7 @@ from batdetect2.train.augmentations import (
     AugmentationsConfig,
     EchoAugmentationConfig,
     FrequencyMaskAugmentationConfig,
-    RandomExampleSource,
+    RandomAudioSource,
     TimeMaskAugmentationConfig,
     VolumeAugmentationConfig,
     WarpAugmentationConfig,
@@ -10,7 +10,7 @@ from batdetect2.train.augmentations import (
     build_augmentations,
     mask_frequency,
     mask_time,
-    mix_examples,
+    mix_audio,
     scale_volume,
     warp_spectrogram,
 )
@@ -22,10 +22,7 @@ from batdetect2.train.config import (
     load_full_training_config,
     load_train_config,
 )
-from batdetect2.train.dataset import (
-    LabeledDataset,
-    list_preprocessed_files,
-)
+from batdetect2.train.dataset import TrainingDataset
 from batdetect2.train.labels import build_clip_labeler, load_label_config
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.losses import (
@@ -56,11 +53,11 @@ __all__ = [
     "EchoAugmentationConfig",
     "FrequencyMaskAugmentationConfig",
     "FullTrainingConfig",
-    "LabeledDataset",
+    "TrainingDataset",
     "LossConfig",
     "LossFunction",
     "PLTrainerConfig",
-    "RandomExampleSource",
+    "RandomAudioSource",
     "SizeLossConfig",
     "TimeMaskAugmentationConfig",
     "TrainingConfig",
@@ -78,13 +75,12 @@ __all__ = [
     "build_val_dataset",
     "build_val_loader",
     "generate_train_example",
-    "list_preprocessed_files",
     "load_full_training_config",
     "load_label_config",
     "load_train_config",
     "mask_frequency",
     "mask_time",
-    "mix_examples",
+    "mix_audio",
     "preprocess_annotations",
     "scale_volume",
     "select_subclip",

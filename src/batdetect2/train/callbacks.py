@@ -17,7 +17,7 @@ from batdetect2.evaluate.match import (
 from batdetect2.models import Model
 from batdetect2.plotting.evaluation import plot_example_gallery
 from batdetect2.postprocess import get_sound_event_predictions
-from batdetect2.train.dataset import LabeledDataset
+from batdetect2.train.dataset import TrainingDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.typing import (
     BatDetect2Prediction,
@@ -49,11 +49,11 @@ class ValidationMetrics(Callback):
             Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]
         ] = []
 
-    def get_dataset(self, trainer: Trainer) -> LabeledDataset:
+    def get_dataset(self, trainer: Trainer) -> TrainingDataset:
         dataloaders = trainer.val_dataloaders
         assert isinstance(dataloaders, DataLoader)
         dataset = dataloaders.dataset
-        assert isinstance(dataset, LabeledDataset)
+        assert isinstance(dataset, TrainingDataset)
         return dataset
 
     def plot_examples(
@@ -136,12 +136,12 @@ class ValidationMetrics(Callback):
 def _get_batch_clips_and_predictions(
     batch: TrainExample,
     outputs: ModelOutput,
-    dataset: LabeledDataset,
+    dataset: TrainingDataset,
     model: Model,
 ) -> List[Tuple[data.ClipAnnotation, List[BatDetect2Prediction]]]:
     clip_annotations = [
         _get_subclip(
-            dataset.get_clip_annotation(example_id),
+            dataset.clip_annotations[int(example_id)],
             start_time=start_time.item(),
             end_time=end_time.item(),
             targets=model.targets,

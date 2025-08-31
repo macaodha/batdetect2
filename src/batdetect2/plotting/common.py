@@ -38,6 +38,8 @@ def plot_spectrogram(
     if isinstance(spec, torch.Tensor):
         spec = spec.numpy()
 
+    spec = spec.squeeze()
+
     ax = create_ax(ax=ax, figsize=figsize)
 
     if start_time is None:

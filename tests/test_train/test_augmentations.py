@@ -6,7 +6,7 @@ from soundevent import data
 
 from batdetect2.train.augmentations import (
     add_echo,
-    mix_examples,
+    mix_audio,
 )
 from batdetect2.train.clips import select_subclip
 from batdetect2.train.preprocess import generate_train_example
@@ -41,7 +41,7 @@ def test_mix_examples(
         labeller=sample_labeller,
     )
 
-    mixed = mix_examples(
+    mixed = mix_audio(
         example1,
         example2,
         weight=0.3,
@@ -86,7 +86,7 @@ def test_mix_examples_of_different_durations(
         labeller=sample_labeller,
     )
 
-    mixed = mix_examples(
+    mixed = mix_audio(
         example1,
         example2,
         weight=0.3,

@@ -6,19 +6,19 @@ import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
+from batdetect2.data import load_dataset_from_config
 from batdetect2.train import (
     FullTrainingConfig,
     load_full_training_config,
     train,
 )
-from batdetect2.train.dataset import list_preprocessed_files
 
 __all__ = ["train_command"]
 
 
 @cli.command(name="train")
-@click.argument("train_dir", type=click.Path(exists=True))
-@click.option("--val-dir", type=click.Path(exists=True))
+@click.argument("train_dataset", type=click.Path(exists=True))
+@click.option("--val-dataset", type=click.Path(exists=True))
 @click.option("--model-path", type=click.Path(exists=True))
 @click.option("--config", type=click.Path(exists=True))
 @click.option("--config-field", type=str)
@@ -31,8 +31,8 @@ __all__ = ["train_command"]
     help="Increase verbosity. -v for INFO, -vv for DEBUG.",
 )
 def train_command(
-    train_dir: Path,
-    val_dir: Optional[Path] = None,
+    train_dataset: Path,
+    val_dataset: Optional[Path] = None,
     model_path: Optional[Path] = None,
     config: Optional[Path] = None,
     config_field: Optional[str] = None,
@@ -58,29 +58,27 @@ def train_command(
         else FullTrainingConfig()
     )
 
-    logger.info("Scanning for training and validation data...")
-    train_examples = list_preprocessed_files(train_dir)
+    logger.info("Loading training dataset...")
+    train_annotations = load_dataset_from_config(train_dataset)
     logger.debug(
-        "Found {num_files} training examples in {path}",
-        num_files=len(train_examples),
-        path=train_dir,
+        "Loaded {num_annotations} training examples",
+        num_annotations=len(train_annotations),
     )
 
-    val_examples = None
-    if val_dir is not None:
-        val_examples = list_preprocessed_files(val_dir)
+    val_annotations = None
+    if val_dataset is not None:
+        val_annotations = load_dataset_from_config(val_dataset)
         logger.debug(
-            "Found {num_files} validation examples in {path}",
-            num_files=len(val_examples),
-            path=val_dir,
+            "Loaded {num_annotations} validation examples",
+            num_files=len(val_annotations),
         )
     else:
         logger.debug("No validation directory provided.")
 
     logger.info("Configuration and data loaded. Starting training...")
     train(
-        train_examples=train_examples,
-        val_examples=val_examples,
+        train_annotations=train_annotations,
+        val_annotations=val_annotations,
         config=conf,
         model_path=model_path,
         train_workers=train_workers,

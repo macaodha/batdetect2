@@ -1,14 +1,12 @@
-from typing import Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
-import torch
 from loguru import logger
+from soundevent import data
+from soundevent.geometry import compute_bounds, intervals_overlap
 
 from batdetect2.configs import BaseConfig
 from batdetect2.typing import ClipperProtocol
-from batdetect2.typing.preprocess import PreprocessorProtocol
-from batdetect2.typing.train import PreprocessedExample
-from batdetect2.utils.arrays import adjust_width, slice_tensor
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
@@ -18,50 +16,127 @@ class ClipingConfig(BaseConfig):
     duration: float = DEFAULT_TRAIN_CLIP_DURATION
     random: bool = True
     max_empty: float = DEFAULT_MAX_EMPTY_CLIP
+    min_sound_event_overlap: float = 0
 
 
-class Clipper(torch.nn.Module):
+class Clipper:
     def __init__(
         self,
-        preprocessor: PreprocessorProtocol,
         duration: float = 0.5,
         max_empty: float = 0.2,
         random: bool = True,
+        min_sound_event_overlap: float = 0,
     ):
         super().__init__()
-        self.preprocessor = preprocessor
         self.duration = duration
         self.random = random
         self.max_empty = max_empty
+        self.min_sound_event_overlap = min_sound_event_overlap
 
-    def forward(
+    def __call__(
         self,
-        example: PreprocessedExample,
-    ) -> Tuple[PreprocessedExample, float, float]:
-        start_time = 0
-        duration = example.audio.shape[-1] / self.preprocessor.input_samplerate
-
-        if self.random:
-            start_time = np.random.uniform(
-                -self.max_empty,
-                duration - self.duration + self.max_empty,
-            )
-
-        return (
-            select_subclip(
-                example,
-                start=start_time,
-                duration=self.duration,
-                input_samplerate=self.preprocessor.input_samplerate,
-                output_samplerate=self.preprocessor.output_samplerate,
-            ),
-            start_time,
-            start_time + self.duration,
+        clip_annotation: data.ClipAnnotation,
+    ) -> data.ClipAnnotation:
+        return get_subclip_annotation(
+            clip_annotation,
+            random=self.random,
+            duration=self.duration,
+            max_empty=self.max_empty,
+            min_sound_event_overlap=self.min_sound_event_overlap,
         )
 
 
+def get_subclip_annotation(
+    clip_annotation: data.ClipAnnotation,
+    random: bool = True,
+    duration: float = 0.5,
+    max_empty: float = 0.2,
+    min_sound_event_overlap: float = 0,
+) -> data.ClipAnnotation:
+    clip = clip_annotation.clip
+
+    subclip = select_subclip(
+        clip,
+        random=random,
+        duration=duration,
+        max_empty=max_empty,
+    )
+
+    sound_events = select_sound_event_annotations(
+        clip_annotation,
+        subclip,
+        min_overlap=min_sound_event_overlap,
+    )
+
+    return clip_annotation.model_copy(
+        update=dict(
+            clip=subclip,
+            sound_events=sound_events,
+        )
+    )
+
+
+def select_subclip(
+    clip: data.Clip,
+    random: bool = True,
+    duration: float = 0.5,
+    max_empty: float = 0.2,
+) -> data.Clip:
+    start_time = clip.start_time
+    end_time = clip.end_time
+
+    if duration > clip.duration + max_empty or not random:
+        return clip.model_copy(
+            update=dict(
+                start_time=start_time,
+                end_time=start_time + duration,
+            )
+        )
+
+    random_start_time = np.random.uniform(
+        low=start_time,
+        high=end_time + max_empty - duration,
+    )
+
+    return clip.model_copy(
+        update=dict(
+            start_time=random_start_time,
+            end_time=random_start_time + duration,
+        )
+    )
+
+
+def select_sound_event_annotations(
+    clip_annotation: data.ClipAnnotation,
+    subclip: data.Clip,
+    min_overlap: float = 0,
+) -> List[data.SoundEventAnnotation]:
+    selected = []
+
+    start_time = subclip.start_time
+    end_time = subclip.end_time
+
+    for sound_event_annotation in clip_annotation.sound_events:
+        geometry = sound_event_annotation.sound_event.geometry
+
+        if geometry is None:
+            continue
+
+        geom_start_time, _, geom_end_time, _ = compute_bounds(geometry)
+
+        if not intervals_overlap(
+            (start_time, end_time),
+            (geom_start_time, geom_end_time),
+            min_absolute_overlap=min_overlap,
+        ):
+            continue
+
+        selected.append(sound_event_annotation)
+
+    return selected
+
+
 def build_clipper(
-    preprocessor: PreprocessorProtocol,
     config: Optional[ClipingConfig] = None,
     random: Optional[bool] = None,
 ) -> ClipperProtocol:
@@ -71,73 +146,7 @@ def build_clipper(
         lambda: config.to_yaml_string(),
     )
     return Clipper(
-        preprocessor=preprocessor,
         duration=config.duration,
         max_empty=config.max_empty,
         random=config.random if random else False,
-    )
-
-
-def select_subclip(
-    example: PreprocessedExample,
-    start: float,
-    duration: float,
-    input_samplerate: float,
-    output_samplerate: float,
-    fill_value: float = 0,
-) -> PreprocessedExample:
-    audio_width = int(np.floor(duration * input_samplerate))
-    audio_start = int(np.floor(start * input_samplerate))
-
-    audio = adjust_width(
-        slice_tensor(
-            example.audio,
-            start=audio_start,
-            end=audio_start + audio_width,
-            dim=-1,
-        ),
-        audio_width,
-        value=fill_value,
-    )
-
-    spec_start = int(np.floor(start * output_samplerate))
-    spec_width = int(np.floor(duration * output_samplerate))
-    return PreprocessedExample(
-        audio=audio,
-        spectrogram=adjust_width(
-            slice_tensor(
-                example.spectrogram,
-                start=spec_start,
-                end=spec_start + spec_width,
-                dim=-1,
-            ),
-            spec_width,
-        ),
-        class_heatmap=adjust_width(
-            slice_tensor(
-                example.class_heatmap,
-                start=spec_start,
-                end=spec_start + spec_width,
-                dim=-1,
-            ),
-            spec_width,
-        ),
-        detection_heatmap=adjust_width(
-            slice_tensor(
-                example.detection_heatmap,
-                start=spec_start,
-                end=spec_start + spec_width,
-                dim=-1,
-            ),
-            spec_width,
-        ),
-        size_heatmap=adjust_width(
-            slice_tensor(
-                example.size_heatmap,
-                start=spec_start,
-                end=spec_start + spec_width,
-                dim=-1,
-            ),
-            spec_width,
-        ),
     )

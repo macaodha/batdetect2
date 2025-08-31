@@ -9,14 +9,12 @@ import torch
 from loguru import logger
 from pydantic import Field
 from soundevent import data
+from soundevent.geometry import scale_geometry, shift_geometry
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.train.preprocess import (
-    list_preprocessed_files,
-    load_preprocessed_example,
-)
-from batdetect2.typing import Augmentation, PreprocessorProtocol
-from batdetect2.typing.train import ClipperProtocol, PreprocessedExample
+from batdetect2.train.clips import get_subclip_annotation
+from batdetect2.typing import Augmentation
+from batdetect2.typing.preprocess import AudioLoader
 from batdetect2.utils.arrays import adjust_width
 
 __all__ = [
@@ -24,7 +22,7 @@ __all__ = [
     "AugmentationsConfig",
     "DEFAULT_AUGMENTATION_CONFIG",
     "EchoAugmentationConfig",
-    "ExampleSource",
+    "AudioSource",
     "FrequencyMaskAugmentationConfig",
     "MixAugmentationConfig",
     "TimeMaskAugmentationConfig",
@@ -35,365 +33,12 @@ __all__ = [
     "load_augmentation_config",
     "mask_frequency",
     "mask_time",
-    "mix_examples",
+    "mix_audio",
     "scale_volume",
     "warp_spectrogram",
 ]
 
-ExampleSource = Callable[[], PreprocessedExample]
-"""Type alias for a function that returns a training example"""
-
-
-def mix_examples(
-    example: PreprocessedExample,
-    other: PreprocessedExample,
-    preprocessor: PreprocessorProtocol,
-    weight: float,
-) -> PreprocessedExample:
-    """Combine two training examples."""
-    audio1 = example.audio
-    audio2 = adjust_width(other.audio, audio1.shape[-1])
-
-    combined = weight * audio1 + (1 - weight) * audio2
-
-    spectrogram = preprocessor(combined)
-
-    # NOTE: The subclip's spectrogram might be slightly longer than the
-    # spectrogram computed from the subclip's audio. This is due to a
-    # simplification in the subclip process: It doesn't account for the
-    # spectrogram parameters to precisely determine the corresponding audio
-    # samples. To work around this, we pad the computed spectrogram with zeros
-    # as needed.
-    previous_width = example.spectrogram.shape[-1]
-    spectrogram = adjust_width(spectrogram, previous_width)
-
-    detection_heatmap = torch.maximum(
-        example.detection_heatmap,
-        adjust_width(other.detection_heatmap, previous_width),
-    )
-
-    class_heatmap = torch.maximum(
-        example.class_heatmap,
-        adjust_width(other.class_heatmap, previous_width),
-    )
-
-    size_heatmap = torch.maximum(
-        example.size_heatmap,
-        adjust_width(other.size_heatmap, previous_width),
-    )
-
-    return PreprocessedExample(
-        audio=combined,
-        spectrogram=spectrogram,
-        detection_heatmap=detection_heatmap,
-        class_heatmap=class_heatmap,
-        size_heatmap=size_heatmap,
-    )
-
-
-class EchoAugmentationConfig(BaseConfig):
-    """Configuration for adding synthetic echo/reverb."""
-
-    augmentation_type: Literal["add_echo"] = "add_echo"
-
-    probability: float = 0.2
-    """Probability of applying this augmentation."""
-
-    max_delay: float = 0.005
-    min_weight: float = 0.0
-    max_weight: float = 1.0
-
-
-class AddEcho(torch.nn.Module):
-    def __init__(
-        self,
-        preprocessor: PreprocessorProtocol,
-        min_weight: float = 0.1,
-        max_weight: float = 1.0,
-        max_delay: float = 0.005,
-    ):
-        super().__init__()
-        self.preprocessor = preprocessor
-        self.min_weight = min_weight
-        self.max_weight = max_weight
-        self.max_delay = max_delay
-
-    def forward(self, example: PreprocessedExample) -> PreprocessedExample:
-        delay = np.random.uniform(0, self.max_delay)
-        weight = np.random.uniform(self.min_weight, self.max_weight)
-        return add_echo(
-            example,
-            preprocessor=self.preprocessor,
-            delay=delay,
-            weight=weight,
-        )
-
-
-def add_echo(
-    example: PreprocessedExample,
-    preprocessor: PreprocessorProtocol,
-    delay: float,
-    weight: float,
-) -> PreprocessedExample:
-    """Add a synthetic echo to the audio waveform."""
-
-    audio = example.audio
-    delay_steps = int(preprocessor.input_samplerate * delay)
-
-    slices = [slice(None)] * audio.ndim
-    slices[-1] = slice(None, -delay_steps)
-    audio_delay = adjust_width(audio[tuple(slices)], audio.shape[-1]).roll(
-        delay_steps, dims=-1
-    )
-
-    audio = audio + weight * audio_delay
-    spectrogram = preprocessor(audio)
-
-    # NOTE: The subclip's spectrogram might be slightly longer than the
-    # spectrogram computed from the subclip's audio. This is due to a
-    # simplification in the subclip process: It doesn't account for the
-    # spectrogram parameters to precisely determine the corresponding audio
-    # samples. To work around this, we pad the computed spectrogram with zeros
-    # as needed.
-    spectrogram = adjust_width(
-        spectrogram,
-        example.spectrogram.shape[-1],
-    )
-
-    return PreprocessedExample(
-        audio=audio,
-        spectrogram=spectrogram,
-        detection_heatmap=example.detection_heatmap,
-        class_heatmap=example.class_heatmap,
-        size_heatmap=example.size_heatmap,
-    )
-
-
-class VolumeAugmentationConfig(BaseConfig):
-    """Configuration for random volume scaling of the spectrogram."""
-
-    augmentation_type: Literal["scale_volume"] = "scale_volume"
-    probability: float = 0.2
-    min_scaling: float = 0.0
-    max_scaling: float = 2.0
-
-
-class ScaleVolume(torch.nn.Module):
-    def __init__(self, min_scaling: float = 0.0, max_scaling: float = 2.0):
-        super().__init__()
-        self.min_scaling = min_scaling
-        self.max_scaling = max_scaling
-
-    def forward(self, example: PreprocessedExample) -> PreprocessedExample:
-        factor = np.random.uniform(self.min_scaling, self.max_scaling)
-        return scale_volume(example, factor=factor)
-
-
-def scale_volume(
-    example: PreprocessedExample,
-    factor: Optional[float] = None,
-) -> PreprocessedExample:
-    """Scale the amplitude of the spectrogram by a random factor."""
-    return PreprocessedExample(
-        audio=example.audio,
-        size_heatmap=example.size_heatmap,
-        class_heatmap=example.class_heatmap,
-        detection_heatmap=example.detection_heatmap,
-        spectrogram=example.spectrogram * factor,
-    )
-
-
-class WarpAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["warp"] = "warp"
-    probability: float = 0.2
-    delta: float = 0.04
-
-
-class WarpSpectrogram(torch.nn.Module):
-    def __init__(self, delta: float = 0.04) -> None:
-        super().__init__()
-        self.delta = delta
-
-    def forward(self, example: PreprocessedExample) -> PreprocessedExample:
-        factor = np.random.uniform(1 - self.delta, 1 + self.delta)
-        return warp_spectrogram(example, factor=factor)
-
-
-def warp_spectrogram(
-    example: PreprocessedExample, factor: float
-) -> PreprocessedExample:
-    """Apply time warping by resampling the time axis."""
-    width = example.spectrogram.shape[-1]
-    height = example.spectrogram.shape[-2]
-    target_shape = [height, width]
-    new_width = int(target_shape[-1] * factor)
-
-    spectrogram = torch.nn.functional.interpolate(
-        adjust_width(example.spectrogram, new_width).unsqueeze(0),
-        size=target_shape,
-        mode="bilinear",
-    ).squeeze(0)
-
-    detection = torch.nn.functional.interpolate(
-        adjust_width(example.detection_heatmap, new_width).unsqueeze(0),
-        size=target_shape,
-        mode="nearest",
-    ).squeeze(0)
-
-    classification = torch.nn.functional.interpolate(
-        adjust_width(example.class_heatmap, new_width).unsqueeze(1),
-        size=target_shape,
-        mode="nearest",
-    ).squeeze(1)
-
-    size = torch.nn.functional.interpolate(
-        adjust_width(example.size_heatmap, new_width).unsqueeze(1),
-        size=target_shape,
-        mode="nearest",
-    ).squeeze(1)
-
-    return PreprocessedExample(
-        audio=example.audio,
-        size_heatmap=size,
-        class_heatmap=classification,
-        detection_heatmap=detection,
-        spectrogram=spectrogram,
-    )
-
-
-class TimeMaskAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["mask_time"] = "mask_time"
-    probability: float = 0.2
-    max_perc: float = 0.05
-    max_masks: int = 3
-
-
-class MaskTime(torch.nn.Module):
-    def __init__(
-        self,
-        max_perc: float = 0.05,
-        max_masks: int = 3,
-        mask_heatmaps: bool = False,
-    ) -> None:
-        super().__init__()
-        self.max_perc = max_perc
-        self.max_masks = max_masks
-        self.mask_heatmaps = mask_heatmaps
-
-    def forward(self, example: PreprocessedExample) -> PreprocessedExample:
-        num_masks = np.random.randint(1, self.max_masks + 1)
-        width = example.spectrogram.shape[-1]
-
-        mask_size = np.random.randint(
-            low=0,
-            high=int(self.max_perc * width),
-            size=num_masks,
-        )
-        mask_start = np.random.randint(
-            low=0,
-            high=width - mask_size,
-            size=num_masks,
-        )
-        masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size)
-        ]
-        return mask_time(example, masks, mask_heatmaps=self.mask_heatmaps)
-
-
-def mask_time(
-    example: PreprocessedExample,
-    masks: List[Tuple[int, int]],
-    mask_heatmaps: bool = False,
-) -> PreprocessedExample:
-    """Apply time masking to the spectrogram."""
-
-    for start, end in masks:
-        slices = [slice(None)] * example.spectrogram.ndim
-        slices[-1] = slice(start, end)
-
-        example.spectrogram[tuple(slices)] = 0
-
-        if not mask_heatmaps:
-            continue
-
-        example.class_heatmap[tuple(slices)] = 0
-        example.size_heatmap[tuple(slices)] = 0
-        example.detection_heatmap[tuple(slices)] = 0
-
-    return PreprocessedExample(
-        audio=example.audio,
-        size_heatmap=example.size_heatmap,
-        class_heatmap=example.class_heatmap,
-        detection_heatmap=example.detection_heatmap,
-        spectrogram=example.spectrogram,
-    )
-
-
-class FrequencyMaskAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["mask_freq"] = "mask_freq"
-    probability: float = 0.2
-    max_perc: float = 0.10
-    max_masks: int = 3
-    mask_heatmaps: bool = False
-
-
-class MaskFrequency(torch.nn.Module):
-    def __init__(
-        self,
-        max_perc: float = 0.10,
-        max_masks: int = 3,
-        mask_heatmaps: bool = False,
-    ) -> None:
-        super().__init__()
-        self.max_perc = max_perc
-        self.max_masks = max_masks
-        self.mask_heatmaps = mask_heatmaps
-
-    def forward(self, example: PreprocessedExample) -> PreprocessedExample:
-        num_masks = np.random.randint(1, self.max_masks + 1)
-        height = example.spectrogram.shape[-2]
-
-        mask_size = np.random.randint(
-            low=0,
-            high=int(self.max_perc * height),
-            size=num_masks,
-        )
-        mask_start = np.random.randint(
-            low=0,
-            high=height - mask_size,
-            size=num_masks,
-        )
-        masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size)
-        ]
-        return mask_frequency(example, masks, mask_heatmaps=self.mask_heatmaps)
-
-
-def mask_frequency(
-    example: PreprocessedExample,
-    masks: List[Tuple[int, int]],
-    mask_heatmaps: bool = False,
-) -> PreprocessedExample:
-    """Apply frequency masking to the spectrogram."""
-    for start, end in masks:
-        slices = [slice(None)] * example.spectrogram.ndim
-        slices[-2] = slice(start, end)
-        example.spectrogram[tuple(slices)] = 0
-
-        if not mask_heatmaps:
-            continue
-
-        example.class_heatmap[tuple(slices)] = 0
-        example.size_heatmap[tuple(slices)] = 0
-        example.detection_heatmap[tuple(slices)] = 0
-
-    return PreprocessedExample(
-        audio=example.audio,
-        size_heatmap=example.size_heatmap,
-        class_heatmap=example.class_heatmap,
-        detection_heatmap=example.detection_heatmap,
-        spectrogram=example.spectrogram,
-    )
+AudioSource = Callable[[float], tuple[torch.Tensor, data.ClipAnnotation]]
 
 
 class MixAugmentationConfig(BaseConfig):
@@ -416,8 +61,7 @@ class MixAudio(torch.nn.Module):
 
     def __init__(
         self,
-        example_source: ExampleSource,
-        preprocessor: PreprocessorProtocol,
+        example_source: AudioSource,
         min_weight: float = 0.3,
         max_weight: float = 0.7,
     ):
@@ -426,19 +70,363 @@ class MixAudio(torch.nn.Module):
         self.min_weight = min_weight
         self.example_source = example_source
         self.max_weight = max_weight
-        self.preprocessor = preprocessor
 
-    def __call__(self, example: PreprocessedExample) -> PreprocessedExample:
+    def __call__(
+        self,
+        wav: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
         """Fetch another example and perform mixup."""
-        other = self.example_source()
+        other_wav, other_clip_annotation = self.example_source(
+            clip_annotation.clip.duration
+        )
         weight = np.random.uniform(self.min_weight, self.max_weight)
-        return mix_examples(
-            example,
-            other,
-            self.preprocessor,
-            weight=weight,
+        mixed_audio = mix_audio(wav, other_wav, weight=weight)
+        mixed_annotations = combine_clip_annotations(
+            clip_annotation,
+            other_clip_annotation,
+        )
+        return mixed_audio, mixed_annotations
+
+
+def mix_audio(
+    wav1: torch.Tensor,
+    wav2: torch.Tensor,
+    weight: float,
+) -> torch.Tensor:
+    """Combine two training examples."""
+    wav2 = adjust_width(wav2, wav1.shape[-1])
+    return weight * wav1 + (1 - weight) * wav2
+
+
+def shift_sound_event_annotation(
+    sound_event_annotation: data.SoundEventAnnotation,
+    time: float,
+) -> data.SoundEventAnnotation:
+    sound_event = sound_event_annotation.sound_event
+    geometry = sound_event.geometry
+
+    if geometry is None:
+        return sound_event_annotation
+
+    sound_event = sound_event.model_copy(
+        update=dict(geometry=shift_geometry(geometry, time=time))
+    )
+    return sound_event_annotation.model_copy(
+        update=dict(sound_event=sound_event)
+    )
+
+
+def combine_clip_annotations(
+    clip_annotation1: data.ClipAnnotation,
+    clip_annotation2: data.ClipAnnotation,
+) -> data.ClipAnnotation:
+    time_shift = (
+        clip_annotation1.clip.start_time - clip_annotation2.clip.start_time
+    )
+    return clip_annotation1.model_copy(
+        update=dict(
+            sound_events=[
+                *clip_annotation1.sound_events,
+                *[
+                    shift_sound_event_annotation(sound_event, time=time_shift)
+                    for sound_event in clip_annotation2.sound_events
+                ],
+            ]
+        )
+    )
+
+
+class EchoAugmentationConfig(BaseConfig):
+    """Configuration for adding synthetic echo/reverb."""
+
+    augmentation_type: Literal["add_echo"] = "add_echo"
+    probability: float = 0.2
+    max_delay: float = 0.005
+    min_weight: float = 0.0
+    max_weight: float = 1.0
+
+
+class AddEcho(torch.nn.Module):
+    def __init__(
+        self,
+        min_weight: float = 0.1,
+        max_weight: float = 1.0,
+        max_delay: int = 2560,
+    ):
+        super().__init__()
+        self.min_weight = min_weight
+        self.max_weight = max_weight
+        self.max_delay = max_delay
+
+    def forward(
+        self,
+        wav: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        delay = np.random.randint(0, self.max_delay)
+        weight = np.random.uniform(self.min_weight, self.max_weight)
+        return add_echo(wav, delay=delay, weight=weight), clip_annotation
+
+
+def add_echo(
+    wav: torch.Tensor,
+    delay: int,
+    weight: float,
+) -> torch.Tensor:
+    """Add a synthetic echo to the audio waveform."""
+
+    slices = [slice(None)] * wav.ndim
+    slices[-1] = slice(None, -delay)
+    audio_delay = adjust_width(wav[tuple(slices)], wav.shape[-1]).roll(
+        delay, dims=-1
+    )
+    return mix_audio(wav, audio_delay, weight)
+
+
+class VolumeAugmentationConfig(BaseConfig):
+    """Configuration for random volume scaling of the spectrogram."""
+
+    augmentation_type: Literal["scale_volume"] = "scale_volume"
+    probability: float = 0.2
+    min_scaling: float = 0.0
+    max_scaling: float = 2.0
+
+
+class ScaleVolume(torch.nn.Module):
+    def __init__(self, min_scaling: float = 0.0, max_scaling: float = 2.0):
+        super().__init__()
+        self.min_scaling = min_scaling
+        self.max_scaling = max_scaling
+
+    def forward(
+        self,
+        spec: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        factor = np.random.uniform(self.min_scaling, self.max_scaling)
+        return scale_volume(spec, factor=factor), clip_annotation
+
+
+def scale_volume(spec: torch.Tensor, factor: float) -> torch.Tensor:
+    """Scale the amplitude of the spectrogram by a factor."""
+    return spec * factor
+
+
+class WarpAugmentationConfig(BaseConfig):
+    augmentation_type: Literal["warp"] = "warp"
+    probability: float = 0.2
+    delta: float = 0.04
+
+
+class WarpSpectrogram(torch.nn.Module):
+    def __init__(self, delta: float = 0.04) -> None:
+        super().__init__()
+        self.delta = delta
+
+    def forward(
+        self,
+        spec: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        factor = np.random.uniform(1 - self.delta, 1 + self.delta)
+        return (
+            warp_spectrogram(spec, factor=factor),
+            warp_clip_annotation(clip_annotation, factor=factor),
         )
 
+
+def warp_sound_event_annotation(
+    sound_event_annotation: data.SoundEventAnnotation,
+    factor: float,
+    anchor: float,
+) -> data.SoundEventAnnotation:
+    sound_event = sound_event_annotation.sound_event
+    geometry = sound_event.geometry
+
+    if geometry is None:
+        return sound_event_annotation
+
+    sound_event = sound_event.model_copy(
+        update=dict(
+            geometry=scale_geometry(
+                geometry,
+                time=1 / factor,
+                time_anchor=anchor,
+            )
+        ),
+    )
+    return sound_event_annotation.model_copy(
+        update=dict(sound_event=sound_event)
+    )
+
+
+def warp_clip_annotation(
+    clip_annotation: data.ClipAnnotation,
+    factor: float,
+) -> data.ClipAnnotation:
+    return clip_annotation.model_copy(
+        update=dict(
+            sound_events=[
+                warp_sound_event_annotation(
+                    sound_event,
+                    factor=factor,
+                    anchor=clip_annotation.clip.start_time,
+                )
+                for sound_event in clip_annotation.sound_events
+            ]
+        )
+    )
+
+
+def warp_spectrogram(
+    spec: torch.Tensor,
+    factor: float,
+) -> torch.Tensor:
+    """Apply time warping by resampling the time axis."""
+    width = spec.shape[-1]
+    height = spec.shape[-2]
+    target_shape = [height, width]
+    new_width = int(target_shape[-1] * factor)
+    return torch.nn.functional.interpolate(
+        adjust_width(spec, new_width).unsqueeze(0),
+        size=target_shape,
+        mode="bilinear",
+    ).squeeze(0)
+
+
+class TimeMaskAugmentationConfig(BaseConfig):
+    augmentation_type: Literal["mask_time"] = "mask_time"
+    probability: float = 0.2
+    max_perc: float = 0.05
+    max_masks: int = 3
+
+
+class MaskTime(torch.nn.Module):
+    def __init__(
+        self,
+        max_perc: float = 0.05,
+        max_masks: int = 3,
+        mask_heatmaps: bool = False,
+    ) -> None:
+        super().__init__()
+        self.max_perc = max_perc
+        self.max_masks = max_masks
+        self.mask_heatmaps = mask_heatmaps
+
+    def forward(
+        self,
+        spec: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        num_masks = np.random.randint(1, self.max_masks + 1)
+        width = spec.shape[-1]
+
+        mask_size = np.random.randint(
+            low=0,
+            high=int(self.max_perc * width),
+            size=num_masks,
+        )
+        mask_start = np.random.randint(
+            low=0,
+            high=width - mask_size,
+            size=num_masks,
+        )
+        masks = [
+            (start, start + size) for start, size in zip(mask_start, mask_size)
+        ]
+        return mask_time(spec, masks), clip_annotation
+
+
+def mask_time(
+    spec: torch.Tensor,
+    masks: List[Tuple[int, int]],
+    value: float = 0,
+) -> torch.Tensor:
+    """Apply time masking to the spectrogram."""
+    for start, end in masks:
+        slices = [slice(None)] * spec.ndim
+        slices[-1] = slice(start, end)
+        spec[tuple(slices)] = value
+
+    return spec
+
+
+class FrequencyMaskAugmentationConfig(BaseConfig):
+    augmentation_type: Literal["mask_freq"] = "mask_freq"
+    probability: float = 0.2
+    max_perc: float = 0.10
+    max_masks: int = 3
+    mask_heatmaps: bool = False
+
+
+class MaskFrequency(torch.nn.Module):
+    def __init__(
+        self,
+        max_perc: float = 0.10,
+        max_masks: int = 3,
+        mask_heatmaps: bool = False,
+    ) -> None:
+        super().__init__()
+        self.max_perc = max_perc
+        self.max_masks = max_masks
+        self.mask_heatmaps = mask_heatmaps
+
+    def forward(
+        self,
+        spec: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        num_masks = np.random.randint(1, self.max_masks + 1)
+        height = spec.shape[-2]
+
+        mask_size = np.random.randint(
+            low=0,
+            high=int(self.max_perc * height),
+            size=num_masks,
+        )
+        mask_start = np.random.randint(
+            low=0,
+            high=height - mask_size,
+            size=num_masks,
+        )
+        masks = [
+            (start, start + size) for start, size in zip(mask_start, mask_size)
+        ]
+        return mask_frequency(spec, masks), clip_annotation
+
+
+def mask_frequency(
+    spec: torch.Tensor,
+    masks: List[Tuple[int, int]],
+) -> torch.Tensor:
+    """Apply frequency masking to the spectrogram."""
+    for start, end in masks:
+        slices = [slice(None)] * spec.ndim
+        slices[-2] = slice(start, end)
+        spec[tuple(slices)] = 0
+
+    return spec
+
+
+AudioAugmentationConfig = Annotated[
+    Union[
+        MixAugmentationConfig,
+        EchoAugmentationConfig,
+    ],
+    Field(discriminator="augmentation_type"),
+]
+
+
+SpectrogramAugmentationConfig = Annotated[
+    Union[
+        VolumeAugmentationConfig,
+        WarpAugmentationConfig,
+        FrequencyMaskAugmentationConfig,
+        TimeMaskAugmentationConfig,
+    ],
+    Field(discriminator="augmentation_type"),
+]
 
 AugmentationConfig = Annotated[
     Union[
@@ -459,7 +447,11 @@ class AugmentationsConfig(BaseConfig):
 
     enabled: bool = True
 
-    steps: List[AugmentationConfig] = Field(default_factory=list)
+    audio: List[AudioAugmentationConfig] = Field(default_factory=list)
+
+    spectrogram: List[SpectrogramAugmentationConfig] = Field(
+        default_factory=list
+    )
 
 
 class MaybeApply(torch.nn.Module):
@@ -470,46 +462,31 @@ class MaybeApply(torch.nn.Module):
         augmentation: Augmentation,
         probability: float = 0.2,
     ):
-        """Initialize the wrapper.
-
-        Parameters
-        ----------
-        augmentation : Augmentation (Callable[[xr.Dataset], xr.Dataset])
-            The augmentation function to potentially apply.
-        probability : float, default=0.5
-            The probability (0.0 to 1.0) of applying the augmentation.
-        """
+        """Initialize the wrapper."""
         super().__init__()
         self.augmentation = augmentation
         self.probability = probability
 
-    def __call__(self, example: PreprocessedExample) -> PreprocessedExample:
-        """Apply the wrapped augmentation with configured probability.
-
-        Parameters
-        ----------
-        example : xr.Dataset
-            The input training example.
-
-        Returns
-        -------
-        xr.Dataset
-            The potentially augmented training example.
-        """
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        clip_annotation: data.ClipAnnotation,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        """Apply the wrapped augmentation with configured probability."""
         if np.random.random() > self.probability:
-            return example
+            return tensor, clip_annotation
 
-        return self.augmentation(example)
+        return self.augmentation(tensor, clip_annotation)
 
 
 def build_augmentation_from_config(
     config: AugmentationConfig,
-    preprocessor: PreprocessorProtocol,
-    example_source: Optional[ExampleSource] = None,
+    samplerate: int,
+    audio_source: Optional[AudioSource] = None,
 ) -> Optional[Augmentation]:
     """Factory function to build a single augmentation from its config."""
     if config.augmentation_type == "mix_audio":
-        if example_source is None:
+        if audio_source is None:
             warnings.warn(
                 "Mix audio augmentation ('mix_audio') requires an "
                 "'example_source' callable to be provided.",
@@ -518,16 +495,14 @@ def build_augmentation_from_config(
             return None
 
         return MixAudio(
-            example_source=example_source,
-            preprocessor=preprocessor,
+            example_source=audio_source,
             min_weight=config.min_weight,
             max_weight=config.max_weight,
         )
 
     if config.augmentation_type == "add_echo":
         return AddEcho(
-            preprocessor=preprocessor,
-            max_delay=config.max_delay,
+            max_delay=int(config.max_delay * samplerate),
             min_weight=config.min_weight,
             max_weight=config.max_weight,
         )
@@ -562,37 +537,35 @@ def build_augmentation_from_config(
 
 
 DEFAULT_AUGMENTATION_CONFIG: AugmentationsConfig = AugmentationsConfig(
-    steps=[
+    enabled=True,
+    audio=[
         MixAugmentationConfig(),
         EchoAugmentationConfig(),
+    ],
+    spectrogram=[
         VolumeAugmentationConfig(),
         WarpAugmentationConfig(),
         TimeMaskAugmentationConfig(),
         FrequencyMaskAugmentationConfig(),
-    ]
+    ],
 )
 
 
-def build_augmentations(
-    preprocessor: PreprocessorProtocol,
-    config: Optional[AugmentationsConfig] = None,
-    example_source: Optional[ExampleSource] = None,
-) -> Augmentation:
-    """Build a composite augmentation pipeline function from configuration."""
-    config = config or DEFAULT_AUGMENTATION_CONFIG
-
-    logger.opt(lazy=True).debug(
-        "Building augmentations with config: \n{}",
-        lambda: config.to_yaml_string(),
-    )
+def build_augmentation_sequence(
+    samplerate: int,
+    steps: Optional[Sequence[AugmentationConfig]] = None,
+    audio_source: Optional[AudioSource] = None,
+) -> Optional[Augmentation]:
+    if not steps:
+        return None
 
     augmentations = []
 
-    for step_config in config.steps:
+    for step_config in steps:
         augmentation = build_augmentation_from_config(
             step_config,
-            preprocessor=preprocessor,
-            example_source=example_source,
+            samplerate=samplerate,
+            audio_source=audio_source,
         )
 
         if augmentation is None:
@@ -608,6 +581,33 @@ def build_augmentations(
     return torch.nn.Sequential(*augmentations)
 
 
+def build_augmentations(
+    samplerate: int,
+    config: Optional[AugmentationsConfig] = None,
+    audio_source: Optional[AudioSource] = None,
+) -> Tuple[Optional[Augmentation], Optional[Augmentation]]:
+    """Build a composite augmentation pipeline function from configuration."""
+    config = config or DEFAULT_AUGMENTATION_CONFIG
+
+    logger.opt(lazy=True).debug(
+        "Building augmentations with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
+
+    audio_augmentation = build_augmentation_sequence(
+        samplerate,
+        steps=config.audio,
+        audio_source=audio_source,
+    )
+    spectrogram_augmentation = build_augmentation_sequence(
+        samplerate,
+        steps=config.audio,
+        audio_source=audio_source,
+    )
+
+    return audio_augmentation, spectrogram_augmentation
+
+
 def load_augmentation_config(
     path: data.PathLike, field: Optional[str] = None
 ) -> AugmentationsConfig:
@@ -615,23 +615,24 @@ def load_augmentation_config(
     return load_config(path, schema=AugmentationsConfig, field=field)
 
 
-class RandomExampleSource:
+class RandomAudioSource:
     def __init__(
         self,
-        filenames: Sequence[data.PathLike],
-        clipper: ClipperProtocol,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        audio_loader: AudioLoader,
     ):
-        self.filenames = filenames
-        self.clipper = clipper
+        self.audio_loader = audio_loader
+        self.clip_annotations = clip_annotations
 
-    def __call__(self) -> PreprocessedExample:
-        index = int(np.random.randint(len(self.filenames)))
-        filename = self.filenames[index]
-        example = load_preprocessed_example(filename)
-        example, _, _ = self.clipper(example)
-        return example
-
-    @classmethod
-    def from_directory(cls, path: data.PathLike, clipper: ClipperProtocol):
-        filenames = list_preprocessed_files(path)
-        return cls(filenames, clipper=clipper)
+    def __call__(
+        self,
+        duration: float,
+    ) -> Tuple[torch.Tensor, data.ClipAnnotation]:
+        index = int(np.random.randint(len(self.clip_annotations)))
+        clip_annotation = get_subclip_annotation(
+            self.clip_annotations[index],
+            duration=duration,
+            max_empty=0,
+        )
+        wav = self.audio_loader.load_clip(clip_annotation.clip)
+        return torch.from_numpy(wav).unsqueeze(0), clip_annotation

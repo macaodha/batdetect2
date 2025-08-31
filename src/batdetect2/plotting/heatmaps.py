@@ -25,6 +25,8 @@ def plot_detection_heatmap(
     if isinstance(heatmap, torch.Tensor):
         heatmap = heatmap.numpy()
 
+    heatmap = heatmap.squeeze()
+
     if threshold is not None:
         heatmap = np.ma.masked_where(
             heatmap < threshold,

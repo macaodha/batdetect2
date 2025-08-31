@@ -15,16 +15,18 @@ from batdetect2.evaluate.metrics import (
     DetectionAveragePrecision,
 )
 from batdetect2.models import Model, build_model
+from batdetect2.plotting.clips import AudioLoader, build_audio_loader
 from batdetect2.train.augmentations import (
-    RandomExampleSource,
+    RandomAudioSource,
     build_augmentations,
 )
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.config import FullTrainingConfig, TrainingConfig
 from batdetect2.train.dataset import (
-    LabeledDataset,
+    TrainingDataset,
 )
+from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
 from batdetect2.train.losses import build_loss
@@ -33,6 +35,7 @@ from batdetect2.typing import (
     TargetProtocol,
     TrainExample,
 )
+from batdetect2.typing.train import ClipLabeller
 from batdetect2.utils.arrays import adjust_width
 
 __all__ = [
@@ -46,8 +49,8 @@ __all__ = [
 
 
 def train(
-    train_examples: Sequence[data.PathLike],
-    val_examples: Optional[Sequence[data.PathLike]] = None,
+    train_annotations: Sequence[data.ClipAnnotation],
+    val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
     config: Optional[FullTrainingConfig] = None,
     model_path: Optional[data.PathLike] = None,
     train_workers: Optional[int] = None,
@@ -59,8 +62,19 @@ def train(
 
     trainer = build_trainer(config, targets=model.targets)
 
+    audio_loader = build_audio_loader(config=config.preprocess.audio)
+
+    labeller = build_clip_labeler(
+        model.targets,
+        min_freq=model.preprocessor.min_freq,
+        max_freq=model.preprocessor.max_freq,
+        config=config.train.labels,
+    )
+
     train_dataloader = build_train_loader(
-        train_examples,
+        train_annotations,
+        audio_loader=audio_loader,
+        labeller=labeller,
         preprocessor=model.preprocessor,
         config=config.train,
         num_workers=train_workers,
@@ -68,12 +82,14 @@ def train(
 
     val_dataloader = (
         build_val_loader(
-            val_examples,
+            val_annotations,
+            audio_loader=audio_loader,
+            labeller=labeller,
             preprocessor=model.preprocessor,
             config=config.train,
             num_workers=val_workers,
         )
-        if val_examples is not None
+        if val_annotations is not None
         else None
     )
 
@@ -153,19 +169,23 @@ def build_trainer(
 
 
 def build_train_loader(
-    train_examples: Sequence[data.PathLike],
+    clip_annotations: Sequence[data.ClipAnnotation],
+    audio_loader: AudioLoader,
+    labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
     num_workers: Optional[int] = None,
 ) -> DataLoader:
     config = config or TrainingConfig()
-
-    logger.info("Building training data loader...")
     train_dataset = build_train_dataset(
-        train_examples,
+        clip_annotations,
+        audio_loader=audio_loader,
+        labeller=labeller,
         preprocessor=preprocessor,
         config=config,
     )
+
+    logger.info("Building training data loader...")
     loader_conf = config.dataloaders.train
     logger.opt(lazy=True).debug(
         "Training data loader config: \n{config}",
@@ -182,16 +202,20 @@ def build_train_loader(
 
 
 def build_val_loader(
-    val_examples: Sequence[data.PathLike],
+    clip_annotations: Sequence[data.ClipAnnotation],
+    audio_loader: AudioLoader,
+    labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
     num_workers: Optional[int] = None,
 ):
+    logger.info("Building validation data loader...")
     config = config or TrainingConfig()
 
-    logger.info("Building validation data loader...")
     val_dataset = build_val_dataset(
-        val_examples,
+        clip_annotations,
+        audio_loader=audio_loader,
+        labeller=labeller,
         preprocessor=preprocessor,
         config=config,
     )
@@ -203,7 +227,7 @@ def build_val_loader(
     num_workers = num_workers or loader_conf.num_workers
     return DataLoader(
         val_dataset,
-        batch_size=loader_conf.batch_size,
+        batch_size=1,
         shuffle=loader_conf.shuffle,
         num_workers=num_workers,
         collate_fn=_collate_fn,
@@ -232,52 +256,60 @@ def _collate_fn(batch: List[TrainExample]) -> TrainExample:
 
 
 def build_train_dataset(
-    examples: Sequence[data.PathLike],
+    clip_annotations: Sequence[data.ClipAnnotation],
+    audio_loader: AudioLoader,
+    labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
-) -> LabeledDataset:
+) -> TrainingDataset:
     logger.info("Building training dataset...")
     config = config or TrainingConfig()
 
     clipper = build_clipper(
-        preprocessor=preprocessor,
         config=config.cliping,
         random=True,
     )
 
-    random_example_source = RandomExampleSource(
-        list(examples),
-        clipper=clipper,
+    random_example_source = RandomAudioSource(
+        clip_annotations,
+        audio_loader=audio_loader,
     )
 
-    if config.augmentations.enabled and config.augmentations.steps:
-        augmentations = build_augmentations(
-            preprocessor,
+    if config.augmentations.enabled:
+        audio_augmentation, spectrogram_augmentation = build_augmentations(
+            samplerate=preprocessor.input_samplerate,
             config=config.augmentations,
-            example_source=random_example_source,
+            audio_source=random_example_source,
         )
     else:
         logger.debug("No augmentations configured for training dataset.")
-        augmentations = None
+        audio_augmentation = None
+        spectrogram_augmentation = None
 
-    return LabeledDataset(
-        examples,
+    return TrainingDataset(
+        clip_annotations,
+        audio_loader=audio_loader,
+        labeller=labeller,
         clipper=clipper,
-        augmentation=augmentations,
+        preprocessor=preprocessor,
+        audio_augmentation=audio_augmentation,
+        spectrogram_augmentation=spectrogram_augmentation,
     )
 
 
 def build_val_dataset(
-    examples: Sequence[data.PathLike],
+    clip_annotations: Sequence[data.ClipAnnotation],
+    audio_loader: AudioLoader,
+    labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
     config: Optional[TrainingConfig] = None,
-    train: bool = True,
-) -> LabeledDataset:
+) -> TrainingDataset:
     logger.info("Building validation dataset...")
     config = config or TrainingConfig()
-    clipper = build_clipper(
+
+    return TrainingDataset(
+        clip_annotations,
+        audio_loader=audio_loader,
+        labeller=labeller,
         preprocessor=preprocessor,
-        config=config.cliping,
-        random=train,
     )
-    return LabeledDataset(examples, clipper=clipper)

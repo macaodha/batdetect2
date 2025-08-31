@@ -1,78 +1,77 @@
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 
-import numpy as np
 import torch
 from soundevent import data
 from torch.utils.data import Dataset
 
-from batdetect2.train.augmentations import Augmentation
-from batdetect2.train.preprocess import (
-    list_preprocessed_files,
-    load_preprocessed_example,
-)
 from batdetect2.typing import ClipperProtocol, TrainExample
-from batdetect2.typing.train import PreprocessedExample
+from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
+from batdetect2.typing.train import Augmentation, ClipLabeller
 
 __all__ = [
-    "LabeledDataset",
+    "TrainingDataset",
 ]
 
 
-class LabeledDataset(Dataset):
+class TrainingDataset(Dataset):
     def __init__(
         self,
-        filenames: Sequence[data.PathLike],
-        clipper: ClipperProtocol,
-        augmentation: Optional[Augmentation] = None,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        audio_loader: AudioLoader,
+        preprocessor: PreprocessorProtocol,
+        labeller: ClipLabeller,
+        clipper: Optional[ClipperProtocol] = None,
+        audio_augmentation: Optional[Augmentation] = None,
+        spectrogram_augmentation: Optional[Augmentation] = None,
+        audio_dir: Optional[data.PathLike] = None,
     ):
-        self.filenames = filenames
+        self.clip_annotations = clip_annotations
         self.clipper = clipper
-        self.augmentation = augmentation
+        self.labeller = labeller
+        self.preprocessor = preprocessor
+        self.audio_loader = audio_loader
+        self.audio_augmentation = audio_augmentation
+        self.spectrogram_augmentation = spectrogram_augmentation
+        self.audio_dir = audio_dir
 
     def __len__(self):
-        return len(self.filenames)
+        return len(self.clip_annotations)
 
     def __getitem__(self, idx) -> TrainExample:
-        example = self.get_example(idx)
+        clip_annotation = self.clip_annotations[idx]
 
-        example, start_time, end_time = self.clipper(example)
+        if self.clipper is not None:
+            clip_annotation = self.clipper(clip_annotation)
 
-        if self.augmentation:
-            example = self.augmentation(example)
+        clip = clip_annotation.clip
+
+        wav = self.audio_loader.load_clip(clip, audio_dir=self.audio_dir)
+
+        # Add channel dim
+        wav_tensor = torch.tensor(wav).unsqueeze(0)
+
+        if self.audio_augmentation is not None:
+            wav_tensor, clip_annotation = self.audio_augmentation(
+                wav_tensor,
+                clip_annotation,
+            )
+
+        spectrogram = self.preprocessor(wav_tensor)
+
+        if self.spectrogram_augmentation is not None:
+            spectrogram, clip_annotation = self.spectrogram_augmentation(
+                spectrogram,
+                clip_annotation,
+            )
+
+        heatmaps = self.labeller(clip_annotation, spectrogram)
 
         return TrainExample(
-            spec=example.spectrogram,
-            detection_heatmap=example.detection_heatmap,
-            class_heatmap=example.class_heatmap,
-            size_heatmap=example.size_heatmap,
+            spec=spectrogram,
+            detection_heatmap=heatmaps.detection,
+            class_heatmap=heatmaps.classes,
+            size_heatmap=heatmaps.size,
             idx=torch.tensor(idx),
-            start_time=torch.tensor(start_time),
-            end_time=torch.tensor(end_time),
+            start_time=torch.tensor(clip.start_time),
+            end_time=torch.tensor(clip.end_time),
         )
-
-    @classmethod
-    def from_directory(
-        cls,
-        directory: data.PathLike,
-        clipper: ClipperProtocol,
-        extension: str = ".npz",
-        augmentation: Optional[Augmentation] = None,
-    ):
-        return cls(
-            filenames=list_preprocessed_files(directory, extension),
-            clipper=clipper,
-            augmentation=augmentation,
-        )
-
-    def get_random_example(self) -> Tuple[PreprocessedExample, float, float]:
-        idx = np.random.randint(0, len(self))
-        dataset = self.get_example(idx)
-        dataset, start_time, end_time = self.clipper(dataset)
-        return dataset, start_time, end_time
-
-    def get_example(self, idx) -> PreprocessedExample:
-        return load_preprocessed_example(self.filenames[idx])
-
-    def get_clip_annotation(self, idx) -> data.ClipAnnotation:
-        item = np.load(self.filenames[idx], allow_pickle=True, mmap_mode="r+")
-        return item["clip_annotation"].tolist()
