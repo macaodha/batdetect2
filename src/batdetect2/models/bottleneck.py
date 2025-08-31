@@ -22,7 +22,6 @@ from torch import nn
 
 from batdetect2.configs import BaseConfig
 from batdetect2.models.blocks import (
-    LayerConfig,
     SelfAttentionConfig,
     VerticalConv,
     build_layer_from_config,

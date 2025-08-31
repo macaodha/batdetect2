@@ -70,7 +70,7 @@ def train_command(
         val_annotations = load_dataset_from_config(val_dataset)
         logger.debug(
             "Loaded {num_annotations} validation examples",
-            num_files=len(val_annotations),
+            num_annotations=len(val_annotations),
         )
     else:
         logger.debug("No validation directory provided.")
