@@ -108,7 +108,8 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        self._matches = []
+        self._clip_annotations = []
+        self._predictions = []
         return super().on_validation_epoch_start(trainer, pl_module)
 
     def on_validation_batch_end(  # type: ignore
