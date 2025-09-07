@@ -8,8 +8,6 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.targets.terms import (
     TagInfo,
-    TermRegistry,
-    default_term_registry,
     get_tag_from_info,
 )
 from batdetect2.typing.targets import SoundEventFilter
@@ -146,10 +144,7 @@ def equal_tags(
     return tags == sound_event_tags
 
 
-def build_filter_from_rule(
-    rule: FilterRule,
-    term_registry: TermRegistry = default_term_registry,
-) -> SoundEventFilter:
+def build_filter_from_rule(rule: FilterRule) -> SoundEventFilter:
     """Creates a callable filter function from a single FilterRule.
 
     Parameters
@@ -168,10 +163,7 @@ def build_filter_from_rule(
     ValueError
         If the rule contains an invalid `match_type`.
     """
-    tag_set = {
-        get_tag_from_info(tag_info, term_registry=term_registry)
-        for tag_info in rule.tags
-    }
+    tag_set = {get_tag_from_info(tag_info) for tag_info in rule.tags}
 
     if rule.match_type == "any":
         return partial(has_any_tag, tags=tag_set)
@@ -235,7 +227,6 @@ class FilterConfig(BaseConfig):
 
 def build_sound_event_filter(
     config: FilterConfig,
-    term_registry: TermRegistry = default_term_registry,
 ) -> SoundEventFilter:
     """Builds a merged filter function from a FilterConfig object.
 
@@ -252,10 +243,7 @@ def build_sound_event_filter(
     SoundEventFilter
         A single callable filter function that applies all defined rules.
     """
-    filters = [
-        build_filter_from_rule(rule, term_registry=term_registry)
-        for rule in config.rules
-    ]
+    filters = [build_filter_from_rule(rule) for rule in config.rules]
     return partial(_passes_all_filters, filters=filters)
 
 
@@ -281,9 +269,7 @@ def load_filter_config(
 
 
 def load_filter_from_config(
-    path: data.PathLike,
-    field: Optional[str] = None,
-    term_registry: TermRegistry = default_term_registry,
+    path: data.PathLike, field: Optional[str] = None,
 ) -> SoundEventFilter:
     """Loads filter configuration from a file and builds the filter function.
 
@@ -304,4 +290,4 @@ def load_filter_from_config(
         The final merged filter function ready to be used.
     """
     config = load_filter_config(path=path, field=field)
-    return build_sound_event_filter(config, term_registry=term_registry)
+    return build_sound_event_filter(config)

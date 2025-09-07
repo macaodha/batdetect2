@@ -57,14 +57,9 @@ from batdetect2.targets.rois import (
 )
 from batdetect2.targets.terms import (
     TagInfo,
-    TermInfo,
-    TermRegistry,
     call_type,
-    default_term_registry,
     get_tag_from_info,
-    get_term_from_key,
     individual,
-    register_term,
 )
 from batdetect2.targets.transform import (
     DerivationRegistry,
@@ -100,7 +95,6 @@ __all__ = [
     "TargetClass",
     "TargetConfig",
     "Targets",
-    "TermInfo",
     "TransformConfig",
     "build_generic_class_tags",
     "build_roi_mapper",
@@ -112,7 +106,6 @@ __all__ = [
     "get_class_names_from_config",
     "get_derivation",
     "get_tag_from_info",
-    "get_term_from_key",
     "individual",
     "load_classes_config",
     "load_decoder_from_config",
@@ -123,7 +116,6 @@ __all__ = [
     "load_transformation_config",
     "load_transformation_from_config",
     "register_derivation",
-    "register_term",
 ]
 
 
@@ -534,7 +526,6 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
 
 def build_targets(
     config: Optional[TargetConfig] = None,
-    term_registry: TermRegistry = default_term_registry,
     derivation_registry: DerivationRegistry = default_derivation_registry,
 ) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
@@ -550,9 +541,6 @@ def build_targets(
     ----------
     config : TargetConfig
         The loaded and validated unified target configuration object.
-    term_registry : TermRegistry, optional
-        The TermRegistry instance to use for resolving term keys. Defaults
-        to the global `batdetect2.targets.terms.term_registry`.
     derivation_registry : DerivationRegistry, optional
         The DerivationRegistry instance to use for resolving derivation
         function names. Defaults to the global
@@ -578,25 +566,15 @@ def build_targets(
     )
 
     filter_fn = (
-        build_sound_event_filter(
-            config.filtering,
-            term_registry=term_registry,
-        )
+        build_sound_event_filter(config.filtering)
         if config.filtering
         else None
     )
-    encode_fn = build_sound_event_encoder(
-        config.classes,
-        term_registry=term_registry,
-    )
-    decode_fn = build_sound_event_decoder(
-        config.classes,
-        term_registry=term_registry,
-    )
+    encode_fn = build_sound_event_encoder(config.classes)
+    decode_fn = build_sound_event_decoder(config.classes)
     transform_fn = (
         build_transformation_from_config(
             config.transforms,
-            term_registry=term_registry,
             derivation_registry=derivation_registry,
         )
         if config.transforms
@@ -604,10 +582,7 @@ def build_targets(
     )
     roi_mapper = build_roi_mapper(config.roi)
     class_names = get_class_names_from_config(config.classes)
-    generic_class_tags = build_generic_class_tags(
-        config.classes,
-        term_registry=term_registry,
-    )
+    generic_class_tags = build_generic_class_tags(config.classes)
     roi_overrides = {
         class_config.name: build_roi_mapper(class_config.roi)
         for class_config in config.classes.classes
@@ -629,7 +604,6 @@ def build_targets(
 def load_targets(
     config_path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = default_term_registry,
     derivation_registry: DerivationRegistry = default_derivation_registry,
 ) -> Targets:
     """Load a Targets object directly from a configuration file.
@@ -645,8 +619,6 @@ def load_targets(
     field : str, optional
         Dot-separated path to a nested section within the file containing
         the target configuration. If None, the entire file content is used.
-    term_registry : TermRegistry, optional
-        The TermRegistry instance to use. Defaults to the global default.
     derivation_registry : DerivationRegistry, optional
         The DerivationRegistry instance to use. Defaults to the global
         default.
@@ -670,11 +642,7 @@ def load_targets(
         config_path,
         field=field,
     )
-    return build_targets(
-        config,
-        term_registry=term_registry,
-        derivation_registry=derivation_registry,
-    )
+    return build_targets(config, derivation_registry=derivation_registry)
 
 
 def iterate_encoded_sound_events(

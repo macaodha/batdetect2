@@ -8,8 +8,6 @@ from typing import Callable, List, Optional, Union
 from pydantic import BaseModel, Field
 from soundevent import data
 
-from batdetect2.targets import get_term_from_key
-
 PathLike = Union[Path, str, os.PathLike]
 
 __all__ = []
@@ -92,15 +90,15 @@ def annotation_to_sound_event(
         sound_event=sound_event,
         tags=[
             data.Tag(
-                term=get_term_from_key(label_key),
+                key=label_key,  # type: ignore
                 value=annotation.label,
             ),
             data.Tag(
-                term=get_term_from_key(event_key),
+                key=event_key,  # type: ignore
                 value=annotation.event,
             ),
             data.Tag(
-                term=get_term_from_key(individual_key),
+                key=individual_key,  # type: ignore
                 value=str(annotation.individual),
             ),
         ],
@@ -125,7 +123,7 @@ def file_annotation_to_clip(
         time_expansion=file_annotation.time_exp,
         tags=[
             data.Tag(
-                term=get_term_from_key(label_key),
+                key=label_key,  # type: ignore
                 value=file_annotation.label,
             )
         ],
@@ -157,7 +155,8 @@ def file_annotation_to_clip_annotation(
         notes=notes,
         tags=[
             data.Tag(
-                term=get_term_from_key(label_key), value=file_annotation.label
+                key=label_key,  # type: ignore
+                value=file_annotation.label,
             )
         ],
         sound_events=[

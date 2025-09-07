@@ -99,7 +99,7 @@ def train(
         module = build_training_module(
             model,
             config,
-            batches_per_epoch=len(train_dataloader),
+            t_max=config.train.t_max * len(train_dataloader),
         )
 
     logger.info("Starting main training loop...")
@@ -113,15 +113,16 @@ def train(
 
 def build_training_module(
     model: Model,
-    config: FullTrainingConfig,
-    batches_per_epoch: int,
+    config: Optional[FullTrainingConfig] = None,
+    t_max: int = 200,
 ) -> TrainingModule:
+    config = config or FullTrainingConfig()
     loss = build_loss(config=config.train.loss)
     return TrainingModule(
         model=model,
         loss=loss,
         learning_rate=config.train.learning_rate,
-        t_max=config.train.t_max * batches_per_epoch,
+        t_max=t_max,
     )
 
 

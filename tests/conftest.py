@@ -15,7 +15,6 @@ from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.targets import (
     TargetConfig,
-    TermRegistry,
     build_targets,
     call_type,
 )
@@ -356,18 +355,6 @@ def create_annotation_project():
 
 
 @pytest.fixture
-def sample_term_registry() -> TermRegistry:
-    """Fixture for a sample TermRegistry."""
-    registry = TermRegistry()
-    registry.add_custom_term("class")
-    registry.add_custom_term("order")
-    registry.add_custom_term("species")
-    registry.add_custom_term("call_type")
-    registry.add_custom_term("quality")
-    return registry
-
-
-@pytest.fixture
 def sample_preprocessor() -> PreprocessorProtocol:
     return build_preprocessor()
 
@@ -399,7 +386,6 @@ def pippip_tag() -> TagInfo:
 
 @pytest.fixture
 def sample_target_config(
-    sample_term_registry: TermRegistry,
     bat_tag: TagInfo,
     noise_tag: TagInfo,
     myomyo_tag: TagInfo,
@@ -422,12 +408,8 @@ def sample_target_config(
 @pytest.fixture
 def sample_targets(
     sample_target_config: TargetConfig,
-    sample_term_registry: TermRegistry,
 ) -> TargetProtocol:
-    return build_targets(
-        sample_target_config,
-        term_registry=sample_term_registry,
-    )
+    return build_targets(sample_target_config)
 
 
 @pytest.fixture
@@ -443,10 +425,8 @@ def sample_labeller(
 
 
 @pytest.fixture
-def sample_clipper(
-    sample_preprocessor: PreprocessorProtocol,
-) -> ClipperProtocol:
-    return build_clipper(preprocessor=sample_preprocessor)
+def sample_clipper() -> ClipperProtocol:
+    return build_clipper()
 
 
 @pytest.fixture

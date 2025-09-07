@@ -31,7 +31,7 @@ class TrainingModule(L.LightningModule):
         self.save_hyperparameters(logger=False)
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:
-        return self.model(spec)
+        return self.model.detector(spec)
 
     def training_step(self, batch: TrainExample):
         outputs = self.model.detector(batch.spec)

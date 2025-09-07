@@ -4,14 +4,16 @@ import lightning as L
 import torch
 from soundevent import data
 
+from batdetect2.models import build_model
 from batdetect2.train import FullTrainingConfig, TrainingModule
 from batdetect2.train.train import build_training_module
 from batdetect2.typing.preprocess import AudioLoader
 
 
 def build_default_module():
+    model = build_model()
     config = FullTrainingConfig()
-    return build_training_module(config)
+    return build_training_module(model, config=config)
 
 
 def test_can_initialize_default_module():
@@ -32,14 +34,14 @@ def test_can_save_checkpoint(
 
     recovered = TrainingModule.load_from_checkpoint(path)
 
-    wav = torch.tensor(sample_audio_loader.load_clip(clip))
+    wav = torch.tensor(sample_audio_loader.load_clip(clip)).unsqueeze(0)
 
     spec1 = module.model.preprocessor(wav)
     spec2 = recovered.model.preprocessor(wav)
 
     torch.testing.assert_close(spec1, spec2, rtol=0, atol=0)
 
-    output1 = module(spec1.unsqueeze(0).unsqueeze(0))
-    output2 = recovered(spec2.unsqueeze(0).unsqueeze(0))
+    output1 = module(spec1.unsqueeze(0))
+    output2 = recovered(spec2.unsqueeze(0))
 
     torch.testing.assert_close(output1, output2, rtol=0, atol=0)

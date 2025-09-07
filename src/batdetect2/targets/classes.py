@@ -10,8 +10,6 @@ from batdetect2.targets.rois import ROIMapperConfig
 from batdetect2.targets.terms import (
     GENERIC_CLASS_KEY,
     TagInfo,
-    TermRegistry,
-    default_term_registry,
     get_tag_from_info,
 )
 from batdetect2.typing.targets import SoundEventDecoder, SoundEventEncoder
@@ -295,10 +293,7 @@ def _encode_with_multiple_classifiers(
     return None
 
 
-def build_sound_event_encoder(
-    config: ClassesConfig,
-    term_registry: TermRegistry = default_term_registry,
-) -> SoundEventEncoder:
+def build_sound_event_encoder(config: ClassesConfig) -> SoundEventEncoder:
     """Build a sound event encoder function from the classes configuration.
 
     The returned encoder function iterates through the class definitions in the
@@ -333,8 +328,7 @@ def build_sound_event_encoder(
             partial(
                 is_target_class,
                 tags={
-                    get_tag_from_info(tag_info, term_registry=term_registry)
-                    for tag_info in class_info.tags
+                    get_tag_from_info(tag_info) for tag_info in class_info.tags
                 },
                 match_all=class_info.match_type == "all",
             ),
@@ -391,7 +385,6 @@ def _decode_class(
 
 def build_sound_event_decoder(
     config: ClassesConfig,
-    term_registry: TermRegistry = default_term_registry,
     raise_on_unmapped: bool = False,
 ) -> SoundEventDecoder:
     """Build a sound event decoder function from the classes configuration.
@@ -433,8 +426,7 @@ def build_sound_event_decoder(
             else class_info.tags
         )
         mapping[class_info.name] = [
-            get_tag_from_info(tag_info, term_registry=term_registry)
-            for tag_info in tags_to_use
+            get_tag_from_info(tag_info) for tag_info in tags_to_use
         ]
 
     return partial(
@@ -444,10 +436,7 @@ def build_sound_event_decoder(
     )
 
 
-def build_generic_class_tags(
-    config: ClassesConfig,
-    term_registry: TermRegistry = default_term_registry,
-) -> List[data.Tag]:
+def build_generic_class_tags(config: ClassesConfig) -> List[data.Tag]:
     """Extract and build the list of tags for the generic class from config.
 
     Converts the list of `TagInfo` objects defined in `config.generic_class`
@@ -472,10 +461,7 @@ def build_generic_class_tags(
         If a term key specified in `config.generic_class` is not found in the
         provided `term_registry`.
     """
-    return [
-        get_tag_from_info(tag_info, term_registry=term_registry)
-        for tag_info in config.generic_class
-    ]
+    return [get_tag_from_info(tag_info) for tag_info in config.generic_class]
 
 
 def load_classes_config(
@@ -509,9 +495,7 @@ def load_classes_config(
 
 
 def load_encoder_from_config(
-    path: data.PathLike,
-    field: Optional[str] = None,
-    term_registry: TermRegistry = default_term_registry,
+    path: data.PathLike, field: Optional[str] = None
 ) -> SoundEventEncoder:
     """Load a class encoder function directly from a configuration file.
 
@@ -546,13 +530,12 @@ def load_encoder_from_config(
         provided `term_registry` during the build process.
     """
     config = load_classes_config(path, field=field)
-    return build_sound_event_encoder(config, term_registry=term_registry)
+    return build_sound_event_encoder(config)
 
 
 def load_decoder_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    term_registry: TermRegistry = default_term_registry,
     raise_on_unmapped: bool = False,
 ) -> SoundEventDecoder:
     """Load a class decoder function directly from a configuration file.
@@ -594,6 +577,5 @@ def load_decoder_from_config(
     config = load_classes_config(path, field=field)
     return build_sound_event_decoder(
         config,
-        term_registry=term_registry,
         raise_on_unmapped=raise_on_unmapped,
     )

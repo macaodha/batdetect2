@@ -56,7 +56,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
 
     detection_heatmap, class_heatmap, size_heatmap = generate_heatmaps(
         clip_annotation,
-        torch.rand([100, 100]),
+        torch.rand([1, 100, 100]),
         min_freq=0,
         max_freq=100,
         targets=targets,
@@ -67,4 +67,4 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
     assert size_heatmap[1, 10, 10] == 20
     assert class_heatmap[pippip_index, 10, 10] == 1.0
     assert class_heatmap[myomyo_index, 10, 10] == 0.0
-    assert detection_heatmap[10, 10] == 1.0
+    assert detection_heatmap[0, 10, 10] == 1.0

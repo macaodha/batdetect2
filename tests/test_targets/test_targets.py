@@ -1,16 +1,14 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from soundevent import data
+from soundevent import data, terms
 
 from batdetect2.targets import build_targets, load_target_config
-from batdetect2.targets.terms import get_term_from_key
 
 
 def test_can_override_default_roi_mapper_per_class(
     create_temp_yaml: Callable[..., Path],
     recording: data.Recording,
-    sample_term_registry,
 ):
     yaml_content = """
     roi:
@@ -36,11 +34,13 @@ def test_can_override_default_roi_mapper_per_class(
     config_path = create_temp_yaml(yaml_content)
 
     config = load_target_config(config_path)
-    targets = build_targets(config, term_registry=sample_term_registry)
+    targets = build_targets(config)
 
     geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
 
-    species = get_term_from_key("species", term_registry=sample_term_registry)
+    species = terms.get_term("species")
+    assert species is not None
+
     se1 = data.SoundEventAnnotation(
         sound_event=data.SoundEvent(recording=recording, geometry=geometry),
         tags=[data.Tag(term=species, value="Pipistrellus pipistrellus")],
@@ -62,7 +62,6 @@ def test_can_override_default_roi_mapper_per_class(
 # TODO: rename this test function
 def test_roi_is_recovered_roundtrip_even_with_overriders(
     create_temp_yaml,
-    sample_term_registry,
     recording,
 ):
     yaml_content = """
@@ -89,11 +88,12 @@ def test_roi_is_recovered_roundtrip_even_with_overriders(
     config_path = create_temp_yaml(yaml_content)
 
     config = load_target_config(config_path)
-    targets = build_targets(config, term_registry=sample_term_registry)
+    targets = build_targets(config)
 
     geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
 
-    species = get_term_from_key("species", term_registry=sample_term_registry)
+    species = terms.get_term("species")
+    assert species is not None
     se1 = data.SoundEventAnnotation(
         sound_event=data.SoundEvent(recording=recording, geometry=geometry),
         tags=[data.Tag(term=species, value="Pipistrellus pipistrellus")],
