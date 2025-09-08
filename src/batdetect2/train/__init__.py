@@ -33,10 +33,6 @@ from batdetect2.train.losses import (
     SizeLossConfig,
     build_loss,
 )
-from batdetect2.train.preprocess import (
-    generate_train_example,
-    preprocess_annotations,
-)
 from batdetect2.train.train import (
     build_train_dataset,
     build_train_loader,
@@ -74,14 +70,12 @@ __all__ = [
     "build_trainer",
     "build_val_dataset",
     "build_val_loader",
-    "generate_train_example",
     "load_full_training_config",
     "load_label_config",
     "load_train_config",
     "mask_frequency",
     "mask_time",
     "mix_audio",
-    "preprocess_annotations",
     "scale_volume",
     "select_subclip",
     "train",
