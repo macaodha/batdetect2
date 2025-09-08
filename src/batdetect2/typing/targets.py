@@ -227,3 +227,70 @@ class TargetProtocol(Protocol):
             if reconstruction fails based on the configured position type.
         """
         ...
+
+
+class ROITargetMapper(Protocol):
+    """Protocol defining the interface for ROI-to-target mapping.
+
+    Specifies the `encode` and `decode` methods required for converting a
+    `soundevent.data.SoundEvent` into a target representation (a reference
+    position and a size vector) and for recovering an approximate ROI from that
+    representation.
+
+    Attributes
+    ----------
+    dimension_names : List[str]
+        A list containing the names of the dimensions in the `Size` array
+        returned by `encode` and expected by `decode`.
+    """
+
+    dimension_names: List[str]
+
+    def encode(self, sound_event: data.SoundEvent) -> tuple[Position, Size]:
+        """Encode a SoundEvent's geometry into a position and size.
+
+        Parameters
+        ----------
+        sound_event : data.SoundEvent
+            The input sound event, which must have a geometry attribute.
+
+        Returns
+        -------
+        Tuple[Position, Size]
+            A tuple containing:
+            - The reference position as (time, frequency) coordinates.
+            - A NumPy array with the calculated size dimensions.
+
+        Raises
+        ------
+        ValueError
+            If the sound event does not have a geometry.
+        """
+        ...
+
+    def decode(self, position: Position, size: Size) -> data.Geometry:
+        """Decode a position and size back into a geometric ROI.
+
+        Performs the inverse mapping: takes a reference position and size
+        dimensions and reconstructs a geometric representation.
+
+        Parameters
+        ----------
+        position : Position
+            The reference position (time, frequency).
+        size : Size
+            NumPy array containing the size dimensions, matching the order
+            and meaning specified by `dimension_names`.
+
+        Returns
+        -------
+        soundevent.data.Geometry
+            The reconstructed geometry, typically a `BoundingBox`.
+
+        Raises
+        ------
+        ValueError
+            If the `size` array has an unexpected shape or if reconstruction
+            fails.
+        """
+        ...
