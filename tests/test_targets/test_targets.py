@@ -11,25 +11,34 @@ def test_can_override_default_roi_mapper_per_class(
     recording: data.Recording,
 ):
     yaml_content = """
+    detection_target:
+        name: bat
+        match_if:
+            name: has_tag
+            tag:
+                key: order
+                value: Chiroptera
+        assign_tags:
+            - key: order
+              value: Chiroptera
+
+    classification_targets:
+      - name: pippip
+        tags:
+            - key: species
+              value: Pipistrellus pipistrellus
+
+      - name: myomyo
+        tags:
+            - key: species
+              value: Myotis myotis
+        roi:
+            name: anchor_bbox
+            anchor: top-left
+
     roi:
         name: anchor_bbox
         anchor: bottom-left
-    classes:
-        classes:
-          - name: pippip
-            tags:
-              - key: species
-                value: Pipistrellus pipistrellus
-          - name: myomyo
-            tags:
-              - key: species
-                value: Myotis myotis
-            roi:
-                name: anchor_bbox
-                anchor: top-left
-        generic_class:
-          - key: order
-            value: Chiroptera
     """
     config_path = create_temp_yaml(yaml_content)
 
@@ -65,25 +74,34 @@ def test_roi_is_recovered_roundtrip_even_with_overriders(
     recording,
 ):
     yaml_content = """
+    detection_target:
+        name: bat
+        match_if:
+            name: has_tag
+            tag:
+                key: order
+                value: Chiroptera
+        assign_tags:
+            - key: order
+              value: Chiroptera
+
+    classification_targets:
+      - name: pippip
+        tags:
+            - key: species
+              value: Pipistrellus pipistrellus
+
+      - name: myomyo
+        tags:
+            - key: species
+              value: Myotis myotis
+        roi:
+            name: anchor_bbox
+            anchor: top-left
+
     roi:
         name: anchor_bbox
         anchor: bottom-left
-    classes:
-        classes:
-          - name: pippip
-            tags:
-              - key: species
-                value: Pipistrellus pipistrellus
-          - name: myomyo
-            tags:
-              - key: species
-                value: Myotis myotis
-            roi:
-                name: anchor_bbox
-                anchor: top-left
-        generic_class:
-          - key: order
-            value: Chiroptera
     """
     config_path = create_temp_yaml(yaml_content)
 

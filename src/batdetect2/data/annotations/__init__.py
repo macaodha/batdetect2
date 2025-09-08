@@ -14,8 +14,9 @@ format-specific loading function to retrieve the annotations as a standard
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Annotated, Optional, Union
 
+from pydantic import Field
 from soundevent import data
 
 from batdetect2.data.annotations.aoef import (
@@ -42,10 +43,13 @@ __all__ = [
 ]
 
 
-AnnotationFormats = Union[
-    BatDetect2MergedAnnotations,
-    BatDetect2FilesAnnotations,
-    AOEFAnnotations,
+AnnotationFormats = Annotated[
+    Union[
+        BatDetect2MergedAnnotations,
+        BatDetect2FilesAnnotations,
+        AOEFAnnotations,
+    ],
+    Field(discriminator="format"),
 ]
 """Type Alias representing all supported data source configurations.
 

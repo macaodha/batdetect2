@@ -1,6 +1,14 @@
 """Computes spectrograms from audio waveforms with configurable parameters."""
 
-from typing import Annotated, Callable, List, Literal, Optional, Union
+from typing import (
+    Annotated,
+    Callable,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 import torch
@@ -306,7 +314,7 @@ class SpectrogramConfig(BaseConfig):
     stft: STFTConfig = Field(default_factory=STFTConfig)
     frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
     size: ResizeConfig = Field(default_factory=ResizeConfig)
-    transforms: List[SpectrogramTransform] = Field(
+    transforms: Sequence[SpectrogramTransform] = Field(
         default_factory=lambda: [
             PcenConfig(),
             SpectralMeanSubstractionConfig(),

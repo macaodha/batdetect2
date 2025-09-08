@@ -1,53 +1,26 @@
-"""Main entry point for the BatDetect2 Target Definition subsystem.
+"""BatDetect2 Target Definition system."""
 
-This package (`batdetect2.targets`) provides the tools and configurations
-necessary to define precisely what the BatDetect2 model should learn to detect,
-classify, and localize from audio data. It involves several conceptual steps,
-managed through configuration files and culminating in an executable pipeline:
-
-1.  **Terms (`.terms`)**: Defining vocabulary for annotation tags.
-2.  **Filtering (`.filtering`)**: Selecting relevant sound event annotations.
-3.  **Transformation (`.transform`)**: Modifying tags (standardization,
-    derivation).
-4.  **ROI Mapping (`.roi`)**: Defining how annotation geometry (ROIs) maps to
-    target position and size representations, and back.
-5.  **Class Definition (`.classes`)**: Mapping tags to target class names
-    (encoding) and mapping predicted names back to tags (decoding).
-
-This module exposes the key components for users to configure and utilize this
-target definition pipeline, primarily through the `TargetConfig` data structure
-and the `Targets` class (implementing `TargetProtocol`), which encapsulates the
-configured processing steps. The main way to create a functional `Targets`
-object is via the `build_targets` or `load_targets` functions.
-"""
-
+from collections import Counter
 from typing import Iterable, List, Optional, Tuple
 
 from loguru import logger
-from pydantic import Field
+from pydantic import Field, field_validator
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
+from batdetect2.data.conditions import (
+    SoundEventCondition,
+    build_sound_event_condition,
+)
 from batdetect2.targets.classes import (
-    ClassesConfig,
+    DEFAULT_CLASSES,
+    DEFAULT_GENERIC_CLASS,
     SoundEventDecoder,
     SoundEventEncoder,
-    TargetClass,
-    build_generic_class_tags,
+    TargetClassConfig,
     build_sound_event_decoder,
     build_sound_event_encoder,
     get_class_names_from_config,
-    load_classes_config,
-    load_decoder_from_config,
-    load_encoder_from_config,
-)
-from batdetect2.targets.filtering import (
-    FilterConfig,
-    FilterRule,
-    SoundEventFilter,
-    build_sound_event_filter,
-    load_filter_config,
-    load_filter_from_config,
 )
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
@@ -55,105 +28,52 @@ from batdetect2.targets.rois import (
     ROITargetMapper,
     build_roi_mapper,
 )
-from batdetect2.targets.terms import (
-    TagInfo,
-    call_type,
-    get_tag_from_info,
-    individual,
-)
-from batdetect2.targets.transform import (
-    DerivationRegistry,
-    DeriveTagRule,
-    MapValueRule,
-    ReplaceRule,
-    SoundEventTransformation,
-    TransformConfig,
-    build_transformation_from_config,
-    default_derivation_registry,
-    get_derivation,
-    load_transformation_config,
-    load_transformation_from_config,
-    register_derivation,
-)
+from batdetect2.targets.terms import call_type, individual
 from batdetect2.typing.targets import Position, Size, TargetProtocol
 
 __all__ = [
-    "ClassesConfig",
     "DEFAULT_TARGET_CONFIG",
-    "DeriveTagRule",
-    "FilterConfig",
-    "FilterRule",
-    "MapValueRule",
     "AnchorBBoxMapperConfig",
     "ROITargetMapper",
-    "ReplaceRule",
     "SoundEventDecoder",
     "SoundEventEncoder",
-    "SoundEventFilter",
-    "SoundEventTransformation",
-    "TagInfo",
-    "TargetClass",
+    "TargetClassConfig",
     "TargetConfig",
     "Targets",
-    "TransformConfig",
-    "build_generic_class_tags",
     "build_roi_mapper",
     "build_sound_event_decoder",
     "build_sound_event_encoder",
-    "build_sound_event_filter",
-    "build_transformation_from_config",
     "call_type",
     "get_class_names_from_config",
-    "get_derivation",
-    "get_tag_from_info",
     "individual",
-    "load_classes_config",
-    "load_decoder_from_config",
-    "load_encoder_from_config",
-    "load_filter_config",
-    "load_filter_from_config",
     "load_target_config",
-    "load_transformation_config",
-    "load_transformation_from_config",
-    "register_derivation",
 ]
 
 
 class TargetConfig(BaseConfig):
-    """Unified configuration for the entire target definition pipeline.
+    detection_target: TargetClassConfig = Field(default=DEFAULT_GENERIC_CLASS)
 
-    This model aggregates the configurations for semantic processing (filtering,
-    transformation, class definition) and geometric processing (ROI mapping).
-    It serves as the primary input for building a complete `Targets` object
-    via `build_targets` or `load_targets`.
-
-    Attributes
-    ----------
-    filtering : FilterConfig, optional
-        Configuration for filtering sound event annotations based on tags.
-        If None or omitted, no filtering is applied.
-    transforms : TransformConfig, optional
-        Configuration for transforming annotation tags
-        (mapping, derivation, etc.). If None or omitted, no tag transformations
-        are applied.
-    classes : ClassesConfig
-        Configuration defining the specific target classes, their tag matching
-        rules for encoding, their representative tags for decoding
-        (`output_tags`), and the definition of the generic class tags.
-        This section is mandatory.
-    roi : ROIConfig, optional
-        Configuration defining how geometric ROIs (e.g., bounding boxes) are
-        mapped to target representations (reference point, scaled size).
-        Controls `position`, `time_scale`, `frequency_scale`. If None or
-        omitted, default ROI mapping settings are used.
-    """
-
-    filtering: FilterConfig = Field(default_factory=FilterConfig)
-    transforms: TransformConfig = Field(default_factory=TransformConfig)
-    classes: ClassesConfig = Field(
-        default_factory=lambda: DEFAULT_CLASSES_CONFIG
+    classification_targets: List[TargetClassConfig] = Field(
+        default_factory=lambda: DEFAULT_CLASSES
     )
+
     roi: ROIMapperConfig = Field(default_factory=AnchorBBoxMapperConfig)
+
+    @field_validator("classification_targets")
+    def check_unique_class_names(cls, v: List[TargetClassConfig]):
+        """Ensure all defined class names are unique."""
+        names = [c.name for c in v]
+
+        if len(names) != len(set(names)):
+            name_counts = Counter(names)
+            duplicates = [
+                name for name, count in name_counts.items() if count > 1
+            ]
+            raise ValueError(
+                "Class names must be unique. Found duplicates: "
+                f"{', '.join(duplicates)}"
+            )
+        return v
 
 
 def load_target_config(
@@ -230,8 +150,7 @@ class Targets(TargetProtocol):
         roi_mapper: ROITargetMapper,
         class_names: list[str],
         generic_class_tags: List[data.Tag],
-        filter_fn: Optional[SoundEventFilter] = None,
-        transform_fn: Optional[SoundEventTransformation] = None,
+        filter_fn: Optional[SoundEventCondition] = None,
         roi_mapper_overrides: Optional[dict[str, ROITargetMapper]] = None,
     ):
         """Initialize the Targets object.
@@ -264,7 +183,6 @@ class Targets(TargetProtocol):
         self._filter_fn = filter_fn
         self._encode_fn = encode_fn
         self._decode_fn = decode_fn
-        self._transform_fn = transform_fn
         self._roi_mapper_overrides = roi_mapper_overrides or {}
 
         for class_name in self._roi_mapper_overrides:
@@ -336,27 +254,6 @@ class Targets(TargetProtocol):
         """
         return self._decode_fn(class_label)
 
-    def transform(
-        self, sound_event: data.SoundEventAnnotation
-    ) -> data.SoundEventAnnotation:
-        """Apply the configured tag transformations to an annotation.
-
-        Parameters
-        ----------
-        sound_event : data.SoundEventAnnotation
-            The annotation whose tags should be transformed.
-
-        Returns
-        -------
-        data.SoundEventAnnotation
-            A new annotation object with the transformed tags. If no
-            transformations were configured, the original annotation object is
-            returned.
-        """
-        if self._transform_fn:
-            return self._transform_fn(sound_event)
-        return sound_event
-
     def encode_roi(
         self, sound_event: data.SoundEventAnnotation
     ) -> tuple[Position, Size]:
@@ -422,112 +319,14 @@ class Targets(TargetProtocol):
         return self._roi_mapper.decode(position, size)
 
 
-DEFAULT_CLASSES = [
-    TargetClass(
-        tags=[TagInfo(value="Myotis mystacinus")],
-        name="myomys",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Myotis alcathoe")],
-        name="myoalc",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Eptesicus serotinus")],
-        name="eptser",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Pipistrellus nathusii")],
-        name="pipnat",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Barbastellus barbastellus")],
-        name="barbar",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Myotis nattereri")],
-        name="myonat",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Myotis daubentonii")],
-        name="myodau",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Myotis brandtii")],
-        name="myobra",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Pipistrellus pipistrellus")],
-        name="pippip",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Myotis bechsteinii")],
-        name="myobec",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Pipistrellus pygmaeus")],
-        name="pippyg",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Rhinolophus hipposideros")],
-        name="rhihip",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Nyctalus leisleri")],
-        name="nyclei",
-        roi=AnchorBBoxMapperConfig(anchor="top-left"),
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Rhinolophus ferrumequinum")],
-        name="rhifer",
-        roi=AnchorBBoxMapperConfig(anchor="top-left"),
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Plecotus auritus")],
-        name="pleaur",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Nyctalus noctula")],
-        name="nycnoc",
-    ),
-    TargetClass(
-        tags=[TagInfo(value="Plecotus austriacus")],
-        name="pleaus",
-    ),
-]
-
-
-DEFAULT_CLASSES_CONFIG: ClassesConfig = ClassesConfig(
-    classes=DEFAULT_CLASSES,
-    generic_class=[TagInfo(value="Bat")],
-)
-
-
 DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
-    filtering=FilterConfig(
-        rules=[
-            FilterRule(
-                match_type="all",
-                tags=[TagInfo(key="event", value="Echolocation")],
-            ),
-            FilterRule(
-                match_type="exclude",
-                tags=[
-                    TagInfo(key="event", value="Feeding"),
-                    TagInfo(key="event", value="Unknown"),
-                    TagInfo(key="event", value="Not Bat"),
-                ],
-            ),
-        ]
-    ),
-    classes=DEFAULT_CLASSES_CONFIG,
+    classification_targets=DEFAULT_CLASSES,
+    detection_target=DEFAULT_GENERIC_CLASS,
     roi=AnchorBBoxMapperConfig(),
 )
 
 
-def build_targets(
-    config: Optional[TargetConfig] = None,
-    derivation_registry: DerivationRegistry = default_derivation_registry,
-) -> Targets:
+def build_targets(config: Optional[TargetConfig] = None) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
 
     This factory function takes the unified `TargetConfig` and constructs all
@@ -541,10 +340,6 @@ def build_targets(
     ----------
     config : TargetConfig
         The loaded and validated unified target configuration object.
-    derivation_registry : DerivationRegistry, optional
-        The DerivationRegistry instance to use for resolving derivation
-        function names. Defaults to the global
-        `batdetect2.targets.transform.derivation_registry`.
 
     Returns
     -------
@@ -565,27 +360,18 @@ def build_targets(
         lambda: config.to_yaml_string(),
     )
 
-    filter_fn = (
-        build_sound_event_filter(config.filtering)
-        if config.filtering
-        else None
-    )
-    encode_fn = build_sound_event_encoder(config.classes)
-    decode_fn = build_sound_event_decoder(config.classes)
-    transform_fn = (
-        build_transformation_from_config(
-            config.transforms,
-            derivation_registry=derivation_registry,
-        )
-        if config.transforms
-        else None
-    )
+    filter_fn = build_sound_event_condition(config.detection_target.match_if)
+    encode_fn = build_sound_event_encoder(config.classification_targets)
+    decode_fn = build_sound_event_decoder(config.classification_targets)
+
     roi_mapper = build_roi_mapper(config.roi)
-    class_names = get_class_names_from_config(config.classes)
-    generic_class_tags = build_generic_class_tags(config.classes)
+    class_names = get_class_names_from_config(config.classification_targets)
+
+    generic_class_tags = config.detection_target.assign_tags
+
     roi_overrides = {
         class_config.name: build_roi_mapper(class_config.roi)
-        for class_config in config.classes.classes
+        for class_config in config.classification_targets
         if class_config.roi is not None
     }
 
@@ -596,7 +382,6 @@ def build_targets(
         class_names=class_names,
         roi_mapper=roi_mapper,
         generic_class_tags=generic_class_tags,
-        transform_fn=transform_fn,
         roi_mapper_overrides=roi_overrides,
     )
 
@@ -604,7 +389,6 @@ def build_targets(
 def load_targets(
     config_path: data.PathLike,
     field: Optional[str] = None,
-    derivation_registry: DerivationRegistry = default_derivation_registry,
 ) -> Targets:
     """Load a Targets object directly from a configuration file.
 
@@ -619,9 +403,6 @@ def load_targets(
     field : str, optional
         Dot-separated path to a nested section within the file containing
         the target configuration. If None, the entire file content is used.
-    derivation_registry : DerivationRegistry, optional
-        The DerivationRegistry instance to use. Defaults to the global
-        default.
 
     Returns
     -------
@@ -642,7 +423,7 @@ def load_targets(
         config_path,
         field=field,
     )
-    return build_targets(config, derivation_registry=derivation_registry)
+    return build_targets(config)
 
 
 def iterate_encoded_sound_events(
@@ -657,8 +438,6 @@ def iterate_encoded_sound_events(
 
         if geometry is None:
             continue
-
-        sound_event = targets.transform(sound_event)
 
         class_name = targets.encode_class(sound_event)
         position, size = targets.encode_roi(sound_event)

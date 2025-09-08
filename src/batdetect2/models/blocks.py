@@ -56,7 +56,7 @@ __all__ = [
 
 
 class SelfAttentionConfig(BaseConfig):
-    block_type: Literal["SelfAttention"] = "SelfAttention"
+    name: Literal["SelfAttention"] = "SelfAttention"
     attention_channels: int
     temperature: float = 1
 
@@ -178,7 +178,7 @@ class SelfAttention(nn.Module):
 class ConvConfig(BaseConfig):
     """Configuration for a basic ConvBlock."""
 
-    block_type: Literal["ConvBlock"] = "ConvBlock"
+    name: Literal["ConvBlock"] = "ConvBlock"
     """Discriminator field indicating the block type."""
 
     out_channels: int
@@ -300,7 +300,7 @@ class VerticalConv(nn.Module):
 class FreqCoordConvDownConfig(BaseConfig):
     """Configuration for a FreqCoordConvDownBlock."""
 
-    block_type: Literal["FreqCoordConvDown"] = "FreqCoordConvDown"
+    name: Literal["FreqCoordConvDown"] = "FreqCoordConvDown"
     """Discriminator field indicating the block type."""
 
     out_channels: int
@@ -390,7 +390,7 @@ class FreqCoordConvDownBlock(nn.Module):
 class StandardConvDownConfig(BaseConfig):
     """Configuration for a StandardConvDownBlock."""
 
-    block_type: Literal["StandardConvDown"] = "StandardConvDown"
+    name: Literal["StandardConvDown"] = "StandardConvDown"
     """Discriminator field indicating the block type."""
 
     out_channels: int
@@ -460,7 +460,7 @@ class StandardConvDownBlock(nn.Module):
 class FreqCoordConvUpConfig(BaseConfig):
     """Configuration for a FreqCoordConvUpBlock."""
 
-    block_type: Literal["FreqCoordConvUp"] = "FreqCoordConvUp"
+    name: Literal["FreqCoordConvUp"] = "FreqCoordConvUp"
     """Discriminator field indicating the block type."""
 
     out_channels: int
@@ -569,7 +569,7 @@ class FreqCoordConvUpBlock(nn.Module):
 class StandardConvUpConfig(BaseConfig):
     """Configuration for a StandardConvUpBlock."""
 
-    block_type: Literal["StandardConvUp"] = "StandardConvUp"
+    name: Literal["StandardConvUp"] = "StandardConvUp"
     """Discriminator field indicating the block type."""
 
     out_channels: int
@@ -664,13 +664,13 @@ LayerConfig = Annotated[
         SelfAttentionConfig,
         "LayerGroupConfig",
     ],
-    Field(discriminator="block_type"),
+    Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configuration models."""
 
 
 class LayerGroupConfig(BaseConfig):
-    block_type: Literal["LayerGroup"] = "LayerGroup"
+    name: Literal["LayerGroup"] = "LayerGroup"
     layers: List[LayerConfig]
 
 
@@ -686,7 +686,7 @@ def build_layer_from_config(
     parameters derived from the config and the current pipeline state
     (`input_height`, `in_channels`).
 
-    It uses the `block_type` field within the `config` object to determine
+    It uses the `name` field within the `config` object to determine
     which block class to instantiate.
 
     Parameters
@@ -698,7 +698,7 @@ def build_layer_from_config(
     config : LayerConfig
         A Pydantic configuration object for the desired block (e.g., an
         instance of `ConvConfig`, `FreqCoordConvDownConfig`, etc.), identified
-        by its `block_type` field.
+        by its `name` field.
 
     Returns
     -------
@@ -711,11 +711,11 @@ def build_layer_from_config(
     Raises
     ------
     NotImplementedError
-        If the `config.block_type` does not correspond to a known block type.
+        If the `config.name` does not correspond to a known block type.
     ValueError
         If parameters derived from the config are invalid for the block.
     """
-    if config.block_type == "ConvBlock":
+    if config.name == "ConvBlock":
         return (
             ConvBlock(
                 in_channels=in_channels,
@@ -727,7 +727,7 @@ def build_layer_from_config(
             input_height,
         )
 
-    if config.block_type == "FreqCoordConvDown":
+    if config.name == "FreqCoordConvDown":
         return (
             FreqCoordConvDownBlock(
                 in_channels=in_channels,
@@ -740,7 +740,7 @@ def build_layer_from_config(
             input_height // 2,
         )
 
-    if config.block_type == "StandardConvDown":
+    if config.name == "StandardConvDown":
         return (
             StandardConvDownBlock(
                 in_channels=in_channels,
@@ -752,7 +752,7 @@ def build_layer_from_config(
             input_height // 2,
         )
 
-    if config.block_type == "FreqCoordConvUp":
+    if config.name == "FreqCoordConvUp":
         return (
             FreqCoordConvUpBlock(
                 in_channels=in_channels,
@@ -765,7 +765,7 @@ def build_layer_from_config(
             input_height * 2,
         )
 
-    if config.block_type == "StandardConvUp":
+    if config.name == "StandardConvUp":
         return (
             StandardConvUpBlock(
                 in_channels=in_channels,
@@ -777,7 +777,7 @@ def build_layer_from_config(
             input_height * 2,
         )
 
-    if config.block_type == "SelfAttention":
+    if config.name == "SelfAttention":
         return (
             SelfAttention(
                 in_channels=in_channels,
@@ -788,7 +788,7 @@ def build_layer_from_config(
             input_height,
         )
 
-    if config.block_type == "LayerGroup":
+    if config.name == "LayerGroup":
         current_channels = in_channels
         current_height = input_height
 
@@ -804,4 +804,4 @@ def build_layer_from_config(
 
         return nn.Sequential(*blocks), current_channels, current_height
 
-    raise NotImplementedError(f"Unknown block type {config.block_type}")
+    raise NotImplementedError(f"Unknown block type {config.name}")

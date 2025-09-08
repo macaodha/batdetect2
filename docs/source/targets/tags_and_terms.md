@@ -133,7 +133,7 @@ When you need to specify a tag, you typically use a structure with two fields:
   **It defaults to `class`** if you omit it, which is common when defining the main target classes.
 - `value`: The specific _value_ of the tag (e.g., `Myotis daubentonii`, `Good`, `Rain`).
 
-**Example YAML Configuration using TagInfo (e.g., inside a filter rule):**
+**Example YAML Configuration (e.g., inside a filter rule):**
 
 ```yaml
 # ... inside a filtering configuration section ...

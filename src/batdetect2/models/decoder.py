@@ -47,7 +47,7 @@ DecoderLayerConfig = Annotated[
         StandardConvUpConfig,
         LayerGroupConfig,
     ],
-    Field(discriminator="block_type"),
+    Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""
 
@@ -63,7 +63,7 @@ class DecoderConfig(BaseConfig):
     layers : List[DecoderLayerConfig]
         An ordered list of configuration objects, each defining one layer or
         block in the decoder sequence. Each item must be a valid block
-        config including a `block_type` field and necessary parameters like
+        config including a `name` field and necessary parameters like
         `out_channels`. Input channels for each layer are inferred sequentially.
         The list must contain at least one layer.
     """
@@ -249,9 +249,9 @@ def build_decoder(
     ------
     ValueError
         If `in_channels` or `input_height` are not positive, or if the layer
-        configuration is invalid (e.g., empty list, unknown `block_type`).
+        configuration is invalid (e.g., empty list, unknown `name`).
     NotImplementedError
-        If `build_layer_from_config` encounters an unknown `block_type`.
+        If `build_layer_from_config` encounters an unknown `name`.
     """
     config = config or DEFAULT_DECODER_CONFIG
 

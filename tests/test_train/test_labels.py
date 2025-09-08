@@ -5,7 +5,6 @@ from soundevent import data
 
 from batdetect2.targets import TargetConfig, build_targets
 from batdetect2.targets.rois import AnchorBBoxMapperConfig
-from batdetect2.targets.terms import TagInfo
 from batdetect2.train.labels import generate_heatmaps
 
 recording = data.Recording(
@@ -26,7 +25,7 @@ clip = data.Clip(
 
 def test_generated_heatmap_are_non_zero_at_correct_positions(
     sample_target_config: TargetConfig,
-    pippip_tag: TagInfo,
+    pippip_tag: data.Tag,
 ):
     config = sample_target_config.model_copy(
         update=dict(

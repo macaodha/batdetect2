@@ -67,8 +67,7 @@ class TargetProtocol(Protocol):
     This protocol outlines the standard attributes and methods for an object
     that encapsulates the complete, configured process for handling sound event
     annotations (both tags and geometry). It defines how to:
-    - Filter relevant annotations.
-    - Transform annotation tags.
+    - Select relevant annotations.
     - Encode an annotation into a specific target class name.
     - Decode a class name back into representative tags.
     - Extract a target reference position from an annotation's geometry (ROI).
@@ -118,26 +117,6 @@ class TargetProtocol(Protocol):
             True if the annotation should be kept (passes the filter),
             False otherwise. Implementations should return True if no
             filtering is configured.
-        """
-        ...
-
-    def transform(
-        self,
-        sound_event: data.SoundEventAnnotation,
-    ) -> data.SoundEventAnnotation:
-        """Apply tag transformations to an annotation.
-
-        Parameters
-        ----------
-        sound_event : data.SoundEventAnnotation
-            The annotation whose tags should be transformed.
-
-        Returns
-        -------
-        data.SoundEventAnnotation
-            A new annotation object with the transformed tags. Implementations
-            should return the original annotation object if no transformations
-            were configured.
         """
         ...
 

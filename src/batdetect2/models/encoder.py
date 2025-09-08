@@ -49,7 +49,7 @@ EncoderLayerConfig = Annotated[
         StandardConvDownConfig,
         LayerGroupConfig,
     ],
-    Field(discriminator="block_type"),
+    Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Encoder."""
 
@@ -66,7 +66,7 @@ class EncoderConfig(BaseConfig):
         An ordered list of configuration objects, each defining one layer or
         block in the encoder sequence. Each item must be a valid block config
         (e.g., `ConvConfig`, `FreqCoordConvDownConfig`,
-        `StandardConvDownConfig`) including a `block_type` field and necessary
+        `StandardConvDownConfig`) including a `name` field and necessary
         parameters like `out_channels`. Input channels for each layer are
         inferred sequentially. The list must contain at least one layer.
     """
@@ -287,9 +287,9 @@ def build_encoder(
     ------
     ValueError
         If `in_channels` or `input_height` are not positive, or if the layer
-        configuration is invalid (e.g., empty list, unknown `block_type`).
+        configuration is invalid (e.g., empty list, unknown `name`).
     NotImplementedError
-        If `build_layer_from_config` encounters an unknown `block_type`.
+        If `build_layer_from_config` encounters an unknown `name`.
     """
     if in_channels <= 0 or input_height <= 0:
         raise ValueError("in_channels and input_height must be positive.")

@@ -19,7 +19,7 @@ The core components are:
 """
 
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import List, Optional
 
 from loguru import logger
 from pydantic import Field
@@ -30,6 +30,17 @@ from batdetect2.data.annotations import (
     AnnotatedDataset,
     AnnotationFormats,
     load_annotated_dataset,
+)
+from batdetect2.data.conditions import (
+    SoundEventConditionConfig,
+    build_sound_event_condition,
+    filter_clip_annotation,
+)
+from batdetect2.data.transforms import (
+    ApplyAll,
+    SoundEventTransformConfig,
+    build_sound_event_transform,
+    transform_clip_annotation,
 )
 from batdetect2.targets.terms import data_source
 
@@ -52,79 +63,68 @@ sources.
 
 
 class DatasetConfig(BaseConfig):
-    """Configuration model defining the structure of a BatDetect2 dataset.
-
-    This class is typically loaded from a YAML file and describes the components
-    of the dataset, including metadata and a list of data sources.
-
-    Attributes
-    ----------
-    name : str
-        A descriptive name for the dataset (e.g., "UK_Bats_Project_2024").
-    description : str
-        A longer description of the dataset's contents, origin, purpose, etc.
-    sources : List[AnnotationFormats]
-        A list defining the different data sources contributing to this
-        dataset. Each item in the list must conform to one of the Pydantic
-        models defined in the `AnnotationFormats` type union. The specific
-        model used for each source is determined by the mandatory `format`
-        field within the source's configuration, allowing BatDetect2 to use the
-        correct parser for different annotation styles.
-    """
+    """Configuration model defining the structure of a BatDetect2 dataset."""
 
     name: str
     description: str
-    sources: List[
-        Annotated[AnnotationFormats, Field(..., discriminator="format")]
-    ]
+    sources: List[AnnotationFormats]
+
+    sound_event_filter: Optional[SoundEventConditionConfig] = None
+    sound_event_transforms: List[SoundEventTransformConfig] = Field(
+        default_factory=list
+    )
 
 
 def load_dataset(
-    dataset: DatasetConfig,
+    config: DatasetConfig,
     base_dir: Optional[Path] = None,
 ) -> Dataset:
-    """Load all clip annotations from the sources defined in a DatasetConfig.
-
-    Iterates through each data source specified in the `dataset_config`,
-    delegates the loading and parsing of that source's annotations to
-    `batdetect2.data.annotations.load_annotated_dataset` (which handles
-    different data formats), and aggregates all resulting `ClipAnnotation`
-    objects into a single flat list.
-
-    Parameters
-    ----------
-    dataset_config : DatasetConfig
-        The configuration object describing the dataset and its sources.
-    base_dir : Path, optional
-        An optional base directory path. If provided, relative paths for
-        metadata files or data directories within the `dataset_config`'s
-        sources might be resolved relative to this directory. Defaults to None.
-
-    Returns
-    -------
-    Dataset (List[data.ClipAnnotation])
-        A flat list containing all loaded `ClipAnnotation` metadata objects
-        from all specified sources.
-
-    Raises
-    ------
-    Exception
-        Can raise various exceptions during the delegated loading process
-        (`load_annotated_dataset`) if files are not found, cannot be parsed
-        according to the specified format, or other I/O errors occur.
-    """
+    """Load all clip annotations from the sources defined in a DatasetConfig."""
     clip_annotations = []
-    for source in dataset.sources:
+
+    condition = (
+        build_sound_event_condition(config.sound_event_filter)
+        if config.sound_event_filter is not None
+        else None
+    )
+
+    transform = (
+        ApplyAll(
+            [
+                build_sound_event_transform(step)
+                for step in config.sound_event_transforms
+            ]
+        )
+        if config.sound_event_transforms
+        else None
+    )
+
+    for source in config.sources:
         annotated_source = load_annotated_dataset(source, base_dir=base_dir)
+
         logger.debug(
             "Loaded {num_examples} from dataset source '{source_name}'",
             num_examples=len(annotated_source.clip_annotations),
             source_name=source.name,
         )
-        clip_annotations.extend(
-            insert_source_tag(clip_annotation, source)
-            for clip_annotation in annotated_source.clip_annotations
-        )
+
+        for clip_annotation in annotated_source.clip_annotations:
+            clip_annotation = insert_source_tag(clip_annotation, source)
+
+            if condition is not None:
+                clip_annotation = filter_clip_annotation(
+                    clip_annotation,
+                    condition,
+                )
+
+            if transform is not None:
+                clip_annotation = transform_clip_annotation(
+                    clip_annotation,
+                    transform,
+                )
+
+            clip_annotations.append(clip_annotation)
+
     return clip_annotations
 
 
@@ -161,7 +161,6 @@ def insert_source_tag(
     )
 
 
-# TODO: add documentation
 def load_dataset_config(path: data.PathLike, field: Optional[str] = None):
     return load_config(path=path, schema=DatasetConfig, field=field)
 

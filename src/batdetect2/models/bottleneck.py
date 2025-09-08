@@ -128,7 +128,7 @@ class Bottleneck(nn.Module):
 
 BottleneckLayerConfig = Annotated[
     Union[SelfAttentionConfig,],
-    Field(discriminator="block_type"),
+    Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""
 

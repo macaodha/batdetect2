@@ -1,44 +1,47 @@
 targets:
-  classes:
-    classes:
-      - name: myomys
-        tags:
-          - value: Myotis mystacinus
-      - name: pippip
-        tags:
-          - value: Pipistrellus pipistrellus
-      - name: eptser
-        tags:
-          - value: Eptesicus serotinus
-      - name: rhifer
-        tags:
-          - value: Rhinolophus ferrumequinum
-        roi:
-          name: anchor_bbox
-          anchor: top-left
-    generic_class:
+  detection_target:
+    name: bat
+    match_if:
+      name: all_of
+      conditions:
+        - name: has_tag
+          tag: { key: event, value: Echolocation }
+        - name: not
+          condition:
+            name: has_tag
+            tag: { key: class, value: Unknown }
+    assign_tags:
       - key: class
         value: Bat
 
-  filtering:
-    rules:
-      - match_type: all
-        tags:
-          - key: event
-            value: Echolocation
-      - match_type: exclude
-        tags:
-          - key: class
-            value: Unknown
+  classification_targets:
+    - name: myomys
+      tags:
+        - key: class
+          value: Myotis mystacinus
+    - name: pippip
+      tags:
+        - key: class
+          value: Pipistrellus pipistrellus
+    - name: eptser
+      tags:
+        - key: class
+          value: Eptesicus serotinus
+    - name: rhifer
+      tags:
+        - key: class
+          value: Rhinolophus ferrumequinum
+
+  roi:
+    name: anchor_bbox
+    anchor: top-left
 
 preprocess:
   audio:
+    samplerate: 256000
     resample:
-      samplerate: 256000
+      enabled: True
       method: "poly"
-    scale: false
-    center: true
-    duration: null
 
   spectrogram:
     stft:
@@ -48,27 +51,21 @@ preprocess:
     frequencies:
       max_freq: 120000
       min_freq: 10000
-    pcen:
-      time_constant: 0.1
-      gain: 0.98
-      bias: 2
-      power: 0.5
-    scale: "amplitude"
     size:
       height: 128
       resize_factor: 0.5
-    spectral_mean_substraction: true
-    peak_normalize: false
+    transforms:
+      - name: pcen
+        time_constant: 0.1
+        gain: 0.98
+        bias: 2
+        power: 0.5
+      - name: spectral_mean_substraction
 
 postprocess:
   nms_kernel_size: 9
   detection_threshold: 0.01
-  min_freq: 10000
-  max_freq: 120000
   top_k_per_sec: 200
-
-labels:
-  sigma: 3
 
 model:
   input_height: 128
@@ -76,37 +73,40 @@ model:
   out_channels: 32
   encoder:
     layers:
-      - block_type: FreqCoordConvDown
+      - name: FreqCoordConvDown
         out_channels: 32
-      - block_type: FreqCoordConvDown
+      - name: FreqCoordConvDown
         out_channels: 64
-      - block_type: LayerGroup
+      - name: LayerGroup
         layers:
-          - block_type: FreqCoordConvDown
+          - name: FreqCoordConvDown
             out_channels: 128
-          - block_type: ConvBlock
+          - name: ConvBlock
             out_channels: 256
   bottleneck:
     channels: 256
     layers:
-      - block_type: SelfAttention
+      - name: SelfAttention
         attention_channels: 256
   decoder:
     layers:
-      - block_type: FreqCoordConvUp
+      - name: FreqCoordConvUp
         out_channels: 64
-      - block_type: FreqCoordConvUp
+      - name: FreqCoordConvUp
         out_channels: 32
-      - block_type: LayerGroup
+      - name: LayerGroup
         layers:
-          - block_type: FreqCoordConvUp
+          - name: FreqCoordConvUp
             out_channels: 32
-          - block_type: ConvBlock
+          - name: ConvBlock
             out_channels: 32
 
 train:
   learning_rate: 0.001
   t_max: 100
+
+  labels:
+    sigma: 3
 
   dataloaders:
     train:
@@ -133,33 +133,35 @@ train:
       weight: 0.1
 
   logger:
-    logger_type: csv
-    save_dir: outputs/log/
-    name: logs
+    logger_type: tensorboard
+    # save_dir: outputs/log/
+    # name: logs
 
   augmentations:
-    steps:
-      - augmentation_type: mix_audio
+    enabled: true
+    audio:
+      - name: mix_audio
         probability: 0.2
         min_weight: 0.3
         max_weight: 0.7
-      - augmentation_type: add_echo
+      - name: add_echo
         probability: 0.2
         max_delay: 0.005
         min_weight: 0.0
         max_weight: 1.0
-      - augmentation_type: scale_volume
+    spectrogram:
+      - name: scale_volume
         probability: 0.2
         min_scaling: 0.0
         max_scaling: 2.0
-      - augmentation_type: warp
+      - name: warp
         probability: 0.2
         delta: 0.04
-      - augmentation_type: mask_time
+      - name: mask_time
         probability: 0.2
         max_perc: 0.05
         max_masks: 3
-      - augmentation_type: mask_freq
+      - name: mask_freq
         probability: 0.2
         max_perc: 0.10
         max_masks: 3

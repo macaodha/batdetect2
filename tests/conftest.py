@@ -18,9 +18,7 @@ from batdetect2.targets import (
     build_targets,
     call_type,
 )
-from batdetect2.targets.classes import ClassesConfig, TargetClass
-from batdetect2.targets.filtering import FilterConfig, FilterRule
-from batdetect2.targets.terms import TagInfo
+from batdetect2.targets.classes import TargetClassConfig
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.typing import (
@@ -365,43 +363,37 @@ def sample_audio_loader() -> AudioLoader:
 
 
 @pytest.fixture
-def bat_tag() -> TagInfo:
-    return TagInfo(key="class", value="bat")
+def bat_tag() -> data.Tag:
+    return data.Tag(key="class", value="bat")
 
 
 @pytest.fixture
-def noise_tag() -> TagInfo:
-    return TagInfo(key="class", value="noise")
+def noise_tag() -> data.Tag:
+    return data.Tag(key="class", value="noise")
 
 
 @pytest.fixture
-def myomyo_tag() -> TagInfo:
-    return TagInfo(key="species", value="Myotis myotis")
+def myomyo_tag() -> data.Tag:
+    return data.Tag(key="species", value="Myotis myotis")
 
 
 @pytest.fixture
-def pippip_tag() -> TagInfo:
-    return TagInfo(key="species", value="Pipistrellus pipistrellus")
+def pippip_tag() -> data.Tag:
+    return data.Tag(key="species", value="Pipistrellus pipistrellus")
 
 
 @pytest.fixture
 def sample_target_config(
-    bat_tag: TagInfo,
-    noise_tag: TagInfo,
-    myomyo_tag: TagInfo,
-    pippip_tag: TagInfo,
+    bat_tag: data.Tag,
+    myomyo_tag: data.Tag,
+    pippip_tag: data.Tag,
 ) -> TargetConfig:
     return TargetConfig(
-        filtering=FilterConfig(
-            rules=[FilterRule(match_type="exclude", tags=[noise_tag])]
-        ),
-        classes=ClassesConfig(
-            classes=[
-                TargetClass(name="pippip", tags=[pippip_tag]),
-                TargetClass(name="myomyo", tags=[myomyo_tag]),
-            ],
-            generic_class=[bat_tag],
-        ),
+        detection_target=TargetClassConfig(name="bat", tags=[bat_tag]),
+        classification_targets=[
+            TargetClassConfig(name="pippip", tags=[pippip_tag]),
+            TargetClassConfig(name="myomyo", tags=[myomyo_tag]),
+        ],
     )
 
 

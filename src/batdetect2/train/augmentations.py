@@ -44,7 +44,7 @@ AudioSource = Callable[[float], tuple[torch.Tensor, data.ClipAnnotation]]
 class MixAugmentationConfig(BaseConfig):
     """Configuration for MixUp augmentation (mixing two examples)."""
 
-    augmentation_type: Literal["mix_audio"] = "mix_audio"
+    name: Literal["mix_audio"] = "mix_audio"
 
     probability: float = 0.2
     """Probability of applying this augmentation to an example."""
@@ -140,7 +140,7 @@ def combine_clip_annotations(
 class EchoAugmentationConfig(BaseConfig):
     """Configuration for adding synthetic echo/reverb."""
 
-    augmentation_type: Literal["add_echo"] = "add_echo"
+    name: Literal["add_echo"] = "add_echo"
     probability: float = 0.2
     max_delay: float = 0.005
     min_weight: float = 0.0
@@ -187,7 +187,7 @@ def add_echo(
 class VolumeAugmentationConfig(BaseConfig):
     """Configuration for random volume scaling of the spectrogram."""
 
-    augmentation_type: Literal["scale_volume"] = "scale_volume"
+    name: Literal["scale_volume"] = "scale_volume"
     probability: float = 0.2
     min_scaling: float = 0.0
     max_scaling: float = 2.0
@@ -214,7 +214,7 @@ def scale_volume(spec: torch.Tensor, factor: float) -> torch.Tensor:
 
 
 class WarpAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["warp"] = "warp"
+    name: Literal["warp"] = "warp"
     probability: float = 0.2
     delta: float = 0.04
 
@@ -296,7 +296,7 @@ def warp_spectrogram(
 
 
 class TimeMaskAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["mask_time"] = "mask_time"
+    name: Literal["mask_time"] = "mask_time"
     probability: float = 0.2
     max_perc: float = 0.05
     max_masks: int = 3
@@ -353,7 +353,7 @@ def mask_time(
 
 
 class FrequencyMaskAugmentationConfig(BaseConfig):
-    augmentation_type: Literal["mask_freq"] = "mask_freq"
+    name: Literal["mask_freq"] = "mask_freq"
     probability: float = 0.2
     max_perc: float = 0.10
     max_masks: int = 3
@@ -414,7 +414,7 @@ AudioAugmentationConfig = Annotated[
         MixAugmentationConfig,
         EchoAugmentationConfig,
     ],
-    Field(discriminator="augmentation_type"),
+    Field(discriminator="name"),
 ]
 
 
@@ -425,7 +425,7 @@ SpectrogramAugmentationConfig = Annotated[
         FrequencyMaskAugmentationConfig,
         TimeMaskAugmentationConfig,
     ],
-    Field(discriminator="augmentation_type"),
+    Field(discriminator="name"),
 ]
 
 AugmentationConfig = Annotated[
@@ -437,7 +437,7 @@ AugmentationConfig = Annotated[
         FrequencyMaskAugmentationConfig,
         TimeMaskAugmentationConfig,
     ],
-    Field(discriminator="augmentation_type"),
+    Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of individual augmentation config."""
 
@@ -485,7 +485,7 @@ def build_augmentation_from_config(
     audio_source: Optional[AudioSource] = None,
 ) -> Optional[Augmentation]:
     """Factory function to build a single augmentation from its config."""
-    if config.augmentation_type == "mix_audio":
+    if config.name == "mix_audio":
         if audio_source is None:
             warnings.warn(
                 "Mix audio augmentation ('mix_audio') requires an "
@@ -500,31 +500,31 @@ def build_augmentation_from_config(
             max_weight=config.max_weight,
         )
 
-    if config.augmentation_type == "add_echo":
+    if config.name == "add_echo":
         return AddEcho(
             max_delay=int(config.max_delay * samplerate),
             min_weight=config.min_weight,
             max_weight=config.max_weight,
         )
 
-    if config.augmentation_type == "scale_volume":
+    if config.name == "scale_volume":
         return ScaleVolume(
             max_scaling=config.max_scaling,
             min_scaling=config.min_scaling,
         )
 
-    if config.augmentation_type == "warp":
+    if config.name == "warp":
         return WarpSpectrogram(
             delta=config.delta,
         )
 
-    if config.augmentation_type == "mask_time":
+    if config.name == "mask_time":
         return MaskTime(
             max_perc=config.max_perc,
             max_masks=config.max_masks,
         )
 
-    if config.augmentation_type == "mask_freq":
+    if config.name == "mask_freq":
         return MaskFrequency(
             max_perc=config.max_perc,
             max_masks=config.max_masks,
