@@ -33,7 +33,8 @@ class TargetClassConfig(BaseConfig):
         alias="match_if",
         default=None,
     )
-    tags: Optional[List[data.Tag]] = None
+
+    tags: Optional[List[data.Tag]] = Field(default=None, exclude=True)
 
     assign_tags: List[data.Tag] = Field(default_factory=list)
 
@@ -42,20 +43,24 @@ class TargetClassConfig(BaseConfig):
     _match_if: SoundEventConditionConfig = PrivateAttr()
 
     @model_validator(mode="after")
-    def _process_shorthands(self) -> "TargetClassConfig":
+    def _process_tags(self) -> "TargetClassConfig":
         if self.tags and self.condition_input:
             raise ValueError("Use either 'tags' or 'match_if', not both.")
 
-        if self.condition_input:
-            final_condition = self.condition_input
-        elif self.tags:
-            final_condition = HasAllTagsConfig(tags=self.tags)
-        else:
+        if self.condition_input is not None:
+            self._match_if = self.condition_input
+            return self
+
+        if self.tags is None:
             raise ValueError(
                 f"Class '{self.name}' must have a 'tags' or 'match_if' rule."
             )
 
-        self._match_if = final_condition
+        self._match_if = HasAllTagsConfig(tags=self.tags)
+
+        if not self.assign_tags:
+            self.assign_tags = self.tags
+
         return self
 
     @computed_field

@@ -26,6 +26,7 @@ clip = data.Clip(
 def test_generated_heatmap_are_non_zero_at_correct_positions(
     sample_target_config: TargetConfig,
     pippip_tag: data.Tag,
+    bat_tag: data.Tag,
 ):
     config = sample_target_config.model_copy(
         update=dict(
@@ -48,7 +49,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
                         coordinates=[10, 10, 20, 30],
                     ),
                 ),
-                tags=[data.Tag(key=pippip_tag.key, value=pippip_tag.value)],  # type: ignore
+                tags=[pippip_tag, bat_tag],
             )
         ],
     )
