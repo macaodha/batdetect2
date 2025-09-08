@@ -282,7 +282,7 @@ def match_sound_events_and_raw_predictions(
     config = config or MatchConfig()
 
     target_sound_events = [
-        targets.transform(sound_event_annotation)
+        sound_event_annotation
         for sound_event_annotation in clip_annotation.sound_events
         if targets.filter(sound_event_annotation)
         and sound_event_annotation.sound_event.geometry is not None

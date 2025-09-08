@@ -6,33 +6,3 @@ sources:
     description: Examples included for testing batdetect2
     annotations_dir: example_data/anns
     audio_dir: example_data/audio
-
-classes:
-  # Each class has a name
-  - name: rhihip
-
-    # Can be specified by some tags
-    tags:
-      - key: species
-        value: Rhinolophus hipposideros
-
-  - name: myotis
-
-    # Or if needed by more complex conditions
-    condition:
-      name: has_any_tag
-      tag:
-        - key: species
-          value: Myotis myotis
-        - key: species
-          value: Myotis nattereri
-        - key: species
-          value: Myotis daubentonii
-
-    # Specifies how to translate back the "class" into
-    # the tag system
-    # If tags are provided and output_tags are not then
-    # just use the provided tags
-    output_tags:
-      - key: genus
-        value: Myotis
