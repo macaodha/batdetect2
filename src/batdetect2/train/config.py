@@ -6,7 +6,6 @@ from soundevent import data
 from batdetect2.configs import BaseConfig, load_config
 from batdetect2.evaluate import EvaluationConfig
 from batdetect2.models import ModelConfig
-from batdetect2.targets import TargetConfig
 from batdetect2.train.augmentations import (
     DEFAULT_AUGMENTATION_CONFIG,
     AugmentationsConfig,
@@ -75,7 +74,6 @@ class TrainingConfig(BaseConfig):
     cliping: ClipingConfig = Field(default_factory=ClipingConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
     labels: LabelConfig = Field(default_factory=LabelConfig)
 
 

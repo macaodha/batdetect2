@@ -29,7 +29,6 @@ provided here.
 from typing import List, Optional
 
 import torch
-from lightning import LightningModule
 from pydantic import Field
 from soundevent.data import PathLike
 
@@ -105,7 +104,16 @@ __all__ = [
 ]
 
 
-class Model(LightningModule):
+class ModelConfig(BaseConfig):
+    model: BackboneConfig = Field(default_factory=BackboneConfig)
+    preprocess: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
+    targets: TargetConfig = Field(default_factory=TargetConfig)
+
+
+class Model(torch.nn.Module):
     detector: DetectionModel
     preprocessor: PreprocessorProtocol
     postprocessor: PostprocessorProtocol
@@ -117,13 +125,14 @@ class Model(LightningModule):
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
         targets: TargetProtocol,
+        config: ModelConfig,
     ):
         super().__init__()
         self.detector = detector
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
         self.targets = targets
-        self.save_hyperparameters()
+        self.config = config
 
     def forward(self, wav: torch.Tensor) -> List[DetectionsTensor]:
         spec = self.preprocessor(wav)
@@ -131,29 +140,24 @@ class Model(LightningModule):
         return self.postprocessor(outputs)
 
 
-class ModelConfig(BaseConfig):
-    model: BackboneConfig = Field(default_factory=BackboneConfig)
-    preprocess: PreprocessingConfig = Field(
-        default_factory=PreprocessingConfig
-    )
-    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
-
-
 def build_model(config: Optional[ModelConfig] = None):
     config = config or ModelConfig()
 
     targets = build_targets(config=config.targets)
+
     preprocessor = build_preprocessor(config=config.preprocess)
+
     postprocessor = build_postprocessor(
         preprocessor=preprocessor,
         config=config.postprocess,
     )
+
     detector = build_detector(
         num_classes=len(targets.class_names),
         config=config.model,
     )
     return Model(
+        config=config,
         detector=detector,
         postprocessor=postprocessor,
         preprocessor=preprocessor,

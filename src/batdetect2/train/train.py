@@ -14,9 +14,9 @@ from batdetect2.evaluate.metrics import (
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
-from batdetect2.models import Model, build_model
 from batdetect2.plotting.clips import AudioLoader, build_audio_loader
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.targets import build_targets
 from batdetect2.train.augmentations import (
     RandomAudioSource,
     build_augmentations,
@@ -28,7 +28,6 @@ from batdetect2.train.dataset import TrainingDataset, ValidationDataset
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import build_logger
-from batdetect2.train.losses import build_loss
 from batdetect2.typing import (
     PreprocessorProtocol,
     TargetProtocol,
@@ -54,19 +53,21 @@ def train(
     model_path: Optional[data.PathLike] = None,
     train_workers: Optional[int] = None,
     val_workers: Optional[int] = None,
+    checkpoint_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[data.PathLike] = None,
 ):
     config = config or FullTrainingConfig()
 
-    model = build_model(config=config)
+    targets = build_targets(config.targets)
 
-    trainer = build_trainer(config, targets=model.targets)
+    preprocessor = build_preprocessor(config.preprocess)
 
     audio_loader = build_audio_loader(config=config.preprocess.audio)
 
     labeller = build_clip_labeler(
-        model.targets,
-        min_freq=model.preprocessor.min_freq,
-        max_freq=model.preprocessor.max_freq,
+        targets,
+        min_freq=preprocessor.min_freq,
+        max_freq=preprocessor.max_freq,
         config=config.train.labels,
     )
 
@@ -74,7 +75,7 @@ def train(
         train_annotations,
         audio_loader=audio_loader,
         labeller=labeller,
-        preprocessor=build_preprocessor(config.preprocess),
+        preprocessor=preprocessor,
         config=config.train,
         num_workers=train_workers,
     )
@@ -84,7 +85,7 @@ def train(
             val_annotations,
             audio_loader=audio_loader,
             labeller=labeller,
-            preprocessor=build_preprocessor(config.preprocess),
+            preprocessor=preprocessor,
             config=config.train,
             num_workers=val_workers,
         )
@@ -97,10 +98,16 @@ def train(
         module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
     else:
         module = build_training_module(
-            model,
             config,
             t_max=config.train.t_max * len(train_dataloader),
         )
+
+    trainer = build_trainer(
+        config,
+        targets=targets,
+        checkpoint_dir=checkpoint_dir,
+        log_dir=log_dir,
+    )
 
     logger.info("Starting main training loop...")
     trainer.fit(
@@ -112,15 +119,12 @@ def train(
 
 
 def build_training_module(
-    model: Model,
     config: Optional[FullTrainingConfig] = None,
     t_max: int = 200,
 ) -> TrainingModule:
     config = config or FullTrainingConfig()
-    loss = build_loss(config=config.train.loss)
     return TrainingModule(
-        model=model,
-        loss=loss,
+        config=config,
         learning_rate=config.train.learning_rate,
         t_max=t_max,
     )
@@ -130,10 +134,14 @@ def build_trainer_callbacks(
     targets: TargetProtocol,
     preprocessor: PreprocessorProtocol,
     config: EvaluationConfig,
+    checkpoint_dir: Optional[data.PathLike] = None,
 ) -> List[Callback]:
+    if checkpoint_dir is None:
+        checkpoint_dir = "outputs/checkpoints"
+
     return [
         ModelCheckpoint(
-            dirpath="outputs/checkpoints",
+            dirpath=str(checkpoint_dir),
             save_top_k=1,
             monitor="total_loss/val",
         ),
@@ -154,15 +162,22 @@ def build_trainer_callbacks(
 def build_trainer(
     conf: FullTrainingConfig,
     targets: TargetProtocol,
+    checkpoint_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[data.PathLike] = None,
 ) -> Trainer:
     trainer_conf = conf.train.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
-    train_logger = build_logger(conf.train.logger)
+    train_logger = build_logger(conf.train.logger, log_dir=log_dir)
 
-    train_logger.log_hyperparams(conf.model_dump(mode="json"))
+    train_logger.log_hyperparams(
+        conf.model_dump(
+            mode="json",
+            exclude_none=True,
+        )
+    )
 
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
@@ -171,6 +186,7 @@ def build_trainer(
             targets,
             config=conf.evaluation,
             preprocessor=build_preprocessor(conf.preprocess),
+            checkpoint_dir=checkpoint_dir,
         ),
     )
 

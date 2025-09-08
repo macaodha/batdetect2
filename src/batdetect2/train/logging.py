@@ -5,10 +5,11 @@ import numpy as np
 from lightning.pytorch.loggers import Logger, MLFlowLogger, TensorBoardLogger
 from loguru import logger
 from pydantic import Field
+from soundevent import data
 
 from batdetect2.configs import BaseConfig
 
-DEFAULT_LOGS_DIR: str = "logs"
+DEFAULT_LOGS_DIR: str = "outputs"
 
 
 class DVCLiveConfig(BaseConfig):
@@ -31,7 +32,7 @@ class CSVLoggerConfig(BaseConfig):
 class TensorBoardLoggerConfig(BaseConfig):
     logger_type: Literal["tensorboard"] = "tensorboard"
     save_dir: str = DEFAULT_LOGS_DIR
-    name: Optional[str] = "default"
+    name: Optional[str] = "logs"
     version: Optional[str] = None
     log_graph: bool = False
 
@@ -57,7 +58,10 @@ LoggerConfig = Annotated[
 ]
 
 
-def create_dvclive_logger(config: DVCLiveConfig) -> Logger:
+def create_dvclive_logger(
+    config: DVCLiveConfig,
+    log_dir: Optional[data.PathLike] = None,
+) -> Logger:
     try:
         from dvclive.lightning import DVCLiveLogger  # type: ignore
     except ImportError as error:
@@ -68,7 +72,7 @@ def create_dvclive_logger(config: DVCLiveConfig) -> Logger:
         ) from error
 
     return DVCLiveLogger(
-        dir=config.dir,
+        dir=log_dir if log_dir is not None else config.dir,
         run_name=config.run_name,
         prefix=config.prefix,
         log_model=config.log_model,
@@ -76,29 +80,38 @@ def create_dvclive_logger(config: DVCLiveConfig) -> Logger:
     )
 
 
-def create_csv_logger(config: CSVLoggerConfig) -> Logger:
+def create_csv_logger(
+    config: CSVLoggerConfig,
+    log_dir: Optional[data.PathLike] = None,
+) -> Logger:
     from lightning.pytorch.loggers import CSVLogger
 
     return CSVLogger(
-        save_dir=config.save_dir,
+        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
         name=config.name,
         version=config.version,
         flush_logs_every_n_steps=config.flush_logs_every_n_steps,
     )
 
 
-def create_tensorboard_logger(config: TensorBoardLoggerConfig) -> Logger:
+def create_tensorboard_logger(
+    config: TensorBoardLoggerConfig,
+    log_dir: Optional[data.PathLike] = None,
+) -> Logger:
     from lightning.pytorch.loggers import TensorBoardLogger
 
     return TensorBoardLogger(
-        save_dir=config.save_dir,
+        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
         name=config.name,
         version=config.version,
         log_graph=config.log_graph,
     )
 
 
-def create_mlflow_logger(config: MLFlowLoggerConfig) -> Logger:
+def create_mlflow_logger(
+    config: MLFlowLoggerConfig,
+    log_dir: Optional[data.PathLike] = None,
+) -> Logger:
     try:
         from lightning.pytorch.loggers import MLFlowLogger
     except ImportError as error:
@@ -111,7 +124,7 @@ def create_mlflow_logger(config: MLFlowLoggerConfig) -> Logger:
     return MLFlowLogger(
         experiment_name=config.experiment_name,
         run_name=config.run_name,
-        save_dir=config.save_dir,
+        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
         tracking_uri=config.tracking_uri,
         tags=config.tags,
         log_model=config.log_model,
@@ -126,7 +139,10 @@ LOGGER_FACTORY = {
 }
 
 
-def build_logger(config: LoggerConfig) -> Logger:
+def build_logger(
+    config: LoggerConfig,
+    log_dir: Optional[data.PathLike] = None,
+) -> Logger:
     """
     Creates a logger instance from a validated Pydantic config object.
     """
@@ -141,7 +157,7 @@ def build_logger(config: LoggerConfig) -> Logger:
 
     creation_func = LOGGER_FACTORY[logger_type]
 
-    return creation_func(config)
+    return creation_func(config, log_dir=log_dir)
 
 
 def get_image_plotter(logger: Logger):

@@ -20,6 +20,8 @@ __all__ = ["train_command"]
 @click.argument("train_dataset", type=click.Path(exists=True))
 @click.option("--val-dataset", type=click.Path(exists=True))
 @click.option("--model-path", type=click.Path(exists=True))
+@click.option("--ckpt-dir", type=click.Path(exists=True))
+@click.option("--log-dir", type=click.Path(exists=True))
 @click.option("--config", type=click.Path(exists=True))
 @click.option("--config-field", type=str)
 @click.option("--train-workers", type=int)
@@ -34,6 +36,8 @@ def train_command(
     train_dataset: Path,
     val_dataset: Optional[Path] = None,
     model_path: Optional[Path] = None,
+    ckpt_dir: Optional[Path] = None,
+    log_dir: Optional[Path] = None,
     config: Optional[Path] = None,
     config_field: Optional[str] = None,
     train_workers: int = 0,
@@ -83,4 +87,6 @@ def train_command(
         model_path=model_path,
         train_workers=train_workers,
         val_workers=val_workers,
+        log_dir=log_dir,
+        checkpoint_dir=ckpt_dir,
     )

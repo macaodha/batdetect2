@@ -108,6 +108,9 @@ train:
   labels:
     sigma: 3
 
+  trainer:
+    max_epochs: 40
+
   dataloaders:
     train:
       batch_size: 8
@@ -115,7 +118,7 @@ train:
       shuffle: True
 
     val:
-      batch_size: 8
+      batch_size: 1
       num_workers: 2
 
   loss:
@@ -133,7 +136,7 @@ train:
       weight: 0.1
 
   logger:
-    logger_type: tensorboard
+    logger_type: csv
     # save_dir: outputs/log/
     # name: logs
 

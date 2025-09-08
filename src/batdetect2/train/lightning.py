@@ -1,9 +1,14 @@
+from typing import Optional, Tuple
+
 import lightning as L
 import torch
+from soundevent.data import PathLike
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from batdetect2.models import Model
+from batdetect2.models import Model, build_model
+from batdetect2.train.config import FullTrainingConfig
+from batdetect2.train.losses import build_loss
 from batdetect2.typing import ModelOutput, TrainExample
 
 __all__ = [
@@ -16,22 +21,28 @@ class TrainingModule(L.LightningModule):
 
     def __init__(
         self,
-        model: Model,
-        loss: torch.nn.Module,
+        config: FullTrainingConfig,
         learning_rate: float = 0.001,
         t_max: int = 100,
+        model: Optional[Model] = None,
+        loss: Optional[torch.nn.Module] = None,
     ):
         super().__init__()
 
+        self.save_hyperparameters(logger=False)
+
+        self.config = config
         self.learning_rate = learning_rate
         self.t_max = t_max
 
+        if loss is None:
+            loss = build_loss(self.config.train.loss)
+
+        if model is None:
+            model = build_model(self.config)
+
         self.loss = loss
         self.model = model
-        self.save_hyperparameters(logger=False)
-
-    def forward(self, spec: torch.Tensor) -> ModelOutput:
-        return self.model.detector(spec)
 
     def training_step(self, batch: TrainExample):
         outputs = self.model.detector(batch.spec)
@@ -59,3 +70,10 @@ class TrainingModule(L.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = CosineAnnealingLR(optimizer, T_max=self.t_max)
         return [optimizer], [scheduler]
+
+
+def load_model_from_checkpoint(
+    path: PathLike,
+) -> Tuple[Model, FullTrainingConfig]:
+    module = TrainingModule.load_from_checkpoint(path)  # type: ignore
+    return module.model, module.config
