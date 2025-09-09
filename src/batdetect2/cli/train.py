@@ -27,6 +27,7 @@ __all__ = ["train_command"]
 @click.option("--train-workers", type=int)
 @click.option("--val-workers", type=int)
 @click.option("--experiment-name", type=str)
+@click.option("--run-name", type=str)
 @click.option("--seed", type=int)
 @click.option(
     "-v",
@@ -46,6 +47,7 @@ def train_command(
     train_workers: int = 0,
     val_workers: int = 0,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
     verbose: int = 0,
 ):
     logger.remove()
@@ -95,4 +97,5 @@ def train_command(
         log_dir=log_dir,
         checkpoint_dir=ckpt_dir,
         seed=seed,
+        run_name=run_name,
     )

@@ -136,9 +136,9 @@ train:
       weight: 0.1
 
   logger:
-    logger_type: csv
-    # save_dir: outputs/log/
-    # name: logs
+    name: mlflow
+    tracking_uri: http://10.20.20.211:9000
+    log_model: true
 
   augmentations:
     enabled: true

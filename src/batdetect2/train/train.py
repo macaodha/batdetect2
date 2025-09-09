@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from pathlib import Path
 from typing import List, Optional
 
 import torch
@@ -45,6 +46,8 @@ __all__ = [
     "train",
 ]
 
+DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
+
 
 def train(
     train_annotations: Sequence[data.ClipAnnotation],
@@ -53,9 +56,10 @@ def train(
     model_path: Optional[data.PathLike] = None,
     train_workers: Optional[int] = None,
     val_workers: Optional[int] = None,
-    checkpoint_dir: Optional[data.PathLike] = None,
-    log_dir: Optional[data.PathLike] = None,
+    checkpoint_dir: Optional[Path] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
     seed: Optional[int] = None,
 ):
     if seed is not None:
@@ -113,6 +117,7 @@ def train(
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
         experiment_name=experiment_name,
+        run_name=run_name,
     )
 
     logger.info("Starting main training loop...")
@@ -140,21 +145,32 @@ def build_trainer_callbacks(
     targets: TargetProtocol,
     preprocessor: PreprocessorProtocol,
     config: EvaluationConfig,
-    checkpoint_dir: Optional[data.PathLike] = None,
+    checkpoint_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> List[Callback]:
     if checkpoint_dir is None:
-        checkpoint_dir = "outputs/checkpoints"
+        checkpoint_dir = DEFAULT_CHECKPOINT_DIR
+
+    filename = "best-{epoch:02d}-{val_loss:.0f}"
+
+    if run_name is not None:
+        filename = f"run_{run_name}_{filename}"
 
     if experiment_name is not None:
-        checkpoint_dir = f"{checkpoint_dir}/{experiment_name}"
+        filename = f"experiment_{experiment_name}_{filename}"
+
+    model_checkpoint = ModelCheckpoint(
+        dirpath=str(checkpoint_dir),
+        save_top_k=1,
+        filename=filename,
+        monitor="total_loss/val",
+    )
+
+    model_checkpoint.CHECKPOINT_EQUALS_CHAR = "_"  # type: ignore
 
     return [
-        ModelCheckpoint(
-            dirpath=str(checkpoint_dir),
-            save_top_k=1,
-            monitor="total_loss/val",
-        ),
+        model_checkpoint,
         ValidationMetrics(
             metrics=[
                 DetectionAveragePrecision(),
@@ -172,9 +188,10 @@ def build_trainer_callbacks(
 def build_trainer(
     conf: FullTrainingConfig,
     targets: TargetProtocol,
-    checkpoint_dir: Optional[data.PathLike] = None,
-    log_dir: Optional[data.PathLike] = None,
+    checkpoint_dir: Optional[Path] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Trainer:
     trainer_conf = conf.train.trainer
     logger.opt(lazy=True).debug(
@@ -185,6 +202,7 @@ def build_trainer(
         conf.train.logger,
         log_dir=log_dir,
         experiment_name=experiment_name,
+        run_name=run_name,
     )
 
     train_logger.log_hyperparams(

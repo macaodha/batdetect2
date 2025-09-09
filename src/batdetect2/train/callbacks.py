@@ -68,7 +68,7 @@ class ValidationMetrics(Callback):
             n_examples=4,
         ):
             plotter(
-                f"images/{class_name}_examples",
+                f"examples/{class_name}",
                 fig,
                 pl_module.global_step,
             )

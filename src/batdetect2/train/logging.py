@@ -1,5 +1,16 @@
 import io
-from typing import Annotated, Any, Literal, Optional, Union
+from pathlib import Path
+from typing import (
+    Annotated,
+    Any,
+    Dict,
+    Generic,
+    Literal,
+    Optional,
+    Protocol,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from lightning.pytorch.loggers import Logger, MLFlowLogger, TensorBoardLogger
@@ -9,39 +20,34 @@ from soundevent import data
 
 from batdetect2.configs import BaseConfig
 
-DEFAULT_LOGS_DIR: str = "outputs/logs"
+DEFAULT_LOGS_DIR: Path = Path("outputs") / "logs"
 
 
-class DVCLiveConfig(BaseConfig):
-    logger_type: Literal["dvclive"] = "dvclive"
-    dir: str = DEFAULT_LOGS_DIR
+class BaseLoggerConfig(BaseConfig):
+    log_dir: Path = DEFAULT_LOGS_DIR
+    experiment_name: Optional[str] = None
     run_name: Optional[str] = None
+
+
+class DVCLiveConfig(BaseLoggerConfig):
+    name: Literal["dvclive"] = "dvclive"
     prefix: str = ""
     log_model: Union[bool, Literal["all"]] = False
     monitor_system: bool = False
 
 
-class CSVLoggerConfig(BaseConfig):
-    logger_type: Literal["csv"] = "csv"
-    save_dir: str = DEFAULT_LOGS_DIR
-    name: Optional[str] = "logs"
-    version: Optional[str] = None
+class CSVLoggerConfig(BaseLoggerConfig):
+    name: Literal["csv"] = "csv"
     flush_logs_every_n_steps: int = 100
 
 
-class TensorBoardLoggerConfig(BaseConfig):
-    logger_type: Literal["tensorboard"] = "tensorboard"
-    save_dir: str = DEFAULT_LOGS_DIR
-    name: Optional[str] = "logs"
-    version: Optional[str] = None
+class TensorBoardLoggerConfig(BaseLoggerConfig):
+    name: Literal["tensorboard"] = "tensorboard"
     log_graph: bool = False
 
 
-class MLFlowLoggerConfig(BaseConfig):
-    logger_type: Literal["mlflow"] = "mlflow"
-    experiment_name: str = "default"
-    run_name: Optional[str] = None
-    save_dir: Optional[str] = "./mlruns"
+class MLFlowLoggerConfig(BaseLoggerConfig):
+    name: Literal["mlflow"] = "mlflow"
     tracking_uri: Optional[str] = None
     tags: Optional[dict[str, Any]] = None
     log_model: bool = False
@@ -54,14 +60,28 @@ LoggerConfig = Annotated[
         TensorBoardLoggerConfig,
         MLFlowLoggerConfig,
     ],
-    Field(discriminator="logger_type"),
+    Field(discriminator="name"),
 ]
+
+
+T = TypeVar("T", bound=LoggerConfig, contravariant=True)
+
+
+class LoggerBuilder(Protocol, Generic[T]):
+    def __call__(
+        self,
+        config: T,
+        log_dir: Optional[Path] = None,
+        experiment_name: Optional[str] = None,
+        run_name: Optional[str] = None,
+    ) -> Logger: ...
 
 
 def create_dvclive_logger(
     config: DVCLiveConfig,
-    log_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Logger:
     try:
         from dvclive.lightning import DVCLiveLogger  # type: ignore
@@ -73,10 +93,11 @@ def create_dvclive_logger(
         ) from error
 
     return DVCLiveLogger(
-        dir=log_dir if log_dir is not None else config.dir,
-        run_name=experiment_name
+        dir=log_dir if log_dir is not None else config.log_dir,
+        run_name=run_name if run_name is not None else config.run_name,
+        experiment=experiment_name
         if experiment_name is not None
-        else config.run_name,
+        else config.experiment_name,
         prefix=config.prefix,
         log_model=config.log_model,
         monitor_system=config.monitor_system,
@@ -85,30 +106,58 @@ def create_dvclive_logger(
 
 def create_csv_logger(
     config: CSVLoggerConfig,
-    log_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Logger:
     from lightning.pytorch.loggers import CSVLogger
 
+    if log_dir is None:
+        log_dir = Path(config.log_dir)
+
+    if run_name is None:
+        run_name = config.run_name
+
+    if experiment_name is None:
+        experiment_name = config.experiment_name
+
+    name = run_name
+
+    if run_name is not None and experiment_name is not None:
+        name = str(Path(experiment_name) / run_name)
+
     return CSVLogger(
-        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
-        name=experiment_name if experiment_name is not None else config.name,
-        version=config.version,
+        save_dir=str(log_dir),
+        name=name,
         flush_logs_every_n_steps=config.flush_logs_every_n_steps,
     )
 
 
 def create_tensorboard_logger(
     config: TensorBoardLoggerConfig,
-    log_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Logger:
     from lightning.pytorch.loggers import TensorBoardLogger
 
+    if log_dir is None:
+        log_dir = Path(config.log_dir)
+
+    if run_name is None:
+        run_name = config.run_name
+
+    if experiment_name is None:
+        experiment_name = config.experiment_name
+
+    name = run_name
+
+    if run_name is not None and experiment_name is not None:
+        name = str(Path(experiment_name) / run_name)
+
     return TensorBoardLogger(
-        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
-        name=experiment_name if experiment_name is not None else config.name,
-        version=config.version,
+        save_dir=str(log_dir),
+        name=name,
         log_graph=config.log_graph,
     )
 
@@ -117,6 +166,7 @@ def create_mlflow_logger(
     config: MLFlowLoggerConfig,
     log_dir: Optional[data.PathLike] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Logger:
     try:
         from lightning.pytorch.loggers import MLFlowLogger
@@ -127,19 +177,25 @@ def create_mlflow_logger(
             "or `uv add mlflow`"
         ) from error
 
+    if experiment_name is None:
+        experiment_name = config.experiment_name or "Default"
+
+    if log_dir is None:
+        log_dir = config.log_dir
+
     return MLFlowLogger(
         experiment_name=experiment_name
         if experiment_name is not None
         else config.experiment_name,
-        run_name=config.run_name,
-        save_dir=str(log_dir) if log_dir is not None else config.save_dir,
+        run_name=run_name if run_name is not None else config.run_name,
+        save_dir=str(log_dir),
         tracking_uri=config.tracking_uri,
         tags=config.tags,
         log_model=config.log_model,
     )
 
 
-LOGGER_FACTORY = {
+LOGGER_FACTORY: Dict[str, LoggerBuilder] = {
     "dvclive": create_dvclive_logger,
     "csv": create_csv_logger,
     "tensorboard": create_tensorboard_logger,
@@ -149,8 +205,9 @@ LOGGER_FACTORY = {
 
 def build_logger(
     config: LoggerConfig,
-    log_dir: Optional[data.PathLike] = None,
+    log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
 ) -> Logger:
     """
     Creates a logger instance from a validated Pydantic config object.
@@ -159,7 +216,7 @@ def build_logger(
         "Building logger with config: \n{}",
         lambda: config.to_yaml_string(),
     )
-    logger_type = config.logger_type
+    logger_type = config.name
 
     if logger_type not in LOGGER_FACTORY:
         raise ValueError(f"Unknown logger type: {logger_type}")
@@ -170,6 +227,7 @@ def build_logger(
         config,
         log_dir=log_dir,
         experiment_name=experiment_name,
+        run_name=run_name,
     )
 
 
@@ -186,8 +244,8 @@ def get_image_plotter(logger: Logger):
         def plot_figure(name, figure, step):
             image = _convert_figure_to_image(figure)
             return logger.experiment.log_image(
-                run_id=logger.run_id,
-                image=image,
+                logger.run_id,
+                image,
                 key=name,
                 step=step,
             )
