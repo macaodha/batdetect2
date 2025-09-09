@@ -94,8 +94,10 @@ class TargetProtocol(Protocol):
     class_names: List[str]
     """Ordered list of unique names for the specific target classes."""
 
-    generic_class_tags: List[data.Tag]
-    """List of tags representing the generic (unclassified) category."""
+    detection_class_tags: List[data.Tag]
+    """List of tags representing the detection category (unclassified)."""
+
+    detection_class_name: str
 
     dimension_names: List[str]
     """Names of the size dimensions (e.g., ['width', 'height'])."""

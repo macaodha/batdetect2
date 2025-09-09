@@ -140,16 +140,18 @@ class Targets(TargetProtocol):
     """
 
     class_names: List[str]
-    generic_class_tags: List[data.Tag]
+    detection_class_tags: List[data.Tag]
     dimension_names: List[str]
+    detection_class_name: str
 
     def __init__(
         self,
+        detection_class_name: str,
         encode_fn: SoundEventEncoder,
         decode_fn: SoundEventDecoder,
         roi_mapper: ROITargetMapper,
         class_names: list[str],
-        generic_class_tags: List[data.Tag],
+        detection_class_tags: List[data.Tag],
         filter_fn: Optional[SoundEventCondition] = None,
         roi_mapper_overrides: Optional[dict[str, ROITargetMapper]] = None,
     ):
@@ -175,8 +177,9 @@ class Targets(TargetProtocol):
         transform_fn : SoundEventTransformation, optional
             Configured function to transform annotation tags. Defaults to None.
         """
+        self.detection_class_name = detection_class_name
         self.class_names = class_names
-        self.generic_class_tags = generic_class_tags
+        self.detection_class_tags = detection_class_tags
         self.dimension_names = roi_mapper.dimension_names
 
         self._roi_mapper = roi_mapper
@@ -381,7 +384,8 @@ def build_targets(config: Optional[TargetConfig] = None) -> Targets:
         decode_fn=decode_fn,
         class_names=class_names,
         roi_mapper=roi_mapper,
-        generic_class_tags=generic_class_tags,
+        detection_class_name=config.detection_target.name,
+        detection_class_tags=generic_class_tags,
         roi_mapper_overrides=roi_overrides,
     )
 

@@ -103,7 +103,7 @@ def convert_raw_prediction_to_sound_event_prediction(
     tags = [
         *get_generic_tags(
             raw_prediction.detection_score,
-            generic_class_tags=targets.generic_class_tags,
+            generic_class_tags=targets.detection_class_tags,
         ),
         *get_class_tags(
             raw_prediction.class_scores,

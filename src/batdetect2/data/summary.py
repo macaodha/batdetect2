@@ -100,8 +100,11 @@ def extract_sound_events_df(
 
             class_name = targets.encode_class(sound_event)
 
-            if class_name is None and exclude_generic:
-                continue
+            if class_name is None:
+                if exclude_generic:
+                    continue
+                else:
+                    class_name = targets.detection_class_name
 
             start_time, low_freq, end_time, high_freq = compute_bounds(
                 sound_event.sound_event.geometry
@@ -153,7 +156,7 @@ def compute_class_summary(
     sound_events = extract_sound_events_df(
         dataset,
         targets,
-        exclude_generic=True,
+        exclude_generic=False,
         exclude_non_target=True,
     )
     recordings = extract_recordings_df(dataset)

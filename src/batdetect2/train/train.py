@@ -158,25 +158,13 @@ def build_trainer_callbacks(
     if run_name is not None:
         checkpoint_dir = checkpoint_dir / run_name
 
-    filename = "best-{epoch:02d}-{val_loss:.0f}"
-
-    if run_name is not None:
-        filename = f"run_{run_name}_{filename}"
-
-    if experiment_name is not None:
-        filename = f"experiment_{experiment_name}_{filename}"
-
-    model_checkpoint = ModelCheckpoint(
-        dirpath=str(checkpoint_dir),
-        save_top_k=1,
-        filename=filename,
-        monitor="total_loss/val",
-    )
-
-    model_checkpoint.CHECKPOINT_EQUALS_CHAR = "_"  # type: ignore
-
     return [
-        model_checkpoint,
+        ModelCheckpoint(
+            dirpath=str(checkpoint_dir),
+            save_top_k=1,
+            filename="best-{epoch:02d}-{val_loss:.0f}",
+            monitor="total_loss/val",
+        ),
         ValidationMetrics(
             metrics=[
                 DetectionAveragePrecision(),
@@ -226,7 +214,8 @@ def build_trainer(
             config=conf.evaluation,
             preprocessor=build_preprocessor(conf.preprocess),
             checkpoint_dir=checkpoint_dir,
-            experiment_name=train_logger.name,
+            experiment_name=experiment_name,
+            run_name=run_name,
         ),
     )
 

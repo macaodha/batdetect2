@@ -301,7 +301,8 @@ def load_batdetect2_merged_annotated_dataset(
     for ann in content:
         try:
             ann = FileAnnotation.model_validate(ann)
-        except ValueError:
+        except ValueError as err:
+            logger.warning(f"Invalid annotation file: {err}")
             continue
 
         if (
@@ -309,14 +310,17 @@ def load_batdetect2_merged_annotated_dataset(
             and dataset.filter.only_annotated
             and not ann.annotated
         ):
+            logger.debug(f"Skipping incomplete annotation {ann.id}")
             continue
 
         if dataset.filter and dataset.filter.exclude_issues and ann.issues:
+            logger.debug(f"Skipping annotation with issues {ann.id}")
             continue
 
         try:
             clip = file_annotation_to_clip(ann, audio_dir=audio_dir)
-        except FileNotFoundError:
+        except FileNotFoundError as err:
+            logger.warning(f"Error loading annotations: {err}")
             continue
 
         annotations.append(file_annotation_to_clip_annotation(ann, clip))
