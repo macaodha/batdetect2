@@ -55,6 +55,7 @@ def train(
     val_workers: Optional[int] = None,
     checkpoint_dir: Optional[data.PathLike] = None,
     log_dir: Optional[data.PathLike] = None,
+    experiment_name: Optional[str] = None,
 ):
     config = config or FullTrainingConfig()
 
@@ -107,6 +108,7 @@ def train(
         targets=targets,
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
+        experiment_name=experiment_name,
     )
 
     logger.info("Starting main training loop...")
@@ -135,9 +137,13 @@ def build_trainer_callbacks(
     preprocessor: PreprocessorProtocol,
     config: EvaluationConfig,
     checkpoint_dir: Optional[data.PathLike] = None,
+    experiment_name: Optional[str] = None,
 ) -> List[Callback]:
     if checkpoint_dir is None:
         checkpoint_dir = "outputs/checkpoints"
+
+    if experiment_name is not None:
+        checkpoint_dir = f"{checkpoint_dir}/{experiment_name}"
 
     return [
         ModelCheckpoint(
@@ -164,13 +170,18 @@ def build_trainer(
     targets: TargetProtocol,
     checkpoint_dir: Optional[data.PathLike] = None,
     log_dir: Optional[data.PathLike] = None,
+    experiment_name: Optional[str] = None,
 ) -> Trainer:
     trainer_conf = conf.train.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
-    train_logger = build_logger(conf.train.logger, log_dir=log_dir)
+    train_logger = build_logger(
+        conf.train.logger,
+        log_dir=log_dir,
+        experiment_name=experiment_name,
+    )
 
     train_logger.log_hyperparams(
         conf.model_dump(
@@ -187,6 +198,7 @@ def build_trainer(
             config=conf.evaluation,
             preprocessor=build_preprocessor(conf.preprocess),
             checkpoint_dir=checkpoint_dir,
+            experiment_name=train_logger.name,
         ),
     )
 
