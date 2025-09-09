@@ -109,7 +109,7 @@ train:
     sigma: 3
 
   trainer:
-    max_epochs: 40
+    max_epochs: 5
 
   dataloaders:
     train:

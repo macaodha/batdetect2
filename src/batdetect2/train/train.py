@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import List, Optional
 
 import torch
-from lightning import Trainer
+from lightning import Trainer, seed_everything
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from loguru import logger
 from soundevent import data
@@ -56,7 +56,11 @@ def train(
     checkpoint_dir: Optional[data.PathLike] = None,
     log_dir: Optional[data.PathLike] = None,
     experiment_name: Optional[str] = None,
+    seed: Optional[int] = None,
 ):
+    if seed is not None:
+        seed_everything(seed)
+
     config = config or FullTrainingConfig()
 
     targets = build_targets(config.targets)

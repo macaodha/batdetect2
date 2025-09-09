@@ -9,7 +9,7 @@ from soundevent import data
 
 from batdetect2.configs import BaseConfig
 
-DEFAULT_LOGS_DIR: str = "outputs"
+DEFAULT_LOGS_DIR: str = "outputs/logs"
 
 
 class DVCLiveConfig(BaseConfig):

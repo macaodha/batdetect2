@@ -27,6 +27,7 @@ __all__ = ["train_command"]
 @click.option("--train-workers", type=int)
 @click.option("--val-workers", type=int)
 @click.option("--experiment-name", type=str)
+@click.option("--seed", type=int)
 @click.option(
     "-v",
     "--verbose",
@@ -41,6 +42,7 @@ def train_command(
     log_dir: Optional[Path] = None,
     config: Optional[Path] = None,
     config_field: Optional[str] = None,
+    seed: Optional[int] = None,
     train_workers: int = 0,
     val_workers: int = 0,
     experiment_name: Optional[str] = None,
@@ -92,4 +94,5 @@ def train_command(
         experiment_name=experiment_name,
         log_dir=log_dir,
         checkpoint_dir=ckpt_dir,
+        seed=seed,
     )
