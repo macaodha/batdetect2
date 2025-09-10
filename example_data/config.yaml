@@ -111,15 +111,19 @@ train:
   trainer:
     max_epochs: 5
 
-  dataloaders:
-    train:
-      batch_size: 8
-      num_workers: 2
-      shuffle: True
+  train_loader:
+    batch_size: 8
+    num_workers: 2
+    shuffle: True
+    clipping_strategy:
+      name: random_subclip
+      duration: 0.256
 
-    val:
-      batch_size: 1
-      num_workers: 2
+  val_loader:
+    num_workers: 2
+    clipping_strategy:
+      name: whole_audio_padded
+      chunk_size: 0.256
 
   loss:
     detection:
@@ -136,9 +140,7 @@ train:
       weight: 0.1
 
   logger:
-    name: mlflow
-    tracking_uri: http://10.20.20.211:9000
-    log_model: true
+    name: csv
 
   augmentations:
     enabled: true
