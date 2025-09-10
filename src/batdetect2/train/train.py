@@ -24,7 +24,11 @@ from batdetect2.train.augmentations import (
 )
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.clips import build_clipper
-from batdetect2.train.config import FullTrainingConfig, TrainingConfig
+from batdetect2.train.config import (
+    FullTrainingConfig,
+    TrainLoaderConfig,
+    ValLoaderConfig,
+)
 from batdetect2.train.dataset import TrainingDataset, ValidationDataset
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import TrainingModule
@@ -85,7 +89,7 @@ def train(
         audio_loader=audio_loader,
         labeller=labeller,
         preprocessor=preprocessor,
-        config=config.train,
+        config=config.train.train_loader,
         num_workers=train_workers,
     )
 
@@ -95,7 +99,7 @@ def train(
             audio_loader=audio_loader,
             labeller=labeller,
             preprocessor=preprocessor,
-            config=config.train,
+            config=config.train.val_loader,
             num_workers=val_workers,
         )
         if val_annotations is not None
@@ -225,10 +229,17 @@ def build_train_loader(
     audio_loader: AudioLoader,
     labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
-    config: Optional[TrainingConfig] = None,
+    config: Optional[TrainLoaderConfig] = None,
     num_workers: Optional[int] = None,
 ) -> DataLoader:
-    config = config or TrainingConfig()
+    config = config or TrainLoaderConfig()
+
+    logger.info("Building training data loader...")
+    logger.opt(lazy=True).debug(
+        "Training data loader config: \n{config}",
+        config=lambda: config.to_yaml_string(exclude_none=True),
+    )
+
     train_dataset = build_train_dataset(
         clip_annotations,
         audio_loader=audio_loader,
@@ -237,17 +248,11 @@ def build_train_loader(
         config=config,
     )
 
-    logger.info("Building training data loader...")
-    loader_conf = config.dataloaders.train
-    logger.opt(lazy=True).debug(
-        "Training data loader config: \n{config}",
-        config=lambda: loader_conf.to_yaml_string(exclude_none=True),
-    )
-    num_workers = num_workers or loader_conf.num_workers
+    num_workers = num_workers or config.num_workers
     return DataLoader(
         train_dataset,
-        batch_size=loader_conf.batch_size,
-        shuffle=loader_conf.shuffle,
+        batch_size=config.batch_size,
+        shuffle=config.shuffle,
         num_workers=num_workers,
         collate_fn=_collate_fn,
     )
@@ -258,11 +263,15 @@ def build_val_loader(
     audio_loader: AudioLoader,
     labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
-    config: Optional[TrainingConfig] = None,
+    config: Optional[ValLoaderConfig] = None,
     num_workers: Optional[int] = None,
 ):
     logger.info("Building validation data loader...")
-    config = config or TrainingConfig()
+    config = config or ValLoaderConfig()
+    logger.opt(lazy=True).debug(
+        "Validation data loader config: \n{config}",
+        config=lambda: config.to_yaml_string(exclude_none=True),
+    )
 
     val_dataset = build_val_dataset(
         clip_annotations,
@@ -271,39 +280,14 @@ def build_val_loader(
         preprocessor=preprocessor,
         config=config,
     )
-    loader_conf = config.dataloaders.val
-    logger.opt(lazy=True).debug(
-        "Validation data loader config: \n{config}",
-        config=lambda: loader_conf.to_yaml_string(exclude_none=True),
-    )
-    num_workers = num_workers or loader_conf.num_workers
+
+    num_workers = num_workers or config.num_workers
     return DataLoader(
         val_dataset,
         batch_size=1,
-        shuffle=loader_conf.shuffle,
+        shuffle=False,
         num_workers=num_workers,
         collate_fn=_collate_fn,
-    )
-
-
-def _collate_fn(batch: List[TrainExample]) -> TrainExample:
-    max_width = max(item.spec.shape[-1] for item in batch)
-    return TrainExample(
-        spec=torch.stack(
-            [adjust_width(item.spec, max_width) for item in batch]
-        ),
-        detection_heatmap=torch.stack(
-            [adjust_width(item.detection_heatmap, max_width) for item in batch]
-        ),
-        size_heatmap=torch.stack(
-            [adjust_width(item.size_heatmap, max_width) for item in batch]
-        ),
-        class_heatmap=torch.stack(
-            [adjust_width(item.class_heatmap, max_width) for item in batch]
-        ),
-        idx=torch.stack([item.idx for item in batch]),
-        start_time=torch.stack([item.start_time for item in batch]),
-        end_time=torch.stack([item.end_time for item in batch]),
     )
 
 
@@ -312,15 +296,12 @@ def build_train_dataset(
     audio_loader: AudioLoader,
     labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
-    config: Optional[TrainingConfig] = None,
+    config: Optional[TrainLoaderConfig] = None,
 ) -> TrainingDataset:
     logger.info("Building training dataset...")
-    config = config or TrainingConfig()
+    config = config or TrainLoaderConfig()
 
-    clipper = build_clipper(
-        config=config.cliping,
-        random=True,
-    )
+    clipper = build_clipper(config=config.clipping_strategy)
 
     random_example_source = RandomAudioSource(
         clip_annotations,
@@ -354,14 +335,37 @@ def build_val_dataset(
     audio_loader: AudioLoader,
     labeller: ClipLabeller,
     preprocessor: PreprocessorProtocol,
-    config: Optional[TrainingConfig] = None,
+    config: Optional[ValLoaderConfig] = None,
 ) -> ValidationDataset:
     logger.info("Building validation dataset...")
-    config = config or TrainingConfig()
+    config = config or ValLoaderConfig()
 
+    clipper = build_clipper(config.clipping_strategy)
     return ValidationDataset(
         clip_annotations,
         audio_loader=audio_loader,
         labeller=labeller,
         preprocessor=preprocessor,
+        clipper=clipper,
+    )
+
+
+def _collate_fn(batch: List[TrainExample]) -> TrainExample:
+    max_width = max(item.spec.shape[-1] for item in batch)
+    return TrainExample(
+        spec=torch.stack(
+            [adjust_width(item.spec, max_width) for item in batch]
+        ),
+        detection_heatmap=torch.stack(
+            [adjust_width(item.detection_heatmap, max_width) for item in batch]
+        ),
+        size_heatmap=torch.stack(
+            [adjust_width(item.size_heatmap, max_width) for item in batch]
+        ),
+        class_heatmap=torch.stack(
+            [adjust_width(item.class_heatmap, max_width) for item in batch]
+        ),
+        idx=torch.stack([item.idx for item in batch]),
+        start_time=torch.stack([item.start_time for item in batch]),
+        end_time=torch.stack([item.end_time for item in batch]),
     )

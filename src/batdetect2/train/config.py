@@ -10,7 +10,11 @@ from batdetect2.train.augmentations import (
     DEFAULT_AUGMENTATION_CONFIG,
     AugmentationsConfig,
 )
-from batdetect2.train.clips import ClipingConfig
+from batdetect2.train.clips import (
+    ClipConfig,
+    PaddedClipConfig,
+    RandomClipConfig,
+)
 from batdetect2.train.labels import LabelConfig
 from batdetect2.train.logging import CSVLoggerConfig, LoggerConfig
 from batdetect2.train.losses import LossConfig
@@ -44,34 +48,39 @@ class PLTrainerConfig(BaseConfig):
     val_check_interval: Optional[Union[int, float]] = None
 
 
-class DataLoaderConfig(BaseConfig):
-    batch_size: int = 8
-    shuffle: bool = False
+class ValLoaderConfig(BaseConfig):
     num_workers: int = 0
 
-
-DEFAULT_TRAIN_LOADER_CONFIG = DataLoaderConfig(batch_size=8, shuffle=True)
-DEFAULT_VAL_LOADER_CONFIG = DataLoaderConfig(batch_size=1, shuffle=False)
-
-
-class LoadersConfig(BaseConfig):
-    train: DataLoaderConfig = Field(
-        default_factory=lambda: DEFAULT_TRAIN_LOADER_CONFIG.model_copy()
+    clipping_strategy: ClipConfig = Field(
+        default_factory=lambda: RandomClipConfig()
     )
-    val: DataLoaderConfig = Field(
-        default_factory=lambda: DEFAULT_VAL_LOADER_CONFIG.model_copy()
+
+
+class TrainLoaderConfig(BaseConfig):
+    num_workers: int = 0
+
+    batch_size: int = 8
+
+    shuffle: bool = False
+
+    augmentations: AugmentationsConfig = Field(
+        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG.model_copy()
+    )
+
+    clipping_strategy: ClipConfig = Field(
+        default_factory=lambda: PaddedClipConfig()
     )
 
 
 class TrainingConfig(BaseConfig):
     learning_rate: float = 1e-3
     t_max: int = 100
-    dataloaders: LoadersConfig = Field(default_factory=LoadersConfig)
+
+    train_loader: TrainLoaderConfig = Field(default_factory=TrainLoaderConfig)
+    val_loader: ValLoaderConfig = Field(default_factory=ValLoaderConfig)
+
     loss: LossConfig = Field(default_factory=LossConfig)
-    augmentations: AugmentationsConfig = Field(
-        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG.model_copy()
-    )
-    cliping: ClipingConfig = Field(default_factory=ClipingConfig)
+    cliping: RandomClipConfig = Field(default_factory=RandomClipConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
     labels: LabelConfig = Field(default_factory=LabelConfig)

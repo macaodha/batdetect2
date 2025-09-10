@@ -1,25 +1,32 @@
-from typing import List, Optional
+from typing import Annotated, List, Literal, Optional, Union
 
 import numpy as np
 from loguru import logger
+from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds, intervals_overlap
 
 from batdetect2.configs import BaseConfig
+from batdetect2.data._core import Registry
 from batdetect2.typing import ClipperProtocol
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
 
 
-class ClipingConfig(BaseConfig):
+registry: Registry[ClipperProtocol] = Registry("clipper")
+
+
+class RandomClipConfig(BaseConfig):
+    name: Literal["random_subclip"] = "random_subclip"
     duration: float = DEFAULT_TRAIN_CLIP_DURATION
     random: bool = True
     max_empty: float = DEFAULT_MAX_EMPTY_CLIP
     min_sound_event_overlap: float = 0
 
 
-class Clipper:
+@registry.register(RandomClipConfig)
+class RandomClip:
     def __init__(
         self,
         duration: float = 0.5,
@@ -43,6 +50,14 @@ class Clipper:
             duration=self.duration,
             max_empty=self.max_empty,
             min_sound_event_overlap=self.min_sound_event_overlap,
+        )
+
+    @classmethod
+    def from_config(cls, config: RandomClipConfig):
+        return cls(
+            duration=config.duration,
+            max_empty=config.max_empty,
+            min_sound_event_overlap=config.min_sound_event_overlap,
         )
 
 
@@ -136,17 +151,46 @@ def select_sound_event_annotations(
     return selected
 
 
-def build_clipper(
-    config: Optional[ClipingConfig] = None,
-    random: Optional[bool] = None,
-) -> ClipperProtocol:
-    config = config or ClipingConfig()
+class PaddedClipConfig(BaseConfig):
+    name: Literal["whole_audio_padded"] = "whole_audio_padded"
+    chunk_size: float = DEFAULT_TRAIN_CLIP_DURATION
+
+
+@registry.register(PaddedClipConfig)
+class PaddedClip:
+    def __init__(self, duration: float = DEFAULT_TRAIN_CLIP_DURATION):
+        self.duration = duration
+
+    def __call__(
+        self,
+        clip_annotation: data.ClipAnnotation,
+    ) -> data.ClipAnnotation:
+        clip = clip_annotation.clip
+        duration = clip.duration
+
+        target_duration = self.duration * np.ceil(duration / self.duration)
+        clip = clip.model_copy(
+            update=dict(
+                end_time=clip.start_time + target_duration,
+            )
+        )
+        return clip_annotation.model_copy(update=dict(clip=clip))
+
+    @classmethod
+    def from_config(cls, config: PaddedClipConfig):
+        return cls(duration=config.chunk_size)
+
+
+ClipConfig = Annotated[
+    Union[RandomClipConfig, PaddedClipConfig], Field(discriminator="name")
+]
+
+
+def build_clipper(config: Optional[ClipConfig] = None) -> ClipperProtocol:
+    config = config or RandomClipConfig()
+
     logger.opt(lazy=True).debug(
         "Building clipper with config: \n{}",
         lambda: config.to_yaml_string(),
     )
-    return Clipper(
-        duration=config.duration,
-        max_empty=config.max_empty,
-        random=config.random if random else False,
-    )
+    return registry.build(config)

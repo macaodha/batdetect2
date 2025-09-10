@@ -87,6 +87,7 @@ class ValidationDataset(Dataset):
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         labeller: ClipLabeller,
+        clipper: Optional[ClipperProtocol] = None,
         audio_dir: Optional[data.PathLike] = None,
     ):
         self.clip_annotations = clip_annotations
@@ -94,14 +95,18 @@ class ValidationDataset(Dataset):
         self.preprocessor = preprocessor
         self.audio_loader = audio_loader
         self.audio_dir = audio_dir
+        self.clipper = clipper
 
     def __len__(self):
         return len(self.clip_annotations)
 
     def __getitem__(self, idx) -> TrainExample:
         clip_annotation = self.clip_annotations[idx]
-        clip = clip_annotation.clip
 
+        if self.clipper is not None:
+            clip_annotation = self.clipper(clip_annotation)
+
+        clip = clip_annotation.clip
         wav = self.audio_loader.load_clip(
             clip_annotation.clip,
             audio_dir=self.audio_dir,
