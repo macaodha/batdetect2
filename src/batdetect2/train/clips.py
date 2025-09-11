@@ -158,8 +158,8 @@ class PaddedClipConfig(BaseConfig):
 
 @registry.register(PaddedClipConfig)
 class PaddedClip:
-    def __init__(self, duration: float = DEFAULT_TRAIN_CLIP_DURATION):
-        self.duration = duration
+    def __init__(self, chunk_size: float = DEFAULT_TRAIN_CLIP_DURATION):
+        self.chunk_size = chunk_size
 
     def __call__(
         self,
@@ -168,7 +168,9 @@ class PaddedClip:
         clip = clip_annotation.clip
         duration = clip.duration
 
-        target_duration = self.duration * np.ceil(duration / self.duration)
+        target_duration = float(
+            self.chunk_size * np.ceil(duration / self.chunk_size)
+        )
         clip = clip.model_copy(
             update=dict(
                 end_time=clip.start_time + target_duration,
@@ -178,7 +180,7 @@ class PaddedClip:
 
     @classmethod
     def from_config(cls, config: PaddedClipConfig):
-        return cls(duration=config.chunk_size)
+        return cls(chunk_size=config.chunk_size)
 
 
 ClipConfig = Annotated[

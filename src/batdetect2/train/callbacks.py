@@ -126,7 +126,7 @@ class ValidationMetrics(Callback):
         dataset = self.get_dataset(trainer)
 
         clip_annotations = [
-            dataset.clip_annotations[int(example_idx)]
+            dataset.get_clip_annotation(int(example_idx))
             for example_idx in batch.idx
         ]
 
