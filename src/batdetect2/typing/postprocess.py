@@ -47,29 +47,7 @@ class GeometryDecoder(Protocol):
 
 
 class RawPrediction(NamedTuple):
-    """Intermediate representation of a single detected sound event.
-
-    Holds extracted information about a detection after initial processing
-    (like peak finding, coordinate remapping, geometry recovery) but before
-    final class decoding and conversion into a `SoundEventPrediction`. This
-    can be useful for evaluation or simpler data handling formats.
-
-    Attributes
-    ----------
-    geometry: data.Geometry
-        The recovered estimated geometry of the detected sound event.
-        Usually a bounding box.
-    detection_score : float
-        The confidence score associated with this detection, typically from
-        the detection heatmap peak.
-    class_scores : xr.DataArray
-        An xarray DataArray containing the predicted probabilities or scores
-        for each target class at the detection location. Indexed by a
-        'category' coordinate containing class names.
-    features : xr.DataArray
-        An xarray DataArray containing extracted feature vectors at the
-        detection location. Indexed by a 'feature' coordinate.
-    """
+    """Intermediate representation of a single detected sound event."""
 
     geometry: data.Geometry
     detection_score: float

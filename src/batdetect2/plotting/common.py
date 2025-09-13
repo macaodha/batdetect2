@@ -32,9 +32,12 @@ def plot_spectrogram(
     max_freq: Optional[float] = None,
     ax: Optional[axes.Axes] = None,
     figsize: Optional[Tuple[int, int]] = None,
+    add_colorbar: bool = False,
+    colorbar_kwargs: Optional[dict] = None,
+    vmin: Optional[float] = None,
+    vmax: Optional[float] = None,
     cmap="gray",
 ) -> axes.Axes:
-
     if isinstance(spec, torch.Tensor):
         spec = spec.numpy()
 
@@ -54,10 +57,16 @@ def plot_spectrogram(
     if max_freq is None:
         max_freq = spec.shape[-2]
 
-    ax.pcolormesh(
+    mappable = ax.pcolormesh(
         np.linspace(start_time, end_time, spec.shape[-1] + 1, endpoint=True),
         np.linspace(min_freq, max_freq, spec.shape[-2] + 1, endpoint=True),
         spec,
         cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
     )
+
+    if add_colorbar:
+        plt.colorbar(mappable, ax=ax, **(colorbar_kwargs or {}))
+
     return ax

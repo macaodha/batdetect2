@@ -57,6 +57,7 @@ class MatchConfig(BaseConfig):
     affinity_threshold: float = 0.0
     time_buffer: float = 0.005
     frequency_buffer: float = 1_000
+    ignore_start_end: float = 0.01
 
 
 def _to_bbox(geometry: data.Geometry) -> data.BoundingBox:
@@ -273,6 +274,17 @@ def greedy_match(
         yield None, target_idx, 0
 
 
+def _is_in_bounds(
+    geometry: data.Geometry,
+    clip: data.Clip,
+    buffer: float,
+) -> bool:
+    start_time = compute_bounds(geometry)[0]
+    return (start_time >= clip.start_time + buffer) and (
+        start_time <= clip.end_time - buffer
+    )
+
+
 def match_sound_events_and_raw_predictions(
     clip_annotation: data.ClipAnnotation,
     raw_predictions: List[RawPrediction],
@@ -286,12 +298,27 @@ def match_sound_events_and_raw_predictions(
         for sound_event_annotation in clip_annotation.sound_events
         if targets.filter(sound_event_annotation)
         and sound_event_annotation.sound_event.geometry is not None
+        and _is_in_bounds(
+            sound_event_annotation.sound_event.geometry,
+            clip=clip_annotation.clip,
+            buffer=config.ignore_start_end,
+        )
     ]
 
-    target_geometries: List[data.Geometry] = [  # type: ignore
+    target_geometries: List[data.Geometry] = [
         sound_event_annotation.sound_event.geometry
         for sound_event_annotation in target_sound_events
         if sound_event_annotation.sound_event.geometry is not None
+    ]
+
+    raw_predictions = [
+        raw_prediction
+        for raw_prediction in raw_predictions
+        if _is_in_bounds(
+            raw_prediction.geometry,
+            clip=clip_annotation.clip,
+            buffer=config.ignore_start_end,
+        )
     ]
 
     predicted_geometries = [

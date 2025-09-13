@@ -89,18 +89,9 @@ def annotation_to_sound_event(
         uuid=uuid.uuid5(NAMESPACE, f"{sound_event.uuid}_annotation"),
         sound_event=sound_event,
         tags=[
-            data.Tag(
-                key=label_key,  # type: ignore
-                value=annotation.label,
-            ),
-            data.Tag(
-                key=event_key,  # type: ignore
-                value=annotation.event,
-            ),
-            data.Tag(
-                key=individual_key,  # type: ignore
-                value=str(annotation.individual),
-            ),
+            data.Tag(key=label_key, value=annotation.label),
+            data.Tag(key=event_key, value=annotation.event),
+            data.Tag(key=individual_key, value=str(annotation.individual)),
         ],
     )
 
@@ -121,12 +112,7 @@ def file_annotation_to_clip(
     recording = data.Recording.from_file(
         full_path,
         time_expansion=file_annotation.time_exp,
-        tags=[
-            data.Tag(
-                key=label_key,  # type: ignore
-                value=file_annotation.label,
-            )
-        ],
+        tags=[data.Tag(key=label_key, value=file_annotation.label)],
     )
 
     return data.Clip(
@@ -153,12 +139,7 @@ def file_annotation_to_clip_annotation(
         uuid=uuid.uuid5(NAMESPACE, f"{file_annotation.id}_clip_annotation"),
         clip=clip,
         notes=notes,
-        tags=[
-            data.Tag(
-                key=label_key,  # type: ignore
-                value=file_annotation.label,
-            )
-        ],
+        tags=[data.Tag(key=label_key, value=file_annotation.label)],
         sound_events=[
             annotation_to_sound_event(
                 annotation,

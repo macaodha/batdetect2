@@ -6,6 +6,7 @@ __all__ = [
     "call_type",
     "individual",
     "data_source",
+    "generic_class",
 ]
 
 # The default key used to reference the 'generic_class' term.
