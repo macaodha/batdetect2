@@ -136,7 +136,7 @@ def plot_class_examples(
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except (ValueError, AssertionError, RuntimeError):
+        except (ValueError, AssertionError, RuntimeError, FileNotFoundError):
             continue
 
     return fig
