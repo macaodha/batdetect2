@@ -52,7 +52,7 @@ class ValLoaderConfig(BaseConfig):
     num_workers: int = 0
 
     clipping_strategy: ClipConfig = Field(
-        default_factory=lambda: RandomClipConfig()
+        default_factory=lambda: PaddedClipConfig()
     )
 
 

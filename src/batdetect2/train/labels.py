@@ -14,7 +14,8 @@ from loguru import logger
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.targets import iterate_encoded_sound_events
+from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
+from batdetect2.targets import build_targets, iterate_encoded_sound_events
 from batdetect2.typing import (
     ClipLabeller,
     Heatmaps,
@@ -45,9 +46,9 @@ class LabelConfig(BaseConfig):
 
 
 def build_clip_labeler(
-    targets: TargetProtocol,
-    min_freq: float,
-    max_freq: float,
+    targets: Optional[TargetProtocol] = None,
+    min_freq: float = MIN_FREQ,
+    max_freq: float = MAX_FREQ,
     config: Optional[LabelConfig] = None,
 ) -> ClipLabeller:
     """Construct the final clip labelling function."""
@@ -56,6 +57,10 @@ def build_clip_labeler(
         "Building clip labeler with config: \n{}",
         lambda: config.to_yaml_string(),
     )
+
+    if targets is None:
+        targets = build_targets()
+
     return partial(
         generate_heatmaps,
         targets=targets,

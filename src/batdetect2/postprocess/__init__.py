@@ -51,7 +51,7 @@ __all__ = [
 DEFAULT_DETECTION_THRESHOLD = 0.01
 
 
-TOP_K_PER_SEC = 200
+TOP_K_PER_SEC = 100
 
 
 class PostprocessConfig(BaseConfig):
@@ -206,11 +206,13 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         if clips is None:
             return detections
 
+        width = output.detection_probs.shape[-1]
+        duration = width / self.samplerate
         return [
             map_detection_to_clip(
                 detection,
                 start_time=clip.start_time,
-                end_time=clip.end_time,
+                end_time=clip.start_time + duration,
                 min_freq=self.min_freq,
                 max_freq=self.max_freq,
             )
@@ -220,9 +222,9 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
 
 def get_raw_predictions(
     output: ModelOutput,
-    clips: List[data.Clip],
     targets: TargetProtocol,
     postprocessor: PostprocessorProtocol,
+    clips: Optional[List[data.Clip]] = None,
 ) -> List[List[RawPrediction]]:
     """Extract intermediate RawPrediction objects for a batch.
 
@@ -259,9 +261,9 @@ def get_sound_event_predictions(
 ) -> List[List[BatDetect2Prediction]]:
     raw_predictions = get_raw_predictions(
         output,
-        clips,
         targets=targets,
         postprocessor=postprocessor,
+        clips=clips,
     )
     return [
         [
@@ -308,9 +310,9 @@ def get_predictions(
     """
     raw_predictions = get_raw_predictions(
         output,
-        clips,
         targets=targets,
         postprocessor=postprocessor,
+        clips=clips,
     )
     return [
         convert_raw_predictions_to_clip_prediction(

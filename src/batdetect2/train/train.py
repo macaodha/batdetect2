@@ -226,9 +226,9 @@ def build_trainer(
 
 def build_train_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: AudioLoader,
-    labeller: ClipLabeller,
-    preprocessor: PreprocessorProtocol,
+    audio_loader: Optional[AudioLoader] = None,
+    labeller: Optional[ClipLabeller] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
     config: Optional[TrainLoaderConfig] = None,
     num_workers: Optional[int] = None,
 ) -> DataLoader:
@@ -260,9 +260,9 @@ def build_train_loader(
 
 def build_val_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: AudioLoader,
-    labeller: ClipLabeller,
-    preprocessor: PreprocessorProtocol,
+    audio_loader: Optional[AudioLoader] = None,
+    labeller: Optional[ClipLabeller] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
     config: Optional[ValLoaderConfig] = None,
     num_workers: Optional[int] = None,
 ):
@@ -293,15 +293,27 @@ def build_val_loader(
 
 def build_train_dataset(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: AudioLoader,
-    labeller: ClipLabeller,
-    preprocessor: PreprocessorProtocol,
+    audio_loader: Optional[AudioLoader] = None,
+    labeller: Optional[ClipLabeller] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
     config: Optional[TrainLoaderConfig] = None,
 ) -> TrainingDataset:
     logger.info("Building training dataset...")
     config = config or TrainLoaderConfig()
 
     clipper = build_clipper(config=config.clipping_strategy)
+
+    if audio_loader is None:
+        audio_loader = build_audio_loader()
+
+    if preprocessor is None:
+        preprocessor = build_preprocessor()
+
+    if labeller is None:
+        labeller = build_clip_labeler(
+            min_freq=preprocessor.min_freq,
+            max_freq=preprocessor.max_freq,
+        )
 
     random_example_source = RandomAudioSource(
         clip_annotations,
@@ -332,13 +344,25 @@ def build_train_dataset(
 
 def build_val_dataset(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: AudioLoader,
-    labeller: ClipLabeller,
-    preprocessor: PreprocessorProtocol,
+    audio_loader: Optional[AudioLoader] = None,
+    labeller: Optional[ClipLabeller] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
     config: Optional[ValLoaderConfig] = None,
 ) -> ValidationDataset:
     logger.info("Building validation dataset...")
     config = config or ValLoaderConfig()
+
+    if audio_loader is None:
+        audio_loader = build_audio_loader()
+
+    if preprocessor is None:
+        preprocessor = build_preprocessor()
+
+    if labeller is None:
+        labeller = build_clip_labeler(
+            min_freq=preprocessor.min_freq,
+            max_freq=preprocessor.max_freq,
+        )
 
     clipper = build_clipper(config.clipping_strategy)
     return ValidationDataset(

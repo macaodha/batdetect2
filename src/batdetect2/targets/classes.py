@@ -14,7 +14,7 @@ from batdetect2.data.conditions import (
     SoundEventConditionConfig,
     build_sound_event_condition,
 )
-from batdetect2.targets.rois import AnchorBBoxMapperConfig, ROIMapperConfig
+from batdetect2.targets.rois import ROIMapperConfig
 from batdetect2.typing.targets import SoundEventDecoder, SoundEventEncoder
 
 __all__ = [
@@ -140,7 +140,6 @@ DEFAULT_CLASSES = [
     TargetClassConfig(
         name="rhihip",
         tags=[data.Tag(key="class", value="Rhinolophus hipposideros")],
-        roi=AnchorBBoxMapperConfig(anchor="top-left"),
     ),
     TargetClassConfig(
         name="nyclei",
@@ -149,7 +148,6 @@ DEFAULT_CLASSES = [
     TargetClassConfig(
         name="rhifer",
         tags=[data.Tag(key="class", value="Rhinolophus ferrumequinum")],
-        roi=AnchorBBoxMapperConfig(anchor="top-left"),
     ),
     TargetClassConfig(
         name="pleaur",

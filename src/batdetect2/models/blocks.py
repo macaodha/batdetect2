@@ -225,7 +225,7 @@ class ConvBlock(nn.Module):
             kernel_size=kernel_size,
             padding=pad_size,
         )
-        self.conv_bn = nn.BatchNorm2d(out_channels)
+        self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply Conv -> BN -> ReLU.
@@ -240,7 +240,7 @@ class ConvBlock(nn.Module):
         torch.Tensor
             Output tensor, shape `(B, C_out, H, W)`.
         """
-        return F.relu_(self.conv_bn(self.conv(x)))
+        return F.relu_(self.batch_norm(self.conv(x)))
 
 
 class VerticalConv(nn.Module):
@@ -364,7 +364,7 @@ class FreqCoordConvDownBlock(nn.Module):
             padding=pad_size,
             stride=1,
         )
-        self.conv_bn = nn.BatchNorm2d(out_channels)
+        self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply CoordF -> Conv -> MaxPool -> BN -> ReLU.
@@ -383,7 +383,7 @@ class FreqCoordConvDownBlock(nn.Module):
         freq_info = self.coords.repeat(x.shape[0], 1, 1, x.shape[3])
         x = torch.cat((x, freq_info), 1)
         x = F.max_pool2d(self.conv(x), 2, 2)
-        x = F.relu(self.conv_bn(x), inplace=True)
+        x = F.relu(self.batch_norm(x), inplace=True)
         return x
 
 
@@ -438,7 +438,7 @@ class StandardConvDownBlock(nn.Module):
             padding=pad_size,
             stride=1,
         )
-        self.conv_bn = nn.BatchNorm2d(out_channels)
+        self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         """Apply Conv -> MaxPool -> BN -> ReLU.
@@ -454,7 +454,7 @@ class StandardConvDownBlock(nn.Module):
             Output tensor, shape `(B, C_out, H/2, W/2)`.
         """
         x = F.max_pool2d(self.conv(x), 2, 2)
-        return F.relu(self.conv_bn(x), inplace=True)
+        return F.relu(self.batch_norm(x), inplace=True)
 
 
 class FreqCoordConvUpConfig(BaseConfig):
@@ -534,7 +534,7 @@ class FreqCoordConvUpBlock(nn.Module):
             kernel_size=kernel_size,
             padding=pad_size,
         )
-        self.conv_bn = nn.BatchNorm2d(out_channels)
+        self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply Interpolate -> Concat Coords -> Conv -> BN -> ReLU.
@@ -562,7 +562,7 @@ class FreqCoordConvUpBlock(nn.Module):
         freq_info = self.coords.repeat(op.shape[0], 1, 1, op.shape[3])
         op = torch.cat((op, freq_info), 1)
         op = self.conv(op)
-        op = F.relu(self.conv_bn(op), inplace=True)
+        op = F.relu(self.batch_norm(op), inplace=True)
         return op
 
 
@@ -625,7 +625,7 @@ class StandardConvUpBlock(nn.Module):
             kernel_size=kernel_size,
             padding=pad_size,
         )
-        self.conv_bn = nn.BatchNorm2d(out_channels)
+        self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply Interpolate -> Conv -> BN -> ReLU.
@@ -650,7 +650,7 @@ class StandardConvUpBlock(nn.Module):
             align_corners=False,
         )
         op = self.conv(op)
-        op = F.relu(self.conv_bn(op), inplace=True)
+        op = F.relu(self.batch_norm(op), inplace=True)
         return op
 
 
