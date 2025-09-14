@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
@@ -19,9 +20,8 @@ class DetectionAveragePrecision(MetricsProtocol):
 
 
 class ClassificationMeanAveragePrecision(MetricsProtocol):
-    def __init__(self, class_names: List[str], per_class: bool = True):
+    def __init__(self, class_names: List[str]):
         self.class_names = class_names
-        self.per_class = per_class
 
     def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
         y_true = label_binarize(
@@ -40,14 +40,8 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
                 for match in matches
             ]
         ).fillna(0)
-        mAP = metrics.average_precision_score(y_true, y_pred[self.class_names])
 
-        ret = {
-            "classification_mAP": float(mAP),
-        }
-
-        if not self.per_class:
-            return ret
+        ret = {}
 
         for class_index, class_name in enumerate(self.class_names):
             y_true_class = y_true[:, class_index]
@@ -57,6 +51,10 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
                 y_pred_class,
             )
             ret[f"classification_AP/{class_name}"] = float(class_ap)
+
+        ret["classification_mAP"] = np.mean(
+            [value for value in ret.values() if value != 0]
+        )
 
         return ret
 

@@ -47,7 +47,7 @@ def evaluate(
         audio_loader=audio_loader,
         labeller=labeller,
         preprocessor=preprocessor,
-        config=config.train,
+        config=config.train.val_loader,
         num_workers=num_workers,
     )
 
@@ -67,7 +67,8 @@ def evaluate(
         predictions = get_raw_predictions(
             outputs,
             start_times=[
-                clip_annotation.clip for clip_annotation in clip_annotations
+                clip_annotation.clip.start_time
+                for clip_annotation in clip_annotations
             ],
             targets=targets,
             postprocessor=model.postprocessor,
