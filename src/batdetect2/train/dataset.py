@@ -101,8 +101,15 @@ class ValidationDataset(Dataset):
         return len(self.clip_annotations)
 
     def __getitem__(self, idx) -> TrainExample:
-        wav, clip_annotation = self.load_audio(idx)
+        clip_annotation = self.clip_annotations[idx]
+
+        if self.clipper is not None:
+            clip_annotation = self.clipper(clip_annotation)
+
         clip = clip_annotation.clip
+        wav = torch.tensor(
+            self.audio_loader.load_clip(clip, audio_dir=self.audio_dir)
+        ).unsqueeze(0)
 
         spectrogram = self.preprocessor(wav)
 
@@ -117,17 +124,3 @@ class ValidationDataset(Dataset):
             start_time=torch.tensor(clip.start_time),
             end_time=torch.tensor(clip.end_time),
         )
-
-    def get_clip_annotation(self, idx: int) -> data.ClipAnnotation:
-        clip_annotation = self.clip_annotations[idx]
-
-        if self.clipper is not None:
-            clip_annotation = self.clipper(clip_annotation)
-
-        return clip_annotation
-
-    def load_audio(self, idx: int) -> Tuple[torch.Tensor, data.ClipAnnotation]:
-        clip_annotation = self.get_clip_annotation(idx)
-        clip = clip_annotation.clip
-        wav = self.audio_loader.load_clip(clip, audio_dir=self.audio_dir)
-        return torch.tensor(wav).unsqueeze(0), clip_annotation

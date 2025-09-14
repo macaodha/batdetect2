@@ -191,7 +191,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
     def get_detections(
         self,
         output: ModelOutput,
-        clips: Optional[List[data.Clip]] = None,
+        start_times: Optional[List[float]] = None,
     ) -> List[DetectionsTensor]:
         width = output.detection_probs.shape[-1]
         duration = width / self.samplerate
@@ -203,7 +203,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
             threshold=self.detection_threshold,
         )
 
-        if clips is None:
+        if start_times is None:
             return detections
 
         width = output.detection_probs.shape[-1]
@@ -211,12 +211,12 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         return [
             map_detection_to_clip(
                 detection,
-                start_time=clip.start_time,
-                end_time=clip.start_time + duration,
+                start_time=start_time,
+                end_time=start_time + duration,
                 min_freq=self.min_freq,
                 max_freq=self.max_freq,
             )
-            for detection, clip in zip(detections, clips)
+            for detection, start_time in zip(detections, start_times)
         ]
 
 
@@ -224,28 +224,10 @@ def get_raw_predictions(
     output: ModelOutput,
     targets: TargetProtocol,
     postprocessor: PostprocessorProtocol,
-    clips: Optional[List[data.Clip]] = None,
+    start_times: Optional[List[float]] = None,
 ) -> List[List[RawPrediction]]:
-    """Extract intermediate RawPrediction objects for a batch.
-
-    Processes raw model output through remapping, NMS, detection, data
-    extraction, and geometry recovery via the configured
-    `targets.recover_roi`.
-
-    Parameters
-    ----------
-    output : ModelOutput
-        Raw output from the neural network model for a batch.
-    clips : List[data.Clip]
-        List of `soundevent.data.Clip` objects corresponding to the batch.
-
-    Returns
-    -------
-    List[List[RawPrediction]]
-        List of lists (one inner list per input clip). Each inner list
-        contains `RawPrediction` objects for detections in that clip.
-    """
-    detections = postprocessor.get_detections(output, clips)
+    """Extract intermediate RawPrediction objects for a batch."""
+    detections = postprocessor.get_detections(output, start_times)
     return [
         to_raw_predictions(detection.numpy(), targets=targets)
         for detection in detections
@@ -254,16 +236,16 @@ def get_raw_predictions(
 
 def get_sound_event_predictions(
     output: ModelOutput,
-    clips: List[data.Clip],
     targets: TargetProtocol,
     postprocessor: PostprocessorProtocol,
+    clips: List[data.Clip],
     classification_threshold: float = DEFAULT_CLASSIFICATION_THRESHOLD,
 ) -> List[List[BatDetect2Prediction]]:
     raw_predictions = get_raw_predictions(
         output,
         targets=targets,
         postprocessor=postprocessor,
-        clips=clips,
+        start_times=[clip.start_time for clip in clips],
     )
     return [
         [
@@ -312,7 +294,7 @@ def get_predictions(
         output,
         targets=targets,
         postprocessor=postprocessor,
-        clips=clips,
+        start_times=[clip.start_time for clip in clips],
     )
     return [
         convert_raw_predictions_to_clip_prediction(

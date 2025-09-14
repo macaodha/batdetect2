@@ -97,5 +97,5 @@ class PostprocessorProtocol(Protocol):
     def get_detections(
         self,
         output: ModelOutput,
-        clips: Optional[List[data.Clip]] = None,
+        start_times: Optional[List[float]] = None,
     ) -> List[DetectionsTensor]: ...

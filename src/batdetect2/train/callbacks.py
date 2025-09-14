@@ -126,14 +126,15 @@ class ValidationMetrics(Callback):
         dataset = self.get_dataset(trainer)
 
         clip_annotations = [
-            dataset.get_clip_annotation(int(example_idx))
+            dataset.clip_annotations[int(example_idx)]
             for example_idx in batch.idx
         ]
 
         predictions = get_raw_predictions(
             outputs,
-            clips=[
-                clip_annotation.clip for clip_annotation in clip_annotations
+            start_times=[
+                clip_annotation.clip.start_time
+                for clip_annotation in clip_annotations
             ],
             targets=targets,
             postprocessor=postprocessor,

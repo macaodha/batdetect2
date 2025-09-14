@@ -66,7 +66,7 @@ def evaluate(
 
         predictions = get_raw_predictions(
             outputs,
-            clips=[
+            start_times=[
                 clip_annotation.clip for clip_annotation in clip_annotations
             ],
             targets=targets,
