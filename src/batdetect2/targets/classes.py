@@ -15,6 +15,7 @@ from batdetect2.data.conditions import (
     build_sound_event_condition,
 )
 from batdetect2.targets.rois import ROIMapperConfig
+from batdetect2.targets.terms import call_type, generic_class
 from batdetect2.typing.targets import SoundEventDecoder, SoundEventEncoder
 
 __all__ = [
@@ -69,24 +70,27 @@ class TargetClassConfig(BaseConfig):
         return self._match_if
 
 
-DEFAULT_GENERIC_CLASS = TargetClassConfig(
+DEFAULT_DETECTION_CLASS = TargetClassConfig(
     name="bat",
     match_if=AllOfConfig(
         conditions=[
-            HasTagConfig(tag=data.Tag(key="event", value="Echolocation")),
+            HasTagConfig(tag=data.Tag(term=call_type, value="Echolocation")),
             NotConfig(
                 condition=HasAnyTagConfig(
                     tags=[
-                        data.Tag(key="event", value="Feeding"),
-                        data.Tag(key="event", value="Unknown"),
-                        data.Tag(key="event", value="Not Bat"),
+                        data.Tag(term=call_type, value="Feeding"),
+                        data.Tag(term=call_type, value="Social"),
+                        data.Tag(term=call_type, value="Unknown"),
+                        data.Tag(term=generic_class, value="Unknown"),
+                        data.Tag(term=generic_class, value="Not Bat"),
+                        data.Tag(term=call_type, value="Not Bat"),
                     ]
                 )
             ),
         ]
     ),
     assign_tags=[
-        data.Tag(key="call_type", value="Echolocation"),
+        data.Tag(term=call_type, value="Echolocation"),
         data.Tag(key="order", value="Chiroptera"),
     ],
 )
@@ -94,72 +98,72 @@ DEFAULT_GENERIC_CLASS = TargetClassConfig(
 
 DEFAULT_CLASSES = [
     TargetClassConfig(
-        name="myomys",
-        tags=[data.Tag(key="class", value="Myotis mystacinus")],
-    ),
-    TargetClassConfig(
-        name="myoalc",
-        tags=[data.Tag(key="class", value="Myotis alcathoe")],
+        name="barbar",
+        tags=[data.Tag(key="class", value="Barbastellus barbastellus")],
     ),
     TargetClassConfig(
         name="eptser",
         tags=[data.Tag(key="class", value="Eptesicus serotinus")],
     ),
     TargetClassConfig(
-        name="pipnat",
-        tags=[data.Tag(key="class", value="Pipistrellus nathusii")],
-    ),
-    TargetClassConfig(
-        name="barbar",
-        tags=[data.Tag(key="class", value="Barbastellus barbastellus")],
-    ),
-    TargetClassConfig(
-        name="myonat",
-        tags=[data.Tag(key="class", value="Myotis nattereri")],
-    ),
-    TargetClassConfig(
-        name="myodau",
-        tags=[data.Tag(key="class", value="Myotis daubentonii")],
-    ),
-    TargetClassConfig(
-        name="myobra",
-        tags=[data.Tag(key="class", value="Myotis brandtii")],
-    ),
-    TargetClassConfig(
-        name="pippip",
-        tags=[data.Tag(key="class", value="Pipistrellus pipistrellus")],
+        name="myoalc",
+        tags=[data.Tag(key="class", value="Myotis alcathoe")],
     ),
     TargetClassConfig(
         name="myobec",
         tags=[data.Tag(key="class", value="Myotis bechsteinii")],
     ),
     TargetClassConfig(
-        name="pippyg",
-        tags=[data.Tag(key="class", value="Pipistrellus pygmaeus")],
+        name="myobra",
+        tags=[data.Tag(key="class", value="Myotis brandtii")],
     ),
     TargetClassConfig(
-        name="rhihip",
-        tags=[data.Tag(key="class", value="Rhinolophus hipposideros")],
+        name="myodau",
+        tags=[data.Tag(key="class", value="Myotis daubentonii")],
+    ),
+    TargetClassConfig(
+        name="myomys",
+        tags=[data.Tag(key="class", value="Myotis mystacinus")],
+    ),
+    TargetClassConfig(
+        name="myonat",
+        tags=[data.Tag(key="class", value="Myotis nattereri")],
     ),
     TargetClassConfig(
         name="nyclei",
         tags=[data.Tag(key="class", value="Nyctalus leisleri")],
     ),
     TargetClassConfig(
-        name="rhifer",
-        tags=[data.Tag(key="class", value="Rhinolophus ferrumequinum")],
+        name="nycnoc",
+        tags=[data.Tag(key="class", value="Nyctalus noctula")],
+    ),
+    TargetClassConfig(
+        name="pipnat",
+        tags=[data.Tag(key="class", value="Pipistrellus nathusii")],
+    ),
+    TargetClassConfig(
+        name="pippip",
+        tags=[data.Tag(key="class", value="Pipistrellus pipistrellus")],
+    ),
+    TargetClassConfig(
+        name="pippyg",
+        tags=[data.Tag(key="class", value="Pipistrellus pygmaeus")],
     ),
     TargetClassConfig(
         name="pleaur",
         tags=[data.Tag(key="class", value="Plecotus auritus")],
     ),
     TargetClassConfig(
-        name="nycnoc",
-        tags=[data.Tag(key="class", value="Nyctalus noctula")],
-    ),
-    TargetClassConfig(
         name="pleaus",
         tags=[data.Tag(key="class", value="Plecotus austriacus")],
+    ),
+    TargetClassConfig(
+        name="rhifer",
+        tags=[data.Tag(key="class", value="Rhinolophus ferrumequinum")],
+    ),
+    TargetClassConfig(
+        name="rhihip",
+        tags=[data.Tag(key="class", value="Rhinolophus hipposideros")],
     ),
 ]
 

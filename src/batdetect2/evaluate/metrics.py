@@ -24,10 +24,12 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
         self.class_names = class_names
 
     def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
+        # NOTE: Need to exclude generic but unclassified targets
         y_true = label_binarize(
             [
                 match.gt_class if match.gt_class is not None else "__NONE__"
                 for match in matches
+                if not (match.gt_det and match.gt_class is None)
             ],
             classes=self.class_names,
         )
@@ -38,11 +40,11 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
                     for name in self.class_names
                 }
                 for match in matches
+                if not (match.gt_det and match.gt_class is None)
             ]
         ).fillna(0)
 
         ret = {}
-
         for class_index, class_name in enumerate(self.class_names):
             y_true_class = y_true[:, class_index]
             y_pred_class = y_pred[class_name]
@@ -57,39 +59,3 @@ class ClassificationMeanAveragePrecision(MetricsProtocol):
         )
 
         return ret
-
-
-class ClassificationAccuracy(MetricsProtocol):
-    def __init__(self, class_names: List[str]):
-        self.class_names = class_names
-
-    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]:
-        y_true = [
-            match.gt_class if match.gt_class is not None else "__NONE__"
-            for match in matches
-        ]
-
-        y_pred = pd.DataFrame(
-            [
-                {
-                    name: match.pred_class_scores.get(name, 0)
-                    for name in self.class_names
-                }
-                for match in matches
-            ]
-        ).fillna(0)
-        y_pred = y_pred.apply(
-            lambda row: row.idxmax()
-            if row.max() >= (1 - row.sum())
-            else "__NONE__",
-            axis=1,
-        )
-
-        accuracy = metrics.balanced_accuracy_score(
-            y_true,
-            y_pred,
-        )
-
-        return {
-            "classification_acc": float(accuracy),
-        }

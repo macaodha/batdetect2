@@ -8,13 +8,10 @@ from pydantic import Field, field_validator
 from soundevent import data
 
 from batdetect2.configs import BaseConfig, load_config
-from batdetect2.data.conditions import (
-    SoundEventCondition,
-    build_sound_event_condition,
-)
+from batdetect2.data.conditions import build_sound_event_condition
 from batdetect2.targets.classes import (
     DEFAULT_CLASSES,
-    DEFAULT_GENERIC_CLASS,
+    DEFAULT_DETECTION_CLASS,
     SoundEventDecoder,
     SoundEventEncoder,
     TargetClassConfig,
@@ -58,7 +55,9 @@ __all__ = [
 
 
 class TargetConfig(BaseConfig):
-    detection_target: TargetClassConfig = Field(default=DEFAULT_GENERIC_CLASS)
+    detection_target: TargetClassConfig = Field(
+        default=DEFAULT_DETECTION_CLASS
+    )
 
     classification_targets: List[TargetClassConfig] = Field(
         default_factory=lambda: DEFAULT_CLASSES
@@ -151,49 +150,36 @@ class Targets(TargetProtocol):
     dimension_names: List[str]
     detection_class_name: str
 
-    def __init__(
-        self,
-        detection_class_name: str,
-        encode_fn: SoundEventEncoder,
-        decode_fn: SoundEventDecoder,
-        roi_mapper: ROITargetMapper,
-        class_names: list[str],
-        detection_class_tags: List[data.Tag],
-        filter_fn: Optional[SoundEventCondition] = None,
-        roi_mapper_overrides: Optional[dict[str, ROITargetMapper]] = None,
-    ):
-        """Initialize the Targets object.
+    def __init__(self, config: TargetConfig):
+        """Initialize the Targets object."""
+        self.config = config
 
-        Note: This constructor is typically called internally by the
-        `build_targets` factory function.
+        self._filter_fn = build_sound_event_condition(
+            config.detection_target.match_if
+        )
+        self._encode_fn = build_sound_event_encoder(
+            config.classification_targets
+        )
+        self._decode_fn = build_sound_event_decoder(
+            config.classification_targets
+        )
 
-        Parameters
-        ----------
-        encode_fn : SoundEventEncoder
-            Configured function to encode annotations to class names.
-        decode_fn : SoundEventDecoder
-            Configured function to decode class names to tags.
-        roi_mapper : ROITargetMapper
-            Configured object for mapping geometry to/from position/size.
-        class_names : list[str]
-            Ordered list of specific target class names.
-        generic_class_tags : List[data.Tag]
-            List of tags representing the generic class.
-        filter_fn : SoundEventFilter, optional
-            Configured function to filter annotations. Defaults to None.
-        transform_fn : SoundEventTransformation, optional
-            Configured function to transform annotation tags. Defaults to None.
-        """
-        self.detection_class_name = detection_class_name
-        self.class_names = class_names
-        self.detection_class_tags = detection_class_tags
-        self.dimension_names = roi_mapper.dimension_names
+        self._roi_mapper = build_roi_mapper(config.roi)
 
-        self._roi_mapper = roi_mapper
-        self._filter_fn = filter_fn
-        self._encode_fn = encode_fn
-        self._decode_fn = decode_fn
-        self._roi_mapper_overrides = roi_mapper_overrides or {}
+        self.dimension_names = self._roi_mapper.dimension_names
+
+        self.class_names = get_class_names_from_config(
+            config.classification_targets
+        )
+
+        self.detection_class_name = config.detection_target.name
+        self.detection_class_tags = config.detection_target.assign_tags
+
+        self._roi_mapper_overrides = {
+            class_config.name: build_roi_mapper(class_config.roi)
+            for class_config in config.classification_targets
+            if class_config.roi is not None
+        }
 
         for class_name in self._roi_mapper_overrides:
             if class_name not in self.class_names:
@@ -218,8 +204,6 @@ class Targets(TargetProtocol):
             True if the annotation should be kept (passes the filter),
             False otherwise. If no filter was configured, always returns True.
         """
-        if not self._filter_fn:
-            return True
         return self._filter_fn(sound_event)
 
     def encode_class(
@@ -331,20 +315,13 @@ class Targets(TargetProtocol):
 
 DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
     classification_targets=DEFAULT_CLASSES,
-    detection_target=DEFAULT_GENERIC_CLASS,
+    detection_target=DEFAULT_DETECTION_CLASS,
     roi=AnchorBBoxMapperConfig(),
 )
 
 
 def build_targets(config: Optional[TargetConfig] = None) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
-
-    This factory function takes the unified `TargetConfig` and constructs all
-    necessary functional components (filter, transform, encoder,
-    decoder, ROI mapper) by calling their respective builder functions. It also
-    extracts metadata (class names, generic tags, dimension names) to create
-    and return a fully initialized `Targets` instance, ready to process
-    annotations.
 
     Parameters
     ----------
@@ -370,31 +347,7 @@ def build_targets(config: Optional[TargetConfig] = None) -> Targets:
         lambda: config.to_yaml_string(),
     )
 
-    filter_fn = build_sound_event_condition(config.detection_target.match_if)
-    encode_fn = build_sound_event_encoder(config.classification_targets)
-    decode_fn = build_sound_event_decoder(config.classification_targets)
-
-    roi_mapper = build_roi_mapper(config.roi)
-    class_names = get_class_names_from_config(config.classification_targets)
-
-    generic_class_tags = config.detection_target.assign_tags
-
-    roi_overrides = {
-        class_config.name: build_roi_mapper(class_config.roi)
-        for class_config in config.classification_targets
-        if class_config.roi is not None
-    }
-
-    return Targets(
-        filter_fn=filter_fn,
-        encode_fn=encode_fn,
-        decode_fn=decode_fn,
-        class_names=class_names,
-        roi_mapper=roi_mapper,
-        detection_class_name=config.detection_target.name,
-        detection_class_tags=generic_class_tags,
-        roi_mapper_overrides=roi_overrides,
-    )
+    return Targets(config=config)
 
 
 def load_targets(

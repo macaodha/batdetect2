@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.match import (
     MatchConfig,
+    build_matcher,
     match_all_predictions,
 )
 from batdetect2.plotting.clips import PreprocessorProtocol
@@ -41,6 +42,8 @@ class ValidationMetrics(Callback):
         self.metrics = metrics
         self.preprocessor = preprocessor
         self.plot = plot
+
+        self.matcher = build_matcher(config=match_config)
 
         self._clip_annotations: List[data.ClipAnnotation] = []
         self._predictions: List[List[RawPrediction]] = []
@@ -93,7 +96,7 @@ class ValidationMetrics(Callback):
             self._clip_annotations,
             self._predictions,
             targets=pl_module.model.targets,
-            config=self.match_config,
+            matcher=self.matcher,
         )
 
         self.log_metrics(pl_module, matches)

@@ -4,9 +4,8 @@ import pandas as pd
 from soundevent import data
 
 from batdetect2.evaluate.dataframe import extract_matches_dataframe
-from batdetect2.evaluate.match import match_all_predictions
+from batdetect2.evaluate.match import build_matcher, match_all_predictions
 from batdetect2.evaluate.metrics import (
-    ClassificationAccuracy,
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
@@ -77,11 +76,13 @@ def evaluate(
         clip_annotations.extend(clip_annotations)
         predictions.extend(predictions)
 
+    matcher = build_matcher(config.evaluation.match)
+
     matches = match_all_predictions(
         clip_annotations,
         predictions,
         targets=targets,
-        config=config.evaluation.match,
+        matcher=matcher,
     )
 
     df = extract_matches_dataframe(matches)
@@ -89,7 +90,6 @@ def evaluate(
     metrics = [
         DetectionAveragePrecision(),
         ClassificationMeanAveragePrecision(class_names=targets.class_names),
-        ClassificationAccuracy(class_names=targets.class_names),
     ]
 
     results = {

@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.metrics import (
-    ClassificationAccuracy,
     ClassificationMeanAveragePrecision,
     DetectionAveragePrecision,
 )
@@ -175,7 +174,6 @@ def build_trainer_callbacks(
                 ClassificationMeanAveragePrecision(
                     class_names=targets.class_names
                 ),
-                ClassificationAccuracy(class_names=targets.class_names),
             ],
             preprocessor=preprocessor,
             match_config=config.match,

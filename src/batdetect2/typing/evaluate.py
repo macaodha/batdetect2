@@ -1,5 +1,15 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Protocol
+from typing import (
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    TypeVar,
+)
 
 from soundevent import data
 
@@ -38,6 +48,28 @@ class MatchEvaluation:
             return 0
 
         return self.pred_class_scores[pred_class]
+
+
+class MatcherProtocol(Protocol):
+    def __call__(
+        self,
+        ground_truth: Sequence[data.Geometry],
+        predictions: Sequence[data.Geometry],
+        scores: Sequence[float],
+    ) -> Iterable[Tuple[Optional[int], Optional[int], float]]: ...
+
+
+Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)
+
+
+class AffinityFunction(Protocol, Generic[Geom]):
+    def __call__(
+        self,
+        geometry1: Geom,
+        geometry2: Geom,
+        time_buffer: float = 0.01,
+        freq_buffer: float = 1000,
+    ) -> float: ...
 
 
 class MetricsProtocol(Protocol):
