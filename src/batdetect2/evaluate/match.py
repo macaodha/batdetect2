@@ -1,9 +1,7 @@
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
 from typing import Annotated, List, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from loguru import logger
 from pydantic import Field
 from soundevent import data
 from soundevent.evaluation import compute_affinity
@@ -12,6 +10,11 @@ from soundevent.geometry import compute_bounds
 
 from batdetect2.configs import BaseConfig
 from batdetect2.data._core import Registry
+from batdetect2.evaluate.affinity import (
+    AffinityConfig,
+    GeometricIOUConfig,
+    build_affinity_function,
+)
 from batdetect2.targets import build_targets
 from batdetect2.typing import (
     MatchEvaluation,
@@ -23,7 +26,88 @@ from batdetect2.typing.postprocess import RawPrediction
 MatchingGeometry = Literal["bbox", "interval", "timestamp"]
 """The geometry representation to use for matching."""
 
-matching_strategy = Registry("matching_strategy")
+matching_strategies = Registry("matching_strategy")
+
+
+def match(
+    sound_event_annotations: Sequence[data.SoundEventAnnotation],
+    raw_predictions: Sequence[RawPrediction],
+    clip: data.Clip,
+    targets: Optional[TargetProtocol] = None,
+    matcher: Optional[MatcherProtocol] = None,
+) -> List[MatchEvaluation]:
+    if matcher is None:
+        matcher = build_matcher()
+
+    if targets is None:
+        targets = build_targets()
+
+    target_geometries: List[data.Geometry] = [  # type: ignore
+        sound_event_annotation.sound_event.geometry
+        for sound_event_annotation in sound_event_annotations
+    ]
+
+    predicted_geometries = [
+        raw_prediction.geometry for raw_prediction in raw_predictions
+    ]
+
+    scores = [
+        raw_prediction.detection_score for raw_prediction in raw_predictions
+    ]
+
+    matches = []
+
+    for source_idx, target_idx, affinity in matcher(
+        ground_truth=target_geometries,
+        predictions=predicted_geometries,
+        scores=scores,
+    ):
+        target = (
+            sound_event_annotations[target_idx]
+            if target_idx is not None
+            else None
+        )
+        prediction = (
+            raw_predictions[source_idx] if source_idx is not None else None
+        )
+
+        gt_det = target_idx is not None
+        gt_class = targets.encode_class(target) if target is not None else None
+
+        pred_score = float(prediction.detection_score) if prediction else 0
+
+        pred_geometry = (
+            predicted_geometries[source_idx]
+            if source_idx is not None
+            else None
+        )
+
+        class_scores = (
+            {
+                str(class_name): float(score)
+                for class_name, score in zip(
+                    targets.class_names,
+                    prediction.class_scores,
+                )
+            }
+            if prediction is not None
+            else {}
+        )
+
+        matches.append(
+            MatchEvaluation(
+                clip=clip,
+                sound_event_annotation=target,
+                gt_det=gt_det,
+                gt_class=gt_class,
+                pred_score=pred_score,
+                pred_class_scores=class_scores,
+                pred_geometry=pred_geometry,
+                affinity=affinity,
+            )
+        )
+
+    return matches
 
 
 class StartTimeMatchConfig(BaseConfig):
@@ -31,7 +115,6 @@ class StartTimeMatchConfig(BaseConfig):
     distance_threshold: float = 0.01
 
 
-@matching_strategy.register(StartTimeMatchConfig)
 class StartTimeMatcher(MatcherProtocol):
     def __init__(self, distance_threshold: float):
         self.distance_threshold = distance_threshold
@@ -54,6 +137,9 @@ class StartTimeMatcher(MatcherProtocol):
         return cls(distance_threshold=config.distance_threshold)
 
 
+matching_strategies.register(StartTimeMatchConfig, StartTimeMatcher)
+
+
 def match_start_times(
     ground_truth: Sequence[data.Geometry],
     predictions: Sequence[data.Geometry],
@@ -74,8 +160,8 @@ def match_start_times(
 
     gt_times = np.array([compute_bounds(geom)[0] for geom in ground_truth])
     pred_times = np.array([compute_bounds(geom)[0] for geom in predictions])
-    scores = np.array(scores)
 
+    scores = np.array(scores)
     sort_args = np.argsort(scores)[::-1]
 
     distances = np.abs(gt_times[None, :] - pred_times[:, None])
@@ -143,89 +229,25 @@ _geometry_cast_functions: Mapping[
 }
 
 
-def _timestamp_affinity(
-    geometry1: data.Geometry,
-    geometry2: data.Geometry,
-    time_buffer: float = 0.01,
-    freq_buffer: float = 1000,
-) -> float:
-    assert isinstance(geometry1, data.TimeStamp)
-    assert isinstance(geometry2, data.TimeStamp)
-
-    start_time1 = geometry1.coordinates
-    start_time2 = geometry2.coordinates
-
-    a = min(start_time1, start_time2)
-    b = max(start_time1, start_time2)
-
-    if b - a >= 2 * time_buffer:
-        return 0
-
-    intersection = a - b + 2 * time_buffer
-    union = b - a + 2 * time_buffer
-    return intersection / union
-
-
-def _interval_affinity(
-    geometry1: data.Geometry,
-    geometry2: data.Geometry,
-    time_buffer: float = 0.01,
-    freq_buffer: float = 1000,
-) -> float:
-    assert isinstance(geometry1, data.TimeInterval)
-    assert isinstance(geometry2, data.TimeInterval)
-
-    start_time1, end_time1 = geometry1.coordinates
-    start_time2, end_time2 = geometry1.coordinates
-
-    start_time1 -= time_buffer
-    start_time2 -= time_buffer
-    end_time1 += time_buffer
-    end_time2 += time_buffer
-
-    intersection = max(
-        0, min(end_time1, end_time2) - max(start_time1, start_time2)
-    )
-    union = (
-        (end_time1 - start_time1) + (end_time2 - start_time2) - intersection
-    )
-
-    if union == 0:
-        return 0
-
-    return intersection / union
-
-
-_affinity_functions: Mapping[MatchingGeometry, AffinityFunction] = {
-    "timestamp": _timestamp_affinity,
-    "interval": _interval_affinity,
-    "bbox": compute_affinity,
-}
-
-
 class GreedyMatchConfig(BaseConfig):
     name: Literal["greedy_match"] = "greedy_match"
     geometry: MatchingGeometry = "timestamp"
-    affinity_threshold: float = 0.0
-    time_buffer: float = 0.005
-    frequency_buffer: float = 1_000
+    affinity_threshold: float = 0.5
+    affinity_function: AffinityConfig = Field(
+        default_factory=GeometricIOUConfig
+    )
 
 
-@matching_strategy.register(GreedyMatchConfig)
 class GreedyMatcher(MatcherProtocol):
     def __init__(
         self,
         geometry: MatchingGeometry,
         affinity_threshold: float,
-        time_buffer: float,
-        frequency_buffer: float,
+        affinity_function: AffinityFunction,
     ):
         self.geometry = geometry
+        self.affinity_function = affinity_function
         self.affinity_threshold = affinity_threshold
-        self.time_buffer = time_buffer
-        self.frequency_buffer = frequency_buffer
-
-        self.affinity_function = _affinity_functions[self.geometry]
         self.cast_geometry = _geometry_cast_functions[self.geometry]
 
     def __call__(
@@ -240,18 +262,19 @@ class GreedyMatcher(MatcherProtocol):
             scores=scores,
             affinity_function=self.affinity_function,
             affinity_threshold=self.affinity_threshold,
-            time_buffer=self.time_buffer,
-            freq_buffer=self.frequency_buffer,
         )
 
     @classmethod
     def from_config(cls, config: GreedyMatchConfig):
+        affinity_function = build_affinity_function(config.affinity_function)
         return cls(
             geometry=config.geometry,
             affinity_threshold=config.affinity_threshold,
-            time_buffer=config.time_buffer,
-            frequency_buffer=config.frequency_buffer,
+            affinity_function=affinity_function,
         )
+
+
+matching_strategies.register(GreedyMatchConfig, GreedyMatcher)
 
 
 def greedy_match(
@@ -260,8 +283,6 @@ def greedy_match(
     scores: Sequence[float],
     affinity_threshold: float = 0.5,
     affinity_function: AffinityFunction = compute_affinity,
-    time_buffer: float = 0.001,
-    freq_buffer: float = 1000,
 ) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
     """Performs a greedy, one-to-one matching of source to target geometries.
 
@@ -279,10 +300,6 @@ def greedy_match(
         Confidence scores for each source geometry for prioritization.
     affinity_threshold
         The minimum affinity score required for a valid match.
-    time_buffer
-        Time tolerance in seconds for affinity calculation.
-    freq_buffer
-        Frequency tolerance in Hertz for affinity calculation.
 
     Yields
     ------
@@ -314,12 +331,7 @@ def greedy_match(
 
         affinities = np.array(
             [
-                affinity_function(
-                    source_geometry,
-                    target_geometry,
-                    time_buffer=time_buffer,
-                    freq_buffer=freq_buffer,
-                )
+                affinity_function(source_geometry, target_geometry)
                 for target_geometry in ground_truth
             ]
         )
@@ -344,12 +356,11 @@ def greedy_match(
 
 class OptimalMatchConfig(BaseConfig):
     name: Literal["optimal_match"] = "optimal_match"
-    affinity_threshold: float = 0.0
+    affinity_threshold: float = 0.5
     time_buffer: float = 0.005
     frequency_buffer: float = 1_000
 
 
-@matching_strategy.register(OptimalMatchConfig)
 class OptimalMatcher(MatcherProtocol):
     def __init__(
         self,
@@ -384,6 +395,8 @@ class OptimalMatcher(MatcherProtocol):
         )
 
 
+matching_strategies.register(OptimalMatchConfig, OptimalMatcher)
+
 MatchConfig = Annotated[
     Union[
         GreedyMatchConfig,
@@ -396,174 +409,4 @@ MatchConfig = Annotated[
 
 def build_matcher(config: Optional[MatchConfig] = None) -> MatcherProtocol:
     config = config or StartTimeMatchConfig()
-    return matching_strategy.build(config)
-
-
-def _is_in_bounds(
-    geometry: data.Geometry,
-    clip: data.Clip,
-    buffer: float,
-) -> bool:
-    start_time = compute_bounds(geometry)[0]
-    return (start_time >= clip.start_time + buffer) and (
-        start_time <= clip.end_time - buffer
-    )
-
-
-def match_sound_events_and_predictions(
-    clip_annotation: data.ClipAnnotation,
-    raw_predictions: List[RawPrediction],
-    targets: Optional[TargetProtocol] = None,
-    matcher: Optional[MatcherProtocol] = None,
-    ignore_start_end: float = 0.01,
-) -> List[MatchEvaluation]:
-    if matcher is None:
-        matcher = build_matcher()
-
-    if targets is None:
-        targets = build_targets()
-
-    target_sound_events = [
-        sound_event_annotation
-        for sound_event_annotation in clip_annotation.sound_events
-        if targets.filter(sound_event_annotation)
-        and sound_event_annotation.sound_event.geometry is not None
-        and _is_in_bounds(
-            sound_event_annotation.sound_event.geometry,
-            clip=clip_annotation.clip,
-            buffer=ignore_start_end,
-        )
-    ]
-
-    target_geometries: List[data.Geometry] = [
-        sound_event_annotation.sound_event.geometry
-        for sound_event_annotation in target_sound_events
-        if sound_event_annotation.sound_event.geometry is not None
-    ]
-
-    raw_predictions = [
-        raw_prediction
-        for raw_prediction in raw_predictions
-        if _is_in_bounds(
-            raw_prediction.geometry,
-            clip=clip_annotation.clip,
-            buffer=ignore_start_end,
-        )
-    ]
-
-    predicted_geometries = [
-        raw_prediction.geometry for raw_prediction in raw_predictions
-    ]
-
-    scores = [
-        raw_prediction.detection_score for raw_prediction in raw_predictions
-    ]
-
-    matches = []
-
-    for source_idx, target_idx, affinity in matcher(
-        ground_truth=target_geometries,
-        predictions=predicted_geometries,
-        scores=scores,
-    ):
-        target = (
-            target_sound_events[target_idx] if target_idx is not None else None
-        )
-        prediction = (
-            raw_predictions[source_idx] if source_idx is not None else None
-        )
-
-        gt_det = target_idx is not None
-        gt_class = targets.encode_class(target) if target is not None else None
-
-        pred_score = float(prediction.detection_score) if prediction else 0
-
-        pred_geometry = (
-            predicted_geometries[source_idx]
-            if source_idx is not None
-            else None
-        )
-
-        class_scores = (
-            {
-                str(class_name): float(score)
-                for class_name, score in zip(
-                    targets.class_names,
-                    prediction.class_scores,
-                )
-            }
-            if prediction is not None
-            else {}
-        )
-
-        matches.append(
-            MatchEvaluation(
-                clip=clip_annotation.clip,
-                sound_event_annotation=target,
-                gt_det=gt_det,
-                gt_class=gt_class,
-                pred_score=pred_score,
-                pred_class_scores=class_scores,
-                pred_geometry=pred_geometry,
-                affinity=affinity,
-            )
-        )
-
-    return matches
-
-
-def match_all_predictions(
-    clip_annotations: List[data.ClipAnnotation],
-    predictions: List[List[RawPrediction]],
-    targets: Optional[TargetProtocol] = None,
-    matcher: Optional[MatcherProtocol] = None,
-    ignore_start_end: float = 0.01,
-) -> List[MatchEvaluation]:
-    logger.info("Matching all annotations and predictions...")
-    return [
-        match
-        for clip_annotation, raw_predictions in zip(
-            clip_annotations,
-            predictions,
-        )
-        for match in match_sound_events_and_predictions(
-            clip_annotation,
-            raw_predictions,
-            targets=targets,
-            matcher=matcher,
-            ignore_start_end=ignore_start_end,
-        )
-    ]
-
-
-@dataclass
-class ClassExamples:
-    false_positives: List[MatchEvaluation] = field(default_factory=list)
-    false_negatives: List[MatchEvaluation] = field(default_factory=list)
-    true_positives: List[MatchEvaluation] = field(default_factory=list)
-    cross_triggers: List[MatchEvaluation] = field(default_factory=list)
-
-
-def group_matches(matches: List[MatchEvaluation]) -> ClassExamples:
-    class_examples = ClassExamples()
-
-    for match in matches:
-        gt_class = match.gt_class
-        pred_class = match.pred_class
-
-        if pred_class is None:
-            class_examples.false_negatives.append(match)
-            continue
-
-        if gt_class is None:
-            class_examples.false_positives.append(match)
-            continue
-
-        if gt_class != pred_class:
-            class_examples.cross_triggers.append(match)
-            class_examples.cross_triggers.append(match)
-            continue
-
-        class_examples.true_positives.append(match)
-
-    return class_examples
+    return matching_strategies.build(config)

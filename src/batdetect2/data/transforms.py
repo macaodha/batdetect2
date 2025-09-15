@@ -17,7 +17,7 @@ SoundEventTransform = Callable[
     data.SoundEventAnnotation,
 ]
 
-_transforms: Registry[SoundEventTransform] = Registry("transform")
+transform_registry: Registry[SoundEventTransform, []] = Registry("transform")
 
 
 class SetFrequencyBoundConfig(BaseConfig):
@@ -26,7 +26,6 @@ class SetFrequencyBoundConfig(BaseConfig):
     hertz: float
 
 
-@_transforms.register(SetFrequencyBoundConfig)
 class SetFrequencyBound:
     def __init__(self, hertz: float, boundary: Literal["low", "high"] = "low"):
         self.hertz = hertz
@@ -69,13 +68,15 @@ class SetFrequencyBound:
         return cls(hertz=config.hertz, boundary=config.boundary)
 
 
+transform_registry.register(SetFrequencyBoundConfig, SetFrequencyBound)
+
+
 class ApplyIfConfig(BaseConfig):
     name: Literal["apply_if"] = "apply_if"
     transform: "SoundEventTransformConfig"
     condition: SoundEventConditionConfig
 
 
-@_transforms.register(ApplyIfConfig)
 class ApplyIf:
     def __init__(
         self,
@@ -101,13 +102,15 @@ class ApplyIf:
         return cls(condition=condition, transform=transform)
 
 
+transform_registry.register(ApplyIfConfig, ApplyIf)
+
+
 class ReplaceTagConfig(BaseConfig):
     name: Literal["replace_tag"] = "replace_tag"
     original: data.Tag
     replacement: data.Tag
 
 
-@_transforms.register(ReplaceTagConfig)
 class ReplaceTag:
     def __init__(
         self,
@@ -136,6 +139,9 @@ class ReplaceTag:
         return cls(original=config.original, replacement=config.replacement)
 
 
+transform_registry.register(ReplaceTagConfig, ReplaceTag)
+
+
 class MapTagValueConfig(BaseConfig):
     name: Literal["map_tag_value"] = "map_tag_value"
     tag_key: str
@@ -143,7 +149,6 @@ class MapTagValueConfig(BaseConfig):
     target_key: Optional[str] = None
 
 
-@_transforms.register(MapTagValueConfig)
 class MapTagValue:
     def __init__(
         self,
@@ -193,12 +198,14 @@ class MapTagValue:
         )
 
 
+transform_registry.register(MapTagValueConfig, MapTagValue)
+
+
 class ApplyAllConfig(BaseConfig):
     name: Literal["apply_all"] = "apply_all"
     steps: List["SoundEventTransformConfig"] = Field(default_factory=list)
 
 
-@_transforms.register(ApplyAllConfig)
 class ApplyAll:
     def __init__(self, steps: List[SoundEventTransform]):
         self.steps = steps
@@ -218,6 +225,8 @@ class ApplyAll:
         return cls(steps)
 
 
+transform_registry.register(ApplyAllConfig, ApplyAll)
+
 SoundEventTransformConfig = Annotated[
     Union[
         SetFrequencyBoundConfig,
@@ -233,7 +242,7 @@ SoundEventTransformConfig = Annotated[
 def build_sound_event_transform(
     config: SoundEventTransformConfig,
 ) -> SoundEventTransform:
-    return _transforms.build(config)
+    return transform_registry.build(config)
 
 
 def transform_clip_annotation(

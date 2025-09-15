@@ -10,10 +10,7 @@ from soundevent import data
 from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.config import EvaluationConfig
-from batdetect2.evaluate.metrics import (
-    ClassificationMeanAveragePrecision,
-    DetectionAveragePrecision,
-)
+from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.plotting.clips import AudioLoader, build_audio_loader
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
@@ -146,7 +143,6 @@ def build_training_module(
 
 def build_trainer_callbacks(
     targets: TargetProtocol,
-    preprocessor: PreprocessorProtocol,
     config: EvaluationConfig,
     checkpoint_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
@@ -161,6 +157,8 @@ def build_trainer_callbacks(
     if run_name is not None:
         checkpoint_dir = checkpoint_dir / run_name
 
+    evaluator = build_evaluator(config=config, targets=targets)
+
     return [
         ModelCheckpoint(
             dirpath=str(checkpoint_dir),
@@ -168,16 +166,7 @@ def build_trainer_callbacks(
             filename="best-{epoch:02d}-{val_loss:.0f}",
             monitor="total_loss/val",
         ),
-        ValidationMetrics(
-            metrics=[
-                DetectionAveragePrecision(),
-                ClassificationMeanAveragePrecision(
-                    class_names=targets.class_names
-                ),
-            ],
-            preprocessor=preprocessor,
-            match_config=config.match,
-        ),
+        ValidationMetrics(evaluator),
     ]
 
 
@@ -214,7 +203,6 @@ def build_trainer(
         callbacks=build_trainer_callbacks(
             targets,
             config=conf.evaluation,
-            preprocessor=build_preprocessor(conf.preprocess),
             checkpoint_dir=checkpoint_dir,
             experiment_name=experiment_name,
             run_name=run_name,

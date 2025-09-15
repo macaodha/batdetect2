@@ -14,7 +14,7 @@ DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
 
 
-registry: Registry[ClipperProtocol] = Registry("clipper")
+clipper_registry: Registry[ClipperProtocol, []] = Registry("clipper")
 
 
 class RandomClipConfig(BaseConfig):
@@ -25,7 +25,6 @@ class RandomClipConfig(BaseConfig):
     min_sound_event_overlap: float = 0
 
 
-@registry.register(RandomClipConfig)
 class RandomClip:
     def __init__(
         self,
@@ -59,6 +58,9 @@ class RandomClip:
             max_empty=config.max_empty,
             min_sound_event_overlap=config.min_sound_event_overlap,
         )
+
+
+clipper_registry.register(RandomClipConfig, RandomClip)
 
 
 def get_subclip_annotation(
@@ -156,7 +158,6 @@ class PaddedClipConfig(BaseConfig):
     chunk_size: float = DEFAULT_TRAIN_CLIP_DURATION
 
 
-@registry.register(PaddedClipConfig)
 class PaddedClip:
     def __init__(self, chunk_size: float = DEFAULT_TRAIN_CLIP_DURATION):
         self.chunk_size = chunk_size
@@ -183,6 +184,8 @@ class PaddedClip:
         return cls(chunk_size=config.chunk_size)
 
 
+clipper_registry.register(PaddedClipConfig, PaddedClip)
+
 ClipConfig = Annotated[
     Union[RandomClipConfig, PaddedClipConfig], Field(discriminator="name")
 ]
@@ -195,4 +198,4 @@ def build_clipper(config: Optional[ClipConfig] = None) -> ClipperProtocol:
         "Building clipper with config: \n{}",
         lambda: config.to_yaml_string(),
     )
-    return registry.build(config)
+    return clipper_registry.build(config)

@@ -2,6 +2,7 @@ from batdetect2.plotting.clip_annotations import plot_clip_annotation
 from batdetect2.plotting.clip_predictions import plot_clip_prediction
 from batdetect2.plotting.clips import plot_clip
 from batdetect2.plotting.common import plot_spectrogram
+from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.plotting.heatmaps import (
     plot_classification_heatmap,
     plot_detection_heatmap,
@@ -26,4 +27,5 @@ __all__ = [
     "plot_true_positive_match",
     "plot_detection_heatmap",
     "plot_classification_heatmap",
+    "plot_match_gallery",
 ]

@@ -1,6 +1,7 @@
 from typing import Generic, Protocol, Type, TypeVar
 
 from pydantic import BaseModel
+from typing_extensions import ParamSpec
 
 __all__ = [
     "Registry",
@@ -8,26 +9,36 @@ __all__ = [
 
 T_Config = TypeVar("T_Config", bound=BaseModel, contravariant=True)
 T_Type = TypeVar("T_Type", covariant=True)
+P_Type = ParamSpec("P_Type")
 
 
-class LogicProtocol(Generic[T_Config, T_Type], Protocol):
-    """A generic protocol for the logic classes (conditions or transforms)."""
+class LogicProtocol(Generic[T_Config, T_Type, P_Type], Protocol):
+    """A generic protocol for the logic classes."""
 
     @classmethod
-    def from_config(cls, config: T_Config) -> T_Type: ...
+    def from_config(
+        cls,
+        config: T_Config,
+        *args: P_Type.args,
+        **kwargs: P_Type.kwargs,
+    ) -> T_Type: ...
 
 
 T_Proto = TypeVar("T_Proto", bound=LogicProtocol)
 
 
-class Registry(Generic[T_Type]):
+class Registry(Generic[T_Type, P_Type]):
     """A generic class to create and manage a registry of items."""
 
     def __init__(self, name: str):
         self._name = name
         self._registry = {}
 
-    def register(self, config_cls: Type[T_Config]):
+    def register(
+        self,
+        config_cls: Type[T_Config],
+        logic_cls: LogicProtocol[T_Config, T_Type, P_Type],
+    ) -> None:
         """A decorator factory to register a new item."""
         fields = config_cls.model_fields
 
@@ -39,13 +50,14 @@ class Registry(Generic[T_Type]):
         if not isinstance(name, str):
             raise ValueError("'name' field must be a string literal.")
 
-        def decorator(logic_cls: Type[T_Proto]) -> Type[T_Proto]:
-            self._registry[name] = logic_cls
-            return logic_cls
+        self._registry[name] = logic_cls
 
-        return decorator
-
-    def build(self, config: BaseModel) -> T_Type:
+    def build(
+        self,
+        config: BaseModel,
+        *args: P_Type.args,
+        **kwargs: P_Type.kwargs,
+    ) -> T_Type:
         """Builds a logic instance from a config object."""
 
         name = getattr(config, "name")  # noqa: B009
@@ -58,4 +70,4 @@ class Registry(Generic[T_Type]):
                 f"No {self._name} with name '{name}' is registered."
             )
 
-        return self._registry[name].from_config(config)
+        return self._registry[name].from_config(config, *args, **kwargs)

@@ -7,8 +7,8 @@ from soundevent.geometry import compute_bounds
 from soundevent.plot.tags import TagColorMapper
 
 from batdetect2.plotting.clip_predictions import plot_prediction
-from batdetect2.plotting.clips import plot_clip
-from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
+from batdetect2.plotting.clips import AudioLoader, plot_clip
+from batdetect2.preprocess import PreprocessorProtocol
 from batdetect2.typing.evaluate import MatchEvaluation
 
 __all__ = [
@@ -32,6 +32,7 @@ DEFAULT_PREDICTION_LINE_STYLE = "--"
 def plot_matches(
     matches: List[data.Match],
     clip: data.Clip,
+    audio_loader: Optional[AudioLoader] = None,
     preprocessor: Optional[PreprocessorProtocol] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
@@ -46,12 +47,11 @@ def plot_matches(
     annotation_linestyle: str = DEFAULT_ANNOTATION_LINE_STYLE,
     prediction_linestyle: str = DEFAULT_PREDICTION_LINE_STYLE,
 ) -> Axes:
-    if preprocessor is None:
-        preprocessor = build_preprocessor()
-
     ax = plot_clip(
         clip,
         ax=ax,
+        audio_loader=audio_loader,
+        preprocessor=preprocessor,
         figsize=figsize,
         audio_dir=audio_dir,
         spec_cmap=spec_cmap,
@@ -116,6 +116,7 @@ def plot_matches(
 
 def plot_false_positive_match(
     match: MatchEvaluation,
+    audio_loader: Optional[AudioLoader] = None,
     preprocessor: Optional[PreprocessorProtocol] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
@@ -143,6 +144,7 @@ def plot_false_positive_match(
 
     ax = plot_clip(
         clip,
+        audio_loader=audio_loader,
         preprocessor=preprocessor,
         figsize=figsize,
         ax=ax,
@@ -174,6 +176,7 @@ def plot_false_positive_match(
 
 def plot_false_negative_match(
     match: MatchEvaluation,
+    audio_loader: Optional[AudioLoader] = None,
     preprocessor: Optional[PreprocessorProtocol] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
@@ -203,6 +206,7 @@ def plot_false_negative_match(
 
     ax = plot_clip(
         clip,
+        audio_loader=audio_loader,
         preprocessor=preprocessor,
         figsize=figsize,
         ax=ax,
@@ -237,6 +241,7 @@ def plot_false_negative_match(
 def plot_true_positive_match(
     match: MatchEvaluation,
     preprocessor: Optional[PreprocessorProtocol] = None,
+    audio_loader: Optional[AudioLoader] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
@@ -267,6 +272,7 @@ def plot_true_positive_match(
 
     ax = plot_clip(
         clip,
+        audio_loader=audio_loader,
         preprocessor=preprocessor,
         figsize=figsize,
         ax=ax,
@@ -312,6 +318,7 @@ def plot_true_positive_match(
 def plot_cross_trigger_match(
     match: MatchEvaluation,
     preprocessor: Optional[PreprocessorProtocol] = None,
+    audio_loader: Optional[AudioLoader] = None,
     figsize: Optional[Tuple[int, int]] = None,
     ax: Optional[Axes] = None,
     audio_dir: Optional[data.PathLike] = None,
@@ -342,6 +349,7 @@ def plot_cross_trigger_match(
 
     ax = plot_clip(
         clip,
+        audio_loader=audio_loader,
         preprocessor=preprocessor,
         figsize=figsize,
         ax=ax,

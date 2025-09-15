@@ -10,7 +10,7 @@ from batdetect2.data._core import Registry
 
 SoundEventCondition = Callable[[data.SoundEventAnnotation], bool]
 
-_conditions: Registry[SoundEventCondition] = Registry("condition")
+condition_registry: Registry[SoundEventCondition, []] = Registry("condition")
 
 
 class HasTagConfig(BaseConfig):
@@ -18,7 +18,6 @@ class HasTagConfig(BaseConfig):
     tag: data.Tag
 
 
-@_conditions.register(HasTagConfig)
 class HasTag:
     def __init__(self, tag: data.Tag):
         self.tag = tag
@@ -33,12 +32,14 @@ class HasTag:
         return cls(tag=config.tag)
 
 
+condition_registry.register(HasTagConfig, HasTag)
+
+
 class HasAllTagsConfig(BaseConfig):
     name: Literal["has_all_tags"] = "has_all_tags"
     tags: List[data.Tag]
 
 
-@_conditions.register(HasAllTagsConfig)
 class HasAllTags:
     def __init__(self, tags: List[data.Tag]):
         if not tags:
@@ -56,12 +57,14 @@ class HasAllTags:
         return cls(tags=config.tags)
 
 
+condition_registry.register(HasAllTagsConfig, HasAllTags)
+
+
 class HasAnyTagConfig(BaseConfig):
     name: Literal["has_any_tag"] = "has_any_tag"
     tags: List[data.Tag]
 
 
-@_conditions.register(HasAnyTagConfig)
 class HasAnyTag:
     def __init__(self, tags: List[data.Tag]):
         if not tags:
@@ -78,6 +81,8 @@ class HasAnyTag:
     def from_config(cls, config: HasAnyTagConfig):
         return cls(tags=config.tags)
 
+
+condition_registry.register(HasAnyTagConfig, HasAnyTag)
 
 Operator = Literal["gt", "gte", "lt", "lte", "eq"]
 
@@ -109,7 +114,6 @@ def _build_comparator(
     raise ValueError(f"Invalid operator {operator}")
 
 
-@_conditions.register(DurationConfig)
 class Duration:
     def __init__(self, operator: Operator, seconds: float):
         self.operator = operator
@@ -135,6 +139,9 @@ class Duration:
         return cls(operator=config.operator, seconds=config.seconds)
 
 
+condition_registry.register(DurationConfig, Duration)
+
+
 class FrequencyConfig(BaseConfig):
     name: Literal["frequency"] = "frequency"
     boundary: Literal["low", "high"]
@@ -142,7 +149,6 @@ class FrequencyConfig(BaseConfig):
     hertz: float
 
 
-@_conditions.register(FrequencyConfig)
 class Frequency:
     def __init__(
         self,
@@ -184,12 +190,14 @@ class Frequency:
         )
 
 
+condition_registry.register(FrequencyConfig, Frequency)
+
+
 class AllOfConfig(BaseConfig):
     name: Literal["all_of"] = "all_of"
     conditions: Sequence["SoundEventConditionConfig"]
 
 
-@_conditions.register(AllOfConfig)
 class AllOf:
     def __init__(self, conditions: List[SoundEventCondition]):
         self.conditions = conditions
@@ -207,12 +215,14 @@ class AllOf:
         return cls(conditions)
 
 
+condition_registry.register(AllOfConfig, AllOf)
+
+
 class AnyOfConfig(BaseConfig):
     name: Literal["any_of"] = "any_of"
     conditions: List["SoundEventConditionConfig"]
 
 
-@_conditions.register(AnyOfConfig)
 class AnyOf:
     def __init__(self, conditions: List[SoundEventCondition]):
         self.conditions = conditions
@@ -230,12 +240,14 @@ class AnyOf:
         return cls(conditions)
 
 
+condition_registry.register(AnyOfConfig, AnyOf)
+
+
 class NotConfig(BaseConfig):
     name: Literal["not"] = "not"
     condition: "SoundEventConditionConfig"
 
 
-@_conditions.register(NotConfig)
 class Not:
     def __init__(self, condition: SoundEventCondition):
         self.condition = condition
@@ -250,6 +262,8 @@ class Not:
         condition = build_sound_event_condition(config.condition)
         return cls(condition)
 
+
+condition_registry.register(NotConfig, Not)
 
 SoundEventConditionConfig = Annotated[
     Union[
@@ -269,7 +283,7 @@ SoundEventConditionConfig = Annotated[
 def build_sound_event_condition(
     config: SoundEventConditionConfig,
 ) -> SoundEventCondition:
-    return _conditions.build(config)
+    return condition_registry.build(config)
 
 
 def filter_clip_annotation(

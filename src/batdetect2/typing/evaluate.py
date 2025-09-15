@@ -11,6 +11,7 @@ from typing import (
     TypeVar,
 )
 
+from matplotlib.figure import Figure
 from soundevent import data
 
 __all__ = [
@@ -50,6 +51,12 @@ class MatchEvaluation:
         return self.pred_class_scores[pred_class]
 
 
+@dataclass
+class ClipEvaluation:
+    clip: data.Clip
+    matches: List[MatchEvaluation]
+
+
 class MatcherProtocol(Protocol):
     def __call__(
         self,
@@ -67,10 +74,16 @@ class AffinityFunction(Protocol, Generic[Geom]):
         self,
         geometry1: Geom,
         geometry2: Geom,
-        time_buffer: float = 0.01,
-        freq_buffer: float = 1000,
     ) -> float: ...
 
 
 class MetricsProtocol(Protocol):
-    def __call__(self, matches: List[MatchEvaluation]) -> Dict[str, float]: ...
+    def __call__(
+        self, clip_evaluations: Sequence[ClipEvaluation]
+    ) -> Dict[str, float]: ...
+
+
+class PlotterProtocol(Protocol):
+    def __call__(
+        self, clip_evaluations: Sequence[ClipEvaluation]
+    ) -> Iterable[Tuple[str, Figure]]: ...
