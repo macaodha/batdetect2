@@ -22,7 +22,14 @@ from batdetect2.train.config import (
     load_full_training_config,
     load_train_config,
 )
-from batdetect2.train.dataset import TrainingDataset
+from batdetect2.train.dataset import (
+    TrainingDataset,
+    ValidationDataset,
+    build_train_dataset,
+    build_train_loader,
+    build_val_dataset,
+    build_val_loader,
+)
 from batdetect2.train.labels import build_clip_labeler, load_label_config
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.losses import (
@@ -33,14 +40,7 @@ from batdetect2.train.losses import (
     SizeLossConfig,
     build_loss,
 )
-from batdetect2.train.train import (
-    build_train_dataset,
-    build_train_loader,
-    build_trainer,
-    build_val_dataset,
-    build_val_loader,
-    train,
-)
+from batdetect2.train.train import build_trainer, train
 
 __all__ = [
     "AugmentationsConfig",
@@ -49,7 +49,6 @@ __all__ = [
     "EchoAugmentationConfig",
     "FrequencyMaskAugmentationConfig",
     "FullTrainingConfig",
-    "TrainingDataset",
     "LossConfig",
     "LossFunction",
     "PLTrainerConfig",
@@ -57,7 +56,9 @@ __all__ = [
     "SizeLossConfig",
     "TimeMaskAugmentationConfig",
     "TrainingConfig",
+    "TrainingDataset",
     "TrainingModule",
+    "ValidationDataset",
     "VolumeAugmentationConfig",
     "WarpAugmentationConfig",
     "add_echo",

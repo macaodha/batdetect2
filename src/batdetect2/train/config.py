@@ -72,13 +72,16 @@ class TrainLoaderConfig(BaseConfig):
     )
 
 
-class TrainingConfig(BaseConfig):
+class OptimizerConfig(BaseConfig):
     learning_rate: float = 1e-3
     t_max: int = 100
 
+
+class TrainingConfig(BaseConfig):
     train_loader: TrainLoaderConfig = Field(default_factory=TrainLoaderConfig)
     val_loader: ValLoaderConfig = Field(default_factory=ValLoaderConfig)
 
+    optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
     loss: LossConfig = Field(default_factory=LossConfig)
     cliping: RandomClipConfig = Field(default_factory=RandomClipConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)

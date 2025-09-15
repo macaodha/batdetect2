@@ -77,3 +77,15 @@ def load_model_from_checkpoint(
 ) -> Tuple[Model, FullTrainingConfig]:
     module = TrainingModule.load_from_checkpoint(path)  # type: ignore
     return module.model, module.config
+
+
+def build_training_module(
+    config: Optional[FullTrainingConfig] = None,
+    t_max: int = 200,
+) -> TrainingModule:
+    config = config or FullTrainingConfig()
+    return TrainingModule(
+        config=config,
+        learning_rate=config.train.optimizer.learning_rate,
+        t_max=t_max,
+    )
