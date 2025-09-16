@@ -46,13 +46,13 @@ def train_command(
     run_name: Optional[str] = None,
     verbose: int = 0,
 ):
+    from batdetect2.api.base import BatDetect2API
     from batdetect2.config import (
         BatDetect2Config,
         load_full_config,
     )
     from batdetect2.data import load_dataset_from_config
     from batdetect2.targets import load_target_config
-    from batdetect2.train import train
 
     logger.remove()
     if verbose == 0:
@@ -62,11 +62,9 @@ def train_command(
     else:
         log_level = "DEBUG"
     logger.add(sys.stderr, level=log_level)
-
     logger.info("Initiating training process...")
 
-    logger.info("Loading training configuration...")
-
+    logger.info("Loading configuration...")
     conf = (
         load_full_config(config, field=config_field)
         if config is not None
@@ -98,16 +96,19 @@ def train_command(
 
     logger.info("Configuration and data loaded. Starting training...")
 
-    train(
+    if model_path is None:
+        api = BatDetect2API.from_config(conf)
+    else:
+        api = BatDetect2API.from_checkpoint(model_path)
+
+    return api.train(
         train_annotations=train_annotations,
         val_annotations=val_annotations,
-        config=conf,
-        model_path=model_path,
         train_workers=train_workers,
         val_workers=val_workers,
-        experiment_name=experiment_name,
-        log_dir=log_dir,
         checkpoint_dir=ckpt_dir,
-        seed=seed,
+        log_dir=log_dir,
+        experiment_name=experiment_name,
         run_name=run_name,
+        seed=seed,
     )

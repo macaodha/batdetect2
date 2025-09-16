@@ -15,7 +15,7 @@ from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.config import TrainingConfig
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
-from batdetect2.train.lightning import TrainingModule, build_training_module
+from batdetect2.train.lightning import build_training_module
 from batdetect2.train.logging import build_logger
 
 if TYPE_CHECKING:
@@ -38,14 +38,12 @@ DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
 def train(
     train_annotations: Sequence[data.ClipAnnotation],
     val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
-    evaluator: Optional[Evaluator] = None,
-    trainer: Optional[Trainer] = None,
     targets: Optional["TargetProtocol"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
     labeller: Optional["ClipLabeller"] = None,
     config: Optional["BatDetect2Config"] = None,
-    model_path: Optional[data.PathLike] = None,
+    trainer: Optional[Trainer] = None,
     train_workers: Optional[int] = None,
     val_workers: Optional[int] = None,
     checkpoint_dir: Optional[Path] = None,
@@ -99,19 +97,15 @@ def train(
         else None
     )
 
-    if model_path is not None:
-        logger.debug("Loading model from: {path}", path=model_path)
-        module = TrainingModule.load_from_checkpoint(Path(model_path))
-    else:
-        module = build_training_module(
-            config,
-            t_max=config.train.optimizer.t_max * len(train_dataloader),
-        )
+    module = build_training_module(
+        config,
+        t_max=config.train.optimizer.t_max * len(train_dataloader),
+    )
 
     trainer = trainer or build_trainer(
         config.train,
         targets=targets,
-        evaluator=evaluator,
+        evaluator=build_evaluator(config.evaluation, targets=targets),
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
         experiment_name=experiment_name,
