@@ -3,39 +3,46 @@ from typing import List, Optional, Tuple
 import pandas as pd
 from soundevent import data
 
+from batdetect2.audio import build_audio_loader
+from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.dataframe import extract_matches_dataframe
 from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.metrics import ClassificationAP, DetectionAP
 from batdetect2.models import Model
-from batdetect2.plotting.clips import build_audio_loader
+from batdetect2.plotting.clips import AudioLoader, PreprocessorProtocol
 from batdetect2.postprocess import get_raw_predictions
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
-from batdetect2.train.config import FullTrainingConfig
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.train import build_val_loader
+from batdetect2.typing import ClipLabeller, TargetProtocol
 
 
 def evaluate(
     model: Model,
     test_annotations: List[data.ClipAnnotation],
-    config: Optional[FullTrainingConfig] = None,
+    targets: Optional[TargetProtocol] = None,
+    audio_loader: Optional[AudioLoader] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
+    labeller: Optional[ClipLabeller] = None,
+    config: Optional[EvaluationConfig] = None,
     num_workers: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, dict]:
-    config = config or FullTrainingConfig()
+    config = config or EvaluationConfig()
 
-    audio_loader = build_audio_loader(config.preprocess.audio)
+    audio_loader = audio_loader or build_audio_loader()
 
-    preprocessor = build_preprocessor(config.preprocess)
+    preprocessor = preprocessor or build_preprocessor(
+        input_samplerate=audio_loader.samplerate,
+    )
 
-    targets = build_targets(config.targets)
+    targets = targets or build_targets()
 
-    labeller = build_clip_labeler(
+    labeller = labeller or build_clip_labeler(
         targets,
         min_freq=preprocessor.min_freq,
         max_freq=preprocessor.max_freq,
-        config=config.train.labels,
     )
 
     loader = build_val_loader(
@@ -43,7 +50,6 @@ def evaluate(
         audio_loader=audio_loader,
         labeller=labeller,
         preprocessor=preprocessor,
-        config=config.train.val_loader,
         num_workers=num_workers,
     )
 
@@ -52,7 +58,7 @@ def evaluate(
     clip_annotations = []
     predictions = []
 
-    evaluator = build_evaluator(config=config.evaluation)
+    evaluator = build_evaluator(config=config)
 
     for batch in loader:
         outputs = model.detector(batch.spec)

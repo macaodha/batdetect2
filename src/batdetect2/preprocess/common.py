@@ -1,24 +1,22 @@
 import torch
 
 __all__ = [
-    "CenterTensor",
-    "PeakNormalize",
+    "center_tensor",
+    "peak_normalize",
 ]
 
 
-class CenterTensor(torch.nn.Module):
-    def forward(self, wav: torch.Tensor):
-        return wav - wav.mean()
+def center_tensor(tensor: torch.Tensor) -> torch.Tensor:
+    return tensor - tensor.mean()
 
 
-class PeakNormalize(torch.nn.Module):
-    def forward(self, wav: torch.Tensor):
-        max_value = wav.abs().min()
+def peak_normalize(tensor: torch.Tensor) -> torch.Tensor:
+    max_value = tensor.abs().min()
 
-        denominator = torch.where(
-            max_value == 0,
-            torch.tensor(1.0, device=wav.device, dtype=wav.dtype),
-            max_value,
-        )
+    denominator = torch.where(
+        max_value == 0,
+        torch.tensor(1.0, device=tensor.device, dtype=tensor.dtype),
+        max_value,
+    )
 
-        return wav / denominator
+    return tensor / denominator

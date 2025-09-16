@@ -29,15 +29,10 @@ provided here.
 from typing import List, Optional
 
 import torch
-from pydantic import Field
-from soundevent.data import PathLike
 
-from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.models.backbones import (
     Backbone,
-    BackboneConfig,
     build_backbone,
-    load_backbone_config,
 )
 from batdetect2.models.blocks import (
     ConvConfig,
@@ -51,6 +46,10 @@ from batdetect2.models.bottleneck import (
     BottleneckConfig,
     build_bottleneck,
 )
+from batdetect2.models.config import (
+    BackboneConfig,
+    load_backbone_config,
+)
 from batdetect2.models.decoder import (
     DEFAULT_DECODER_CONFIG,
     DecoderConfig,
@@ -63,9 +62,9 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
-from batdetect2.postprocess import PostprocessConfig, build_postprocessor
-from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.targets import TargetConfig, build_targets
+from batdetect2.postprocess import build_postprocessor
+from batdetect2.preprocess import build_preprocessor
+from batdetect2.targets import build_targets
 from batdetect2.typing.models import DetectionModel
 from batdetect2.typing.postprocess import (
     DetectionsTensor,
@@ -99,18 +98,8 @@ __all__ = [
     "build_detector",
     "load_backbone_config",
     "Model",
-    "ModelConfig",
     "build_model",
 ]
-
-
-class ModelConfig(BaseConfig):
-    model: BackboneConfig = Field(default_factory=BackboneConfig)
-    preprocess: PreprocessingConfig = Field(
-        default_factory=PreprocessingConfig
-    )
-    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
 
 
 class Model(torch.nn.Module):
@@ -125,14 +114,12 @@ class Model(torch.nn.Module):
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
         targets: TargetProtocol,
-        config: ModelConfig,
     ):
         super().__init__()
         self.detector = detector
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
         self.targets = targets
-        self.config = config
 
     def forward(self, wav: torch.Tensor) -> List[DetectionsTensor]:
         spec = self.preprocessor(wav)
@@ -140,32 +127,25 @@ class Model(torch.nn.Module):
         return self.postprocessor(outputs)
 
 
-def build_model(config: Optional[ModelConfig] = None):
-    config = config or ModelConfig()
-
-    targets = build_targets(config=config.targets)
-
-    preprocessor = build_preprocessor(config=config.preprocess)
-
-    postprocessor = build_postprocessor(
+def build_model(
+    config: Optional[BackboneConfig] = None,
+    targets: Optional[TargetProtocol] = None,
+    preprocessor: Optional[PreprocessorProtocol] = None,
+    postprocessor: Optional[PostprocessorProtocol] = None,
+):
+    config = config or BackboneConfig()
+    targets = targets or build_targets()
+    preprocessor = preprocessor or build_preprocessor()
+    postprocessor = postprocessor or build_postprocessor(
         preprocessor=preprocessor,
-        config=config.postprocess,
     )
-
     detector = build_detector(
         num_classes=len(targets.class_names),
-        config=config.model,
+        config=config,
     )
     return Model(
-        config=config,
         detector=detector,
         postprocessor=postprocessor,
         preprocessor=preprocessor,
         targets=targets,
     )
-
-
-def load_model_config(
-    path: PathLike, field: Optional[str] = None
-) -> ModelConfig:
-    return load_config(path, schema=ModelConfig, field=field)

@@ -32,6 +32,8 @@ class AudioLoader(Protocol):
     allows for different loading strategies or implementations.
     """
 
+    samplerate: int
+
     def load_file(
         self,
         path: data.PathLike,
@@ -125,22 +127,6 @@ class SpectrogramBuilder(Protocol):
         ...
 
 
-class AudioPipeline(Protocol):
-    def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
-
-
-class SpectrogramPipeline(Protocol):
-    def compute_spectrogram(self, wav: torch.Tensor) -> torch.Tensor: ...
-
-    def select_frequencies(self, spec: torch.Tensor) -> torch.Tensor: ...
-
-    def transform_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
-
-    def resize_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
-
-    def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
-
-
 class PreprocessorProtocol(Protocol):
     """Defines a high-level interface for the complete preprocessing pipeline."""
 
@@ -152,11 +138,13 @@ class PreprocessorProtocol(Protocol):
 
     output_samplerate: float
 
-    audio_pipeline: AudioPipeline
-
-    spectrogram_pipeline: SpectrogramPipeline
-
     def __call__(self, wav: torch.Tensor) -> torch.Tensor: ...
+
+    def generate_spectrogram(self, wav: torch.Tensor) -> torch.Tensor: ...
+
+    def process_audio(self, wav: torch.Tensor) -> torch.Tensor: ...
+
+    def process_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
 
     def process_numpy(self, wav: np.ndarray) -> np.ndarray:
         return self(torch.tensor(wav)).numpy()

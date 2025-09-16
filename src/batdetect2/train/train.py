@@ -1,29 +1,31 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from lightning import Trainer, seed_everything
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from loguru import logger
 from soundevent import data
 
-from batdetect2.evaluate.evaluator import build_evaluator
-from batdetect2.plotting.clips import PreprocessorProtocol, build_audio_loader
+from batdetect2.audio import build_audio_loader
+from batdetect2.evaluate.evaluator import Evaluator, build_evaluator
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
 from batdetect2.train.callbacks import ValidationMetrics
-from batdetect2.train.config import (
-    FullTrainingConfig,
-)
+from batdetect2.train.config import TrainingConfig
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import TrainingModule, build_training_module
 from batdetect2.train.logging import build_logger
-from batdetect2.typing import (
-    TargetProtocol,
-)
-from batdetect2.typing.preprocess import AudioLoader
-from batdetect2.typing.train import ClipLabeller
+
+if TYPE_CHECKING:
+    from batdetect2.config import BatDetect2Config
+    from batdetect2.typing import (
+        AudioLoader,
+        ClipLabeller,
+        PreprocessorProtocol,
+        TargetProtocol,
+    )
 
 __all__ = [
     "build_trainer",
@@ -36,12 +38,13 @@ DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
 def train(
     train_annotations: Sequence[data.ClipAnnotation],
     val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
+    evaluator: Optional[Evaluator] = None,
     trainer: Optional[Trainer] = None,
-    targets: Optional[TargetProtocol] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    audio_loader: Optional[AudioLoader] = None,
-    labeller: Optional[ClipLabeller] = None,
-    config: Optional[FullTrainingConfig] = None,
+    targets: Optional["TargetProtocol"] = None,
+    preprocessor: Optional["PreprocessorProtocol"] = None,
+    audio_loader: Optional["AudioLoader"] = None,
+    labeller: Optional["ClipLabeller"] = None,
+    config: Optional["BatDetect2Config"] = None,
     model_path: Optional[data.PathLike] = None,
     train_workers: Optional[int] = None,
     val_workers: Optional[int] = None,
@@ -51,17 +54,20 @@ def train(
     run_name: Optional[str] = None,
     seed: Optional[int] = None,
 ):
+    from batdetect2.config import BatDetect2Config
+
     if seed is not None:
         seed_everything(seed)
 
-    config = config or FullTrainingConfig()
+    config = config or BatDetect2Config()
 
-    targets = targets or build_targets(config.targets)
+    targets = targets or build_targets(config=config.targets)
 
-    preprocessor = preprocessor or build_preprocessor(config.preprocess)
+    audio_loader = audio_loader or build_audio_loader(config=config.audio)
 
-    audio_loader = audio_loader or build_audio_loader(
-        config=config.preprocess.audio
+    preprocessor = preprocessor or build_preprocessor(
+        input_samplerate=audio_loader.samplerate,
+        config=config.preprocess,
     )
 
     labeller = labeller or build_clip_labeler(
@@ -95,7 +101,7 @@ def train(
 
     if model_path is not None:
         logger.debug("Loading model from: {path}", path=model_path)
-        module = TrainingModule.load_from_checkpoint(model_path)  # type: ignore
+        module = TrainingModule.load_from_checkpoint(Path(model_path))
     else:
         module = build_training_module(
             config,
@@ -103,8 +109,9 @@ def train(
         )
 
     trainer = trainer or build_trainer(
-        config,
+        config.train,
         targets=targets,
+        evaluator=evaluator,
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
         experiment_name=experiment_name,
@@ -121,8 +128,8 @@ def train(
 
 
 def build_trainer_callbacks(
-    targets: TargetProtocol,
-    config: FullTrainingConfig,
+    targets: "TargetProtocol",
+    evaluator: Optional[Evaluator] = None,
     checkpoint_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
@@ -136,7 +143,7 @@ def build_trainer_callbacks(
     if run_name is not None:
         checkpoint_dir = checkpoint_dir / run_name
 
-    evaluator = build_evaluator(config=config.evaluation, targets=targets)
+    evaluator = evaluator or build_evaluator(targets=targets)
 
     return [
         ModelCheckpoint(
@@ -150,20 +157,21 @@ def build_trainer_callbacks(
 
 
 def build_trainer(
-    conf: FullTrainingConfig,
-    targets: TargetProtocol,
+    conf: TrainingConfig,
+    targets: "TargetProtocol",
+    evaluator: Optional[Evaluator] = None,
     checkpoint_dir: Optional[Path] = None,
     log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
 ) -> Trainer:
-    trainer_conf = conf.train.trainer
+    trainer_conf = conf.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
     train_logger = build_logger(
-        conf.train.logger,
+        conf.logger,
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
@@ -181,7 +189,7 @@ def build_trainer(
         logger=train_logger,
         callbacks=build_trainer_callbacks(
             targets,
-            config=conf,
+            evaluator=evaluator,
             checkpoint_dir=checkpoint_dir,
             experiment_name=experiment_name,
             run_name=run_name,

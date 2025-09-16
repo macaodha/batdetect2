@@ -36,31 +36,30 @@ targets:
     name: anchor_bbox
     anchor: top-left
 
-preprocess:
-  audio:
-    samplerate: 256000
-    resample:
-      enabled: True
-      method: "poly"
+audio:
+  samplerate: 256000
+  resample:
+    enabled: True
+    method: "poly"
 
-  spectrogram:
-    stft:
-      window_duration: 0.002
-      window_overlap: 0.75
-      window_fn: hann
-    frequencies:
-      max_freq: 120000
-      min_freq: 10000
-    size:
-      height: 128
-      resize_factor: 0.5
-    transforms:
-      - name: pcen
-        time_constant: 0.1
-        gain: 0.98
-        bias: 2
-        power: 0.5
-      - name: spectral_mean_substraction
+preprocess:
+  stft:
+    window_duration: 0.002
+    window_overlap: 0.75
+    window_fn: hann
+  frequencies:
+    max_freq: 120000
+    min_freq: 10000
+  size:
+    height: 128
+    resize_factor: 0.5
+  spectrogram_transforms:
+    - name: pcen
+      time_constant: 0.1
+      gain: 0.98
+      bias: 2
+      power: 0.5
+    - name: spectral_mean_substraction
 
 postprocess:
   nms_kernel_size: 9
@@ -113,11 +112,43 @@ train:
 
   train_loader:
     batch_size: 8
+
     num_workers: 2
+
     shuffle: True
+
     clipping_strategy:
       name: random_subclip
       duration: 0.256
+
+    augmentations:
+      enabled: true
+      audio:
+        - name: mix_audio
+          probability: 0.2
+          min_weight: 0.3
+          max_weight: 0.7
+        - name: add_echo
+          probability: 0.2
+          max_delay: 0.005
+          min_weight: 0.0
+          max_weight: 1.0
+      spectrogram:
+        - name: scale_volume
+          probability: 0.2
+          min_scaling: 0.0
+          max_scaling: 2.0
+        - name: warp
+          probability: 0.2
+          delta: 0.04
+        - name: mask_time
+          probability: 0.2
+          max_perc: 0.05
+          max_masks: 3
+        - name: mask_freq
+          probability: 0.2
+          max_perc: 0.10
+          max_masks: 3
 
   val_loader:
     num_workers: 2
@@ -141,32 +172,3 @@ train:
 
   logger:
     name: csv
-
-  augmentations:
-    enabled: true
-    audio:
-      - name: mix_audio
-        probability: 0.2
-        min_weight: 0.3
-        max_weight: 0.7
-      - name: add_echo
-        probability: 0.2
-        max_delay: 0.005
-        min_weight: 0.0
-        max_weight: 1.0
-    spectrogram:
-      - name: scale_volume
-        probability: 0.2
-        min_scaling: 0.0
-        max_scaling: 2.0
-      - name: warp
-        probability: 0.2
-        delta: 0.04
-      - name: mask_time
-        probability: 0.2
-        max_perc: 0.05
-        max_masks: 3
-      - name: mask_freq
-        probability: 0.2
-        max_perc: 0.10
-        max_masks: 3

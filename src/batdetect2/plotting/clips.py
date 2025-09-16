@@ -5,8 +5,9 @@ import torch
 from matplotlib.axes import Axes
 from soundevent import data
 
+from batdetect2.audio import build_audio_loader
 from batdetect2.plotting.common import plot_spectrogram
-from batdetect2.preprocess import build_audio_loader, build_preprocessor
+from batdetect2.preprocess import build_preprocessor
 from batdetect2.typing import AudioLoader, PreprocessorProtocol
 
 __all__ = [

@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import lightning as L
 import torch
@@ -6,10 +6,16 @@ from soundevent.data import PathLike
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
+from batdetect2.audio import TARGET_SAMPLERATE_HZ
 from batdetect2.models import Model, build_model
-from batdetect2.train.config import FullTrainingConfig
+from batdetect2.plotting.clips import build_preprocessor
+from batdetect2.postprocess import build_postprocessor
+from batdetect2.targets.targets import build_targets
 from batdetect2.train.losses import build_loss
 from batdetect2.typing import ModelOutput, TrainExample
+
+if TYPE_CHECKING:
+    from batdetect2.config import BatDetect2Config
 
 __all__ = [
     "TrainingModule",
@@ -21,7 +27,8 @@ class TrainingModule(L.LightningModule):
 
     def __init__(
         self,
-        config: FullTrainingConfig,
+        config: "BatDetect2Config",
+        input_samplerate: int = TARGET_SAMPLERATE_HZ,
         learning_rate: float = 0.001,
         t_max: int = 100,
         model: Optional[Model] = None,
@@ -31,6 +38,7 @@ class TrainingModule(L.LightningModule):
 
         self.save_hyperparameters(logger=False)
 
+        self.input_samplerate = input_samplerate
         self.config = config
         self.learning_rate = learning_rate
         self.t_max = t_max
@@ -39,7 +47,23 @@ class TrainingModule(L.LightningModule):
             loss = build_loss(self.config.train.loss)
 
         if model is None:
-            model = build_model(self.config)
+            targets = build_targets(self.config.targets)
+
+            preprocessor = build_preprocessor(
+                config=self.config.preprocess,
+                input_samplerate=self.input_samplerate,
+            )
+
+            postprocessor = build_postprocessor(
+                preprocessor, config=self.config.postprocess
+            )
+
+            model = build_model(
+                config=self.config.model,
+                targets=targets,
+                preprocessor=preprocessor,
+                postprocessor=postprocessor,
+            )
 
         self.loss = loss
         self.model = model
@@ -74,16 +98,18 @@ class TrainingModule(L.LightningModule):
 
 def load_model_from_checkpoint(
     path: PathLike,
-) -> Tuple[Model, FullTrainingConfig]:
+) -> Tuple[Model, "BatDetect2Config"]:
     module = TrainingModule.load_from_checkpoint(path)  # type: ignore
     return module.model, module.config
 
 
 def build_training_module(
-    config: Optional[FullTrainingConfig] = None,
+    config: Optional["BatDetect2Config"] = None,
     t_max: int = 200,
 ) -> TrainingModule:
-    config = config or FullTrainingConfig()
+    from batdetect2.config import BatDetect2Config
+
+    config = config or BatDetect2Config()
     return TrainingModule(
         config=config,
         learning_rate=config.train.optimizer.learning_rate,

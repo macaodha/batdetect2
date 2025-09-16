@@ -16,10 +16,8 @@ from batdetect2.train.augmentations import (
 )
 from batdetect2.train.clips import build_clipper, select_subclip
 from batdetect2.train.config import (
-    FullTrainingConfig,
     PLTrainerConfig,
     TrainingConfig,
-    load_full_training_config,
     load_train_config,
 )
 from batdetect2.train.dataset import (
@@ -48,7 +46,6 @@ __all__ = [
     "DetectionLossConfig",
     "EchoAugmentationConfig",
     "FrequencyMaskAugmentationConfig",
-    "FullTrainingConfig",
     "LossConfig",
     "LossFunction",
     "PLTrainerConfig",
@@ -71,7 +68,6 @@ __all__ = [
     "build_trainer",
     "build_val_dataset",
     "build_val_loader",
-    "load_full_training_config",
     "load_label_config",
     "load_train_config",
     "mask_frequency",

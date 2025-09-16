@@ -89,7 +89,7 @@ class ExampleGallery(PlotterProtocol):
     @classmethod
     def from_config(cls, config: ExampleGalleryConfig):
         preprocessor = build_preprocessor(config.preprocessing)
-        audio_loader = build_audio_loader(config.preprocessing.audio)
+        audio_loader = build_audio_loader(config.preprocessing.audio_transforms)
         return cls(
             examples_per_class=config.examples_per_class,
             preprocessor=preprocessor,

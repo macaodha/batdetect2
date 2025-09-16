@@ -13,8 +13,6 @@ from batdetect2.typing.postprocess import (
 from batdetect2.typing.preprocess import (
     AudioLoader,
     PreprocessorProtocol,
-    SpectrogramBuilder,
-    SpectrogramPipeline,
 )
 from batdetect2.typing.targets import (
     Position,
@@ -60,8 +58,6 @@ __all__ = [
     "SoundEventDecoder",
     "SoundEventEncoder",
     "SoundEventFilter",
-    "SpectrogramBuilder",
-    "SpectrogramPipeline",
     "TargetProtocol",
     "TrainExample",
 ]

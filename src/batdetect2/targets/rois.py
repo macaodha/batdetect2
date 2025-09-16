@@ -26,10 +26,10 @@ import numpy as np
 from pydantic import Field
 from soundevent import data
 
+from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.core.arrays import spec_to_xarray
 from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.typing import (
     AudioLoader,
     Position,
@@ -265,6 +265,7 @@ class PeakEnergyBBoxMapperConfig(BaseConfig):
     """
 
     name: Literal["peak_energy_bbox"] = "peak_energy_bbox"
+    audio: AudioConfig = Field(default_factory=AudioConfig)
     preprocessing: PreprocessingConfig = Field(
         default_factory=PreprocessingConfig
     )
@@ -456,8 +457,11 @@ def build_roi_mapper(
         )
 
     if config.name == "peak_energy_bbox":
-        preprocessor = build_preprocessor(config.preprocessing)
-        audio_loader = build_audio_loader(config.preprocessing.audio)
+        audio_loader = build_audio_loader(config=config.audio)
+        preprocessor = build_preprocessor(
+            config.preprocessing,
+            input_samplerate=audio_loader.samplerate,
+        )
         return PeakEnergyBBoxMapper(
             preprocessor=preprocessor,
             audio_loader=audio_loader,

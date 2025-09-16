@@ -1,21 +1,19 @@
 """Main entry point for the BatDetect2 preprocessing subsystem."""
 
-from batdetect2.preprocess.audio import build_audio_loader
+from batdetect2.audio import TARGET_SAMPLERATE_HZ
 from batdetect2.preprocess.config import (
-    MAX_FREQ,
-    MIN_FREQ,
-    TARGET_SAMPLERATE_HZ,
     PreprocessingConfig,
     load_preprocessing_config,
 )
-from batdetect2.preprocess.preprocessor import build_preprocessor
+from batdetect2.preprocess.preprocessor import Preprocessor, build_preprocessor
+from batdetect2.preprocess.spectrogram import MAX_FREQ, MIN_FREQ
 
 __all__ = [
-    "MIN_FREQ",
     "MAX_FREQ",
-    "TARGET_SAMPLERATE_HZ",
+    "MIN_FREQ",
     "PreprocessingConfig",
-    "load_preprocessing_config",
+    "Preprocessor",
+    "TARGET_SAMPLERATE_HZ",
     "build_preprocessor",
-    "build_audio_loader",
+    "load_preprocessing_config",
 ]
