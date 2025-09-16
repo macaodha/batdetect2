@@ -3,7 +3,7 @@ from typing import Optional, Union
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.evaluate import EvaluationConfig
 from batdetect2.models import ModelConfig
 from batdetect2.train.augmentations import (
@@ -80,7 +80,6 @@ class OptimizerConfig(BaseConfig):
 class TrainingConfig(BaseConfig):
     train_loader: TrainLoaderConfig = Field(default_factory=TrainLoaderConfig)
     val_loader: ValLoaderConfig = Field(default_factory=ValLoaderConfig)
-
     optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
     loss: LossConfig = Field(default_factory=LossConfig)
     cliping: RandomClipConfig = Field(default_factory=RandomClipConfig)

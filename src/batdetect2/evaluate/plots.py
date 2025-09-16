@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import Field
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 from batdetect2.plotting.clips import PreprocessorProtocol, build_audio_loader
 from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor

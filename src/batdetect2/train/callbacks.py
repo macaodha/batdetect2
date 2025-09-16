@@ -10,10 +10,12 @@ from batdetect2.postprocess import get_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.logging import get_image_plotter
-from batdetect2.typing.evaluate import ClipEvaluation
-from batdetect2.typing.models import ModelOutput
-from batdetect2.typing.postprocess import RawPrediction
-from batdetect2.typing.train import TrainExample
+from batdetect2.typing import (
+    ClipEvaluation,
+    ModelOutput,
+    RawPrediction,
+    TrainExample,
+)
 
 
 class ValidationMetrics(Callback):

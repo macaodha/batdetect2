@@ -25,7 +25,7 @@ from loguru import logger
 from pydantic import Field
 from soundevent import data, io
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.data.annotations import (
     AnnotatedDataset,
     AnnotationFormats,

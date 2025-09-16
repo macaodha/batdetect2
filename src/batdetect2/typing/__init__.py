@@ -1,4 +1,8 @@
-from batdetect2.typing.evaluate import MatchEvaluation, MetricsProtocol
+from batdetect2.typing.evaluate import (
+    ClipEvaluation,
+    MatchEvaluation,
+    MetricsProtocol,
+)
 from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
@@ -10,9 +14,11 @@ from batdetect2.typing.preprocess import (
     AudioLoader,
     PreprocessorProtocol,
     SpectrogramBuilder,
+    SpectrogramPipeline,
 )
 from batdetect2.typing.targets import (
     Position,
+    ROITargetMapper,
     Size,
     SoundEventDecoder,
     SoundEventEncoder,
@@ -34,6 +40,7 @@ __all__ = [
     "Augmentation",
     "BackboneModel",
     "BatDetect2Prediction",
+    "ClipEvaluation",
     "ClipLabeller",
     "ClipperProtocol",
     "DetectionModel",
@@ -47,12 +54,14 @@ __all__ = [
     "Position",
     "PostprocessorProtocol",
     "PreprocessorProtocol",
+    "ROITargetMapper",
     "RawPrediction",
     "Size",
     "SoundEventDecoder",
     "SoundEventEncoder",
     "SoundEventFilter",
     "SpectrogramBuilder",
+    "SpectrogramPipeline",
     "TargetProtocol",
     "TrainExample",
 ]

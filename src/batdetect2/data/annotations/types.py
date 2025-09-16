@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 
 __all__ = [
     "AnnotatedDataset",

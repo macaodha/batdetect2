@@ -18,7 +18,7 @@ from loguru import logger
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 
 DEFAULT_LOGS_DIR: Path = Path("outputs") / "logs"
 

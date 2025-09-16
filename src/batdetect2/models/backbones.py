@@ -25,7 +25,7 @@ import torch.nn.functional as F
 from soundevent import data
 from torch import nn
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.models.bottleneck import (
     DEFAULT_BOTTLENECK_CONFIG,
     BottleneckConfig,

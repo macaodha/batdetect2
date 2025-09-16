@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.evaluate.match import MatchConfig, StartTimeMatchConfig
 from batdetect2.evaluate.metrics import (
     ClassificationAPConfig,

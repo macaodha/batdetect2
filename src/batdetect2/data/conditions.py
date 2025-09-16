@@ -5,8 +5,8 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 
 SoundEventCondition = Callable[[data.SoundEventAnnotation], bool]
 

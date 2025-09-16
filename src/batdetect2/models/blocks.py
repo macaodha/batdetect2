@@ -34,7 +34,7 @@ import torch.nn.functional as F
 from pydantic import Field
 from torch import nn
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 
 __all__ = [
     "ConvBlock",

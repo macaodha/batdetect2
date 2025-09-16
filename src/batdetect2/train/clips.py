@@ -6,8 +6,7 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds, intervals_overlap
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core import BaseConfig, Registry
 from batdetect2.typing import ClipperProtocol
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.256

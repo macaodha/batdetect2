@@ -1,10 +1,15 @@
+import os
+
 import click
 
-from batdetect2 import api
 from batdetect2.cli.base import cli
-from batdetect2.detector.parameters import DEFAULT_MODEL_PATH
-from batdetect2.types import ProcessingConfiguration
-from batdetect2.utils.detector_utils import save_results_to_file
+
+DEFAULT_MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "models",
+    "checkpoints",
+    "Net2DFast_UK_same.pth.tar",
+)
 
 
 @cli.command()
@@ -74,6 +79,9 @@ def detect(
 
     Input files should be short in duration e.g. < 30 seconds.
     """
+    from batdetect2 import api
+    from batdetect2.utils.detector_utils import save_results_to_file
+
     click.echo(f"Loading model: {args['model_path']}")
     model, params = api.load_model(args["model_path"])
 
@@ -123,7 +131,7 @@ def detect(
             click.echo(f"  {err}")
 
 
-def print_config(config: ProcessingConfiguration):
+def print_config(config):
     """Print the processing configuration."""
     click.echo("\nProcessing Configuration:")
     click.echo(f"Time Expansion Factor: {config.get('time_expansion')}")

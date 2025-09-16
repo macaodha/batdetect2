@@ -8,8 +8,8 @@ from soundevent.evaluation import compute_affinity
 from soundevent.evaluation import match_geometries as optimal_match
 from soundevent.geometry import compute_bounds
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 from batdetect2.evaluate.affinity import (
     AffinityConfig,
     GeometricIOUConfig,

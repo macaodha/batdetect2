@@ -11,7 +11,6 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 from soundevent.types import ClassMapper
 
-from batdetect2.targets.terms import get_term_from_key
 from batdetect2.types import (
     Annotation,
     AudioLoaderAnnotationGroup,
@@ -173,18 +172,9 @@ def annotation_to_sound_event_annotation(
         uuid=uuid.uuid5(NAMESPACE, f"{sound_event.uuid}_annotation"),
         sound_event=sound_event,
         tags=[
-            data.Tag(
-                term=get_term_from_key(label_key),
-                value=annotation["class"],
-            ),
-            data.Tag(
-                term=get_term_from_key(event_key),
-                value=annotation["event"],
-            ),
-            data.Tag(
-                term=get_term_from_key(individual_key),
-                value=str(annotation["individual"]),
-            ),
+            data.Tag(key=label_key, value=annotation["class"]),
+            data.Tag(key=event_key, value=annotation["event"]),
+            data.Tag(key=individual_key, value=str(annotation["individual"])),
         ],
     )
 
@@ -219,17 +209,11 @@ def annotation_to_sound_event_prediction(
         tags=[
             data.PredictedTag(
                 score=annotation["class_prob"],
-                tag=data.Tag(
-                    term=get_term_from_key(label_key),
-                    value=annotation["class"],
-                ),
+                tag=data.Tag(key=label_key, value=annotation["class"]),
             ),
             data.PredictedTag(
                 score=annotation["det_prob"],
-                tag=data.Tag(
-                    term=get_term_from_key(event_key),
-                    value=annotation["event"],
-                ),
+                tag=data.Tag(key=event_key, value=annotation["event"]),
             ),
         ],
     )

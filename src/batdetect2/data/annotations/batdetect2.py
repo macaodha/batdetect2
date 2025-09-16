@@ -33,7 +33,7 @@ from loguru import logger
 from pydantic import Field, ValidationError
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 from batdetect2.data.annotations.legacy import (
     FileAnnotation,
     file_annotation_to_clip,

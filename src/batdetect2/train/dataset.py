@@ -5,8 +5,8 @@ from loguru import logger
 from soundevent import data
 from torch.utils.data import DataLoader, Dataset
 
-from batdetect2.plotting.clips import build_audio_loader
-from batdetect2.preprocess import build_preprocessor
+from batdetect2.core.arrays import adjust_width
+from batdetect2.preprocess import build_audio_loader, build_preprocessor
 from batdetect2.train.augmentations import (
     RandomAudioSource,
     build_augmentations,
@@ -14,10 +14,14 @@ from batdetect2.train.augmentations import (
 from batdetect2.train.clips import build_clipper
 from batdetect2.train.config import TrainLoaderConfig, ValLoaderConfig
 from batdetect2.train.labels import build_clip_labeler
-from batdetect2.typing import ClipperProtocol, TrainExample
-from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
-from batdetect2.typing.train import Augmentation, ClipLabeller
-from batdetect2.utils.arrays import adjust_width
+from batdetect2.typing import (
+    AudioLoader,
+    Augmentation,
+    ClipLabeller,
+    ClipperProtocol,
+    PreprocessorProtocol,
+    TrainExample,
+)
 
 __all__ = [
     "TrainingDataset",

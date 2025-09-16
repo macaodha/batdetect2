@@ -26,12 +26,17 @@ import numpy as np
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.arrays import spec_to_xarray
+from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.preprocess.audio import build_audio_loader
-from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
-from batdetect2.typing.targets import Position, ROITargetMapper, Size
-from batdetect2.utils.arrays import spec_to_xarray
+from batdetect2.typing import (
+    AudioLoader,
+    Position,
+    PreprocessorProtocol,
+    ROITargetMapper,
+    Size,
+)
 
 __all__ = [
     "Anchor",

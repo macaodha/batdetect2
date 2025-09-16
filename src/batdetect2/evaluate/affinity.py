@@ -4,8 +4,8 @@ from pydantic import Field
 from soundevent import data
 from soundevent.evaluation import compute_affinity
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 from batdetect2.typing.evaluate import AffinityFunction
 
 affinity_functions: Registry[AffinityFunction, []] = Registry(

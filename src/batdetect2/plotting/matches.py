@@ -8,8 +8,7 @@ from soundevent.plot.tags import TagColorMapper
 
 from batdetect2.plotting.clip_predictions import plot_prediction
 from batdetect2.plotting.clips import AudioLoader, plot_clip
-from batdetect2.preprocess import PreprocessorProtocol
-from batdetect2.typing.evaluate import MatchEvaluation
+from batdetect2.typing import MatchEvaluation, PreprocessorProtocol
 
 __all__ = [
     "plot_matches",

@@ -6,9 +6,6 @@ import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
-from batdetect2.data import load_dataset_from_config
-from batdetect2.evaluate.evaluate import evaluate
-from batdetect2.train.lightning import load_model_from_checkpoint
 
 __all__ = ["evaluate_command"]
 
@@ -31,6 +28,10 @@ def evaluate_command(
     workers: Optional[int] = None,
     verbose: int = 0,
 ):
+    from batdetect2.data import load_dataset_from_config
+    from batdetect2.evaluate.evaluate import evaluate
+    from batdetect2.train.lightning import load_model_from_checkpoint
+
     logger.remove()
     if verbose == 0:
         log_level = "WARNING"

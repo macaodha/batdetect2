@@ -13,14 +13,10 @@ import torch
 from loguru import logger
 from soundevent import data
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
 from batdetect2.targets import build_targets, iterate_encoded_sound_events
-from batdetect2.typing import (
-    ClipLabeller,
-    Heatmaps,
-    TargetProtocol,
-)
+from batdetect2.typing import ClipLabeller, Heatmaps, TargetProtocol
 
 __all__ = [
     "LabelConfig",

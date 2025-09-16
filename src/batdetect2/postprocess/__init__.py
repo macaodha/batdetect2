@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.postprocess.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
     convert_raw_prediction_to_sound_event_prediction,

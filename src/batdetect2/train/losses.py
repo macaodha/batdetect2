@@ -27,7 +27,7 @@ from loguru import logger
 from pydantic import Field
 from torch import nn
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 from batdetect2.typing import Losses, LossProtocol, ModelOutput, TrainExample
 
 __all__ = [

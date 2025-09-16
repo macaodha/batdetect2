@@ -1,64 +1,34 @@
 """Handles loading and initial preprocessing of audio waveforms."""
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Optional
 
 import numpy as np
 import torch
 from numpy.typing import DTypeLike
-from pydantic import Field
 from scipy.signal import resample, resample_poly
 from soundevent import audio, data
 from soundfile import LibsndfileError
 
-from batdetect2.configs import BaseConfig
 from batdetect2.preprocess.common import CenterTensor, PeakNormalize
+from batdetect2.preprocess.config import (
+    TARGET_SAMPLERATE_HZ,
+    AudioConfig,
+    AudioTransform,
+    ResampleConfig,
+)
 from batdetect2.typing import AudioLoader
 
 __all__ = [
-    "ResampleConfig",
-    "AudioConfig",
     "SoundEventAudioLoader",
     "build_audio_loader",
     "load_file_audio",
     "load_recording_audio",
     "load_clip_audio",
     "resample_audio",
-    "TARGET_SAMPLERATE_HZ",
-    "SCALE_RAW_AUDIO",
-    "DEFAULT_DURATION",
 ]
 
-TARGET_SAMPLERATE_HZ = 256_000
-"""Default target sample rate in Hz used if resampling is enabled."""
 
-SCALE_RAW_AUDIO = False
-"""Default setting for whether to perform peak normalization."""
-
-DEFAULT_DURATION = None
-"""Default setting for target audio duration in seconds."""
-
-
-class ResampleConfig(BaseConfig):
-    """Configuration for audio resampling.
-
-    Attributes
-    ----------
-    samplerate : int, default=256000
-        The target sample rate in Hz to resample the audio to. Must be > 0.
-    method : str, default="poly"
-        The resampling algorithm to use. Options:
-        - "poly": Polyphase resampling using `scipy.signal.resample_poly`.
-                  Generally fast.
-        - "fourier": Resampling via Fourier method using
-                     `scipy.signal.resample`. May handle non-integer
-                     resampling factors differently.
-    """
-
-    enabled: bool = True
-    method: str = "poly"
-
-
-class SoundEventAudioLoader:
+class SoundEventAudioLoader(AudioLoader):
     """Concrete implementation of the `AudioLoader`."""
 
     def __init__(
@@ -294,19 +264,6 @@ def resample_audio_fourier(
     )
 
 
-class CenterAudioConfig(BaseConfig):
-    name: Literal["center_audio"] = "center_audio"
-
-
-class ScaleAudioConfig(BaseConfig):
-    name: Literal["scale_audio"] = "scale_audio"
-
-
-class FixDurationConfig(BaseConfig):
-    name: Literal["fix_duration"] = "fix_duration"
-    duration: float = 0.5
-
-
 class FixDuration(torch.nn.Module):
     def __init__(self, samplerate: int, duration: float):
         super().__init__()
@@ -324,24 +281,6 @@ class FixDuration(torch.nn.Module):
             return wav[: self.length]
 
         return torch.nn.functional.pad(wav, (0, self.length - length))
-
-
-AudioTransform = Annotated[
-    Union[
-        FixDurationConfig,
-        ScaleAudioConfig,
-        CenterAudioConfig,
-    ],
-    Field(discriminator="name"),
-]
-
-
-class AudioConfig(BaseConfig):
-    """Configuration for loading and initial audio preprocessing."""
-
-    samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
-    resample: Optional[ResampleConfig] = Field(default_factory=ResampleConfig)
-    transforms: List[AudioTransform] = Field(default_factory=list)
 
 
 def build_audio_loader(

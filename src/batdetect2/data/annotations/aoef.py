@@ -18,7 +18,7 @@ from uuid import uuid5
 from pydantic import Field
 from soundevent import data, io
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 from batdetect2.data.annotations.types import AnnotatedDataset
 
 __all__ = [

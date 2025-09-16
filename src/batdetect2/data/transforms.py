@@ -4,8 +4,8 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 from batdetect2.data.conditions import (
     SoundEventCondition,
     SoundEventConditionConfig,

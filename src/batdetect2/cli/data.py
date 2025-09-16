@@ -4,7 +4,6 @@ from typing import Optional
 import click
 
 from batdetect2.cli.base import cli
-from batdetect2.data import load_dataset_from_config
 
 __all__ = ["data"]
 
@@ -33,6 +32,8 @@ def summary(
     field: Optional[str] = None,
     base_dir: Optional[Path] = None,
 ):
+    from batdetect2.data import load_dataset_from_config
+
     base_dir = base_dir or Path.cwd()
     dataset = load_dataset_from_config(
         dataset_config,

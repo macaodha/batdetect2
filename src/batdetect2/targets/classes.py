@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from pydantic import Field, PrivateAttr, computed_field, model_validator
 from soundevent import data
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 from batdetect2.data.conditions import (
     AllOfConfig,
     HasAllTagsConfig,

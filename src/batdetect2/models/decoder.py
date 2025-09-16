@@ -24,7 +24,7 @@ import torch
 from pydantic import Field
 from torch import nn
 
-from batdetect2.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig
 from batdetect2.models.blocks import (
     ConvConfig,
     FreqCoordConvUpConfig,

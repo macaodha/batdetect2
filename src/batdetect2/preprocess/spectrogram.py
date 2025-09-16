@@ -1,63 +1,37 @@
 """Computes spectrograms from audio waveforms with configurable parameters."""
 
-from typing import (
-    Annotated,
-    Callable,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Callable, Optional
 
 import numpy as np
 import torch
 import torchaudio
-from pydantic import Field
 
-from batdetect2.configs import BaseConfig
 from batdetect2.preprocess.common import PeakNormalize
+from batdetect2.preprocess.config import (
+    ScaleAmplitudeConfig,
+    SpectrogramConfig,
+    SpectrogramTransform,
+    STFTConfig,
+)
 
 __all__ = [
-    "STFTConfig",
-    "FrequencyConfig",
-    "PcenConfig",
-    "SpectrogramConfig",
     "build_spectrogram_builder",
-    "MIN_FREQ",
-    "MAX_FREQ",
+    "build_spectrogram_pipeline",
 ]
 
 
-MIN_FREQ = 10_000
-"""Default minimum frequency (Hz) for spectrogram frequency cropping."""
-
-MAX_FREQ = 120_000
-"""Default maximum frequency (Hz) for spectrogram frequency cropping."""
-
-
-class STFTConfig(BaseConfig):
-    """Configuration for the Short-Time Fourier Transform (STFT).
-
-    Attributes
-    ----------
-    window_duration : float, default=0.002
-        Duration of the STFT window in seconds (e.g., 0.002 for 2ms). Must be
-        > 0. Determines frequency resolution (longer window = finer frequency
-        resolution).
-    window_overlap : float, default=0.75
-        Fraction of overlap between consecutive STFT windows (e.g., 0.75
-        for 75%). Must be >= 0 and < 1. Determines time resolution
-        (higher overlap = finer time resolution).
-    window_fn : str, default="hann"
-        Name of the window function to apply before FFT calculation. Common
-        options include "hann", "hamming", "blackman". See
-        `scipy.signal.get_window`.
-    """
-
-    window_duration: float = Field(default=0.002, gt=0)
-    window_overlap: float = Field(default=0.75, ge=0, lt=1)
-    window_fn: str = "hann"
+def build_spectrogram_builder(
+    samplerate: int,
+    conf: STFTConfig,
+) -> torch.nn.Module:
+    n_fft, hop_length = _spec_params_from_config(samplerate, conf)
+    return torchaudio.transforms.Spectrogram(
+        n_fft=n_fft,
+        hop_length=hop_length,
+        window_fn=get_spectrogram_window(conf.window_fn),
+        center=True,
+        power=1,
+    )
 
 
 def get_spectrogram_window(name: str) -> Callable[..., torch.Tensor]:
@@ -85,37 +59,6 @@ def _spec_params_from_config(samplerate: int, conf: STFTConfig):
     n_fft = int(samplerate * conf.window_duration)
     hop_length = int(n_fft * (1 - conf.window_overlap))
     return n_fft, hop_length
-
-
-def build_spectrogram_builder(
-    samplerate: int,
-    conf: STFTConfig,
-) -> torch.nn.Module:
-    n_fft, hop_length = _spec_params_from_config(samplerate, conf)
-    return torchaudio.transforms.Spectrogram(
-        n_fft=n_fft,
-        hop_length=hop_length,
-        window_fn=get_spectrogram_window(conf.window_fn),
-        center=True,
-        power=1,
-    )
-
-
-class FrequencyConfig(BaseConfig):
-    """Configuration for frequency axis parameters.
-
-    Attributes
-    ----------
-    max_freq : int, default=120000
-        Maximum frequency in Hz to retain in the spectrogram after STFT.
-        Frequencies above this value will be cropped. Must be > 0.
-    min_freq : int, default=10000
-        Minimum frequency in Hz to retain in the spectrogram after STFT.
-        Frequencies below this value will be cropped. Must be >= 0.
-    """
-
-    max_freq: int = Field(default=120_000, ge=0)
-    min_freq: int = Field(default=10_000, ge=0)
 
 
 def _frequency_to_index(
@@ -162,16 +105,6 @@ class FrequencyClip(torch.nn.Module):
             start=low_index,
             length=length,
         )
-
-
-class PcenConfig(BaseConfig):
-    """Configuration for Per-Channel Energy Normalization (PCEN)."""
-
-    name: Literal["pcen"] = "pcen"
-    time_constant: float = 0.4
-    gain: float = 0.98
-    bias: float = 2
-    power: float = 0.5
 
 
 class PCEN(torch.nn.Module):
@@ -231,11 +164,6 @@ def _compute_smoothing_constant(
     return (np.sqrt(1 + 4 * t_frames**2) - 1) / (2 * t_frames**2)
 
 
-class ScaleAmplitudeConfig(BaseConfig):
-    name: Literal["scale_amplitude"] = "scale_amplitude"
-    scale: Literal["power", "db"] = "db"
-
-
 class ToPower(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         return spec**2
@@ -253,20 +181,10 @@ def _build_amplitude_scaler(conf: ScaleAmplitudeConfig) -> torch.nn.Module:
     )
 
 
-class SpectralMeanSubstractionConfig(BaseConfig):
-    name: Literal["spectral_mean_substraction"] = "spectral_mean_substraction"
-
-
 class SpectralMeanSubstraction(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         mean = spec.mean(-1, keepdim=True)
         return (spec - mean).clamp(min=0)
-
-
-class ResizeConfig(BaseConfig):
-    name: Literal["resize_spec"] = "resize_spec"
-    height: int = 128
-    resize_factor: float = 0.5
 
 
 class ResizeSpec(torch.nn.Module):
@@ -293,33 +211,6 @@ class ResizeSpec(torch.nn.Module):
             resized = resized.squeeze(0)
 
         return resized
-
-
-class PeakNormalizeConfig(BaseConfig):
-    name: Literal["peak_normalize"] = "peak_normalize"
-
-
-SpectrogramTransform = Annotated[
-    Union[
-        PcenConfig,
-        ScaleAmplitudeConfig,
-        SpectralMeanSubstractionConfig,
-        PeakNormalizeConfig,
-    ],
-    Field(discriminator="name"),
-]
-
-
-class SpectrogramConfig(BaseConfig):
-    stft: STFTConfig = Field(default_factory=STFTConfig)
-    frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
-    size: ResizeConfig = Field(default_factory=ResizeConfig)
-    transforms: Sequence[SpectrogramTransform] = Field(
-        default_factory=lambda: [
-            PcenConfig(),
-            SpectralMeanSubstractionConfig(),
-        ]
-    )
 
 
 def _build_spectrogram_transform_step(

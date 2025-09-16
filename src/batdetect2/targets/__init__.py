@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import Field, field_validator
 from soundevent import data
 
-from batdetect2.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.data.conditions import build_sound_event_condition
 from batdetect2.targets.classes import (
     DEFAULT_CLASSES,

@@ -15,8 +15,8 @@ from pydantic import Field
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
 
-from batdetect2.configs import BaseConfig
-from batdetect2.data._core import Registry
+from batdetect2.core.configs import BaseConfig
+from batdetect2.core.registries import Registry
 from batdetect2.typing import MetricsProtocol
 from batdetect2.typing.evaluate import ClipEvaluation
 
@@ -31,7 +31,7 @@ AveragePrecisionImplementation = Literal["sklearn", "pascal_voc"]
 
 class DetectionAPConfig(BaseConfig):
     name: Literal["detection_ap"] = "detection_ap"
-    implementation: AveragePrecisionImplementation = "pascal_voc"
+    ap_implementation: AveragePrecisionImplementation = "pascal_voc"
 
 
 def pascal_voc_average_precision(y_true, y_score) -> float:
@@ -96,7 +96,7 @@ class DetectionAP(MetricsProtocol):
 
     @classmethod
     def from_config(cls, config: DetectionAPConfig, class_names: List[str]):
-        return cls(implementation=config.implementation)
+        return cls(implementation=config.ap_implementation)
 
 
 metrics_registry.register(DetectionAPConfig, DetectionAP)
@@ -104,6 +104,7 @@ metrics_registry.register(DetectionAPConfig, DetectionAP)
 
 class ClassificationAPConfig(BaseConfig):
     name: Literal["classification_ap"] = "classification_ap"
+    ap_implementation: AveragePrecisionImplementation = "pascal_voc"
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
 
@@ -193,6 +194,7 @@ class ClassificationAP(MetricsProtocol):
     ):
         return cls(
             class_names,
+            implementation=config.ap_implementation,
             include=config.include,
             exclude=config.exclude,
         )

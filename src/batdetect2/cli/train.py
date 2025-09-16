@@ -6,13 +6,6 @@ import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
-from batdetect2.data import load_dataset_from_config
-from batdetect2.targets import load_target_config
-from batdetect2.train import (
-    FullTrainingConfig,
-    load_full_training_config,
-    train,
-)
 
 __all__ = ["train_command"]
 
@@ -53,6 +46,14 @@ def train_command(
     run_name: Optional[str] = None,
     verbose: int = 0,
 ):
+    from batdetect2.data import load_dataset_from_config
+    from batdetect2.targets import load_target_config
+    from batdetect2.train import (
+        FullTrainingConfig,
+        load_full_training_config,
+        train,
+    )
+
     logger.remove()
     if verbose == 0:
         log_level = "WARNING"
