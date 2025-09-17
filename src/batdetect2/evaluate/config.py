@@ -10,7 +10,7 @@ from batdetect2.evaluate.metrics import (
     DetectionAPConfig,
     MetricConfig,
 )
-from batdetect2.evaluate.plots import ExampleGalleryConfig, PlotConfig
+from batdetect2.evaluate.plots import PlotConfig
 
 __all__ = [
     "EvaluationConfig",
@@ -20,18 +20,14 @@ __all__ = [
 
 class EvaluationConfig(BaseConfig):
     ignore_start_end: float = 0.01
-    match: MatchConfig = Field(default_factory=StartTimeMatchConfig)
+    match_strategy: MatchConfig = Field(default_factory=StartTimeMatchConfig)
     metrics: List[MetricConfig] = Field(
         default_factory=lambda: [
             DetectionAPConfig(),
             ClassificationAPConfig(),
         ]
     )
-    plots: List[PlotConfig] = Field(
-        default_factory=lambda: [
-            ExampleGalleryConfig(),
-        ]
-    )
+    plots: List[PlotConfig] = Field(default_factory=list)
 
 
 def load_evaluation_config(

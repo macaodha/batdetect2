@@ -12,7 +12,6 @@ from batdetect2.evaluate.evaluator import Evaluator, build_evaluator
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
 from batdetect2.train.callbacks import ValidationMetrics
-from batdetect2.train.config import TrainingConfig
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
@@ -103,9 +102,9 @@ def train(
     )
 
     trainer = trainer or build_trainer(
-        config.train,
+        config,
         targets=targets,
-        evaluator=build_evaluator(config.evaluation, targets=targets),
+        evaluator=build_evaluator(config.train.validation, targets=targets),
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
         experiment_name=experiment_name,
@@ -151,7 +150,7 @@ def build_trainer_callbacks(
 
 
 def build_trainer(
-    conf: TrainingConfig,
+    conf: "BatDetect2Config",
     targets: "TargetProtocol",
     evaluator: Optional[Evaluator] = None,
     checkpoint_dir: Optional[Path] = None,
@@ -159,13 +158,13 @@ def build_trainer(
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
 ) -> Trainer:
-    trainer_conf = conf.trainer
+    trainer_conf = conf.train.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
     train_logger = build_logger(
-        conf.logger,
+        conf.train.logger,
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,

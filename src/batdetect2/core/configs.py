@@ -27,7 +27,7 @@ class BaseConfig(BaseModel):
     and serialization capabilities.
     """
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     def to_yaml_string(
         self,

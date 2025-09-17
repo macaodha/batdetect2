@@ -4,6 +4,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.train.augmentations import (
     DEFAULT_AUGMENTATION_CONFIG,
     AugmentationsConfig,
@@ -82,6 +83,7 @@ class TrainingConfig(BaseConfig):
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
     labels: LabelConfig = Field(default_factory=LabelConfig)
+    validation: EvaluationConfig = Field(default_factory=EvaluationConfig)
 
 
 def load_train_config(

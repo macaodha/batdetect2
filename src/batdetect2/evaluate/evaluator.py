@@ -138,7 +138,7 @@ def build_evaluator(
 ) -> Evaluator:
     config = config or EvaluationConfig()
     targets = targets or build_targets()
-    matcher = matcher or build_matcher(config.match)
+    matcher = matcher or build_matcher(config.match_strategy)
 
     if metrics is None:
         metrics = [
@@ -147,7 +147,10 @@ def build_evaluator(
         ]
 
     if plots is None:
-        plots = [build_plotter(config) for config in config.plots]
+        plots = [
+            build_plotter(config, targets.class_names)
+            for config in config.plots
+        ]
 
     return Evaluator(
         config=config,

@@ -111,7 +111,7 @@ def match(
 
 
 class StartTimeMatchConfig(BaseConfig):
-    name: Literal["start_time"] = "start_time"
+    name: Literal["start_time_match"] = "start_time_match"
     distance_threshold: float = 0.01
 
 

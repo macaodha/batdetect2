@@ -58,7 +58,7 @@ def evaluate(
     clip_annotations = []
     predictions = []
 
-    evaluator = build_evaluator(config=config)
+    evaluator = build_evaluator(config=config, targets=targets)
 
     for batch in loader:
         outputs = model.detector(batch.spec)

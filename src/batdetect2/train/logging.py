@@ -1,4 +1,6 @@
 import io
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import (
     Annotated,
@@ -13,8 +15,14 @@ from typing import (
 )
 
 import numpy as np
-from lightning.pytorch.loggers import Logger, MLFlowLogger, TensorBoardLogger
+from lightning.pytorch.loggers import (
+    CSVLogger,
+    Logger,
+    MLFlowLogger,
+    TensorBoardLogger,
+)
 from loguru import logger
+from matplotlib.figure import Figure
 from pydantic import Field
 from soundevent import data
 
@@ -231,18 +239,17 @@ def build_logger(
     )
 
 
-def get_image_plotter(logger: Logger):
+Plotter = Callable[[str, Figure, int], None]
+
+
+def get_image_plotter(logger: Logger) -> Optional[Plotter]:
     if isinstance(logger, TensorBoardLogger):
-
-        def plot_figure(name, figure, step):
-            return logger.experiment.add_figure(name, figure, step)
-
-        return plot_figure
+        return logger.experiment.add_figure
 
     if isinstance(logger, MLFlowLogger):
 
         def plot_figure(name, figure, step):
-            image = _convert_figure_to_image(figure)
+            image = _convert_figure_to_array(figure)
             return logger.experiment.log_image(
                 logger.run_id,
                 image,
@@ -252,8 +259,20 @@ def get_image_plotter(logger: Logger):
 
         return plot_figure
 
+    if isinstance(logger, CSVLogger):
+        return partial(save_figure, dir=Path(logger.log_dir))
 
-def _convert_figure_to_image(figure):
+
+def save_figure(name: str, fig: Figure, step: int, dir: Path) -> None:
+    path = dir / "plots" / f"{name}_step_{step}.png"
+
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True)
+
+    fig.savefig(path, transparent=True, bbox_inches="tight")
+
+
+def _convert_figure_to_array(figure: Figure) -> np.ndarray:
     with io.BytesIO() as buff:
         figure.savefig(buff, format="raw")
         buff.seek(0)

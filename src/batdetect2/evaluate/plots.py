@@ -4,13 +4,18 @@ from dataclasses import dataclass, field
 from typing import Annotated, Dict, List, Literal, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from pydantic import Field
+from sklearn import metrics
+from sklearn.preprocessing import label_binarize
 
+from batdetect2.audio import AudioConfig
 from batdetect2.core.configs import BaseConfig
 from batdetect2.core.registries import Registry
 from batdetect2.plotting.clips import PreprocessorProtocol, build_audio_loader
 from batdetect2.plotting.gallery import plot_match_gallery
+from batdetect2.plotting.matches import plot_matches
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.typing.evaluate import (
     ClipEvaluation,
@@ -26,12 +31,13 @@ __all__ = [
 ]
 
 
-plots_registry: Registry[PlotterProtocol, []] = Registry("plot")
+plots_registry: Registry[PlotterProtocol, [List[str]]] = Registry("plot")
 
 
 class ExampleGalleryConfig(BaseConfig):
     name: Literal["example_gallery"] = "example_gallery"
     examples_per_class: int = 5
+    audio: AudioConfig = Field(default_factory=AudioConfig)
     preprocessing: PreprocessingConfig = Field(
         default_factory=PreprocessingConfig
     )
@@ -87,9 +93,12 @@ class ExampleGallery(PlotterProtocol):
             plt.close(fig)
 
     @classmethod
-    def from_config(cls, config: ExampleGalleryConfig):
-        preprocessor = build_preprocessor(config.preprocessing)
-        audio_loader = build_audio_loader(config.preprocessing.audio_transforms)
+    def from_config(cls, config: ExampleGalleryConfig, class_names: List[str]):
+        audio_loader = build_audio_loader(config.audio)
+        preprocessor = build_preprocessor(
+            config.preprocessing,
+            input_samplerate=audio_loader.samplerate,
+        )
         return cls(
             examples_per_class=config.examples_per_class,
             preprocessor=preprocessor,
@@ -100,13 +109,345 @@ class ExampleGallery(PlotterProtocol):
 plots_registry.register(ExampleGalleryConfig, ExampleGallery)
 
 
+class ClipEvaluationPlotConfig(BaseConfig):
+    name: Literal["example_clip"] = "example_clip"
+    num_plots: int = 5
+    audio: AudioConfig = Field(default_factory=AudioConfig)
+    preprocessing: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+
+
+class PlotClipEvaluation(PlotterProtocol):
+    def __init__(
+        self,
+        num_plots: int = 3,
+        preprocessor: Optional[PreprocessorProtocol] = None,
+        audio_loader: Optional[AudioLoader] = None,
+    ):
+        self.preprocessor = preprocessor
+        self.audio_loader = audio_loader
+        self.num_plots = num_plots
+
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        examples = random.sample(
+            clip_evaluations,
+            k=min(self.num_plots, len(clip_evaluations)),
+        )
+
+        for index, clip_evaluation in enumerate(examples):
+            fig, ax = plt.subplots()
+            plot_matches(
+                clip_evaluation.matches,
+                clip=clip_evaluation.clip,
+                audio_loader=self.audio_loader,
+                ax=ax,
+            )
+            yield f"clip_evaluation/example_{index}", fig
+            plt.close(fig)
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ClipEvaluationPlotConfig,
+        class_names: List[str],
+    ):
+        audio_loader = build_audio_loader(config.audio)
+        preprocessor = build_preprocessor(
+            config.preprocessing,
+            input_samplerate=audio_loader.samplerate,
+        )
+        return cls(
+            num_plots=config.num_plots,
+            preprocessor=preprocessor,
+            audio_loader=audio_loader,
+        )
+
+
+plots_registry.register(ClipEvaluationPlotConfig, PlotClipEvaluation)
+
+
+class DetectionPRCurveConfig(BaseConfig):
+    name: Literal["detection_pr_curve"] = "detection_pr_curve"
+
+
+class DetectionPRCurve(PlotterProtocol):
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        y_true, y_score = zip(
+            *[
+                (match.gt_det, match.pred_score)
+                for clip_eval in clip_evaluations
+                for match in clip_eval.matches
+            ]
+        )
+        precision, recall, _ = metrics.precision_recall_curve(y_true, y_score)
+        fig, ax = plt.subplots()
+
+        ax.plot(recall, precision, label="Detector")
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
+        ax.legend()
+
+        yield "detection_pr_curve", fig
+
+    @classmethod
+    def from_config(
+        cls,
+        config: DetectionPRCurveConfig,
+        class_names: List[str],
+    ):
+        return cls()
+
+
+plots_registry.register(DetectionPRCurveConfig, DetectionPRCurve)
+
+
+class ClassificationPRCurvesConfig(BaseConfig):
+    name: Literal["classification_pr_curves"] = "classification_pr_curves"
+    include: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+
+
+class ClassificationPRCurves(PlotterProtocol):
+    def __init__(
+        self,
+        class_names: List[str],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+    ):
+        self.class_names = class_names
+        self.selected = class_names
+
+        if include is not None:
+            self.selected = [
+                class_name
+                for class_name in self.selected
+                if class_name in include
+            ]
+
+        if exclude is not None:
+            self.selected = [
+                class_name
+                for class_name in self.selected
+                if class_name not in exclude
+            ]
+
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        y_true = []
+        y_pred = []
+
+        for clip_eval in clip_evaluations:
+            for match in clip_eval.matches:
+                # Ignore generic unclassified targets
+                if match.gt_det and match.gt_class is None:
+                    continue
+
+                y_true.append(
+                    match.gt_class
+                    if match.gt_class is not None
+                    else "__NONE__"
+                )
+
+                y_pred.append(
+                    np.array(
+                        [
+                            match.pred_class_scores.get(name, 0)
+                            for name in self.class_names
+                        ]
+                    )
+                )
+
+        y_true = label_binarize(y_true, classes=self.class_names)
+        y_pred = np.stack(y_pred)
+
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for class_index, class_name in enumerate(self.class_names):
+            if class_name not in self.selected:
+                continue
+
+            y_true_class = y_true[:, class_index]
+            y_pred_class = y_pred[:, class_index]
+            precision, recall, _ = metrics.precision_recall_curve(
+                y_true_class,
+                y_pred_class,
+            )
+            ax.plot(recall, precision, label=class_name)
+
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
+        ax.legend(
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            borderaxespad=0.0,
+        )
+
+        yield "classification_pr_curve", fig
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ClassificationPRCurvesConfig,
+        class_names: List[str],
+    ):
+        return cls(
+            class_names=class_names,
+            include=config.include,
+            exclude=config.exclude,
+        )
+
+
+plots_registry.register(ClassificationPRCurvesConfig, ClassificationPRCurves)
+
+
+class DetectionROCCurveConfig(BaseConfig):
+    name: Literal["detection_roc_curve"] = "detection_roc_curve"
+
+
+class DetectionROCCurve(PlotterProtocol):
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        y_true, y_score = zip(
+            *[
+                (match.gt_det, match.pred_score)
+                for clip_eval in clip_evaluations
+                for match in clip_eval.matches
+            ]
+        )
+        fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
+        fig, ax = plt.subplots()
+
+        ax.plot(fpr, tpr, label="Detection")
+        ax.set_xlabel("False Positive Rate")
+        ax.set_ylabel("True Positive Rate")
+        ax.legend()
+
+        yield "detection_roc_curve", fig
+
+    @classmethod
+    def from_config(
+        cls,
+        config: DetectionROCCurveConfig,
+        class_names: List[str],
+    ):
+        return cls()
+
+
+plots_registry.register(DetectionROCCurveConfig, DetectionROCCurve)
+
+
+class ClassificationROCCurvesConfig(BaseConfig):
+    name: Literal["classification_roc_curves"] = "classification_roc_curves"
+    include: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+
+
+class ClassificationROCCurves(PlotterProtocol):
+    def __init__(
+        self,
+        class_names: List[str],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+    ):
+        self.class_names = class_names
+        self.selected = class_names
+
+        if include is not None:
+            self.selected = [
+                class_name
+                for class_name in self.selected
+                if class_name in include
+            ]
+
+        if exclude is not None:
+            self.selected = [
+                class_name
+                for class_name in self.selected
+                if class_name not in exclude
+            ]
+
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        y_true = []
+        y_pred = []
+
+        for clip_eval in clip_evaluations:
+            for match in clip_eval.matches:
+                # Ignore generic unclassified targets
+                if match.gt_det and match.gt_class is None:
+                    continue
+
+                y_true.append(
+                    match.gt_class
+                    if match.gt_class is not None
+                    else "__NONE__"
+                )
+
+                y_pred.append(
+                    np.array(
+                        [
+                            match.pred_class_scores.get(name, 0)
+                            for name in self.class_names
+                        ]
+                    )
+                )
+
+        y_true = label_binarize(y_true, classes=self.class_names)
+        y_pred = np.stack(y_pred)
+
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for class_index, class_name in enumerate(self.class_names):
+            if class_name not in self.selected:
+                continue
+
+            y_true_class = y_true[:, class_index]
+            y_roced_class = y_pred[:, class_index]
+            fpr, tpr, _ = metrics.roc_curve(
+                y_true_class,
+                y_roced_class,
+            )
+            ax.plot(fpr, tpr, label=class_name)
+
+        ax.set_xlabel("False Positive Rate")
+        ax.set_ylabel("True Positive Rate")
+        ax.legend(
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            borderaxespad=0.0,
+        )
+
+        yield "classification_roc_curve", fig
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ClassificationROCCurvesConfig,
+        class_names: List[str],
+    ):
+        return cls(
+            class_names=class_names,
+            include=config.include,
+            exclude=config.exclude,
+        )
+
+
+plots_registry.register(ClassificationROCCurvesConfig, ClassificationROCCurves)
+
+
 PlotConfig = Annotated[
-    Union[ExampleGalleryConfig,], Field(discriminator="name")
+    Union[
+        ExampleGalleryConfig,
+        ClipEvaluationPlotConfig,
+        DetectionPRCurveConfig,
+        ClassificationPRCurvesConfig,
+        DetectionROCCurveConfig,
+        ClassificationROCCurvesConfig,
+    ],
+    Field(discriminator="name"),
 ]
 
 
-def build_plotter(config: PlotConfig) -> PlotterProtocol:
-    return plots_registry.build(config)
+def build_plotter(
+    config: PlotConfig, class_names: List[str]
+) -> PlotterProtocol:
+    return plots_registry.build(config, class_names)
 
 
 @dataclass

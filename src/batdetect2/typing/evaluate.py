@@ -50,6 +50,26 @@ class MatchEvaluation:
 
         return self.pred_class_scores[pred_class]
 
+    def is_true_positive(self, threshold: float = 0) -> bool:
+        return (
+            self.gt_det
+            and self.pred_score > threshold
+            and self.gt_class == self.pred_class
+        )
+
+    def is_false_positive(self, threshold: float = 0) -> bool:
+        return self.gt_det is None and self.pred_score > threshold
+
+    def is_false_negative(self, threshold: float = 0) -> bool:
+        return self.gt_det and self.pred_score <= threshold
+
+    def is_cross_trigger(self, threshold: float = 0) -> bool:
+        return (
+            self.gt_det
+            and self.pred_score > threshold
+            and self.gt_class != self.pred_class
+        )
+
 
 @dataclass
 class ClipEvaluation:

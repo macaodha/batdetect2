@@ -56,7 +56,10 @@ class BatDetect2API:
         train(
             train_annotations=train_annotations,
             val_annotations=val_annotations,
+            targets=self.targets,
             config=self.config,
+            audio_loader=self.audio_loader,
+            preprocessor=self.preprocessor,
             train_workers=train_workers,
             val_workers=val_workers,
             checkpoint_dir=checkpoint_dir,
