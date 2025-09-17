@@ -1,0 +1,36 @@
+detection_target:
+  name: bat
+  match_if:
+    name: all_of
+    conditions:
+      - name: has_tag
+        tag: { key: event, value: Echolocation }
+      - name: not
+        condition:
+          name: has_tag
+          tag: { key: class, value: Unknown }
+  assign_tags:
+    - key: class
+      value: Bat
+
+classification_targets:
+  - name: myomys
+    tags:
+      - key: class
+        value: Myotis mystacinus
+  - name: pippip
+    tags:
+      - key: class
+        value: Pipistrellus pipistrellus
+  - name: eptser
+    tags:
+      - key: class
+        value: Eptesicus serotinus
+  - name: rhifer
+    tags:
+      - key: class
+        value: Rhinolophus ferrumequinum
+
+roi:
+  name: anchor_bbox
+  anchor: top-left

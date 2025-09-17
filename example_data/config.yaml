@@ -1,41 +1,3 @@
-targets:
-  detection_target:
-    name: bat
-    match_if:
-      name: all_of
-      conditions:
-        - name: has_tag
-          tag: { key: event, value: Echolocation }
-        - name: not
-          condition:
-            name: has_tag
-            tag: { key: class, value: Unknown }
-    assign_tags:
-      - key: class
-        value: Bat
-
-  classification_targets:
-    - name: myomys
-      tags:
-        - key: class
-          value: Myotis mystacinus
-    - name: pippip
-      tags:
-        - key: class
-          value: Pipistrellus pipistrellus
-    - name: eptser
-      tags:
-        - key: class
-          value: Eptesicus serotinus
-    - name: rhifer
-      tags:
-        - key: class
-          value: Rhinolophus ferrumequinum
-
-  roi:
-    name: anchor_bbox
-    anchor: top-left
-
 audio:
   samplerate: 256000
   resample:
@@ -101,14 +63,16 @@ model:
             out_channels: 32
 
 train:
-  learning_rate: 0.001
-  t_max: 100
+  optimizer:
+    learning_rate: 0.001
+    t_max: 100
 
   labels:
     sigma: 3
 
   trainer:
-    max_epochs: 5
+    max_epochs: 10
+    check_val_every_n_epoch: 5
 
   train_loader:
     batch_size: 8
@@ -172,3 +136,29 @@ train:
 
   logger:
     name: csv
+
+  validation:
+    metrics:
+      - name: detection_ap
+      - name: detection_roc_auc
+      - name: classification_ap
+      - name: classification_roc_auc
+      - name: top_class_ap
+      - name: classification_balanced_accuracy
+      - name: clip_ap
+      - name: clip_roc_auc
+
+evaluation:
+  match_strategy:
+    name: start_time_match
+    distance_threshold: 0.01
+  metrics:
+    - name: classification_ap
+    - name: detection_ap
+  plots:
+    - name: example_gallery
+    - name: example_clip
+    - name: detection_pr_curve
+    - name: classification_pr_curves
+    - name: detection_roc_curve
+    - name: classification_roc_curves
