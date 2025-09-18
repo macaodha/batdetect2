@@ -13,6 +13,12 @@ DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
 
 
+__all__ = [
+    "build_clipper",
+    "ClipConfig",
+]
+
+
 clipper_registry: Registry[ClipperProtocol, []] = Registry("clipper")
 
 
