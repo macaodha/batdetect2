@@ -1,18 +1,49 @@
-from typing import List
+from typing import Annotated, Callable, Literal, Sequence, Union
 
 import pandas as pd
+from pydantic import Field
 from soundevent.geometry import compute_bounds
 
-from batdetect2.typing.evaluate import ClipEvaluation
+from batdetect2.core import BaseConfig, Registry
+from batdetect2.typing import ClipEvaluation
+
+EvaluationTableGenerator = Callable[[Sequence[ClipEvaluation]], pd.DataFrame]
 
 
-def extract_matches_dataframe(clip_evaluations: List[ClipEvaluation]) -> pd.DataFrame:
+tables_registry: Registry[EvaluationTableGenerator, []] = Registry(
+    "evaluation_table"
+)
+
+
+class FullEvaluationTableConfig(BaseConfig):
+    name: Literal["full_evaluation"] = "full_evaluation"
+
+
+class FullEvaluationTable:
+    def __call__(
+        self, clip_evaluations: Sequence[ClipEvaluation]
+    ) -> pd.DataFrame:
+        return extract_matches_dataframe(clip_evaluations)
+
+    @classmethod
+    def from_config(cls, config: FullEvaluationTableConfig):
+        return cls()
+
+
+tables_registry.register(FullEvaluationTableConfig, FullEvaluationTable)
+
+
+def extract_matches_dataframe(
+    clip_evaluations: Sequence[ClipEvaluation],
+) -> pd.DataFrame:
     data = []
 
     for clip_evaluation in clip_evaluations:
         for match in clip_evaluation.matches:
             gt_start_time = gt_low_freq = gt_end_time = gt_high_freq = None
-            pred_start_time = pred_low_freq = pred_end_time = pred_high_freq = None
+            pred_start_time = pred_low_freq = pred_end_time = (
+                pred_high_freq
+            ) = None
 
             sound_event_annotation = match.sound_event_annotation
 
@@ -24,9 +55,12 @@ def extract_matches_dataframe(clip_evaluations: List[ClipEvaluation]) -> pd.Data
                 )
 
             if match.pred_geometry is not None:
-                pred_start_time, pred_low_freq, pred_end_time, pred_high_freq = (
-                    compute_bounds(match.pred_geometry)
-                )
+                (
+                    pred_start_time,
+                    pred_low_freq,
+                    pred_end_time,
+                    pred_high_freq,
+                ) = compute_bounds(match.pred_geometry)
 
             data.append(
                 {
@@ -61,3 +95,14 @@ def extract_matches_dataframe(clip_evaluations: List[ClipEvaluation]) -> pd.Data
     df = pd.DataFrame(data)
     df.columns = pd.MultiIndex.from_tuples(df.columns)  # type: ignore
     return df
+
+
+EvaluationTableConfig = Annotated[
+    Union[FullEvaluationTableConfig,], Field(discriminator="name")
+]
+
+
+def build_table_generator(
+    config: EvaluationTableConfig,
+) -> EvaluationTableGenerator:
+    return tables_registry.build(config)

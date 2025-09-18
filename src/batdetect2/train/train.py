@@ -8,20 +8,21 @@ from loguru import logger
 from soundevent import data
 
 from batdetect2.audio import build_audio_loader
-from batdetect2.evaluate.evaluator import Evaluator, build_evaluator
+from batdetect2.evaluate.evaluator import build_evaluator
+from batdetect2.logging import build_logger
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
-from batdetect2.train.logging import build_logger
 
 if TYPE_CHECKING:
     from batdetect2.config import BatDetect2Config
     from batdetect2.typing import (
         AudioLoader,
         ClipLabeller,
+        EvaluatorProtocol,
         PreprocessorProtocol,
         TargetProtocol,
     )
@@ -122,7 +123,7 @@ def train(
 
 def build_trainer_callbacks(
     targets: "TargetProtocol",
-    evaluator: Optional[Evaluator] = None,
+    evaluator: Optional["EvaluatorProtocol"] = None,
     checkpoint_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
@@ -142,7 +143,6 @@ def build_trainer_callbacks(
         ModelCheckpoint(
             dirpath=str(checkpoint_dir),
             save_top_k=1,
-            filename="best-{epoch:02d}-{val_loss:.0f}",
             monitor="total_loss/val",
         ),
         ValidationMetrics(evaluator),
@@ -152,7 +152,7 @@ def build_trainer_callbacks(
 def build_trainer(
     conf: "BatDetect2Config",
     targets: "TargetProtocol",
-    evaluator: Optional[Evaluator] = None,
+    evaluator: Optional["EvaluatorProtocol"] = None,
     checkpoint_dir: Optional[Path] = None,
     log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,

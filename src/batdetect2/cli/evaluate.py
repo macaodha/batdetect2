@@ -10,11 +10,17 @@ from batdetect2.cli.base import cli
 __all__ = ["evaluate_command"]
 
 
+DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
+
+
 @cli.command(name="evaluate")
 @click.argument("model-path", type=click.Path(exists=True))
 @click.argument("test_dataset", type=click.Path(exists=True))
-@click.option("--output-dir", type=click.Path())
-@click.option("--workers", type=int)
+@click.option("--config", "config_path", type=click.Path())
+@click.option("--output-dir", type=click.Path(), default=DEFAULT_OUTPUT_DIR)
+@click.option("--experiment-name", type=str)
+@click.option("--run-name", type=str)
+@click.option("--workers", "num_workers", type=int)
 @click.option(
     "-v",
     "--verbose",
@@ -24,13 +30,16 @@ __all__ = ["evaluate_command"]
 def evaluate_command(
     model_path: Path,
     test_dataset: Path,
-    output_dir: Optional[Path] = None,
-    workers: Optional[int] = None,
+    config_path: Optional[Path],
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    num_workers: Optional[int] = None,
+    experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
     verbose: int = 0,
 ):
+    from batdetect2.api.base import BatDetect2API
+    from batdetect2.config import load_full_config
     from batdetect2.data import load_dataset_from_config
-    from batdetect2.evaluate.evaluate import evaluate
-    from batdetect2.train.lightning import load_model_from_checkpoint
 
     logger.remove()
     if verbose == 0:
@@ -49,16 +58,16 @@ def evaluate_command(
         num_annotations=len(test_annotations),
     )
 
-    model, train_config = load_model_from_checkpoint(model_path)
+    config = None
+    if config_path is not None:
+        config = load_full_config(config_path)
 
-    df, results = evaluate(
-        model,
+    api = BatDetect2API.from_checkpoint(model_path, config=config)
+
+    api.evaluate(
         test_annotations,
-        config=train_config,
-        num_workers=workers,
+        num_workers=num_workers,
+        output_dir=output_dir,
+        experiment_name=experiment_name,
+        run_name=run_name,
     )
-
-    print(results)
-
-    if output_dir:
-        df.to_csv(output_dir / "results.csv")

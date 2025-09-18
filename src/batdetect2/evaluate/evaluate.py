@@ -1,35 +1,44 @@
-from typing import List, Optional, Tuple
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Sequence
 
-import pandas as pd
+from lightning import Trainer
 from soundevent import data
 
 from batdetect2.audio import build_audio_loader
-from batdetect2.evaluate.config import EvaluationConfig
-from batdetect2.evaluate.dataframe import extract_matches_dataframe
+from batdetect2.evaluate.dataset import build_test_loader
 from batdetect2.evaluate.evaluator import build_evaluator
-from batdetect2.evaluate.metrics import ClassificationAP, DetectionAP
+from batdetect2.evaluate.lightning import EvaluationModule
+from batdetect2.logging import build_logger
 from batdetect2.models import Model
-from batdetect2.plotting.clips import AudioLoader, PreprocessorProtocol
-from batdetect2.postprocess import get_raw_predictions
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
-from batdetect2.train.dataset import ValidationDataset
-from batdetect2.train.labels import build_clip_labeler
-from batdetect2.train.train import build_val_loader
-from batdetect2.typing import ClipLabeller, TargetProtocol
+
+if TYPE_CHECKING:
+    from batdetect2.config import BatDetect2Config
+    from batdetect2.typing import (
+        AudioLoader,
+        PreprocessorProtocol,
+        TargetProtocol,
+    )
+
+DEFAULT_OUTPUT_DIR: Path = Path("outputs") / "evaluations"
 
 
 def evaluate(
     model: Model,
-    test_annotations: List[data.ClipAnnotation],
-    targets: Optional[TargetProtocol] = None,
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    labeller: Optional[ClipLabeller] = None,
-    config: Optional[EvaluationConfig] = None,
+    test_annotations: Sequence[data.ClipAnnotation],
+    targets: Optional["TargetProtocol"] = None,
+    audio_loader: Optional["AudioLoader"] = None,
+    preprocessor: Optional["PreprocessorProtocol"] = None,
+    config: Optional["BatDetect2Config"] = None,
     num_workers: Optional[int] = None,
-) -> Tuple[pd.DataFrame, dict]:
-    config = config or EvaluationConfig()
+    output_dir: data.PathLike = DEFAULT_OUTPUT_DIR,
+    experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
+):
+    from batdetect2.config import BatDetect2Config
+
+    config = config or BatDetect2Config()
 
     audio_loader = audio_loader or build_audio_loader()
 
@@ -39,60 +48,21 @@ def evaluate(
 
     targets = targets or build_targets()
 
-    labeller = labeller or build_clip_labeler(
-        targets,
-        min_freq=preprocessor.min_freq,
-        max_freq=preprocessor.max_freq,
-    )
-
-    loader = build_val_loader(
+    loader = build_test_loader(
         test_annotations,
         audio_loader=audio_loader,
-        labeller=labeller,
         preprocessor=preprocessor,
         num_workers=num_workers,
     )
 
-    dataset: ValidationDataset = loader.dataset  # type: ignore
+    evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
-    clip_annotations = []
-    predictions = []
-
-    evaluator = build_evaluator(config=config, targets=targets)
-
-    for batch in loader:
-        outputs = model.detector(batch.spec)
-
-        clip_annotations = [
-            dataset.clip_annotations[int(example_idx)]
-            for example_idx in batch.idx
-        ]
-
-        predictions = get_raw_predictions(
-            outputs,
-            start_times=[
-                clip_annotation.clip.start_time
-                for clip_annotation in clip_annotations
-            ],
-            targets=targets,
-            postprocessor=model.postprocessor,
-        )
-
-        clip_annotations.extend(clip_annotations)
-        predictions.extend(predictions)
-
-    matches = evaluator.evaluate(clip_annotations, predictions)
-    df = extract_matches_dataframe(matches)
-
-    metrics = [
-        DetectionAP(),
-        ClassificationAP(class_names=targets.class_names),
-    ]
-
-    results = {
-        name: value
-        for metric in metrics
-        for name, value in metric(matches).items()
-    }
-
-    return df, results
+    logger = build_logger(
+        config.evaluation.logger,
+        log_dir=Path(output_dir),
+        experiment_name=experiment_name,
+        run_name=run_name,
+    )
+    module = EvaluationModule(model, evaluator)
+    trainer = Trainer(logger=logger, enable_checkpointing=False)
+    return trainer.test(module, loader)

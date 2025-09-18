@@ -11,9 +11,9 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import scale_geometry, shift_geometry
 
+from batdetect2.audio.clips import get_subclip_annotation
 from batdetect2.core.arrays import adjust_width
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.train.clips import get_subclip_annotation
 from batdetect2.typing import AudioLoader, Augmentation
 
 __all__ = [

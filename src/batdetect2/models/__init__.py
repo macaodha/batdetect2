@@ -67,7 +67,7 @@ from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
 from batdetect2.typing.models import DetectionModel
 from batdetect2.typing.postprocess import (
-    DetectionsTensor,
+    ClipDetectionsTensor,
     PostprocessorProtocol,
 )
 from batdetect2.typing.preprocess import PreprocessorProtocol
@@ -121,7 +121,7 @@ class Model(torch.nn.Module):
         self.postprocessor = postprocessor
         self.targets = targets
 
-    def forward(self, wav: torch.Tensor) -> List[DetectionsTensor]:
+    def forward(self, wav: torch.Tensor) -> List[ClipDetectionsTensor]:
         spec = self.preprocessor(wav)
         outputs = self.detector(spec)
         return self.postprocessor(outputs)

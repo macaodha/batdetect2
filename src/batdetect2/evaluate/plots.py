@@ -10,19 +10,18 @@ from pydantic import Field
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
 
-from batdetect2.audio import AudioConfig
-from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
-from batdetect2.plotting.clips import PreprocessorProtocol, build_audio_loader
+from batdetect2.audio import AudioConfig, build_audio_loader
+from batdetect2.core import BaseConfig, Registry
 from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.plotting.matches import plot_matches
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.typing.evaluate import (
+from batdetect2.typing import (
+    AudioLoader,
     ClipEvaluation,
     MatchEvaluation,
     PlotterProtocol,
+    PreprocessorProtocol,
 )
-from batdetect2.typing.preprocess import AudioLoader
 
 __all__ = [
     "build_plotter",
@@ -431,6 +430,62 @@ class ClassificationROCCurves(PlotterProtocol):
 plots_registry.register(ClassificationROCCurvesConfig, ClassificationROCCurves)
 
 
+class ConfusionMatrixConfig(BaseConfig):
+    name: Literal["confusion_matrix"] = "confusion_matrix"
+    background_class: str = "noise"
+
+
+class ConfusionMatrix(PlotterProtocol):
+    def __init__(self, background_class: str, class_names: List[str]):
+        self.background_class = background_class
+        self.class_names = class_names
+
+    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+        y_true = []
+        y_pred = []
+
+        for clip_eval in clip_evaluations:
+            for match in clip_eval.matches:
+                # Ignore generic unclassified targets
+                if match.gt_det and match.gt_class is None:
+                    continue
+
+                y_true.append(
+                    match.gt_class
+                    if match.gt_class is not None
+                    else self.background_class
+                )
+
+                top_class = match.pred_class
+                y_pred.append(
+                    top_class
+                    if top_class is not None
+                    else self.background_class
+                )
+
+        display = metrics.ConfusionMatrixDisplay.from_predictions(
+            y_true,
+            y_pred,
+            labels=[*self.class_names, self.background_class],
+        )
+
+        yield "confusion_matrix", display.figure_
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ConfusionMatrixConfig,
+        class_names: List[str],
+    ):
+        return cls(
+            background_class=config.background_class,
+            class_names=class_names,
+        )
+
+
+plots_registry.register(ConfusionMatrixConfig, ConfusionMatrix)
+
+
 PlotConfig = Annotated[
     Union[
         ExampleGalleryConfig,
@@ -439,6 +494,7 @@ PlotConfig = Annotated[
         ClassificationPRCurvesConfig,
         DetectionROCCurveConfig,
         ClassificationROCCurvesConfig,
+        ConfusionMatrixConfig,
     ],
     Field(discriminator="name"),
 ]

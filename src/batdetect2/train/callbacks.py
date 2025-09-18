@@ -5,13 +5,13 @@ from lightning.pytorch.callbacks import Callback
 from soundevent import data
 from torch.utils.data import DataLoader
 
-from batdetect2.evaluate import Evaluator
-from batdetect2.postprocess import get_raw_predictions
+from batdetect2.logging import get_image_logger
+from batdetect2.postprocess import to_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
-from batdetect2.train.logging import get_image_plotter
 from batdetect2.typing import (
     ClipEvaluation,
+    EvaluatorProtocol,
     ModelOutput,
     RawPrediction,
     TrainExample,
@@ -19,7 +19,7 @@ from batdetect2.typing import (
 
 
 class ValidationMetrics(Callback):
-    def __init__(self, evaluator: Evaluator):
+    def __init__(self, evaluator: EvaluatorProtocol):
         super().__init__()
 
         self.evaluator = evaluator
@@ -34,12 +34,12 @@ class ValidationMetrics(Callback):
         assert isinstance(dataset, ValidationDataset)
         return dataset
 
-    def plot_examples(
+    def generate_plots(
         self,
         pl_module: LightningModule,
         evaluated_clips: List[ClipEvaluation],
     ):
-        plotter = get_image_plotter(pl_module.logger)  # type: ignore
+        plotter = get_image_logger(pl_module.logger)  # type: ignore
 
         if plotter is None:
             return
@@ -66,7 +66,7 @@ class ValidationMetrics(Callback):
         )
 
         self.log_metrics(pl_module, clip_evaluations)
-        self.plot_examples(pl_module, clip_evaluations)
+        self.generate_plots(pl_module, clip_evaluations)
 
         return super().on_validation_epoch_end(trainer, pl_module)
 
@@ -88,8 +88,7 @@ class ValidationMetrics(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        postprocessor = pl_module.model.postprocessor
-        targets = pl_module.model.targets
+        model = pl_module.model
         dataset = self.get_dataset(trainer)
 
         clip_annotations = [
@@ -97,15 +96,14 @@ class ValidationMetrics(Callback):
             for example_idx in batch.idx
         ]
 
-        predictions = get_raw_predictions(
+        clip_detections = model.postprocessor(
             outputs,
-            start_times=[
-                clip_annotation.clip.start_time
-                for clip_annotation in clip_annotations
-            ],
-            targets=targets,
-            postprocessor=postprocessor,
+            start_times=[ca.clip.start_time for ca in clip_annotations],
         )
+        predictions = [
+            to_raw_predictions(clip_dets.numpy(), targets=model.targets)
+            for clip_dets in clip_detections
+        ]
 
         self._clip_annotations.extend(clip_annotations)
         self._predictions.extend(predictions)

@@ -6,7 +6,7 @@ import numpy as np
 from soundevent import data
 
 from batdetect2.typing.postprocess import (
-    DetectionsArray,
+    ClipDetectionsArray,
     RawPrediction,
 )
 from batdetect2.typing.targets import TargetProtocol
@@ -28,7 +28,7 @@ decoding.
 
 
 def to_raw_predictions(
-    detections: DetectionsArray,
+    detections: ClipDetectionsArray,
     targets: TargetProtocol,
 ) -> List[RawPrediction]:
     predictions = []

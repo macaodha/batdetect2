@@ -1,7 +1,9 @@
 from batdetect2.typing.evaluate import (
     ClipEvaluation,
+    EvaluatorProtocol,
     MatchEvaluation,
     MetricsProtocol,
+    PlotterProtocol,
 )
 from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 from batdetect2.typing.postprocess import (
@@ -49,6 +51,7 @@ __all__ = [
     "MatchEvaluation",
     "MetricsProtocol",
     "ModelOutput",
+    "PlotterProtocol",
     "Position",
     "PostprocessorProtocol",
     "PreprocessorProtocol",
@@ -60,4 +63,5 @@ __all__ = [
     "SoundEventFilter",
     "TargetProtocol",
     "TrainExample",
+    "EvaluatorProtocol",
 ]

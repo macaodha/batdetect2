@@ -14,7 +14,6 @@ from batdetect2.train.augmentations import (
     scale_volume,
     warp_spectrogram,
 )
-from batdetect2.train.clips import build_clipper, select_subclip
 from batdetect2.train.config import (
     PLTrainerConfig,
     TrainingConfig,
@@ -61,7 +60,6 @@ __all__ = [
     "add_echo",
     "build_augmentations",
     "build_clip_labeler",
-    "build_clipper",
     "build_loss",
     "build_train_dataset",
     "build_train_loader",
@@ -74,7 +72,6 @@ __all__ = [
     "mask_time",
     "mix_audio",
     "scale_volume",
-    "select_subclip",
     "train",
     "warp_spectrogram",
 ]

@@ -15,10 +15,8 @@ import numpy as np
 from pydantic import Field
 from sklearn import metrics, preprocessing
 
-from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
-from batdetect2.typing import MetricsProtocol
-from batdetect2.typing.evaluate import ClipEvaluation
+from batdetect2.core import BaseConfig, Registry
+from batdetect2.typing import ClipEvaluation, MetricsProtocol
 
 __all__ = ["DetectionAP", "ClassificationAP"]
 
@@ -375,14 +373,96 @@ metrics_registry.register(
 )
 
 
-class ClipAPConfig(BaseConfig):
-    name: Literal["clip_ap"] = "clip_ap"
+class ClipDetectionAPConfig(BaseConfig):
+    name: Literal["clip_detection_ap"] = "clip_detection_ap"
+    ap_implementation: APImplementation = "pascal_voc"
+
+
+class ClipDetectionAP(MetricsProtocol):
+    def __init__(
+        self,
+        implementation: APImplementation,
+    ):
+        self.implementation = implementation
+        self.metric = _ap_impl_mapping[self.implementation]
+
+    def __call__(
+        self, clip_evaluations: Sequence[ClipEvaluation]
+    ) -> Dict[str, float]:
+        y_true = []
+        y_score = []
+
+        for clip_eval in clip_evaluations:
+            clip_det = []
+            clip_scores = []
+
+            for match in clip_eval.matches:
+                clip_det.append(match.gt_det)
+                clip_scores.append(match.pred_score)
+
+            y_true.append(any(clip_det))
+            y_score.append(max(clip_scores or [0]))
+
+        return {"clip_detection_ap": self.metric(y_true, y_score)}
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ClipDetectionAPConfig,
+        class_names: List[str],
+    ):
+        return cls(implementation=config.ap_implementation)
+
+
+metrics_registry.register(ClipDetectionAPConfig, ClipDetectionAP)
+
+
+class ClipDetectionROCAUCConfig(BaseConfig):
+    name: Literal["clip_detection_roc_auc"] = "clip_detection_roc_auc"
+
+
+class ClipDetectionROCAUC(MetricsProtocol):
+    def __call__(
+        self, clip_evaluations: Sequence[ClipEvaluation]
+    ) -> Dict[str, float]:
+        y_true = []
+        y_score = []
+
+        for clip_eval in clip_evaluations:
+            clip_det = []
+            clip_scores = []
+
+            for match in clip_eval.matches:
+                clip_det.append(match.gt_det)
+                clip_scores.append(match.pred_score)
+
+            y_true.append(any(clip_det))
+            y_score.append(max(clip_scores or [0]))
+
+        return {
+            "clip_detection_ap": float(metrics.roc_auc_score(y_true, y_score))
+        }
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ClipDetectionROCAUCConfig,
+        class_names: List[str],
+    ):
+        return cls()
+
+
+metrics_registry.register(ClipDetectionROCAUCConfig, ClipDetectionROCAUC)
+
+
+class ClipMulticlassAPConfig(BaseConfig):
+    name: Literal["clip_multiclass_ap"] = "clip_multiclass_ap"
     ap_implementation: APImplementation = "pascal_voc"
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
 
 
-class ClipAP(MetricsProtocol):
+class ClipMulticlassAP(MetricsProtocol):
     def __init__(
         self,
         class_names: List[str],
@@ -454,15 +534,17 @@ class ClipAP(MetricsProtocol):
             [value for value in class_scores.values() if value != 0]
         )
         return {
-            "clip_mAP": float(mean_ap),
+            "clip_multiclass_mAP": float(mean_ap),
             **{
-                f"clip_AP/{class_name}": class_scores[class_name]
+                f"clip_multiclass_AP/{class_name}": class_scores[class_name]
                 for class_name in self.selected
             },
         }
 
     @classmethod
-    def from_config(cls, config: ClipAPConfig, class_names: List[str]):
+    def from_config(
+        cls, config: ClipMulticlassAPConfig, class_names: List[str]
+    ):
         return cls(
             implementation=config.ap_implementation,
             include=config.include,
@@ -471,16 +553,16 @@ class ClipAP(MetricsProtocol):
         )
 
 
-metrics_registry.register(ClipAPConfig, ClipAP)
+metrics_registry.register(ClipMulticlassAPConfig, ClipMulticlassAP)
 
 
-class ClipROCAUCConfig(BaseConfig):
-    name: Literal["clip_roc_auc"] = "clip_roc_auc"
+class ClipMulticlassROCAUCConfig(BaseConfig):
+    name: Literal["clip_multiclass_roc_auc"] = "clip_multiclass_roc_auc"
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
 
 
-class ClipROCAUC(MetricsProtocol):
+class ClipMulticlassROCAUC(MetricsProtocol):
     def __init__(
         self,
         class_names: List[str],
@@ -548,9 +630,11 @@ class ClipROCAUC(MetricsProtocol):
             [value for value in class_scores.values() if value != 0]
         )
         return {
-            "clip_macro_ROC_AUC": float(mean_roc_auc),
+            "clip_multiclass_macro_ROC_AUC": float(mean_roc_auc),
             **{
-                f"clip_ROC_AUC/{class_name}": class_scores[class_name]
+                f"clip_multiclass_ROC_AUC/{class_name}": class_scores[
+                    class_name
+                ]
                 for class_name in self.selected
             },
         }
@@ -558,7 +642,7 @@ class ClipROCAUC(MetricsProtocol):
     @classmethod
     def from_config(
         cls,
-        config: ClipROCAUCConfig,
+        config: ClipMulticlassROCAUCConfig,
         class_names: List[str],
     ):
         return cls(
@@ -568,7 +652,7 @@ class ClipROCAUC(MetricsProtocol):
         )
 
 
-metrics_registry.register(ClipROCAUCConfig, ClipROCAUC)
+metrics_registry.register(ClipMulticlassROCAUCConfig, ClipMulticlassROCAUC)
 
 MetricConfig = Annotated[
     Union[
@@ -578,8 +662,10 @@ MetricConfig = Annotated[
         ClassificationROCAUCConfig,
         TopClassAPConfig,
         ClassificationBalancedAccuracyConfig,
-        ClipAPConfig,
-        ClipROCAUCConfig,
+        ClipDetectionAPConfig,
+        ClipDetectionROCAUCConfig,
+        ClipMulticlassAPConfig,
+        ClipMulticlassROCAUCConfig,
     ],
     Field(discriminator="name"),
 ]

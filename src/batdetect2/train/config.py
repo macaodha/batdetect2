@@ -5,17 +5,9 @@ from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.evaluate.config import EvaluationConfig
-from batdetect2.train.augmentations import (
-    DEFAULT_AUGMENTATION_CONFIG,
-    AugmentationsConfig,
-)
-from batdetect2.train.clips import (
-    ClipConfig,
-    PaddedClipConfig,
-    RandomClipConfig,
-)
+from batdetect2.logging import LoggerConfig, TensorBoardLoggerConfig
+from batdetect2.train.dataset import TrainLoaderConfig, ValLoaderConfig
 from batdetect2.train.labels import LabelConfig
-from batdetect2.train.logging import CSVLoggerConfig, LoggerConfig
 from batdetect2.train.losses import LossConfig
 
 __all__ = [
@@ -45,30 +37,6 @@ class PLTrainerConfig(BaseConfig):
     val_check_interval: Optional[Union[int, float]] = None
 
 
-class ValLoaderConfig(BaseConfig):
-    num_workers: int = 0
-
-    clipping_strategy: ClipConfig = Field(
-        default_factory=lambda: PaddedClipConfig()
-    )
-
-
-class TrainLoaderConfig(BaseConfig):
-    num_workers: int = 0
-
-    batch_size: int = 8
-
-    shuffle: bool = False
-
-    augmentations: AugmentationsConfig = Field(
-        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG.model_copy()
-    )
-
-    clipping_strategy: ClipConfig = Field(
-        default_factory=lambda: PaddedClipConfig()
-    )
-
-
 class OptimizerConfig(BaseConfig):
     learning_rate: float = 1e-3
     t_max: int = 100
@@ -79,9 +47,8 @@ class TrainingConfig(BaseConfig):
     val_loader: ValLoaderConfig = Field(default_factory=ValLoaderConfig)
     optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
     loss: LossConfig = Field(default_factory=LossConfig)
-    cliping: RandomClipConfig = Field(default_factory=RandomClipConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
-    logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
+    logger: LoggerConfig = Field(default_factory=TensorBoardLoggerConfig)
     labels: LabelConfig = Field(default_factory=LabelConfig)
     validation: EvaluationConfig = Field(default_factory=EvaluationConfig)
 

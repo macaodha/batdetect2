@@ -11,6 +11,7 @@ from batdetect2.evaluate.plots import build_plotter
 from batdetect2.targets import build_targets
 from batdetect2.typing.evaluate import (
     ClipEvaluation,
+    EvaluatorProtocol,
     MatcherProtocol,
     MetricsProtocol,
     PlotterProtocol,
@@ -135,7 +136,7 @@ def build_evaluator(
     matcher: Optional[MatcherProtocol] = None,
     plots: Optional[List[PlotterProtocol]] = None,
     metrics: Optional[List[MetricsProtocol]] = None,
-) -> Evaluator:
+) -> EvaluatorProtocol:
     config = config or EvaluationConfig()
     targets = targets or build_targets()
     matcher = matcher or build_matcher(config.match_strategy)

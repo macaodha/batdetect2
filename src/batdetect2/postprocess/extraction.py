@@ -15,32 +15,25 @@ precise time-frequency location of each detection. The final output aggregates
 all extracted information into a structured `xarray.Dataset`.
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional
 
 import torch
 
-from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
-from batdetect2.typing.postprocess import (
-    DetectionsTensor,
-    ModelOutput,
-)
+from batdetect2.typing.postprocess import ClipDetectionsTensor
 
 __all__ = [
-    "extract_prediction_tensor",
+    "extract_detection_peaks",
 ]
 
 
-def extract_prediction_tensor(
-    output: ModelOutput,
+def extract_detection_peaks(
+    detection_heatmap: torch.Tensor,
+    size_heatmap: torch.Tensor,
+    feature_heatmap: torch.Tensor,
+    classification_heatmap: torch.Tensor,
     max_detections: int = 200,
     threshold: Optional[float] = None,
-    nms_kernel_size: Union[int, Tuple[int, int]] = NMS_KERNEL_SIZE,
-) -> List[DetectionsTensor]:
-    detection_heatmap = non_max_suppression(
-        output.detection_probs.detach(),
-        kernel_size=nms_kernel_size,
-    )
-
+) -> List[ClipDetectionsTensor]:
     height = detection_heatmap.shape[-2]
     width = detection_heatmap.shape[-1]
 
@@ -53,9 +46,9 @@ def extract_prediction_tensor(
     freqs = freqs.flatten().to(detection_heatmap.device)
     times = times.flatten().to(detection_heatmap.device)
 
-    output_size_preds = output.size_preds.detach()
-    output_features = output.features.detach()
-    output_class_probs = output.class_probs.detach()
+    output_size_preds = size_heatmap.detach()
+    output_features = feature_heatmap.detach()
+    output_class_probs = classification_heatmap.detach()
 
     predictions = []
     for idx, item in enumerate(detection_heatmap):
@@ -65,23 +58,25 @@ def extract_prediction_tensor(
         detection_scores = item.take(indices)
         detection_freqs = freqs.take(indices)
         detection_times = times.take(indices)
-        sizes = output_size_preds[idx, :, detection_freqs, detection_times].T
-        features = output_features[idx, :, detection_freqs, detection_times].T
-        class_scores = output_class_probs[
-            idx, :, detection_freqs, detection_times
-        ].T
 
         if threshold is not None:
             mask = detection_scores >= threshold
+
             detection_scores = detection_scores[mask]
-            sizes = sizes[mask]
             detection_times = detection_times[mask]
             detection_freqs = detection_freqs[mask]
-            features = features[mask]
-            class_scores = class_scores[mask]
+
+        sizes = output_size_preds[idx, :, detection_freqs, detection_times].T
+        features = output_features[idx, :, detection_freqs, detection_times].T
+        class_scores = output_class_probs[
+            idx,
+            :,
+            detection_freqs,
+            detection_times,
+        ].T
 
         predictions.append(
-            DetectionsTensor(
+            ClipDetectionsTensor(
                 scores=detection_scores,
                 sizes=sizes,
                 features=features,

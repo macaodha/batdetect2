@@ -11,6 +11,7 @@ from batdetect2.evaluate.metrics import (
     MetricConfig,
 )
 from batdetect2.evaluate.plots import PlotConfig
+from batdetect2.logging import CSVLoggerConfig, LoggerConfig
 
 __all__ = [
     "EvaluationConfig",
@@ -28,6 +29,7 @@ class EvaluationConfig(BaseConfig):
         ]
     )
     plots: List[PlotConfig] = Field(default_factory=list)
+    logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 
 def load_evaluation_config(

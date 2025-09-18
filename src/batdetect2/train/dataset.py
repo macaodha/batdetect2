@@ -2,18 +2,21 @@ from typing import List, Optional, Sequence
 
 import torch
 from loguru import logger
+from pydantic import Field
 from soundevent import data
 from torch.utils.data import DataLoader, Dataset
 
-from batdetect2.audio import build_audio_loader
+from batdetect2.audio import ClipConfig, build_audio_loader, build_clipper
+from batdetect2.audio.clips import PaddedClipConfig
+from batdetect2.core import BaseConfig
 from batdetect2.core.arrays import adjust_width
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.train.augmentations import (
+    DEFAULT_AUGMENTATION_CONFIG,
+    AugmentationsConfig,
     RandomAudioSource,
     build_augmentations,
 )
-from batdetect2.train.clips import build_clipper
-from batdetect2.train.config import TrainLoaderConfig, ValLoaderConfig
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.typing import (
     AudioLoader,
@@ -144,6 +147,22 @@ class ValidationDataset(Dataset):
         )
 
 
+class TrainLoaderConfig(BaseConfig):
+    num_workers: int = 0
+
+    batch_size: int = 8
+
+    shuffle: bool = False
+
+    augmentations: AugmentationsConfig = Field(
+        default_factory=lambda: DEFAULT_AUGMENTATION_CONFIG.model_copy()
+    )
+
+    clipping_strategy: ClipConfig = Field(
+        default_factory=lambda: PaddedClipConfig()
+    )
+
+
 def build_train_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
     audio_loader: Optional[AudioLoader] = None,
@@ -175,6 +194,14 @@ def build_train_loader(
         shuffle=config.shuffle,
         num_workers=num_workers,
         collate_fn=_collate_fn,
+    )
+
+
+class ValLoaderConfig(BaseConfig):
+    num_workers: int = 0
+
+    clipping_strategy: ClipConfig = Field(
+        default_factory=lambda: PaddedClipConfig()
     )
 
 

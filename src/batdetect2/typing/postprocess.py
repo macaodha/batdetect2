@@ -12,7 +12,7 @@ system that deal with model predictions.
 """
 
 from dataclasses import dataclass
-from typing import List, NamedTuple, Optional, Protocol
+from typing import List, NamedTuple, Optional, Protocol, Sequence
 
 import numpy as np
 import torch
@@ -47,15 +47,13 @@ class GeometryDecoder(Protocol):
 
 
 class RawPrediction(NamedTuple):
-    """Intermediate representation of a single detected sound event."""
-
     geometry: data.Geometry
     detection_score: float
     class_scores: np.ndarray
     features: np.ndarray
 
 
-class DetectionsArray(NamedTuple):
+class ClipDetectionsArray(NamedTuple):
     scores: np.ndarray
     sizes: np.ndarray
     class_scores: np.ndarray
@@ -64,7 +62,7 @@ class DetectionsArray(NamedTuple):
     features: np.ndarray
 
 
-class DetectionsTensor(NamedTuple):
+class ClipDetectionsTensor(NamedTuple):
     scores: torch.Tensor
     sizes: torch.Tensor
     class_scores: torch.Tensor
@@ -72,8 +70,8 @@ class DetectionsTensor(NamedTuple):
     frequencies: torch.Tensor
     features: torch.Tensor
 
-    def numpy(self) -> DetectionsArray:
-        return DetectionsArray(
+    def numpy(self) -> ClipDetectionsArray:
+        return ClipDetectionsArray(
             scores=self.scores.detach().cpu().numpy(),
             sizes=self.sizes.detach().cpu().numpy(),
             class_scores=self.class_scores.detach().cpu().numpy(),
@@ -92,10 +90,8 @@ class BatDetect2Prediction:
 class PostprocessorProtocol(Protocol):
     """Protocol defining the interface for the full postprocessing pipeline."""
 
-    def __call__(self, output: ModelOutput) -> List[DetectionsTensor]: ...
-
-    def get_detections(
+    def __call__(
         self,
         output: ModelOutput,
-        start_times: Optional[List[float]] = None,
-    ) -> List[DetectionsTensor]: ...
+        start_times: Optional[Sequence[float]] = None,
+    ) -> List[ClipDetectionsTensor]: ...

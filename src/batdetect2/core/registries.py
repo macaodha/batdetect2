@@ -2,6 +2,7 @@ import sys
 from typing import Generic, Protocol, Type, TypeVar
 
 from pydantic import BaseModel
+from typing_extensions import assert_type
 
 if sys.version_info >= (3, 10):
     from typing import ParamSpec
@@ -44,7 +45,6 @@ class Registry(Generic[T_Type, P_Type]):
         config_cls: Type[T_Config],
         logic_cls: LogicProtocol[T_Config, T_Type, P_Type],
     ) -> None:
-        """A decorator factory to register a new item."""
         fields = config_cls.model_fields
 
         if "name" not in fields:

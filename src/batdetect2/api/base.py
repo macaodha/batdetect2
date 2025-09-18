@@ -5,7 +5,7 @@ from soundevent import data
 
 from batdetect2.audio import build_audio_loader
 from batdetect2.config import BatDetect2Config
-from batdetect2.evaluate import Evaluator, build_evaluator
+from batdetect2.evaluate import build_evaluator, evaluate
 from batdetect2.models import Model, build_model
 from batdetect2.postprocess import build_postprocessor
 from batdetect2.preprocess import build_preprocessor
@@ -14,6 +14,7 @@ from batdetect2.train import train
 from batdetect2.train.lightning import load_model_from_checkpoint
 from batdetect2.typing import (
     AudioLoader,
+    EvaluatorProtocol,
     PostprocessorProtocol,
     PreprocessorProtocol,
     TargetProtocol,
@@ -28,7 +29,7 @@ class BatDetect2API:
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
-        evaluator: Evaluator,
+        evaluator: EvaluatorProtocol,
         model: Model,
     ):
         self.config = config
@@ -69,6 +70,27 @@ class BatDetect2API:
             seed=seed,
         )
         return self
+
+    def evaluate(
+        self,
+        test_annotations: Sequence[data.ClipAnnotation],
+        num_workers: Optional[int] = None,
+        output_dir: data.PathLike = ".",
+        experiment_name: Optional[str] = None,
+        run_name: Optional[str] = None,
+    ):
+        return evaluate(
+            self.model,
+            test_annotations,
+            targets=self.targets,
+            audio_loader=self.audio_loader,
+            preprocessor=self.preprocessor,
+            config=self.config,
+            num_workers=num_workers,
+            output_dir=output_dir,
+            experiment_name=experiment_name,
+            run_name=run_name,
+        )
 
     @classmethod
     def from_config(cls, config: BatDetect2Config):
@@ -118,8 +140,14 @@ class BatDetect2API:
         )
 
     @classmethod
-    def from_checkpoint(cls, path: data.PathLike):
-        model, config = load_model_from_checkpoint(path)
+    def from_checkpoint(
+        cls,
+        path: data.PathLike,
+        config: Optional[BatDetect2Config] = None,
+    ):
+        model, stored_config = load_model_from_checkpoint(path)
+
+        config = config or stored_config
 
         targets = build_targets(config=config.targets)
 
