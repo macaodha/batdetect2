@@ -27,12 +27,10 @@ class TimeAffinity(AffinityFunction):
             geometry1, geometry2, time_buffer=self.time_buffer
         )
 
-    @classmethod
-    def from_config(cls, config: TimeAffinityConfig):
-        return cls(time_buffer=config.time_buffer)
-
-
-affinity_functions.register(TimeAffinityConfig, TimeAffinity)
+    @affinity_functions.register(TimeAffinityConfig)
+    @staticmethod
+    def from_config(config: TimeAffinityConfig):
+        return TimeAffinity(time_buffer=config.time_buffer)
 
 
 def compute_timestamp_affinity(
@@ -73,12 +71,10 @@ class IntervalIOU(AffinityFunction):
             time_buffer=self.time_buffer,
         )
 
-    @classmethod
-    def from_config(cls, config: IntervalIOUConfig):
-        return cls(time_buffer=config.time_buffer)
-
-
-affinity_functions.register(IntervalIOUConfig, IntervalIOU)
+    @affinity_functions.register(IntervalIOUConfig)
+    @staticmethod
+    def from_config(config: IntervalIOUConfig):
+        return IntervalIOU(time_buffer=config.time_buffer)
 
 
 def compute_interval_iou(
@@ -127,12 +123,11 @@ class GeometricIOU(AffinityFunction):
             time_buffer=self.time_buffer,
         )
 
-    @classmethod
-    def from_config(cls, config: GeometricIOUConfig):
-        return cls(time_buffer=config.time_buffer)
+    @affinity_functions.register(GeometricIOUConfig)
+    @staticmethod
+    def from_config(config: GeometricIOUConfig):
+        return GeometricIOU(time_buffer=config.time_buffer)
 
-
-affinity_functions.register(GeometricIOUConfig, GeometricIOU)
 
 AffinityConfig = Annotated[
     Union[

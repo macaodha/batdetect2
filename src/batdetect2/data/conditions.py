@@ -10,7 +10,7 @@ from batdetect2.core.registries import Registry
 
 SoundEventCondition = Callable[[data.SoundEventAnnotation], bool]
 
-condition_registry: Registry[SoundEventCondition, []] = Registry("condition")
+conditions: Registry[SoundEventCondition, []] = Registry("condition")
 
 
 class HasTagConfig(BaseConfig):
@@ -27,12 +27,10 @@ class HasTag:
     ) -> bool:
         return self.tag in sound_event_annotation.tags
 
-    @classmethod
-    def from_config(cls, config: HasTagConfig):
-        return cls(tag=config.tag)
-
-
-condition_registry.register(HasTagConfig, HasTag)
+    @conditions.register(HasTagConfig)
+    @staticmethod
+    def from_config(config: HasTagConfig):
+        return HasTag(tag=config.tag)
 
 
 class HasAllTagsConfig(BaseConfig):
@@ -52,12 +50,10 @@ class HasAllTags:
     ) -> bool:
         return self.tags.issubset(sound_event_annotation.tags)
 
-    @classmethod
-    def from_config(cls, config: HasAllTagsConfig):
-        return cls(tags=config.tags)
-
-
-condition_registry.register(HasAllTagsConfig, HasAllTags)
+    @conditions.register(HasAllTagsConfig)
+    @staticmethod
+    def from_config(config: HasAllTagsConfig):
+        return HasAllTags(tags=config.tags)
 
 
 class HasAnyTagConfig(BaseConfig):
@@ -77,12 +73,11 @@ class HasAnyTag:
     ) -> bool:
         return bool(self.tags.intersection(sound_event_annotation.tags))
 
-    @classmethod
-    def from_config(cls, config: HasAnyTagConfig):
-        return cls(tags=config.tags)
+    @conditions.register(HasAnyTagConfig)
+    @staticmethod
+    def from_config(config: HasAnyTagConfig):
+        return HasAnyTag(tags=config.tags)
 
-
-condition_registry.register(HasAnyTagConfig, HasAnyTag)
 
 Operator = Literal["gt", "gte", "lt", "lte", "eq"]
 
@@ -134,12 +129,10 @@ class Duration:
 
         return self._comparator(duration)
 
-    @classmethod
-    def from_config(cls, config: DurationConfig):
-        return cls(operator=config.operator, seconds=config.seconds)
-
-
-condition_registry.register(DurationConfig, Duration)
+    @conditions.register(DurationConfig)
+    @staticmethod
+    def from_config(config: DurationConfig):
+        return Duration(operator=config.operator, seconds=config.seconds)
 
 
 class FrequencyConfig(BaseConfig):
@@ -181,16 +174,14 @@ class Frequency:
 
         return self._comparator(high_freq)
 
-    @classmethod
-    def from_config(cls, config: FrequencyConfig):
-        return cls(
+    @conditions.register(FrequencyConfig)
+    @staticmethod
+    def from_config(config: FrequencyConfig):
+        return Frequency(
             operator=config.operator,
             boundary=config.boundary,
             hertz=config.hertz,
         )
-
-
-condition_registry.register(FrequencyConfig, Frequency)
 
 
 class AllOfConfig(BaseConfig):
@@ -207,15 +198,13 @@ class AllOf:
     ) -> bool:
         return all(c(sound_event_annotation) for c in self.conditions)
 
-    @classmethod
-    def from_config(cls, config: AllOfConfig):
+    @conditions.register(AllOfConfig)
+    @staticmethod
+    def from_config(config: AllOfConfig):
         conditions = [
             build_sound_event_condition(cond) for cond in config.conditions
         ]
-        return cls(conditions)
-
-
-condition_registry.register(AllOfConfig, AllOf)
+        return AllOf(conditions)
 
 
 class AnyOfConfig(BaseConfig):
@@ -232,15 +221,13 @@ class AnyOf:
     ) -> bool:
         return any(c(sound_event_annotation) for c in self.conditions)
 
-    @classmethod
-    def from_config(cls, config: AnyOfConfig):
+    @conditions.register(AnyOfConfig)
+    @staticmethod
+    def from_config(config: AnyOfConfig):
         conditions = [
             build_sound_event_condition(cond) for cond in config.conditions
         ]
-        return cls(conditions)
-
-
-condition_registry.register(AnyOfConfig, AnyOf)
+        return AnyOf(conditions)
 
 
 class NotConfig(BaseConfig):
@@ -257,13 +244,12 @@ class Not:
     ) -> bool:
         return not self.condition(sound_event_annotation)
 
-    @classmethod
-    def from_config(cls, config: NotConfig):
+    @conditions.register(NotConfig)
+    @staticmethod
+    def from_config(config: NotConfig):
         condition = build_sound_event_condition(config.condition)
-        return cls(condition)
+        return Not(condition)
 
-
-condition_registry.register(NotConfig, Not)
 
 SoundEventConditionConfig = Annotated[
     Union[
@@ -283,7 +269,7 @@ SoundEventConditionConfig = Annotated[
 def build_sound_event_condition(
     config: SoundEventConditionConfig,
 ) -> SoundEventCondition:
-    return condition_registry.build(config)
+    return conditions.build(config)
 
 
 def filter_clip_annotation(

@@ -10,7 +10,6 @@ from batdetect2.postprocess import to_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.typing import (
-    ClipEvaluation,
     EvaluatorProtocol,
     ModelOutput,
     RawPrediction,
@@ -37,22 +36,26 @@ class ValidationMetrics(Callback):
     def generate_plots(
         self,
         pl_module: LightningModule,
-        evaluated_clips: List[ClipEvaluation],
     ):
         plotter = get_image_logger(pl_module.logger)  # type: ignore
 
         if plotter is None:
             return
 
-        for figure_name, fig in self.evaluator.generate_plots(evaluated_clips):
+        for figure_name, fig in self.evaluator.generate_plots(
+            self._clip_annotations,
+            self._predictions,
+        ):
             plotter(figure_name, fig, pl_module.global_step)
 
     def log_metrics(
         self,
         pl_module: LightningModule,
-        evaluated_clips: List[ClipEvaluation],
     ):
-        metrics = self.evaluator.compute_metrics(evaluated_clips)
+        metrics = self.evaluator.compute_metrics(
+            self._clip_annotations,
+            self._predictions,
+        )
         pl_module.log_dict(metrics)
 
     def on_validation_epoch_end(
@@ -60,13 +63,8 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        clip_evaluations = self.evaluator.evaluate(
-            self._clip_annotations,
-            self._predictions,
-        )
-
-        self.log_metrics(pl_module, clip_evaluations)
-        self.generate_plots(pl_module, clip_evaluations)
+        self.log_metrics(pl_module)
+        self.generate_plots(pl_module)
 
         return super().on_validation_epoch_end(trainer, pl_module)
 

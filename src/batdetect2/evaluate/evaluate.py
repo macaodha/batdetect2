@@ -55,7 +55,10 @@ def evaluate(
         num_workers=num_workers,
     )
 
-    evaluator = build_evaluator(config=config.evaluation, targets=targets)
+    evaluator = build_evaluator(
+        config=config.evaluation.evaluator,
+        targets=targets,
+    )
 
     logger = build_logger(
         config.evaluation.logger,

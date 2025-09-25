@@ -8,8 +8,7 @@ from soundevent.evaluation import compute_affinity
 from soundevent.evaluation import match_geometries as optimal_match
 from soundevent.geometry import compute_bounds
 
-from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
+from batdetect2.core import BaseConfig, Registry
 from batdetect2.evaluate.affinity import (
     AffinityConfig,
     GeometricIOUConfig,
@@ -17,11 +16,13 @@ from batdetect2.evaluate.affinity import (
 )
 from batdetect2.targets import build_targets
 from batdetect2.typing import (
+    AffinityFunction,
+    MatcherProtocol,
     MatchEvaluation,
+    RawPrediction,
     TargetProtocol,
 )
-from batdetect2.typing.evaluate import AffinityFunction, MatcherProtocol
-from batdetect2.typing.postprocess import RawPrediction
+from batdetect2.typing.evaluate import ClipMatches
 
 MatchingGeometry = Literal["bbox", "interval", "timestamp"]
 """The geometry representation to use for matching."""
@@ -33,9 +34,10 @@ def match(
     sound_event_annotations: Sequence[data.SoundEventAnnotation],
     raw_predictions: Sequence[RawPrediction],
     clip: data.Clip,
+    scores: Optional[Sequence[float]] = None,
     targets: Optional[TargetProtocol] = None,
     matcher: Optional[MatcherProtocol] = None,
-) -> List[MatchEvaluation]:
+) -> ClipMatches:
     if matcher is None:
         matcher = build_matcher()
 
@@ -51,9 +53,11 @@ def match(
         raw_prediction.geometry for raw_prediction in raw_predictions
     ]
 
-    scores = [
-        raw_prediction.detection_score for raw_prediction in raw_predictions
-    ]
+    if scores is None:
+        scores = [
+            raw_prediction.detection_score
+            for raw_prediction in raw_predictions
+        ]
 
     matches = []
 
@@ -73,9 +77,11 @@ def match(
 
         gt_det = target_idx is not None
         gt_class = targets.encode_class(target) if target is not None else None
+        gt_geometry = (
+            target_geometries[target_idx] if target_idx is not None else None
+        )
 
         pred_score = float(prediction.detection_score) if prediction else 0
-
         pred_geometry = (
             predicted_geometries[source_idx]
             if source_idx is not None
@@ -84,7 +90,7 @@ def match(
 
         class_scores = (
             {
-                str(class_name): float(score)
+                class_name: score
                 for class_name, score in zip(
                     targets.class_names,
                     prediction.class_scores,
@@ -100,6 +106,7 @@ def match(
                 sound_event_annotation=target,
                 gt_det=gt_det,
                 gt_class=gt_class,
+                gt_geometry=gt_geometry,
                 pred_score=pred_score,
                 pred_class_scores=class_scores,
                 pred_geometry=pred_geometry,
@@ -107,7 +114,7 @@ def match(
             )
         )
 
-    return matches
+    return ClipMatches(clip=clip, matches=matches)
 
 
 class StartTimeMatchConfig(BaseConfig):
@@ -132,12 +139,10 @@ class StartTimeMatcher(MatcherProtocol):
             distance_threshold=self.distance_threshold,
         )
 
-    @classmethod
-    def from_config(cls, config: StartTimeMatchConfig) -> "StartTimeMatcher":
-        return cls(distance_threshold=config.distance_threshold)
-
-
-matching_strategies.register(StartTimeMatchConfig, StartTimeMatcher)
+    @matching_strategies.register(StartTimeMatchConfig)
+    @staticmethod
+    def from_config(config: StartTimeMatchConfig):
+        return StartTimeMatcher(distance_threshold=config.distance_threshold)
 
 
 def match_start_times(
@@ -264,17 +269,15 @@ class GreedyMatcher(MatcherProtocol):
             affinity_threshold=self.affinity_threshold,
         )
 
-    @classmethod
-    def from_config(cls, config: GreedyMatchConfig):
+    @matching_strategies.register(GreedyMatchConfig)
+    @staticmethod
+    def from_config(config: GreedyMatchConfig):
         affinity_function = build_affinity_function(config.affinity_function)
-        return cls(
+        return GreedyMatcher(
             geometry=config.geometry,
             affinity_threshold=config.affinity_threshold,
             affinity_function=affinity_function,
         )
-
-
-matching_strategies.register(GreedyMatchConfig, GreedyMatcher)
 
 
 def greedy_match(
@@ -313,21 +316,21 @@ def greedy_match(
     unassigned_gt = set(range(len(ground_truth)))
 
     if not predictions:
-        for target_idx in range(len(ground_truth)):
-            yield None, target_idx, 0
+        for gt_idx in range(len(ground_truth)):
+            yield None, gt_idx, 0
 
         return
 
     if not ground_truth:
-        for source_idx in range(len(predictions)):
-            yield source_idx, None, 0
+        for pred_idx in range(len(predictions)):
+            yield pred_idx, None, 0
 
         return
 
     indices = np.argsort(scores)[::-1]
 
-    for source_idx in indices:
-        source_geometry = predictions[source_idx]
+    for pred_idx in indices:
+        source_geometry = predictions[pred_idx]
 
         affinities = np.array(
             [
@@ -340,18 +343,18 @@ def greedy_match(
         affinity = affinities[closest_target]
 
         if affinities[closest_target] <= affinity_threshold:
-            yield source_idx, None, 0
+            yield pred_idx, None, 0
             continue
 
         if closest_target not in unassigned_gt:
-            yield source_idx, None, 0
+            yield pred_idx, None, 0
             continue
 
         unassigned_gt.remove(closest_target)
-        yield source_idx, closest_target, affinity
+        yield pred_idx, closest_target, affinity
 
-    for target_idx in unassigned_gt:
-        yield None, target_idx, 0
+    for gt_idx in unassigned_gt:
+        yield None, gt_idx, 0
 
 
 class OptimalMatchConfig(BaseConfig):
@@ -386,16 +389,15 @@ class OptimalMatcher(MatcherProtocol):
             affinity_threshold=self.affinity_threshold,
         )
 
-    @classmethod
-    def from_config(cls, config: OptimalMatchConfig):
-        return cls(
+    @matching_strategies.register(OptimalMatchConfig)
+    @staticmethod
+    def from_config(config: OptimalMatchConfig):
+        return OptimalMatcher(
             affinity_threshold=config.affinity_threshold,
             time_buffer=config.time_buffer,
             frequency_buffer=config.frequency_buffer,
         )
 
-
-matching_strategies.register(OptimalMatchConfig, OptimalMatcher)
 
 MatchConfig = Annotated[
     Union[

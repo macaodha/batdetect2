@@ -105,7 +105,10 @@ def train(
     trainer = trainer or build_trainer(
         config,
         targets=targets,
-        evaluator=build_evaluator(config.train.validation, targets=targets),
+        evaluator=build_evaluator(
+            config.train.validation.evaluator,
+            targets=targets,
+        ),
         checkpoint_dir=checkpoint_dir,
         log_dir=log_dir,
         experiment_name=experiment_name,

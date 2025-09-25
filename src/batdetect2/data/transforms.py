@@ -17,7 +17,7 @@ SoundEventTransform = Callable[
     data.SoundEventAnnotation,
 ]
 
-transform_registry: Registry[SoundEventTransform, []] = Registry("transform")
+transforms: Registry[SoundEventTransform, []] = Registry("transform")
 
 
 class SetFrequencyBoundConfig(BaseConfig):
@@ -63,12 +63,10 @@ class SetFrequencyBound:
             update=dict(sound_event=sound_event)
         )
 
-    @classmethod
-    def from_config(cls, config: SetFrequencyBoundConfig):
-        return cls(hertz=config.hertz, boundary=config.boundary)
-
-
-transform_registry.register(SetFrequencyBoundConfig, SetFrequencyBound)
+    @transforms.register(SetFrequencyBoundConfig)
+    @staticmethod
+    def from_config(config: SetFrequencyBoundConfig):
+        return SetFrequencyBound(hertz=config.hertz, boundary=config.boundary)
 
 
 class ApplyIfConfig(BaseConfig):
@@ -95,14 +93,12 @@ class ApplyIf:
 
         return self.transform(sound_event_annotation)
 
-    @classmethod
-    def from_config(cls, config: ApplyIfConfig):
+    @transforms.register(ApplyIfConfig)
+    @staticmethod
+    def from_config(config: ApplyIfConfig):
         transform = build_sound_event_transform(config.transform)
         condition = build_sound_event_condition(config.condition)
-        return cls(condition=condition, transform=transform)
-
-
-transform_registry.register(ApplyIfConfig, ApplyIf)
+        return ApplyIf(condition=condition, transform=transform)
 
 
 class ReplaceTagConfig(BaseConfig):
@@ -134,12 +130,12 @@ class ReplaceTag:
 
         return sound_event_annotation.model_copy(update=dict(tags=tags))
 
-    @classmethod
-    def from_config(cls, config: ReplaceTagConfig):
-        return cls(original=config.original, replacement=config.replacement)
-
-
-transform_registry.register(ReplaceTagConfig, ReplaceTag)
+    @transforms.register(ReplaceTagConfig)
+    @staticmethod
+    def from_config(config: ReplaceTagConfig):
+        return ReplaceTag(
+            original=config.original, replacement=config.replacement
+        )
 
 
 class MapTagValueConfig(BaseConfig):
@@ -189,16 +185,14 @@ class MapTagValue:
 
         return sound_event_annotation.model_copy(update=dict(tags=tags))
 
-    @classmethod
-    def from_config(cls, config: MapTagValueConfig):
-        return cls(
+    @transforms.register(MapTagValueConfig)
+    @staticmethod
+    def from_config(config: MapTagValueConfig):
+        return MapTagValue(
             tag_key=config.tag_key,
             value_mapping=config.value_mapping,
             target_key=config.target_key,
         )
-
-
-transform_registry.register(MapTagValueConfig, MapTagValue)
 
 
 class ApplyAllConfig(BaseConfig):
@@ -219,13 +213,12 @@ class ApplyAll:
 
         return sound_event_annotation
 
-    @classmethod
-    def from_config(cls, config: ApplyAllConfig):
+    @transforms.register(ApplyAllConfig)
+    @staticmethod
+    def from_config(config: ApplyAllConfig):
         steps = [build_sound_event_transform(step) for step in config.steps]
-        return cls(steps)
+        return ApplyAll(steps)
 
-
-transform_registry.register(ApplyAllConfig, ApplyAll)
 
 SoundEventTransformConfig = Annotated[
     Union[
@@ -242,7 +235,7 @@ SoundEventTransformConfig = Annotated[
 def build_sound_event_transform(
     config: SoundEventTransformConfig,
 ) -> SoundEventTransform:
-    return transform_registry.build(config)
+    return transforms.build(config)
 
 
 def transform_clip_annotation(

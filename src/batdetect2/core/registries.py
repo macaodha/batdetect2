@@ -1,16 +1,16 @@
 import sys
-from typing import Generic, Protocol, Type, TypeVar
+from typing import Callable, Dict, Generic, Tuple, Type, TypeVar
 
 from pydantic import BaseModel
-from typing_extensions import assert_type
 
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec
+    from typing import Concatenate, ParamSpec
 else:
-    from typing_extensions import ParamSpec
+    from typing_extensions import Concatenate, ParamSpec
 
 __all__ = [
     "Registry",
+    "SimpleRegistry",
 ]
 
 T_Config = TypeVar("T_Config", bound=BaseModel, contravariant=True)
@@ -18,19 +18,26 @@ T_Type = TypeVar("T_Type", covariant=True)
 P_Type = ParamSpec("P_Type")
 
 
-class LogicProtocol(Generic[T_Config, T_Type, P_Type], Protocol):
-    """A generic protocol for the logic classes."""
-
-    @classmethod
-    def from_config(
-        cls,
-        config: T_Config,
-        *args: P_Type.args,
-        **kwargs: P_Type.kwargs,
-    ) -> T_Type: ...
+T = TypeVar("T")
 
 
-T_Proto = TypeVar("T_Proto", bound=LogicProtocol)
+class SimpleRegistry(Generic[T]):
+    def __init__(self, name: str):
+        self._name = name
+        self._registry = {}
+
+    def register(self, name: str):
+        def decorator(obj: T) -> T:
+            self._registry[name] = obj
+            return obj
+
+        return decorator
+
+    def get(self, name: str) -> T:
+        return self._registry[name]
+
+    def has(self, name: str) -> bool:
+        return name in self._registry
 
 
 class Registry(Generic[T_Type, P_Type]):
@@ -38,13 +45,15 @@ class Registry(Generic[T_Type, P_Type]):
 
     def __init__(self, name: str):
         self._name = name
-        self._registry = {}
+        self._registry: Dict[
+            str, Callable[Concatenate[..., P_Type], T_Type]
+        ] = {}
+        self._config_types: Dict[str, Type[BaseModel]] = {}
 
     def register(
         self,
         config_cls: Type[T_Config],
-        logic_cls: LogicProtocol[T_Config, T_Type, P_Type],
-    ) -> None:
+    ):
         fields = config_cls.model_fields
 
         if "name" not in fields:
@@ -52,10 +61,21 @@ class Registry(Generic[T_Type, P_Type]):
 
         name = fields["name"].default
 
+        self._config_types[name] = config_cls
+
         if not isinstance(name, str):
             raise ValueError("'name' field must be a string literal.")
 
-        self._registry[name] = logic_cls
+        def decorator(
+            func: Callable[Concatenate[T_Config, P_Type], T_Type],
+        ):
+            self._registry[name] = func
+            return func
+
+        return decorator
+
+    def get_config_types(self) -> Tuple[Type[BaseModel], ...]:
+        return tuple(self._config_types.values())
 
     def build(
         self,
@@ -75,4 +95,4 @@ class Registry(Generic[T_Type, P_Type]):
                 f"No {self._name} with name '{name}' is registered."
             )
 
-        return self._registry[name].from_config(config, *args, **kwargs)
+        return self._registry[name](config, *args, **kwargs)

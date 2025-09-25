@@ -140,13 +140,14 @@ train:
   validation:
     metrics:
       - name: detection_ap
-      - name: detection_roc_auc
       - name: classification_ap
-      - name: classification_roc_auc
-      - name: top_class_ap
-      - name: classification_balanced_accuracy
-      - name: clip_ap
-      - name: clip_roc_auc
+    plots:
+      - name: example_gallery
+      - name: example_clip
+      - name: detection_pr_curve
+      - name: classification_pr_curves
+      - name: detection_roc_curve
+      - name: classification_roc_curves
 
 evaluation:
   match_strategy:
@@ -155,6 +156,14 @@ evaluation:
   metrics:
     - name: classification_ap
     - name: detection_ap
+    - name: detection_roc_auc
+    - name: classification_roc_auc
+    - name: top_class_ap
+    - name: classification_balanced_accuracy
+    - name: clip_multiclass_ap
+    - name: clip_multiclass_roc_auc
+    - name: clip_detection_ap
+    - name: clip_detection_roc_auc
   plots:
     - name: example_gallery
     - name: example_clip

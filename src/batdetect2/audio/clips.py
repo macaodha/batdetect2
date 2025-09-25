@@ -56,16 +56,14 @@ class RandomClip:
             min_sound_event_overlap=self.min_sound_event_overlap,
         )
 
-    @classmethod
-    def from_config(cls, config: RandomClipConfig):
-        return cls(
+    @clipper_registry.register(RandomClipConfig)
+    @staticmethod
+    def from_config(config: RandomClipConfig):
+        return RandomClip(
             duration=config.duration,
             max_empty=config.max_empty,
             min_sound_event_overlap=config.min_sound_event_overlap,
         )
-
-
-clipper_registry.register(RandomClipConfig, RandomClip)
 
 
 def get_subclip_annotation(
@@ -184,12 +182,11 @@ class PaddedClip:
         )
         return clip_annotation.model_copy(update=dict(clip=clip))
 
-    @classmethod
-    def from_config(cls, config: PaddedClipConfig):
-        return cls(chunk_size=config.chunk_size)
+    @clipper_registry.register(PaddedClipConfig)
+    @staticmethod
+    def from_config(config: PaddedClipConfig):
+        return PaddedClip(chunk_size=config.chunk_size)
 
-
-clipper_registry.register(PaddedClipConfig, PaddedClip)
 
 ClipConfig = Annotated[
     Union[RandomClipConfig, PaddedClipConfig], Field(discriminator="name")

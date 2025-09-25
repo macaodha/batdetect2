@@ -53,6 +53,7 @@ class BaseConfig(BaseModel):
         """
         return yaml.dump(
             self.model_dump(
+                mode="json",
                 exclude_none=exclude_none,
                 exclude_unset=exclude_unset,
                 exclude_defaults=exclude_defaults,

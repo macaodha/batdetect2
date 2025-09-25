@@ -31,6 +31,7 @@ class MatchEvaluation:
     sound_event_annotation: Optional[data.SoundEventAnnotation]
     gt_det: bool
     gt_class: Optional[str]
+    gt_geometry: Optional[data.Geometry]
 
     pred_score: float
     pred_class_scores: Dict[str, float]
@@ -39,44 +40,32 @@ class MatchEvaluation:
     affinity: float
 
     @property
-    def pred_class(self) -> Optional[str]:
+    def top_class(self) -> Optional[str]:
         if not self.pred_class_scores:
             return None
 
         return max(self.pred_class_scores, key=self.pred_class_scores.get)  # type: ignore
 
     @property
-    def pred_class_score(self) -> float:
-        pred_class = self.pred_class
+    def is_prediction(self) -> bool:
+        return self.pred_geometry is not None
+
+    @property
+    def is_generic(self) -> bool:
+        return self.gt_det and self.gt_class is None
+
+    @property
+    def top_class_score(self) -> float:
+        pred_class = self.top_class
 
         if pred_class is None:
             return 0
 
         return self.pred_class_scores[pred_class]
 
-    def is_true_positive(self, threshold: float = 0) -> bool:
-        return (
-            self.gt_det
-            and self.pred_score > threshold
-            and self.gt_class == self.pred_class
-        )
-
-    def is_false_positive(self, threshold: float = 0) -> bool:
-        return self.gt_det is None and self.pred_score > threshold
-
-    def is_false_negative(self, threshold: float = 0) -> bool:
-        return self.gt_det and self.pred_score <= threshold
-
-    def is_cross_trigger(self, threshold: float = 0) -> bool:
-        return (
-            self.gt_det
-            and self.pred_score > threshold
-            and self.gt_class != self.pred_class
-        )
-
 
 @dataclass
-class ClipEvaluation:
+class ClipMatches:
     clip: data.Clip
     matches: List[MatchEvaluation]
 
@@ -103,29 +92,36 @@ class AffinityFunction(Protocol, Generic[Geom]):
 
 class MetricsProtocol(Protocol):
     def __call__(
-        self, clip_evaluations: Sequence[ClipEvaluation]
+        self,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        predictions: Sequence[Sequence[RawPrediction]],
     ) -> Dict[str, float]: ...
 
 
 class PlotterProtocol(Protocol):
     def __call__(
-        self, clip_evaluations: Sequence[ClipEvaluation]
+        self,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        predictions: Sequence[Sequence[RawPrediction]],
     ) -> Iterable[Tuple[str, Figure]]: ...
 
 
-class EvaluatorProtocol(Protocol):
+EvaluationOutput = TypeVar("EvaluationOutput")
+
+
+class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
     targets: TargetProtocol
 
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
         predictions: Sequence[Sequence[RawPrediction]],
-    ) -> List[ClipEvaluation]: ...
+    ) -> EvaluationOutput: ...
 
     def compute_metrics(
-        self, clip_evaluations: Sequence[ClipEvaluation]
+        self, eval_outputs: EvaluationOutput
     ) -> Dict[str, float]: ...
 
     def generate_plots(
-        self, clip_evaluations: Sequence[ClipEvaluation]
+        self, eval_outputs: EvaluationOutput
     ) -> Iterable[Tuple[str, Figure]]: ...

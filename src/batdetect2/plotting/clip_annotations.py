@@ -65,8 +65,6 @@ def plot_anchor_points(
         if not targets.filter(sound_event):
             continue
 
-        sound_event = targets.transform(sound_event)
-
         position, _ = targets.encode_roi(sound_event)
         positions.append(position)
 

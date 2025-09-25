@@ -5,9 +5,9 @@ from pydantic import Field
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core import BaseConfig, Registry
-from batdetect2.typing import ClipEvaluation
+from batdetect2.typing import ClipMatches
 
-EvaluationTableGenerator = Callable[[Sequence[ClipEvaluation]], pd.DataFrame]
+EvaluationTableGenerator = Callable[[Sequence[ClipMatches]], pd.DataFrame]
 
 
 tables_registry: Registry[EvaluationTableGenerator, []] = Registry(
@@ -21,20 +21,18 @@ class FullEvaluationTableConfig(BaseConfig):
 
 class FullEvaluationTable:
     def __call__(
-        self, clip_evaluations: Sequence[ClipEvaluation]
+        self, clip_evaluations: Sequence[ClipMatches]
     ) -> pd.DataFrame:
         return extract_matches_dataframe(clip_evaluations)
 
-    @classmethod
-    def from_config(cls, config: FullEvaluationTableConfig):
-        return cls()
-
-
-tables_registry.register(FullEvaluationTableConfig, FullEvaluationTable)
+    @tables_registry.register(FullEvaluationTableConfig)
+    @staticmethod
+    def from_config(config: FullEvaluationTableConfig):
+        return FullEvaluationTable()
 
 
 def extract_matches_dataframe(
-    clip_evaluations: Sequence[ClipEvaluation],
+    clip_evaluations: Sequence[ClipMatches],
 ) -> pd.DataFrame:
     data = []
 
@@ -78,8 +76,8 @@ def extract_matches_dataframe(
                     ("gt", "low_freq"): gt_low_freq,
                     ("gt", "high_freq"): gt_high_freq,
                     ("pred", "score"): match.pred_score,
-                    ("pred", "class"): match.pred_class,
-                    ("pred", "class_score"): match.pred_class_score,
+                    ("pred", "class"): match.top_class,
+                    ("pred", "class_score"): match.top_class_score,
                     ("pred", "start_time"): pred_start_time,
                     ("pred", "end_time"): pred_end_time,
                     ("pred", "low_freq"): pred_low_freq,

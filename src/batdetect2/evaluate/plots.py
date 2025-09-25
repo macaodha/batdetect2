@@ -17,7 +17,7 @@ from batdetect2.plotting.matches import plot_matches
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.typing import (
     AudioLoader,
-    ClipEvaluation,
+    ClipMatches,
     MatchEvaluation,
     PlotterProtocol,
     PreprocessorProtocol,
@@ -53,7 +53,7 @@ class ExampleGallery(PlotterProtocol):
         self.preprocessor = preprocessor or build_preprocessor()
         self.audio_loader = audio_loader or build_audio_loader()
 
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         per_class_matches = group_matches(clip_evaluations)
 
         for class_name, matches in per_class_matches.items():
@@ -128,7 +128,7 @@ class PlotClipEvaluation(PlotterProtocol):
         self.audio_loader = audio_loader
         self.num_plots = num_plots
 
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         examples = random.sample(
             clip_evaluations,
             k=min(self.num_plots, len(clip_evaluations)),
@@ -171,7 +171,7 @@ class DetectionPRCurveConfig(BaseConfig):
 
 
 class DetectionPRCurve(PlotterProtocol):
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         y_true, y_score = zip(
             *[
                 (match.gt_det, match.pred_score)
@@ -231,7 +231,7 @@ class ClassificationPRCurves(PlotterProtocol):
                 if class_name not in exclude
             ]
 
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         y_true = []
         y_pred = []
 
@@ -303,7 +303,7 @@ class DetectionROCCurveConfig(BaseConfig):
 
 
 class DetectionROCCurve(PlotterProtocol):
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         y_true, y_score = zip(
             *[
                 (match.gt_det, match.pred_score)
@@ -363,7 +363,7 @@ class ClassificationROCCurves(PlotterProtocol):
                 if class_name not in exclude
             ]
 
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         y_true = []
         y_pred = []
 
@@ -440,7 +440,7 @@ class ConfusionMatrix(PlotterProtocol):
         self.background_class = background_class
         self.class_names = class_names
 
-    def __call__(self, clip_evaluations: Sequence[ClipEvaluation]):
+    def __call__(self, clip_evaluations: Sequence[ClipMatches]):
         y_true = []
         y_pred = []
 
@@ -456,7 +456,7 @@ class ConfusionMatrix(PlotterProtocol):
                     else self.background_class
                 )
 
-                top_class = match.pred_class
+                top_class = match.top_class
                 y_pred.append(
                     top_class
                     if top_class is not None
@@ -515,14 +515,14 @@ class ClassMatches:
 
 
 def group_matches(
-    clip_evaluations: Sequence[ClipEvaluation],
+    clip_evaluations: Sequence[ClipMatches],
 ) -> Dict[str, ClassMatches]:
     class_examples = defaultdict(ClassMatches)
 
     for clip_evaluation in clip_evaluations:
         for match in clip_evaluation.matches:
             gt_class = match.gt_class
-            pred_class = match.pred_class
+            pred_class = match.top_class
 
             if pred_class is None:
                 class_examples[gt_class].false_negatives.append(match)
@@ -550,7 +550,7 @@ def get_binned_sample(matches: List[MatchEvaluation], n_examples: int = 5):
         *[
             (index, match.pred_class_scores[pred_class])
             for index, match in enumerate(matches)
-            if (pred_class := match.pred_class) is not None
+            if (pred_class := match.top_class) is not None
         ]
     )
 

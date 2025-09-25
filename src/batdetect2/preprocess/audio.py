@@ -28,12 +28,10 @@ class CenterAudio(torch.nn.Module):
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         return center_tensor(wav)
 
-    @classmethod
-    def from_config(cls, config: CenterAudioConfig, samplerate: int):
-        return cls()
-
-
-audio_transforms.register(CenterAudioConfig, CenterAudio)
+    @audio_transforms.register(CenterAudioConfig)
+    @staticmethod
+    def from_config(config: CenterAudioConfig, samplerate: int):
+        return CenterAudio()
 
 
 class ScaleAudioConfig(BaseConfig):
@@ -44,12 +42,10 @@ class ScaleAudio(torch.nn.Module):
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         return peak_normalize(wav)
 
-    @classmethod
-    def from_config(cls, config: ScaleAudioConfig, samplerate: int):
-        return cls()
-
-
-audio_transforms.register(ScaleAudioConfig, ScaleAudio)
+    @audio_transforms.register(ScaleAudioConfig)
+    @staticmethod
+    def from_config(config: ScaleAudioConfig, samplerate: int):
+        return ScaleAudio()
 
 
 class FixDurationConfig(BaseConfig):
@@ -75,12 +71,11 @@ class FixDuration(torch.nn.Module):
 
         return torch.nn.functional.pad(wav, (0, self.length - length))
 
-    @classmethod
-    def from_config(cls, config: FixDurationConfig, samplerate: int):
-        return cls(samplerate=samplerate, duration=config.duration)
+    @audio_transforms.register(FixDurationConfig)
+    @staticmethod
+    def from_config(config: FixDurationConfig, samplerate: int):
+        return FixDuration(samplerate=samplerate, duration=config.duration)
 
-
-audio_transforms.register(FixDurationConfig, FixDuration)
 
 AudioTransform = Annotated[
     Union[

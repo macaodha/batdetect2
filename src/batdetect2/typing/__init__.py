@@ -1,6 +1,8 @@
 from batdetect2.typing.evaluate import (
-    ClipEvaluation,
+    AffinityFunction,
+    ClipMatches,
     EvaluatorProtocol,
+    MatcherProtocol,
     MatchEvaluation,
     MetricsProtocol,
     PlotterProtocol,
@@ -36,19 +38,22 @@ from batdetect2.typing.train import (
 )
 
 __all__ = [
+    "AffinityFunction",
     "AudioLoader",
     "Augmentation",
     "BackboneModel",
     "BatDetect2Prediction",
-    "ClipEvaluation",
+    "ClipMatches",
     "ClipLabeller",
     "ClipperProtocol",
     "DetectionModel",
+    "EvaluatorProtocol",
     "GeometryDecoder",
     "Heatmaps",
     "LossProtocol",
     "Losses",
     "MatchEvaluation",
+    "MatcherProtocol",
     "MetricsProtocol",
     "ModelOutput",
     "PlotterProtocol",
@@ -63,5 +68,4 @@ __all__ = [
     "SoundEventFilter",
     "TargetProtocol",
     "TrainExample",
-    "EvaluatorProtocol",
 ]

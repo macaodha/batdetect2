@@ -99,7 +99,7 @@ DEFAULT_DETECTION_CLASS = TargetClassConfig(
 DEFAULT_CLASSES = [
     TargetClassConfig(
         name="barbar",
-        tags=[data.Tag(key="class", value="Barbastellus barbastellus")],
+        tags=[data.Tag(key="class", value="Barbastella barbastellus")],
     ),
     TargetClassConfig(
         name="eptser",

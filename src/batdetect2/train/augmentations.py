@@ -12,21 +12,23 @@ from soundevent import data
 from soundevent.geometry import scale_geometry, shift_geometry
 
 from batdetect2.audio.clips import get_subclip_annotation
+from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
 from batdetect2.core.arrays import adjust_width
 from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.registries import Registry
 from batdetect2.typing import AudioLoader, Augmentation
 
 __all__ = [
     "AugmentationConfig",
     "AugmentationsConfig",
     "DEFAULT_AUGMENTATION_CONFIG",
-    "EchoAugmentationConfig",
+    "AddEchoConfig",
     "AudioSource",
-    "FrequencyMaskAugmentationConfig",
-    "MixAugmentationConfig",
-    "TimeMaskAugmentationConfig",
-    "VolumeAugmentationConfig",
-    "WarpAugmentationConfig",
+    "MaskFrequencyConfig",
+    "MixAudioConfig",
+    "MaskTimeConfig",
+    "ScaleVolumeConfig",
+    "WarpConfig",
     "add_echo",
     "build_augmentations",
     "load_augmentation_config",
@@ -37,10 +39,19 @@ __all__ = [
     "warp_spectrogram",
 ]
 
+
 AudioSource = Callable[[float], tuple[torch.Tensor, data.ClipAnnotation]]
 
+audio_augmentations: Registry[Augmentation, [int, Optional[AudioSource]]] = (
+    Registry(name="audio_augmentation")
+)
 
-class MixAugmentationConfig(BaseConfig):
+spec_augmentations: Registry[Augmentation, []] = Registry(
+    name="spec_augmentation"
+)
+
+
+class MixAudioConfig(BaseConfig):
     """Configuration for MixUp augmentation (mixing two examples)."""
 
     name: Literal["mix_audio"] = "mix_audio"
@@ -86,6 +97,19 @@ class MixAudio(torch.nn.Module):
             other_clip_annotation,
         )
         return mixed_audio, mixed_annotations
+
+    @audio_augmentations.register(MixAudioConfig)
+    @staticmethod
+    def from_config(
+        config: MixAudioConfig,
+        samplerate: int,
+        source: Optional[AudioSource],
+    ):
+        return MixAudio(
+            example_source=source,
+            min_weight=config.min_weight,
+            max_weight=config.max_weight,
+        )
 
 
 def mix_audio(
@@ -136,7 +160,7 @@ def combine_clip_annotations(
     )
 
 
-class EchoAugmentationConfig(BaseConfig):
+class AddEchoConfig(BaseConfig):
     """Configuration for adding synthetic echo/reverb."""
 
     name: Literal["add_echo"] = "add_echo"
@@ -149,14 +173,17 @@ class EchoAugmentationConfig(BaseConfig):
 class AddEcho(torch.nn.Module):
     def __init__(
         self,
+        samplerate: int = TARGET_SAMPLERATE_HZ,
         min_weight: float = 0.1,
         max_weight: float = 1.0,
-        max_delay: int = 2560,
+        max_delay: float = 0.005,
     ):
         super().__init__()
+        self.samplerate = samplerate
         self.min_weight = min_weight
         self.max_weight = max_weight
-        self.max_delay = max_delay
+        self.max_delay_s = max_delay
+        self.max_delay = int(max_delay * samplerate)
 
     def forward(
         self,
@@ -166,6 +193,18 @@ class AddEcho(torch.nn.Module):
         delay = np.random.randint(0, self.max_delay)
         weight = np.random.uniform(self.min_weight, self.max_weight)
         return add_echo(wav, delay=delay, weight=weight), clip_annotation
+
+    @audio_augmentations.register(AddEchoConfig)
+    @staticmethod
+    def from_config(
+        config: AddEchoConfig, samplerate: int, source: AudioSource
+    ):
+        return AddEcho(
+            samplerate=samplerate,
+            min_weight=config.min_weight,
+            max_weight=config.max_weight,
+            max_delay=config.max_delay,
+        )
 
 
 def add_echo(
@@ -183,7 +222,7 @@ def add_echo(
     return mix_audio(wav, audio_delay, weight)
 
 
-class VolumeAugmentationConfig(BaseConfig):
+class ScaleVolumeConfig(BaseConfig):
     """Configuration for random volume scaling of the spectrogram."""
 
     name: Literal["scale_volume"] = "scale_volume"
@@ -206,19 +245,27 @@ class ScaleVolume(torch.nn.Module):
         factor = np.random.uniform(self.min_scaling, self.max_scaling)
         return scale_volume(spec, factor=factor), clip_annotation
 
+    @spec_augmentations.register(ScaleVolumeConfig)
+    @staticmethod
+    def from_config(config: ScaleVolumeConfig):
+        return ScaleVolume(
+            min_scaling=config.min_scaling,
+            max_scaling=config.max_scaling,
+        )
+
 
 def scale_volume(spec: torch.Tensor, factor: float) -> torch.Tensor:
     """Scale the amplitude of the spectrogram by a factor."""
     return spec * factor
 
 
-class WarpAugmentationConfig(BaseConfig):
+class WarpConfig(BaseConfig):
     name: Literal["warp"] = "warp"
     probability: float = 0.2
     delta: float = 0.04
 
 
-class WarpSpectrogram(torch.nn.Module):
+class Warp(torch.nn.Module):
     def __init__(self, delta: float = 0.04) -> None:
         super().__init__()
         self.delta = delta
@@ -233,6 +280,11 @@ class WarpSpectrogram(torch.nn.Module):
             warp_spectrogram(spec, factor=factor),
             warp_clip_annotation(clip_annotation, factor=factor),
         )
+
+    @spec_augmentations.register(WarpConfig)
+    @staticmethod
+    def from_config(config: WarpConfig):
+        return Warp(delta=config.delta)
 
 
 def warp_sound_event_annotation(
@@ -294,7 +346,7 @@ def warp_spectrogram(
     ).squeeze(0)
 
 
-class TimeMaskAugmentationConfig(BaseConfig):
+class MaskTimeConfig(BaseConfig):
     name: Literal["mask_time"] = "mask_time"
     probability: float = 0.2
     max_perc: float = 0.05
@@ -336,6 +388,14 @@ class MaskTime(torch.nn.Module):
         ]
         return mask_time(spec, masks), clip_annotation
 
+    @spec_augmentations.register(MaskTimeConfig)
+    @staticmethod
+    def from_config(config: MaskTimeConfig):
+        return MaskTime(
+            max_perc=config.max_perc,
+            max_masks=config.max_masks,
+        )
+
 
 def mask_time(
     spec: torch.Tensor,
@@ -351,7 +411,7 @@ def mask_time(
     return spec
 
 
-class FrequencyMaskAugmentationConfig(BaseConfig):
+class MaskFrequencyConfig(BaseConfig):
     name: Literal["mask_freq"] = "mask_freq"
     probability: float = 0.2
     max_perc: float = 0.10
@@ -394,6 +454,14 @@ class MaskFrequency(torch.nn.Module):
         ]
         return mask_frequency(spec, masks), clip_annotation
 
+    @spec_augmentations.register(MaskFrequencyConfig)
+    @staticmethod
+    def from_config(config: MaskFrequencyConfig):
+        return MaskFrequency(
+            max_perc=config.max_perc,
+            max_masks=config.max_masks,
+        )
+
 
 def mask_frequency(
     spec: torch.Tensor,
@@ -410,8 +478,8 @@ def mask_frequency(
 
 AudioAugmentationConfig = Annotated[
     Union[
-        MixAugmentationConfig,
-        EchoAugmentationConfig,
+        MixAudioConfig,
+        AddEchoConfig,
     ],
     Field(discriminator="name"),
 ]
@@ -419,22 +487,22 @@ AudioAugmentationConfig = Annotated[
 
 SpectrogramAugmentationConfig = Annotated[
     Union[
-        VolumeAugmentationConfig,
-        WarpAugmentationConfig,
-        FrequencyMaskAugmentationConfig,
-        TimeMaskAugmentationConfig,
+        ScaleVolumeConfig,
+        WarpConfig,
+        MaskFrequencyConfig,
+        MaskTimeConfig,
     ],
     Field(discriminator="name"),
 ]
 
 AugmentationConfig = Annotated[
     Union[
-        MixAugmentationConfig,
-        EchoAugmentationConfig,
-        VolumeAugmentationConfig,
-        WarpAugmentationConfig,
-        FrequencyMaskAugmentationConfig,
-        TimeMaskAugmentationConfig,
+        MixAudioConfig,
+        AddEchoConfig,
+        ScaleVolumeConfig,
+        WarpConfig,
+        MaskFrequencyConfig,
+        MaskTimeConfig,
     ],
     Field(discriminator="name"),
 ]
@@ -513,7 +581,7 @@ def build_augmentation_from_config(
         )
 
     if config.name == "warp":
-        return WarpSpectrogram(
+        return Warp(
             delta=config.delta,
         )
 
@@ -538,14 +606,14 @@ def build_augmentation_from_config(
 DEFAULT_AUGMENTATION_CONFIG: AugmentationsConfig = AugmentationsConfig(
     enabled=True,
     audio=[
-        MixAugmentationConfig(),
-        EchoAugmentationConfig(),
+        MixAudioConfig(),
+        AddEchoConfig(),
     ],
     spectrogram=[
-        VolumeAugmentationConfig(),
-        WarpAugmentationConfig(),
-        TimeMaskAugmentationConfig(),
-        FrequencyMaskAugmentationConfig(),
+        ScaleVolumeConfig(),
+        WarpConfig(),
+        MaskTimeConfig(),
+        MaskFrequencyConfig(),
     ],
 )
 
@@ -566,9 +634,9 @@ class AugmentationSequence(torch.nn.Module):
         return tensor, clip_annotation
 
 
-def build_augmentation_sequence(
-    samplerate: int,
-    steps: Optional[Sequence[AugmentationConfig]] = None,
+def build_audio_augmentations(
+    steps: Optional[Sequence[AudioAugmentationConfig]] = None,
+    samplerate: int = TARGET_SAMPLERATE_HZ,
     audio_source: Optional[AudioSource] = None,
 ) -> Optional[Augmentation]:
     if not steps:
@@ -577,10 +645,8 @@ def build_augmentation_sequence(
     augmentations = []
 
     for step_config in steps:
-        augmentation = build_augmentation_from_config(
-            step_config,
-            samplerate=samplerate,
-            audio_source=audio_source,
+        augmentation = audio_augmentations.build(
+            step_config, samplerate, audio_source
         )
 
         if augmentation is None:

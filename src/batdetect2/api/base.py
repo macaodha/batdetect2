@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
+import torch
 from soundevent import data
 
 from batdetect2.audio import build_audio_loader
@@ -8,6 +9,7 @@ from batdetect2.config import BatDetect2Config
 from batdetect2.evaluate import build_evaluator, evaluate
 from batdetect2.models import Model, build_model
 from batdetect2.postprocess import build_postprocessor
+from batdetect2.postprocess.decoding import to_raw_predictions
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets.targets import build_targets
 from batdetect2.train import train
@@ -19,6 +21,7 @@ from batdetect2.typing import (
     PreprocessorProtocol,
     TargetProtocol,
 )
+from batdetect2.typing.postprocess import RawPrediction
 
 
 class BatDetect2API:
@@ -92,6 +95,18 @@ class BatDetect2API:
             run_name=run_name,
         )
 
+    def process_spectrogram(
+        self,
+        spec: torch.Tensor,
+        start_times: Optional[Sequence[float]] = None,
+    ) -> List[List[RawPrediction]]:
+        outputs = self.model.detector(spec)
+        clip_detections = self.postprocessor(outputs, start_times=start_times)
+        return [
+            to_raw_predictions(clip_dets.numpy(), self.targets)
+            for clip_dets in clip_detections
+        ]
+
     @classmethod
     def from_config(cls, config: BatDetect2Config):
         targets = build_targets(config=config.targets)
@@ -109,7 +124,7 @@ class BatDetect2API:
         )
 
         evaluator = build_evaluator(
-            config=config.evaluation,
+            config=config.evaluation.evaluator,
             targets=targets,
         )
 
@@ -164,7 +179,7 @@ class BatDetect2API:
         )
 
         evaluator = build_evaluator(
-            config=config.evaluation,
+            config=config.evaluation.evaluator,
             targets=targets,
         )
 

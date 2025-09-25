@@ -1,16 +1,13 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.evaluate.match import MatchConfig, StartTimeMatchConfig
-from batdetect2.evaluate.metrics import (
-    ClassificationAPConfig,
-    DetectionAPConfig,
-    MetricConfig,
+from batdetect2.evaluate.evaluator import (
+    EvaluatorConfig,
+    MultipleEvaluatorConfig,
 )
-from batdetect2.evaluate.plots import PlotConfig
 from batdetect2.logging import CSVLoggerConfig, LoggerConfig
 
 __all__ = [
@@ -20,15 +17,7 @@ __all__ = [
 
 
 class EvaluationConfig(BaseConfig):
-    ignore_start_end: float = 0.01
-    match_strategy: MatchConfig = Field(default_factory=StartTimeMatchConfig)
-    metrics: List[MetricConfig] = Field(
-        default_factory=lambda: [
-            DetectionAPConfig(),
-            ClassificationAPConfig(),
-        ]
-    )
-    plots: List[PlotConfig] = Field(default_factory=list)
+    evaluator: EvaluatorConfig = Field(default_factory=MultipleEvaluatorConfig)
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 

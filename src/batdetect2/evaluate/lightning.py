@@ -8,7 +8,7 @@ from batdetect2.evaluate.tables import FullEvaluationTable
 from batdetect2.logging import get_image_logger, get_table_logger
 from batdetect2.models import Model
 from batdetect2.postprocess import to_raw_predictions
-from batdetect2.typing import ClipEvaluation, EvaluatorProtocol
+from batdetect2.typing import ClipMatches, EvaluatorProtocol
 
 
 class EvaluationModule(LightningModule):
@@ -56,7 +56,7 @@ class EvaluationModule(LightningModule):
         self.plot_examples(self.clip_evaluations)
         self.log_table(self.clip_evaluations)
 
-    def log_table(self, evaluated_clips: Sequence[ClipEvaluation]):
+    def log_table(self, evaluated_clips: Sequence[ClipMatches]):
         table_logger = get_table_logger(self.logger)  # type: ignore
 
         if table_logger is None:
@@ -65,7 +65,7 @@ class EvaluationModule(LightningModule):
         df = FullEvaluationTable()(evaluated_clips)
         table_logger("full_evaluation", df, 0)
 
-    def plot_examples(self, evaluated_clips: Sequence[ClipEvaluation]):
+    def plot_examples(self, evaluated_clips: Sequence[ClipMatches]):
         plotter = get_image_logger(self.logger)  # type: ignore
 
         if plotter is None:
@@ -74,7 +74,7 @@ class EvaluationModule(LightningModule):
         for figure_name, fig in self.evaluator.generate_plots(evaluated_clips):
             plotter(figure_name, fig, self.global_step)
 
-    def log_metrics(self, evaluated_clips: Sequence[ClipEvaluation]):
+    def log_metrics(self, evaluated_clips: Sequence[ClipMatches]):
         metrics = self.evaluator.compute_metrics(evaluated_clips)
         self.log_dict(metrics)
 

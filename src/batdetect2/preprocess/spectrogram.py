@@ -285,18 +285,16 @@ class PCEN(torch.nn.Module):
             * torch.expm1(self.power * torch.log1p(S * smooth / self.bias))
         ).to(spec.dtype)
 
-    @classmethod
-    def from_config(cls, config: PcenConfig, samplerate: int):
+    @spectrogram_transforms.register(PcenConfig)
+    @staticmethod
+    def from_config(config: PcenConfig, samplerate: int):
         smooth = _compute_smoothing_constant(samplerate, config.time_constant)
-        return cls(
+        return PCEN(
             smoothing_constant=smooth,
             gain=config.gain,
             bias=config.bias,
             power=config.power,
         )
-
-
-spectrogram_transforms.register(PcenConfig, PCEN)
 
 
 def _compute_smoothing_constant(
@@ -335,12 +333,10 @@ class ScaleAmplitude(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         return self.scaler(spec)
 
-    @classmethod
-    def from_config(cls, config: ScaleAmplitudeConfig, samplerate: int):
-        return cls(scale=config.scale)
-
-
-spectrogram_transforms.register(ScaleAmplitudeConfig, ScaleAmplitude)
+    @spectrogram_transforms.register(ScaleAmplitudeConfig)
+    @staticmethod
+    def from_config(config: ScaleAmplitudeConfig, samplerate: int):
+        return ScaleAmplitude(scale=config.scale)
 
 
 class SpectralMeanSubstractionConfig(BaseConfig):
@@ -352,19 +348,13 @@ class SpectralMeanSubstraction(torch.nn.Module):
         mean = spec.mean(-1, keepdim=True)
         return (spec - mean).clamp(min=0)
 
-    @classmethod
+    @spectrogram_transforms.register(SpectralMeanSubstractionConfig)
+    @staticmethod
     def from_config(
-        cls,
         config: SpectralMeanSubstractionConfig,
         samplerate: int,
     ):
-        return cls()
-
-
-spectrogram_transforms.register(
-    SpectralMeanSubstractionConfig,
-    SpectralMeanSubstraction,
-)
+        return SpectralMeanSubstraction()
 
 
 class PeakNormalizeConfig(BaseConfig):
@@ -375,12 +365,11 @@ class PeakNormalize(torch.nn.Module):
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         return peak_normalize(spec)
 
-    @classmethod
-    def from_config(cls, config: PeakNormalizeConfig, samplerate: int):
-        return cls()
+    @spectrogram_transforms.register(PeakNormalizeConfig)
+    @staticmethod
+    def from_config(config: PeakNormalizeConfig, samplerate: int):
+        return PeakNormalize()
 
-
-spectrogram_transforms.register(PeakNormalizeConfig, PeakNormalize)
 
 SpectrogramTransform = Annotated[
     Union[
