@@ -1,13 +1,14 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.evaluate.evaluator import (
-    EvaluatorConfig,
-    MultipleEvaluatorConfig,
+from batdetect2.evaluate.tasks import (
+    TaskConfig,
 )
+from batdetect2.evaluate.tasks.classification import ClassificationTaskConfig
+from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
 from batdetect2.logging import CSVLoggerConfig, LoggerConfig
 
 __all__ = [
@@ -17,7 +18,12 @@ __all__ = [
 
 
 class EvaluationConfig(BaseConfig):
-    evaluator: EvaluatorConfig = Field(default_factory=MultipleEvaluatorConfig)
+    tasks: List[TaskConfig] = Field(
+        default_factory=lambda: [
+            DetectionTaskConfig(),
+            ClassificationTaskConfig(),
+        ]
+    )
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 

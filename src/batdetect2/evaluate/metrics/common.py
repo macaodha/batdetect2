@@ -1,23 +1,23 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
+__all__ = [
+    "compute_precision_recall",
+    "average_precision",
+]
 
-def average_precision(
+
+def compute_precision_recall(
     y_true,
     y_score,
     num_positives: Optional[int] = None,
-) -> float:
+) -> Tuple[np.ndarray, np.ndarray]:
     y_true = np.array(y_true)
     y_score = np.array(y_score)
 
     if num_positives is None:
         num_positives = y_true.sum()
-
-    # Remove non-detections
-    valid_inds = y_score > 0
-    y_true = y_true[valid_inds]
-    y_score = y_score[valid_inds]
 
     # Sort by score
     sort_ind = np.argsort(y_score)[::-1]
@@ -34,6 +34,19 @@ def average_precision(
 
     precision[np.isnan(precision)] = 0
     recall[np.isnan(recall)] = 0
+    return precision, recall
+
+
+def average_precision(
+    y_true,
+    y_score,
+    num_positives: Optional[int] = None,
+) -> float:
+    precision, recall = compute_precision_recall(
+        y_true,
+        y_score,
+        num_positives=num_positives,
+    )
 
     # pascal 12 way
     mprec = np.hstack((0, precision, 0))

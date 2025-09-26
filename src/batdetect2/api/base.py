@@ -123,10 +123,7 @@ class BatDetect2API:
             config=config.postprocess,
         )
 
-        evaluator = build_evaluator(
-            config=config.evaluation.evaluator,
-            targets=targets,
-        )
+        evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
         # NOTE: Better to have a separate instance of
         # preprocessor and postprocessor as these may be moved
@@ -178,10 +175,7 @@ class BatDetect2API:
             config=config.postprocess,
         )
 
-        evaluator = build_evaluator(
-            config=config.evaluation.evaluator,
-            targets=targets,
-        )
+        evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
         return cls(
             config=config,

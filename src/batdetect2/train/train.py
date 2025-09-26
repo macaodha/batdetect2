@@ -8,7 +8,7 @@ from loguru import logger
 from soundevent import data
 
 from batdetect2.audio import build_audio_loader
-from batdetect2.evaluate.evaluator import build_evaluator
+from batdetect2.evaluate import build_evaluator
 from batdetect2.logging import build_logger
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
@@ -106,7 +106,7 @@ def train(
         config,
         targets=targets,
         evaluator=build_evaluator(
-            config.train.validation.evaluator,
+            config.train.validation,
             targets=targets,
         ),
         checkpoint_dir=checkpoint_dir,
