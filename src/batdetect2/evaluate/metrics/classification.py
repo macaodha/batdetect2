@@ -19,9 +19,13 @@ from soundevent import data
 
 from batdetect2.core import BaseConfig, Registry
 from batdetect2.evaluate.metrics.common import average_precision
-from batdetect2.typing import RawPrediction
+from batdetect2.typing import RawPrediction, TargetProtocol
 
-__all__ = []
+__all__ = [
+    "ClassificationMetric",
+    "ClassificationMetricConfig",
+    "build_classification_metric",
+]
 
 
 @dataclass
@@ -45,8 +49,8 @@ class ClipEval:
 ClassificationMetric = Callable[[Sequence[ClipEval]], Dict[str, float]]
 
 
-classification_metrics: Registry[ClassificationMetric, []] = Registry(
-    "classification_metric"
+classification_metrics: Registry[ClassificationMetric, [TargetProtocol]] = (
+    Registry("classification_metric")
 )
 
 
@@ -58,9 +62,11 @@ class BaseClassificationConfig(BaseConfig):
 class BaseClassificationMetric:
     def __init__(
         self,
+        targets: TargetProtocol,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
     ):
+        self.targets = targets
         self.include = include
         self.exclude = exclude
 
@@ -84,13 +90,14 @@ class ClassificationAveragePrecisionConfig(BaseClassificationConfig):
 class ClassificationAveragePrecision(BaseClassificationMetric):
     def __init__(
         self,
+        targets: TargetProtocol,
         ignore_non_predictions: bool = True,
         ignore_generic: bool = True,
         label: str = "average_precision",
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
     ):
-        super().__init__(include=include, exclude=exclude)
+        super().__init__(include=include, exclude=exclude, targets=targets)
         self.ignore_non_predictions = ignore_non_predictions
         self.ignore_generic = ignore_generic
         self.label = label
@@ -98,33 +105,11 @@ class ClassificationAveragePrecision(BaseClassificationMetric):
     def __call__(
         self, clip_evaluations: Sequence[ClipEval]
     ) -> Dict[str, float]:
-        y_true = defaultdict(list)
-        y_score = defaultdict(list)
-        num_positives = defaultdict(lambda: 0)
-
-        class_names = set()
-
-        for clip_eval in clip_evaluations:
-            for class_name, matches in clip_eval.matches.items():
-                class_names.add(class_name)
-
-                for m in matches:
-                    # Exclude matches with ground truth sounds where the class
-                    # is unknown
-                    if m.is_generic and self.ignore_generic:
-                        continue
-
-                    is_class = m.true_class == class_name
-
-                    if is_class:
-                        num_positives[class_name] += 1
-
-                    # Ignore matches that don't correspond to a prediction
-                    if not m.is_prediction and self.ignore_non_predictions:
-                        continue
-
-                    y_true[class_name].append(is_class)
-                    y_score[class_name].append(m.score)
+        y_true, y_score, num_positives = _extract_per_class_metric_data(
+            clip_evaluations,
+            ignore_non_predictions=self.ignore_non_predictions,
+            ignore_generic=self.ignore_generic,
+        )
 
         class_scores = {
             class_name: average_precision(
@@ -132,7 +117,7 @@ class ClassificationAveragePrecision(BaseClassificationMetric):
                 y_score[class_name],
                 num_positives=num_positives[class_name],
             )
-            for class_name in class_names
+            for class_name in self.targets.class_names
         }
 
         mean_score = float(
@@ -150,8 +135,12 @@ class ClassificationAveragePrecision(BaseClassificationMetric):
 
     @classification_metrics.register(ClassificationAveragePrecisionConfig)
     @staticmethod
-    def from_config(config: ClassificationAveragePrecisionConfig):
+    def from_config(
+        config: ClassificationAveragePrecisionConfig,
+        targets: TargetProtocol,
+    ):
         return ClassificationAveragePrecision(
+            targets=targets,
             ignore_non_predictions=config.ignore_non_predictions,
             ignore_generic=config.ignore_generic,
             label=config.label,
@@ -170,12 +159,14 @@ class ClassificationROCAUCConfig(BaseClassificationConfig):
 class ClassificationROCAUC(BaseClassificationMetric):
     def __init__(
         self,
+        targets: TargetProtocol,
         ignore_non_predictions: bool = True,
         ignore_generic: bool = True,
         label: str = "roc_auc",
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
     ):
+        self.targets = targets
         self.ignore_non_predictions = ignore_non_predictions
         self.ignore_generic = ignore_generic
         self.label = label
@@ -185,27 +176,11 @@ class ClassificationROCAUC(BaseClassificationMetric):
     def __call__(
         self, clip_evaluations: Sequence[ClipEval]
     ) -> Dict[str, float]:
-        y_true = defaultdict(list)
-        y_score = defaultdict(list)
-
-        class_names = set()
-
-        for clip_eval in clip_evaluations:
-            for class_name, matches in clip_eval.matches.items():
-                class_names.add(class_name)
-
-                for m in matches:
-                    # Exclude matches with ground truth sounds where the class
-                    # is unknown
-                    if m.is_generic and self.ignore_generic:
-                        continue
-
-                    # Ignore matches that don't correspond to a prediction
-                    if not m.is_prediction and self.ignore_non_predictions:
-                        continue
-
-                    y_true[class_name].append(m.true_class == class_name)
-                    y_score[class_name].append(m.score)
+        y_true, y_score, _ = _extract_per_class_metric_data(
+            clip_evaluations,
+            ignore_non_predictions=self.ignore_non_predictions,
+            ignore_generic=self.ignore_generic,
+        )
 
         class_scores = {
             class_name: float(
@@ -214,7 +189,7 @@ class ClassificationROCAUC(BaseClassificationMetric):
                     y_score[class_name],
                 )
             )
-            for class_name in class_names
+            for class_name in self.targets.class_names
         }
 
         mean_score = float(
@@ -232,8 +207,11 @@ class ClassificationROCAUC(BaseClassificationMetric):
 
     @classification_metrics.register(ClassificationROCAUCConfig)
     @staticmethod
-    def from_config(config: ClassificationROCAUCConfig):
+    def from_config(
+        config: ClassificationROCAUCConfig, targets: TargetProtocol
+    ):
         return ClassificationROCAUC(
+            targets=targets,
             ignore_non_predictions=config.ignore_non_predictions,
             ignore_generic=config.ignore_generic,
             label=config.label,
@@ -249,5 +227,40 @@ ClassificationMetricConfig = Annotated[
 ]
 
 
-def build_classification_metrics(config: ClassificationMetricConfig):
-    return classification_metrics.build(config)
+def build_classification_metric(
+    config: ClassificationMetricConfig,
+    targets: TargetProtocol,
+) -> ClassificationMetric:
+    return classification_metrics.build(config, targets)
+
+
+def _extract_per_class_metric_data(
+    clip_evaluations: Sequence[ClipEval],
+    ignore_non_predictions: bool = True,
+    ignore_generic: bool = True,
+):
+    y_true = defaultdict(list)
+    y_score = defaultdict(list)
+    num_positives = defaultdict(lambda: 0)
+
+    for clip_eval in clip_evaluations:
+        for class_name, matches in clip_eval.matches.items():
+            for m in matches:
+                # Exclude matches with ground truth sounds where the class
+                # is unknown
+                if m.is_generic and ignore_generic:
+                    continue
+
+                is_class = m.true_class == class_name
+
+                if is_class:
+                    num_positives[class_name] += 1
+
+                # Ignore matches that don't correspond to a prediction
+                if not m.is_prediction and ignore_non_predictions:
+                    continue
+
+                y_true[class_name].append(is_class)
+                y_score[class_name].append(m.score)
+
+    return y_true, y_score, num_positives

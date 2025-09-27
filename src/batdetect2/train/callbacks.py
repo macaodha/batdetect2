@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
@@ -35,6 +35,7 @@ class ValidationMetrics(Callback):
 
     def generate_plots(
         self,
+        eval_outputs: Any,
         pl_module: LightningModule,
     ):
         plotter = get_image_logger(pl_module.logger)  # type: ignore
@@ -42,20 +43,15 @@ class ValidationMetrics(Callback):
         if plotter is None:
             return
 
-        for figure_name, fig in self.evaluator.generate_plots(
-            self._clip_annotations,
-            self._predictions,
-        ):
+        for figure_name, fig in self.evaluator.generate_plots(eval_outputs):
             plotter(figure_name, fig, pl_module.global_step)
 
     def log_metrics(
         self,
+        eval_outputs: Any,
         pl_module: LightningModule,
     ):
-        metrics = self.evaluator.compute_metrics(
-            self._clip_annotations,
-            self._predictions,
-        )
+        metrics = self.evaluator.compute_metrics(eval_outputs)
         pl_module.log_dict(metrics)
 
     def on_validation_epoch_end(
@@ -63,8 +59,13 @@ class ValidationMetrics(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        self.log_metrics(pl_module)
-        self.generate_plots(pl_module)
+        eval_outputs = self.evaluator.evaluate(
+            self._clip_annotations,
+            self._predictions,
+        )
+
+        self.log_metrics(eval_outputs, pl_module)
+        self.generate_plots(eval_outputs, pl_module)
 
         return super().on_validation_epoch_end(trainer, pl_module)
 

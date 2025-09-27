@@ -12,7 +12,7 @@ def compute_precision_recall(
     y_true,
     y_score,
     num_positives: Optional[int] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     y_true = np.array(y_true)
     y_score = np.array(y_score)
 
@@ -22,6 +22,7 @@ def compute_precision_recall(
     # Sort by score
     sort_ind = np.argsort(y_score)[::-1]
     y_true_sorted = y_true[sort_ind]
+    y_score_sorted = y_score[sort_ind]
 
     false_pos_c = np.cumsum(1 - y_true_sorted)
     true_pos_c = np.cumsum(y_true_sorted)
@@ -34,7 +35,7 @@ def compute_precision_recall(
 
     precision[np.isnan(precision)] = 0
     recall[np.isnan(recall)] = 0
-    return precision, recall
+    return precision, recall, y_score_sorted
 
 
 def average_precision(
@@ -42,7 +43,7 @@ def average_precision(
     y_score,
     num_positives: Optional[int] = None,
 ) -> float:
-    precision, recall = compute_precision_recall(
+    precision, recall, _ = compute_precision_recall(
         y_true,
         y_score,
         num_positives=num_positives,

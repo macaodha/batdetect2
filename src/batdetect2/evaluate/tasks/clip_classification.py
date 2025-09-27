@@ -10,6 +10,10 @@ from batdetect2.evaluate.metrics.clip_classification import (
     ClipEval,
     build_clip_metric,
 )
+from batdetect2.evaluate.plots.clip_classification import (
+    ClipClassificationPlotConfig,
+    build_clip_classification_plotter,
+)
 from batdetect2.evaluate.tasks.base import (
     BaseTask,
     BaseTaskConfig,
@@ -26,6 +30,7 @@ class ClipClassificationTaskConfig(BaseTaskConfig):
             ClipClassificationAveragePrecisionConfig(),
         ]
     )
+    plots: List[ClipClassificationPlotConfig] = Field(default_factory=list)
 
 
 class ClipClassificationTask(BaseTask[ClipEval]):
@@ -68,8 +73,13 @@ class ClipClassificationTask(BaseTask[ClipEval]):
         targets: TargetProtocol,
     ):
         metrics = [build_clip_metric(metric) for metric in config.metrics]
+        plots = [
+            build_clip_classification_plotter(plot, targets)
+            for plot in config.plots
+        ]
         return ClipClassificationTask.build(
             config=config,
+            plots=plots,
             metrics=metrics,
             targets=targets,
         )

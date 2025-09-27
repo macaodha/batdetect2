@@ -10,6 +10,10 @@ from batdetect2.evaluate.metrics.detection import (
     MatchEval,
     build_detection_metric,
 )
+from batdetect2.evaluate.plots.detection import (
+    DetectionPlotConfig,
+    build_detection_plotter,
+)
 from batdetect2.evaluate.tasks.base import (
     BaseTask,
     BaseTaskConfig,
@@ -24,6 +28,7 @@ class DetectionTaskConfig(BaseTaskConfig):
     metrics: List[DetectionMetricConfig] = Field(
         default_factory=lambda: [DetectionAveragePrecisionConfig()]
     )
+    plots: List[DetectionPlotConfig] = Field(default_factory=list)
 
 
 class DetectionTask(BaseTask[ClipEval]):
@@ -72,8 +77,12 @@ class DetectionTask(BaseTask[ClipEval]):
         targets: TargetProtocol,
     ):
         metrics = [build_detection_metric(metric) for metric in config.metrics]
+        plots = [
+            build_detection_plotter(plot, targets) for plot in config.plots
+        ]
         return DetectionTask.build(
             config=config,
             metrics=metrics,
             targets=targets,
+            plots=plots,
         )

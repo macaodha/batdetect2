@@ -12,7 +12,11 @@ from batdetect2.evaluate.metrics.classification import (
     ClassificationMetricConfig,
     ClipEval,
     MatchEval,
-    build_classification_metrics,
+    build_classification_metric,
+)
+from batdetect2.evaluate.plots.classification import (
+    ClassificationPlotConfig,
+    build_classification_plotter,
 )
 from batdetect2.evaluate.tasks.base import (
     BaseTask,
@@ -28,6 +32,7 @@ class ClassificationTaskConfig(BaseTaskConfig):
     metrics: List[ClassificationMetricConfig] = Field(
         default_factory=lambda: [ClassificationAveragePrecisionConfig()]
     )
+    plots: List[ClassificationPlotConfig] = Field(default_factory=list)
     include_generics: bool = True
 
 
@@ -128,10 +133,16 @@ class ClassificationTask(BaseTask[ClipEval]):
         targets: TargetProtocol,
     ):
         metrics = [
-            build_classification_metrics(metric) for metric in config.metrics
+            build_classification_metric(metric, targets)
+            for metric in config.metrics
+        ]
+        plots = [
+            build_classification_plotter(plot, targets)
+            for plot in config.plots
         ]
         return ClassificationTask.build(
             config=config,
+            plots=plots,
             targets=targets,
             metrics=metrics,
         )

@@ -1,5 +1,16 @@
-from typing import Callable, Dict, Generic, List, Sequence, TypeVar
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+)
 
+from matplotlib.figure import Figure
 from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds
@@ -43,6 +54,8 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
 
     metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]]
 
+    plots: List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+
     ignore_start_end: float
 
     prefix: str
@@ -54,9 +67,13 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]],
         prefix: str,
         ignore_start_end: float = 0.01,
+        plots: Optional[
+            List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+        ] = None,
     ):
         self.matcher = matcher
         self.metrics = metrics
+        self.plots = plots or []
         self.targets = targets
         self.prefix = prefix
         self.ignore_start_end = ignore_start_end
@@ -71,6 +88,12 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
             for metric_output in scores
             for name, score in metric_output.items()
         }
+
+    def generate_plots(
+        self, eval_outputs: List[T_Output]
+    ) -> Iterable[Tuple[str, Figure]]:
+        for plot in self.plots:
+            yield plot(eval_outputs)
 
     def evaluate(
         self,
@@ -123,6 +146,9 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         config: BaseTaskConfig,
         targets: TargetProtocol,
         metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]],
+        plots: Optional[
+            List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+        ] = None,
         **kwargs,
     ):
         matcher = build_matcher(config.matching_strategy)
@@ -130,6 +156,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
             matcher=matcher,
             targets=targets,
             metrics=metrics,
+            plots=plots,
             prefix=config.prefix,
             ignore_start_end=config.ignore_start_end,
             **kwargs,

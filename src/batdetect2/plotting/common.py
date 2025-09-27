@@ -19,7 +19,7 @@ def create_ax(
 ) -> axes.Axes:
     """Create a new axis if none is provided"""
     if ax is None:
-        _, ax = plt.subplots(figsize=figsize, **kwargs)  # type: ignore
+        _, ax = plt.subplots(figsize=figsize, nrows=1, ncols=1, **kwargs)  # type: ignore
 
     return ax  # type: ignore
 

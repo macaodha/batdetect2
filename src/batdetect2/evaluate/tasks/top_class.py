@@ -10,6 +10,10 @@ from batdetect2.evaluate.metrics.top_class import (
     TopClassMetricConfig,
     build_top_class_metric,
 )
+from batdetect2.evaluate.plots.top_class import (
+    TopClassPlotConfig,
+    build_top_class_plotter,
+)
 from batdetect2.evaluate.tasks.base import (
     BaseTask,
     BaseTaskConfig,
@@ -24,6 +28,7 @@ class TopClassDetectionTaskConfig(BaseTaskConfig):
     metrics: List[TopClassMetricConfig] = Field(
         default_factory=lambda: [TopClassAveragePrecisionConfig()]
     )
+    plots: List[TopClassPlotConfig] = Field(default_factory=list)
 
 
 class TopClassDetectionTask(BaseTask[ClipEval]):
@@ -94,8 +99,12 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
         targets: TargetProtocol,
     ):
         metrics = [build_top_class_metric(metric) for metric in config.metrics]
+        plots = [
+            build_top_class_plotter(plot, targets) for plot in config.plots
+        ]
         return TopClassDetectionTask.build(
             config=config,
+            plots=plots,
             metrics=metrics,
             targets=targets,
         )
