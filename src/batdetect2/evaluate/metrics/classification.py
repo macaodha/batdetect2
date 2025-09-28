@@ -30,6 +30,7 @@ __all__ = [
 
 @dataclass
 class MatchEval:
+    clip: data.Clip
     gt: Optional[data.SoundEventAnnotation]
     pred: Optional[RawPrediction]
 

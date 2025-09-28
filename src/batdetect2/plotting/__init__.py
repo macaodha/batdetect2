@@ -11,7 +11,6 @@ from batdetect2.plotting.matches import (
     plot_cross_trigger_match,
     plot_false_negative_match,
     plot_false_positive_match,
-    plot_matches,
     plot_true_positive_match,
 )
 
@@ -22,7 +21,6 @@ __all__ = [
     "plot_cross_trigger_match",
     "plot_false_negative_match",
     "plot_false_positive_match",
-    "plot_matches",
     "plot_spectrogram",
     "plot_true_positive_match",
     "plot_detection_heatmap",

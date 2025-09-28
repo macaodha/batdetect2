@@ -11,7 +11,7 @@ class BasePlotConfig(BaseConfig):
     label: str = "plot"
     theme: str = "default"
     title: Optional[str] = None
-    figsize: tuple[int, int] = (5, 5)
+    figsize: tuple[int, int] = (10, 10)
     dpi: int = 100
 
 
@@ -20,7 +20,7 @@ class BasePlot:
         self,
         targets: TargetProtocol,
         label: str = "plot",
-        figsize: tuple[int, int] = (5, 5),
+        figsize: tuple[int, int] = (10, 10),
         title: Optional[str] = None,
         dpi: int = 100,
         theme: str = "default",
@@ -32,7 +32,7 @@ class BasePlot:
         self.theme = theme
         self.title = title
 
-    def get_figure(self) -> Figure:
+    def create_figure(self) -> Figure:
         plt.style.use(self.theme)
         fig = plt.figure(figsize=self.figsize, dpi=self.dpi)
 

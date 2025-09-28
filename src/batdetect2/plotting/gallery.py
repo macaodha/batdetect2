@@ -1,81 +1,109 @@
-from typing import List, Optional
+from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 from batdetect2.plotting.matches import (
+    MatchProtocol,
     plot_cross_trigger_match,
     plot_false_negative_match,
     plot_false_positive_match,
     plot_true_positive_match,
 )
-from batdetect2.typing.evaluate import MatchEvaluation
 from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
 
 __all__ = ["plot_match_gallery"]
 
 
 def plot_match_gallery(
-    true_positives: List[MatchEvaluation],
-    false_positives: List[MatchEvaluation],
-    false_negatives: List[MatchEvaluation],
-    cross_triggers: List[MatchEvaluation],
+    true_positives: Sequence[MatchProtocol],
+    false_positives: Sequence[MatchProtocol],
+    false_negatives: Sequence[MatchProtocol],
+    cross_triggers: Sequence[MatchProtocol],
     audio_loader: Optional[AudioLoader] = None,
     preprocessor: Optional[PreprocessorProtocol] = None,
     n_examples: int = 5,
     duration: float = 0.1,
+    fig: Optional[Figure] = None,
 ):
-    fig = plt.figure(figsize=(20, 20))
+    if fig is None:
+        fig = plt.figure(figsize=(20, 20))
 
-    for index, match in enumerate(true_positives[:n_examples]):
-        ax = plt.subplot(4, n_examples, index + 1)
+    axes = fig.subplots(
+        nrows=4,
+        ncols=n_examples,
+        sharex="none",
+        sharey="row",
+    )
+
+    for tp_ax, tp_match in zip(axes[0], true_positives[:n_examples]):
         try:
             plot_true_positive_match(
-                match,
-                ax=ax,
+                tp_match,
+                ax=tp_ax,
                 audio_loader=audio_loader,
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except (ValueError, AssertionError, RuntimeError, FileNotFoundError):
+        except (
+            ValueError,
+            AssertionError,
+            RuntimeError,
+            FileNotFoundError,
+        ):
             continue
 
-    for index, match in enumerate(false_positives[:n_examples]):
-        ax = plt.subplot(4, n_examples, n_examples + index + 1)
+    for fp_ax, fp_match in zip(axes[1], false_positives[:n_examples]):
         try:
             plot_false_positive_match(
-                match,
-                ax=ax,
+                fp_match,
+                ax=fp_ax,
                 audio_loader=audio_loader,
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except (ValueError, AssertionError, RuntimeError, FileNotFoundError):
+        except (
+            ValueError,
+            AssertionError,
+            RuntimeError,
+            FileNotFoundError,
+        ):
             continue
 
-    for index, match in enumerate(false_negatives[:n_examples]):
-        ax = plt.subplot(4, n_examples, 2 * n_examples + index + 1)
+    for fn_ax, fn_match in zip(axes[2], false_negatives[:n_examples]):
         try:
             plot_false_negative_match(
-                match,
-                ax=ax,
+                fn_match,
+                ax=fn_ax,
                 audio_loader=audio_loader,
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except (ValueError, AssertionError, RuntimeError, FileNotFoundError):
+        except (
+            ValueError,
+            AssertionError,
+            RuntimeError,
+            FileNotFoundError,
+        ):
             continue
 
-    for index, match in enumerate(cross_triggers[:n_examples]):
-        ax = plt.subplot(4, n_examples, 3 * n_examples + index + 1)
+    for ct_ax, ct_match in zip(axes[3], cross_triggers[:n_examples]):
         try:
             plot_cross_trigger_match(
-                match,
-                ax=ax,
+                ct_match,
+                ax=ct_ax,
                 audio_loader=audio_loader,
                 preprocessor=preprocessor,
                 duration=duration,
             )
-        except (ValueError, AssertionError, RuntimeError, FileNotFoundError):
+        except (
+            ValueError,
+            AssertionError,
+            RuntimeError,
+            FileNotFoundError,
+        ):
             continue
+
+    fig.tight_layout()
 
     return fig

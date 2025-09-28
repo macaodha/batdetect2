@@ -1,6 +1,7 @@
 from typing import (
     Annotated,
     Callable,
+    Iterable,
     Literal,
     Optional,
     Sequence,
@@ -8,6 +9,7 @@ from typing import (
     Union,
 )
 
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from pydantic import Field
 from sklearn import metrics
@@ -17,7 +19,9 @@ from batdetect2.evaluate.metrics.clip_classification import ClipEval
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
 from batdetect2.plotting.metrics import (
+    plot_pr_curve,
     plot_pr_curves,
+    plot_roc_curve,
     plot_roc_curves,
 )
 from batdetect2.typing import TargetProtocol
@@ -28,7 +32,9 @@ __all__ = [
     "build_clip_classification_plotter",
 ]
 
-ClipClassificationPlotter = Callable[[Sequence[ClipEval]], Tuple[str, Figure]]
+ClipClassificationPlotter = Callable[
+    [Sequence[ClipEval]], Iterable[Tuple[str, Figure]]
+]
 
 clip_classification_plots: Registry[
     ClipClassificationPlotter, [TargetProtocol]
@@ -38,14 +44,24 @@ clip_classification_plots: Registry[
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Precision-Recall Curve"
+    title: Optional[str] = "Clip Classification Precision-Recall Curve"
+    separate_figures: bool = False
 
 
 class PRCurve(BasePlot):
+    def __init__(
+        self,
+        *args,
+        separate_figures: bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.separate_figures = separate_figures
+
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         data = {}
 
         for class_name in self.targets.class_names:
@@ -61,10 +77,26 @@ class PRCurve(BasePlot):
 
             data[class_name] = (precision, recall, thresholds)
 
-        fig = self.get_figure()
-        ax = fig.subplots()
-        plot_pr_curves(data, ax=ax)
-        return self.label, fig
+        if not self.separate_figures:
+            fig = self.create_figure()
+            ax = fig.subplots()
+
+            plot_pr_curves(data, ax=ax)
+
+            yield self.label, fig
+
+            return
+
+        for class_name, (precision, recall, thresholds) in data.items():
+            fig = self.create_figure()
+            ax = fig.subplots()
+
+            ax = plot_pr_curve(precision, recall, thresholds, ax=ax)
+            ax.set_title(class_name)
+
+            yield f"{self.label}/{class_name}", fig
+
+            plt.close(fig)
 
     @clip_classification_plots.register(PRCurveConfig)
     @staticmethod
@@ -72,20 +104,31 @@ class PRCurve(BasePlot):
         return PRCurve.build(
             config=config,
             targets=targets,
+            separate_figures=config.separate_figures,
         )
 
 
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "ROC Curve"
+    title: Optional[str] = "Clip Classification ROC Curve"
+    separate_figures: bool = False
 
 
 class ROCCurve(BasePlot):
+    def __init__(
+        self,
+        *args,
+        separate_figures: bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.separate_figures = separate_figures
+
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         data = {}
 
         for class_name in self.targets.class_names:
@@ -101,10 +144,24 @@ class ROCCurve(BasePlot):
 
             data[class_name] = (fpr, tpr, thresholds)
 
-        fig = self.get_figure()
-        ax = fig.subplots()
-        plot_roc_curves(data, ax=ax)
-        return self.label, fig
+        if not self.separate_figures:
+            fig = self.create_figure()
+            ax = fig.subplots()
+            plot_roc_curves(data, ax=ax)
+            yield self.label, fig
+
+            return
+
+        for class_name, (fpr, tpr, thresholds) in data.items():
+            fig = self.create_figure()
+            ax = fig.subplots()
+
+            ax = plot_roc_curve(fpr, tpr, thresholds, ax=ax)
+            ax.set_title(class_name)
+
+            yield f"{self.label}/{class_name}", fig
+
+            plt.close(fig)
 
     @clip_classification_plots.register(ROCCurveConfig)
     @staticmethod
@@ -112,6 +169,7 @@ class ROCCurve(BasePlot):
         return ROCCurve.build(
             config=config,
             targets=targets,
+            separate_figures=config.separate_figures,
         )
 
 

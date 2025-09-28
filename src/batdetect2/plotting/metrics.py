@@ -35,6 +35,8 @@ def plot_pr_curve(
     ax: Optional[axes.Axes] = None,
     figsize: Optional[Tuple[int, int]] = None,
     add_labels: bool = True,
+    add_legend: bool = False,
+    label: str = "PR Curve",
 ) -> axes.Axes:
     ax = create_ax(ax=ax, figsize=figsize)
 
@@ -43,13 +45,16 @@ def plot_pr_curve(
     ax.plot(
         recall,
         precision,
-        label="PR Curve",
+        label=label,
         marker="o",
         markevery=_get_marker_positions(thresholds),
     )
 
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
+
+    if add_legend:
+        ax.legend()
 
     if add_labels:
         ax.set_xlabel("Recall")

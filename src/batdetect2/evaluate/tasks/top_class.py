@@ -79,6 +79,7 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
 
             matches.append(
                 MatchEval(
+                    clip=clip,
                     gt=gt,
                     pred=pred,
                     is_ground_truth=gt is not None,

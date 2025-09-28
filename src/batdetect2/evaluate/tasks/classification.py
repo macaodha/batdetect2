@@ -98,6 +98,7 @@ class ClassificationTask(BaseTask[ClipEval]):
 
                 matches.append(
                     MatchEval(
+                        clip=clip,
                         gt=gt,
                         pred=pred,
                         is_prediction=pred is not None,

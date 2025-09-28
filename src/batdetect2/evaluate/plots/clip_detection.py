@@ -1,6 +1,7 @@
 from typing import (
     Annotated,
     Callable,
+    Iterable,
     Literal,
     Optional,
     Sequence,
@@ -27,7 +28,9 @@ __all__ = [
     "build_clip_detection_plotter",
 ]
 
-ClipDetectionPlotter = Callable[[Sequence[ClipEval]], Tuple[str, Figure]]
+ClipDetectionPlotter = Callable[
+    [Sequence[ClipEval]], Iterable[Tuple[str, Figure]]
+]
 
 
 clip_detection_plots: Registry[ClipDetectionPlotter, [TargetProtocol]] = (
@@ -38,14 +41,14 @@ clip_detection_plots: Registry[ClipDetectionPlotter, [TargetProtocol]] = (
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Precision-Recall Curve"
+    title: Optional[str] = "Clip Detection Precision-Recall Curve"
 
 
 class PRCurve(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = [c.gt_det for c in clip_evaluations]
         y_score = [c.score for c in clip_evaluations]
 
@@ -54,10 +57,10 @@ class PRCurve(BasePlot):
             y_score,
         )
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
         plot_pr_curve(precision, recall, thresholds, ax=ax)
-        return self.label, fig
+        yield self.label, fig
 
     @clip_detection_plots.register(PRCurveConfig)
     @staticmethod
@@ -71,14 +74,14 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "ROC Curve"
+    title: Optional[str] = "Clip Detection ROC Curve"
 
 
 class ROCCurve(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = [c.gt_det for c in clip_evaluations]
         y_score = [c.score for c in clip_evaluations]
 
@@ -87,10 +90,10 @@ class ROCCurve(BasePlot):
             y_score,
         )
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
         plot_roc_curve(fpr, tpr, thresholds, ax=ax)
-        return self.label, fig
+        yield self.label, fig
 
     @clip_detection_plots.register(ROCCurveConfig)
     @staticmethod
@@ -104,18 +107,18 @@ class ROCCurve(BasePlot):
 class ScoreDistributionPlotConfig(BasePlotConfig):
     name: Literal["score_distribution"] = "score_distribution"
     label: str = "score_distribution"
-    title: Optional[str] = "Score Distribution"
+    title: Optional[str] = "Clip Detection Score Distribution"
 
 
 class ScoreDistributionPlot(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = [c.gt_det for c in clip_evaluations]
         y_score = [c.score for c in clip_evaluations]
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
 
         df = pd.DataFrame({"is_true": y_true, "score": y_score})
@@ -130,7 +133,7 @@ class ScoreDistributionPlot(BasePlot):
             common_norm=False,
         )
 
-        return self.label, fig
+        yield self.label, fig
 
     @clip_detection_plots.register(ScoreDistributionPlotConfig)
     @staticmethod

@@ -54,7 +54,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
 
     metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]]
 
-    plots: List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+    plots: List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]]
 
     ignore_start_end: float
 
@@ -68,7 +68,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         prefix: str,
         ignore_start_end: float = 0.01,
         plots: Optional[
-            List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+            List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]]
         ] = None,
     ):
         self.matcher = matcher
@@ -93,7 +93,8 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         self, eval_outputs: List[T_Output]
     ) -> Iterable[Tuple[str, Figure]]:
         for plot in self.plots:
-            yield plot(eval_outputs)
+            for name, fig in plot(eval_outputs):
+                yield f"{self.prefix}/{name}", fig
 
     def evaluate(
         self,
@@ -147,7 +148,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         targets: TargetProtocol,
         metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]],
         plots: Optional[
-            List[Callable[[Sequence[T_Output]], Tuple[str, Figure]]]
+            List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]]
         ] = None,
         **kwargs,
     ):

@@ -66,6 +66,9 @@ def plot_spectrogram(
         vmax=vmax,
     )
 
+    ax.set_xlim(start_time, end_time)
+    ax.set_ylim(min_freq, max_freq)
+
     if add_colorbar:
         plt.colorbar(mappable, ax=ax, **(colorbar_kwargs or {}))
 

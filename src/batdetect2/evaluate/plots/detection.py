@@ -1,26 +1,33 @@
 import random
-from typing import Annotated, Callable, Literal, Sequence, Tuple, Union
+from typing import (
+    Annotated,
+    Callable,
+    Iterable,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from matplotlib import patches
 from matplotlib.figure import Figure
 from pydantic import Field
 from sklearn import metrics
-from soundevent.plot import plot_geometry
 
 from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.core import Registry
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.metrics.detection import ClipEval
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
-from batdetect2.plotting.clips import plot_clip
+from batdetect2.plotting.detections import plot_clip_detections
 from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.typing import AudioLoader, PreprocessorProtocol, TargetProtocol
 
-DetectionPlotter = Callable[[Sequence[ClipEval]], Tuple[str, Figure]]
+DetectionPlotter = Callable[[Sequence[ClipEval]], Iterable[Tuple[str, Figure]]]
 
 detection_plots: Registry[DetectionPlotter, [TargetProtocol]] = Registry(
     name="detection_plot"
@@ -30,6 +37,7 @@ detection_plots: Registry[DetectionPlotter, [TargetProtocol]] = Registry(
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
+    title: Optional[str] = "Detection Precision-Recall Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -49,7 +57,7 @@ class PRCurve(BasePlot):
     def __call__(
         self,
         clip_evals: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = []
         y_score = []
         num_positives = 0
@@ -71,10 +79,12 @@ class PRCurve(BasePlot):
             num_positives=num_positives,
         )
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
+
         plot_pr_curve(precision, recall, thresholds, ax=ax)
-        return self.label, fig
+
+        yield self.label, fig
 
     @detection_plots.register(PRCurveConfig)
     @staticmethod
@@ -90,6 +100,7 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
+    title: Optional[str] = "Detection ROC Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -109,7 +120,7 @@ class ROCCurve(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = []
         y_score = []
 
@@ -127,10 +138,12 @@ class ROCCurve(BasePlot):
             y_score,
         )
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
+
         plot_roc_curve(fpr, tpr, thresholds, ax=ax)
-        return self.label, fig
+
+        yield self.label, fig
 
     @detection_plots.register(ROCCurveConfig)
     @staticmethod
@@ -146,6 +159,7 @@ class ROCCurve(BasePlot):
 class ScoreDistributionPlotConfig(BasePlotConfig):
     name: Literal["score_distribution"] = "score_distribution"
     label: str = "score_distribution"
+    title: Optional[str] = "Detection Score Distribution"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -165,7 +179,7 @@ class ScoreDistributionPlot(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
+    ) -> Iterable[Tuple[str, Figure]]:
         y_true = []
         y_score = []
 
@@ -180,7 +194,7 @@ class ScoreDistributionPlot(BasePlot):
 
         df = pd.DataFrame({"is_true": y_true, "score": y_score})
 
-        fig = self.get_figure()
+        fig = self.create_figure()
         ax = fig.subplots()
 
         sns.histplot(
@@ -194,7 +208,7 @@ class ScoreDistributionPlot(BasePlot):
             common_norm=False,
         )
 
-        return self.label, fig
+        yield self.label, fig
 
     @detection_plots.register(ScoreDistributionPlotConfig)
     @staticmethod
@@ -212,7 +226,8 @@ class ScoreDistributionPlot(BasePlot):
 class ExampleDetectionPlotConfig(BasePlotConfig):
     name: Literal["example_detection"] = "example_detection"
     label: str = "example_detection"
-    figsize: tuple[int, int] = (10, 15)
+    title: Optional[str] = "Example Detection"
+    figsize: tuple[int, int] = (10, 4)
     num_examples: int = 5
     threshold: float = 0.2
     audio: AudioConfig = Field(default_factory=AudioConfig)
@@ -240,82 +255,26 @@ class ExampleDetectionPlot(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Tuple[str, Figure]:
-        fig = self.get_figure()
-
+    ) -> Iterable[Tuple[str, Figure]]:
         sample = clip_evaluations
 
         if self.num_examples < len(sample):
             sample = random.sample(sample, self.num_examples)
 
-        axes = fig.subplots(nrows=self.num_examples, ncols=1)
+        for num_example, clip_eval in enumerate(sample):
+            fig = self.create_figure()
+            ax = fig.subplots()
 
-        for ax, clip_eval in zip(axes, sample):
-            plot_clip(
-                clip_eval.clip,
+            plot_clip_detections(
+                clip_eval,
+                ax=ax,
                 audio_loader=self.audio_loader,
                 preprocessor=self.preprocessor,
-                ax=ax,
             )
 
-            for m in clip_eval.matches:
-                is_match = (
-                    m.pred is not None
-                    and m.gt is not None
-                    and m.score >= self.threshold
-                )
+            yield f"{self.label}/example_{num_example}", fig
 
-                if m.pred is not None:
-                    plot_geometry(
-                        m.pred.geometry,
-                        ax=ax,
-                        add_points=False,
-                        facecolor="none",
-                        alpha=m.pred.detection_score,
-                        linestyle="-" if not is_match else "--",
-                        color="red" if not is_match else "orange",
-                    )
-
-                if m.gt is not None:
-                    plot_geometry(
-                        m.gt.sound_event.geometry,  # type: ignore
-                        ax=ax,
-                        add_points=False,
-                        facecolor="none",
-                        color="green" if not is_match else "orange",
-                    )
-
-            ax.set_title(clip_eval.clip.recording.path.name)
-
-            # ax.legend(
-            #     handles=[
-            #         patches.Patch(
-            #             edgecolor="green",
-            #             label="Ground Truth (Unmatched)",
-            #             facecolor="none",
-            #         ),
-            #         patches.Patch(
-            #             edgecolor="orange",
-            #             label="Ground Truth (Matched)",
-            #             facecolor="none",
-            #         ),
-            #         patches.Patch(
-            #             edgecolor="red",
-            #             label="Detection (Unmatched)",
-            #             facecolor="none",
-            #         ),
-            #         patches.Patch(
-            #             edgecolor="orange",
-            #             label="Detection (Matched)",
-            #             facecolor="none",
-            #             linestyle="--",
-            #         ),
-            #     ]
-            # )
-
-        plt.tight_layout()
-
-        return self.label, fig
+            plt.close(fig)
 
     @detection_plots.register(ExampleDetectionPlotConfig)
     @staticmethod
