@@ -105,6 +105,14 @@ class MixAudio(torch.nn.Module):
         samplerate: int,
         source: Optional[AudioSource],
     ):
+        if source is None:
+            warnings.warn(
+                "Mix audio augmentation ('mix_audio') requires an "
+                "'example_source' callable to be provided.",
+                stacklevel=2,
+            )
+            return lambda wav, clip_annotation: (wav, clip_annotation)
+
         return MixAudio(
             example_source=source,
             min_weight=config.min_weight,
@@ -197,7 +205,9 @@ class AddEcho(torch.nn.Module):
     @audio_augmentations.register(AddEchoConfig)
     @staticmethod
     def from_config(
-        config: AddEchoConfig, samplerate: int, source: AudioSource
+        config: AddEchoConfig,
+        samplerate: int,
+        source: Optional[AudioSource],
     ):
         return AddEcho(
             samplerate=samplerate,
@@ -662,6 +672,30 @@ def build_audio_augmentations(
     return AugmentationSequence(augmentations)
 
 
+def build_spectrogram_augmentations(
+    steps: Optional[Sequence[SpectrogramAugmentationConfig]] = None,
+) -> Optional[Augmentation]:
+    if not steps:
+        return None
+
+    augmentations = []
+
+    for step_config in steps:
+        augmentation = spec_augmentations.build(step_config)
+
+        if augmentation is None:
+            continue
+
+        augmentations.append(
+            MaybeApply(
+                augmentation=augmentation,
+                probability=step_config.probability,
+            )
+        )
+
+    return AugmentationSequence(augmentations)
+
+
 def build_augmentations(
     samplerate: int,
     config: Optional[AugmentationsConfig] = None,
@@ -675,16 +709,14 @@ def build_augmentations(
         lambda: config.to_yaml_string(),
     )
 
-    audio_augmentation = build_augmentation_sequence(
-        samplerate,
+    audio_augmentation = build_audio_augmentations(
         steps=config.audio,
+        samplerate=samplerate,
         audio_source=audio_source,
     )
 
-    spectrogram_augmentation = build_augmentation_sequence(
-        samplerate,
-        steps=config.audio,
-        audio_source=audio_source,
+    spectrogram_augmentation = build_spectrogram_augmentations(
+        steps=config.spectrogram,
     )
 
     return audio_augmentation, spectrogram_augmentation

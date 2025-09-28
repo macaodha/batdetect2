@@ -138,36 +138,49 @@ train:
     name: csv
 
   validation:
-    metrics:
-      - name: detection_ap
-      - name: classification_ap
-    plots:
-      - name: example_gallery
-      - name: example_clip
-      - name: detection_pr_curve
-      - name: classification_pr_curves
-      - name: detection_roc_curve
-      - name: classification_roc_curves
+    tasks:
+      - name: sound_event_detection
+        metrics:
+          - name: average_precision
+      - name: sound_event_classification
+        metrics:
+          - name: average_precision
 
 evaluation:
-  match_strategy:
-    name: start_time_match
-    distance_threshold: 0.01
-  metrics:
-    - name: classification_ap
-    - name: detection_ap
-    - name: detection_roc_auc
-    - name: classification_roc_auc
-    - name: top_class_ap
-    - name: classification_balanced_accuracy
-    - name: clip_multiclass_ap
-    - name: clip_multiclass_roc_auc
-    - name: clip_detection_ap
-    - name: clip_detection_roc_auc
-  plots:
-    - name: example_gallery
-    - name: example_clip
-    - name: detection_pr_curve
-    - name: classification_pr_curves
-    - name: detection_roc_curve
-    - name: classification_roc_curves
+  tasks:
+    - name: sound_event_detection
+      metrics:
+        - name: average_precision
+        - name: roc_auc
+      plots:
+        - name: pr_curve
+        - name: score_distribution
+        - name: example_detection
+    - name: sound_event_classification
+      metrics:
+        - name: average_precision
+        - name: roc_auc
+      plots:
+        - name: pr_curve
+    - name: top_class_detection
+      metrics:
+        - name: average_precision
+      plots:
+        - name: pr_curve
+        - name: confusion_matrix
+        - name: example_classification
+    - name: clip_detection
+      metrics:
+        - name: average_precision
+        - name: roc_auc
+      plots:
+        - name: pr_curve
+        - name: roc_curve
+        - name: score_distribution
+    - name: clip_classification
+      metrics:
+        - name: average_precision
+        - name: roc_auc
+      plots:
+        - name: pr_curve
+        - name: roc_curve

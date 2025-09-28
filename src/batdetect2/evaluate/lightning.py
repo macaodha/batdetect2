@@ -4,8 +4,7 @@ from lightning import LightningModule
 from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.dataset import TestDataset, TestExample
-from batdetect2.evaluate.tables import FullEvaluationTable
-from batdetect2.logging import get_image_logger, get_table_logger
+from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
 from batdetect2.postprocess import to_raw_predictions
 from batdetect2.typing import ClipMatches, EvaluatorProtocol
@@ -54,16 +53,6 @@ class EvaluationModule(LightningModule):
     def on_test_epoch_end(self):
         self.log_metrics(self.clip_evaluations)
         self.plot_examples(self.clip_evaluations)
-        self.log_table(self.clip_evaluations)
-
-    def log_table(self, evaluated_clips: Sequence[ClipMatches]):
-        table_logger = get_table_logger(self.logger)  # type: ignore
-
-        if table_logger is None:
-            return
-
-        df = FullEvaluationTable()(evaluated_clips)
-        table_logger("full_evaluation", df, 0)
 
     def plot_examples(self, evaluated_clips: Sequence[ClipMatches]):
         plotter = get_image_logger(self.logger)  # type: ignore

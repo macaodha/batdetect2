@@ -146,7 +146,7 @@ def build_trainer_callbacks(
         ModelCheckpoint(
             dirpath=str(checkpoint_dir),
             save_top_k=1,
-            monitor="total_loss/val",
+            monitor="classification/mean_average_precision",
         ),
         ValidationMetrics(evaluator),
     ]
