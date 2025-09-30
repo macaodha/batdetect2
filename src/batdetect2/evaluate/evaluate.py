@@ -21,7 +21,7 @@ if TYPE_CHECKING:
         TargetProtocol,
     )
 
-DEFAULT_OUTPUT_DIR: Path = Path("outputs") / "evaluations"
+DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 
 
 def evaluate(
@@ -32,7 +32,7 @@ def evaluate(
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
     num_workers: Optional[int] = None,
-    output_dir: data.PathLike = DEFAULT_OUTPUT_DIR,
+    output_dir: data.PathLike = DEFAULT_EVAL_DIR,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
 ):

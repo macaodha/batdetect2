@@ -51,7 +51,7 @@ def run_batch_inference(
     )
 
     module = InferenceModule(model)
-    trainer = Trainer(enable_checkpointing=False)
+    trainer = Trainer(enable_checkpointing=False, logger=False)
     outputs = trainer.predict(module, loader)
     return [
         clip_prediction

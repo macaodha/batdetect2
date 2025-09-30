@@ -221,20 +221,16 @@ def build_logger(
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
 ) -> Logger:
-    """
-    Creates a logger instance from a validated Pydantic config object.
-    """
     logger.opt(lazy=True).debug(
         "Building logger with config: \n{}",
         lambda: config.to_yaml_string(),
     )
-    logger_type = config.name
 
+    logger_type = config.name
     if logger_type not in LOGGER_FACTORY:
         raise ValueError(f"Unknown logger type: {logger_type}")
 
     creation_func = LOGGER_FACTORY[logger_type]
-
     return creation_func(
         config,
         log_dir=log_dir,

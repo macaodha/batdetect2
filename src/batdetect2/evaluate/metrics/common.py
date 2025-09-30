@@ -43,6 +43,9 @@ def average_precision(
     y_score,
     num_positives: Optional[int] = None,
 ) -> float:
+    if num_positives == 0:
+        return np.nan
+
     precision, recall, _ = compute_precision_recall(
         y_true,
         y_score,

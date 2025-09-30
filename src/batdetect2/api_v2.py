@@ -8,13 +8,18 @@ from soundevent.audio.files import get_audio_files
 
 from batdetect2.audio import build_audio_loader
 from batdetect2.config import BatDetect2Config
-from batdetect2.evaluate import build_evaluator, evaluate
+from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
 from batdetect2.inference import process_file_list, run_batch_inference
+from batdetect2.logging import DEFAULT_LOGS_DIR
 from batdetect2.models import Model, build_model
 from batdetect2.postprocess import build_postprocessor, to_raw_predictions
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
-from batdetect2.train import load_model_from_checkpoint, train
+from batdetect2.train import (
+    DEFAULT_CHECKPOINT_DIR,
+    load_model_from_checkpoint,
+    train,
+)
 from batdetect2.typing import (
     AudioLoader,
     BatDetect2Prediction,
@@ -53,8 +58,8 @@ class BatDetect2API:
         val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
         train_workers: Optional[int] = None,
         val_workers: Optional[int] = None,
-        checkpoint_dir: Optional[Path] = None,
-        log_dir: Optional[Path] = None,
+        checkpoint_dir: Optional[Path] = DEFAULT_CHECKPOINT_DIR,
+        log_dir: Optional[Path] = DEFAULT_LOGS_DIR,
         experiment_name: Optional[str] = None,
         run_name: Optional[str] = None,
         seed: Optional[int] = None,
@@ -80,7 +85,7 @@ class BatDetect2API:
         self,
         test_annotations: Sequence[data.ClipAnnotation],
         num_workers: Optional[int] = None,
-        output_dir: data.PathLike = ".",
+        output_dir: data.PathLike = DEFAULT_EVAL_DIR,
         experiment_name: Optional[str] = None,
         run_name: Optional[str] = None,
     ):
