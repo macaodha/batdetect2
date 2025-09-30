@@ -46,7 +46,7 @@ def train_command(
     run_name: Optional[str] = None,
     verbose: int = 0,
 ):
-    from batdetect2.api.base import BatDetect2API
+    from batdetect2.api_v2 import BatDetect2API
     from batdetect2.config import (
         BatDetect2Config,
         load_full_config,
