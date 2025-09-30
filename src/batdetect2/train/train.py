@@ -147,6 +147,7 @@ def build_trainer_callbacks(
             dirpath=str(checkpoint_dir),
             save_top_k=1,
             monitor="classification/mean_average_precision",
+            mode="max",
         ),
         ValidationMetrics(evaluator),
     ]
