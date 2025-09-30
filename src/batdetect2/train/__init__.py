@@ -1,9 +1,9 @@
 from batdetect2.train.augmentations import (
-    AugmentationsConfig,
     AddEchoConfig,
+    AugmentationsConfig,
     MaskFrequencyConfig,
-    RandomAudioSource,
     MaskTimeConfig,
+    RandomAudioSource,
     ScaleVolumeConfig,
     WarpConfig,
     add_echo,
@@ -28,7 +28,10 @@ from batdetect2.train.dataset import (
     build_val_loader,
 )
 from batdetect2.train.labels import build_clip_labeler, load_label_config
-from batdetect2.train.lightning import TrainingModule
+from batdetect2.train.lightning import (
+    TrainingModule,
+    load_model_from_checkpoint,
+)
 from batdetect2.train.losses import (
     ClassificationLossConfig,
     DetectionLossConfig,
@@ -74,4 +77,5 @@ __all__ = [
     "scale_volume",
     "train",
     "warp_spectrogram",
+    "load_model_from_checkpoint",
 ]

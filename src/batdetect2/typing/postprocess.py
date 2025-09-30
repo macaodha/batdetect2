@@ -83,8 +83,8 @@ class ClipDetectionsTensor(NamedTuple):
 
 @dataclass
 class BatDetect2Prediction:
-    raw: RawPrediction
-    sound_event_prediction: data.SoundEventPrediction
+    clip: data.Clip
+    predictions: List[RawPrediction]
 
 
 class PostprocessorProtocol(Protocol):

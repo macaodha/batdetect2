@@ -48,12 +48,25 @@ class RandomClip:
         self,
         clip_annotation: data.ClipAnnotation,
     ) -> data.ClipAnnotation:
-        return get_subclip_annotation(
+        subclip = self.get_subclip(clip_annotation.clip)
+        sound_events = select_sound_event_annotations(
             clip_annotation,
+            subclip,
+            min_overlap=self.min_sound_event_overlap,
+        )
+        return clip_annotation.model_copy(
+            update=dict(
+                clip=subclip,
+                sound_events=sound_events,
+            )
+        )
+
+    def get_subclip(self, clip: data.Clip) -> data.Clip:
+        return select_random_subclip(
+            clip,
             random=self.random,
             duration=self.duration,
             max_empty=self.max_empty,
-            min_sound_event_overlap=self.min_sound_event_overlap,
         )
 
     @clipper_registry.register(RandomClipConfig)
@@ -75,7 +88,7 @@ def get_subclip_annotation(
 ) -> data.ClipAnnotation:
     clip = clip_annotation.clip
 
-    subclip = select_subclip(
+    subclip = select_random_subclip(
         clip,
         random=random,
         duration=duration,
@@ -96,7 +109,7 @@ def get_subclip_annotation(
     )
 
 
-def select_subclip(
+def select_random_subclip(
     clip: data.Clip,
     random: bool = True,
     duration: float = 0.5,
@@ -170,6 +183,10 @@ class PaddedClip:
         clip_annotation: data.ClipAnnotation,
     ) -> data.ClipAnnotation:
         clip = clip_annotation.clip
+        clip = self.get_subclip(clip)
+        return clip_annotation.model_copy(update=dict(clip=clip))
+
+    def get_subclip(self, clip: data.Clip) -> data.Clip:
         duration = clip.duration
 
         target_duration = float(
@@ -180,7 +197,7 @@ class PaddedClip:
                 end_time=clip.start_time + target_duration,
             )
         )
-        return clip_annotation.model_copy(update=dict(clip=clip))
+        return clip
 
     @clipper_registry.register(PaddedClipConfig)
     @staticmethod
@@ -188,8 +205,52 @@ class PaddedClip:
         return PaddedClip(chunk_size=config.chunk_size)
 
 
+class FixedDurationClipConfig(BaseConfig):
+    name: Literal["fixed_duration"] = "fixed_duration"
+    duration: float = DEFAULT_TRAIN_CLIP_DURATION
+
+
+class FixedDurationClip:
+    def __init__(self, duration: float = DEFAULT_TRAIN_CLIP_DURATION):
+        self.duration = duration
+
+    def __call__(
+        self,
+        clip_annotation: data.ClipAnnotation,
+    ) -> data.ClipAnnotation:
+        clip = self.get_subclip(clip_annotation.clip)
+        sound_events = select_sound_event_annotations(
+            clip_annotation,
+            clip,
+            min_overlap=0,
+        )
+        return clip_annotation.model_copy(
+            update=dict(
+                clip=clip,
+                sound_events=sound_events,
+            )
+        )
+
+    def get_subclip(self, clip: data.Clip) -> data.Clip:
+        return clip.model_copy(
+            update=dict(
+                end_time=clip.start_time + self.duration,
+            )
+        )
+
+    @clipper_registry.register(FixedDurationClipConfig)
+    @staticmethod
+    def from_config(config: FixedDurationClipConfig):
+        return FixedDurationClip(duration=config.duration)
+
+
 ClipConfig = Annotated[
-    Union[RandomClipConfig, PaddedClipConfig], Field(discriminator="name")
+    Union[
+        RandomClipConfig,
+        PaddedClipConfig,
+        FixedDurationClipConfig,
+    ],
+    Field(discriminator="name"),
 ]
 
 

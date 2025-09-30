@@ -40,13 +40,14 @@ def evaluate(
 
     config = config or BatDetect2Config()
 
-    audio_loader = audio_loader or build_audio_loader()
+    audio_loader = audio_loader or build_audio_loader(config=config.audio)
 
     preprocessor = preprocessor or build_preprocessor(
+        config=config.preprocess,
         input_samplerate=audio_loader.samplerate,
     )
 
-    targets = targets or build_targets()
+    targets = targets or build_targets(config=config.targets)
 
     loader = build_test_loader(
         test_annotations,

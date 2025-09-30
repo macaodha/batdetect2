@@ -1,4 +1,4 @@
-from typing import Callable, NamedTuple, Protocol, Tuple
+from typing import Callable, List, NamedTuple, Protocol, Tuple
 
 import torch
 from soundevent import data
@@ -104,3 +104,5 @@ class ClipperProtocol(Protocol):
         self,
         clip_annotation: data.ClipAnnotation,
     ) -> data.ClipAnnotation: ...
+
+    def get_subclip(self, clip: data.Clip) -> data.Clip: ...

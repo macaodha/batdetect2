@@ -7,6 +7,7 @@ from batdetect2.audio import AudioConfig
 from batdetect2.core import BaseConfig
 from batdetect2.core.configs import load_config
 from batdetect2.evaluate.config import EvaluationConfig
+from batdetect2.inference.config import InferenceConfig
 from batdetect2.models.config import BackboneConfig
 from batdetect2.postprocess.config import PostprocessConfig
 from batdetect2.preprocess.config import PreprocessingConfig
@@ -31,6 +32,7 @@ class BatDetect2Config(BaseConfig):
     postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
     audio: AudioConfig = Field(default_factory=AudioConfig)
     targets: TargetConfig = Field(default_factory=TargetConfig)
+    inference: InferenceConfig = Field(default_factory=InferenceConfig)
 
 
 def load_full_config(
