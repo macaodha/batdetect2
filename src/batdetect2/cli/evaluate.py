@@ -17,6 +17,7 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 @click.argument("model-path", type=click.Path(exists=True))
 @click.argument("test_dataset", type=click.Path(exists=True))
 @click.option("--config", "config_path", type=click.Path())
+@click.option("--base-dir", type=click.Path(), default=Path.cwd())
 @click.option("--output-dir", type=click.Path(), default=DEFAULT_OUTPUT_DIR)
 @click.option("--experiment-name", type=str)
 @click.option("--run-name", type=str)
@@ -30,6 +31,7 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 def evaluate_command(
     model_path: Path,
     test_dataset: Path,
+    base_dir: Path,
     config_path: Optional[Path],
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     num_workers: Optional[int] = None,
@@ -52,7 +54,10 @@ def evaluate_command(
 
     logger.info("Initiating evaluation process...")
 
-    test_annotations = load_dataset_from_config(test_dataset)
+    test_annotations = load_dataset_from_config(
+        test_dataset,
+        base_dir=base_dir,
+    )
     logger.debug(
         "Loaded {num_annotations} test examples",
         num_annotations=len(test_annotations),

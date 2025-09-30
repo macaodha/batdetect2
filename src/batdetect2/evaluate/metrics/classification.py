@@ -122,7 +122,7 @@ class ClassificationAveragePrecision(BaseClassificationMetric):
         }
 
         mean_score = float(
-            np.mean([v for v in class_scores.values() if v != np.nan])
+            np.mean([v for v in class_scores.values() if not np.isnan(v)])
         )
 
         return {
