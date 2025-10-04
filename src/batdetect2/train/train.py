@@ -1,9 +1,8 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from lightning import Trainer, seed_everything
-from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from loguru import logger
 from soundevent import data
 
@@ -13,6 +12,7 @@ from batdetect2.logging import build_logger
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
 from batdetect2.train.callbacks import ValidationMetrics
+from batdetect2.train.checkpoints import build_checkpoint_callback
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
@@ -31,8 +31,6 @@ __all__ = [
     "build_trainer",
     "train",
 ]
-
-DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
 
 
 def train(
@@ -104,7 +102,6 @@ def train(
 
     trainer = trainer or build_trainer(
         config,
-        targets=targets,
         evaluator=build_evaluator(
             config.train.validation,
             targets=targets,
@@ -124,58 +121,29 @@ def train(
     logger.info("Training complete.")
 
 
-def build_trainer_callbacks(
-    targets: "TargetProtocol",
-    evaluator: Optional["EvaluatorProtocol"] = None,
-    checkpoint_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
-) -> List[Callback]:
-    if checkpoint_dir is None:
-        checkpoint_dir = DEFAULT_CHECKPOINT_DIR
-
-    if experiment_name is not None:
-        checkpoint_dir = checkpoint_dir / experiment_name
-
-    if run_name is not None:
-        checkpoint_dir = checkpoint_dir / run_name
-
-    evaluator = evaluator or build_evaluator(targets=targets)
-
-    return [
-        ModelCheckpoint(
-            dirpath=str(checkpoint_dir),
-            save_top_k=1,
-            monitor="classification/mean_average_precision",
-            mode="max",
-        ),
-        ValidationMetrics(evaluator),
-    ]
-
-
 def build_trainer(
-    conf: "BatDetect2Config",
-    targets: "TargetProtocol",
-    evaluator: Optional["EvaluatorProtocol"] = None,
+    config: "BatDetect2Config",
+    evaluator: "EvaluatorProtocol",
     checkpoint_dir: Optional[Path] = None,
     log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
 ) -> Trainer:
-    trainer_conf = conf.train.trainer
+    trainer_conf = config.train.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
+
     train_logger = build_logger(
-        conf.train.logger,
+        config.train.logger,
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
     )
 
     train_logger.log_hyperparams(
-        conf.model_dump(
+        config.model_dump(
             mode="json",
             exclude_none=True,
         )
@@ -184,11 +152,13 @@ def build_trainer(
     return Trainer(
         **trainer_conf.model_dump(exclude_none=True),
         logger=train_logger,
-        callbacks=build_trainer_callbacks(
-            targets,
-            evaluator=evaluator,
-            checkpoint_dir=checkpoint_dir,
-            experiment_name=experiment_name,
-            run_name=run_name,
-        ),
+        callbacks=[
+            build_checkpoint_callback(
+                config=config.train.checkpoints,
+                checkpoint_dir=checkpoint_dir,
+                experiment_name=experiment_name,
+                run_name=run_name,
+            ),
+            ValidationMetrics(evaluator),
+        ],
     )
