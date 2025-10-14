@@ -62,6 +62,7 @@ class BatDetect2API:
         checkpoint_dir: Optional[Path] = DEFAULT_CHECKPOINT_DIR,
         log_dir: Optional[Path] = DEFAULT_LOGS_DIR,
         experiment_name: Optional[str] = None,
+        num_epochs: Optional[int] = None,
         run_name: Optional[str] = None,
         seed: Optional[int] = None,
     ):
@@ -76,6 +77,7 @@ class BatDetect2API:
             val_workers=val_workers,
             checkpoint_dir=checkpoint_dir,
             log_dir=log_dir,
+            num_epochs=num_epochs,
             experiment_name=experiment_name,
             run_name=run_name,
             seed=seed,

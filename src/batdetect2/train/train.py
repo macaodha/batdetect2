@@ -47,6 +47,7 @@ def train(
     checkpoint_dir: Optional[Path] = None,
     log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
+    num_epochs: Optional[int] = None,
     run_name: Optional[str] = None,
     seed: Optional[int] = None,
 ):
@@ -107,6 +108,7 @@ def train(
             targets=targets,
         ),
         checkpoint_dir=checkpoint_dir,
+        num_epochs=num_epochs,
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
@@ -128,6 +130,7 @@ def build_trainer(
     log_dir: Optional[Path] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
+    num_epochs: Optional[int] = None,
 ) -> Trainer:
     trainer_conf = config.train.trainer
     logger.opt(lazy=True).debug(
@@ -149,8 +152,13 @@ def build_trainer(
         )
     )
 
+    train_config = trainer_conf.model_dump(exclude_none=True)
+
+    if num_epochs is not None:
+        train_config["max_epochs"] = num_epochs
+
     return Trainer(
-        **trainer_conf.model_dump(exclude_none=True),
+        **train_config,
         logger=train_logger,
         callbacks=[
             build_checkpoint_callback(
