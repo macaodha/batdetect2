@@ -35,9 +35,11 @@ def summary(
     from batdetect2.data import load_dataset_from_config
 
     base_dir = base_dir or Path.cwd()
+
     dataset = load_dataset_from_config(
         dataset_config,
         field=field,
         base_dir=base_dir,
     )
+
     print(f"Number of annotated clips: {len(dataset)}")

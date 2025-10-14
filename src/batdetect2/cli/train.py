@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -24,12 +23,6 @@ __all__ = ["train_command"]
 @click.option("--experiment-name", type=str)
 @click.option("--run-name", type=str)
 @click.option("--seed", type=int)
-@click.option(
-    "-v",
-    "--verbose",
-    count=True,
-    help="Increase verbosity. -v for INFO, -vv for DEBUG.",
-)
 def train_command(
     train_dataset: Path,
     val_dataset: Optional[Path] = None,
@@ -44,7 +37,6 @@ def train_command(
     val_workers: int = 0,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
-    verbose: int = 0,
 ):
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.config import (
@@ -54,14 +46,6 @@ def train_command(
     from batdetect2.data import load_dataset_from_config
     from batdetect2.targets import load_target_config
 
-    logger.remove()
-    if verbose == 0:
-        log_level = "WARNING"
-    elif verbose == 1:
-        log_level = "INFO"
-    else:
-        log_level = "DEBUG"
-    logger.add(sys.stderr, level=log_level)
     logger.info("Initiating training process...")
 
     logger.info("Loading configuration...")
@@ -99,7 +83,10 @@ def train_command(
     if model_path is None:
         api = BatDetect2API.from_config(conf)
     else:
-        api = BatDetect2API.from_checkpoint(model_path)
+        api = BatDetect2API.from_checkpoint(
+            model_path,
+            config=conf if config is not None else None,
+        )
 
     return api.train(
         train_annotations=train_annotations,

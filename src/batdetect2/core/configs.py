@@ -11,12 +11,14 @@ configuration sections.
 from typing import Any, Optional, Type, TypeVar
 
 import yaml
+from deepmerge.merger import Merger
 from pydantic import BaseModel, ConfigDict
 from soundevent.data import PathLike
 
 __all__ = [
     "BaseConfig",
     "load_config",
+    "merge_configs",
 ]
 
 
@@ -178,3 +180,19 @@ def load_config(
         config = get_object_field(config, field)
 
     return schema.model_validate(config or {})
+
+
+default_merger = Merger(
+    [],
+    ["override"],
+    ["override"],
+)
+
+
+def merge_configs(config1: T, config2: T) -> T:
+    """Merge two configuration objects."""
+    model = type(config1)
+    dict1 = config1.model_dump()
+    dict2 = config2.model_dump()
+    merged = default_merger.merge(dict1, dict2)
+    return model.model_validate(merged)

@@ -8,6 +8,7 @@ from soundevent.audio.files import get_audio_files
 
 from batdetect2.audio import build_audio_loader
 from batdetect2.config import BatDetect2Config
+from batdetect2.core import merge_configs
 from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
@@ -243,7 +244,9 @@ class BatDetect2API:
     ):
         model, stored_config = load_model_from_checkpoint(path)
 
-        config = config or stored_config
+        config = (
+            merge_configs(config, stored_config) if config else stored_config
+        )
 
         targets = build_targets(config=config.targets)
 
