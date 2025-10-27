@@ -14,7 +14,7 @@ from typing import (
 from matplotlib.figure import Figure
 from soundevent import data
 
-from batdetect2.typing.postprocess import RawPrediction
+from batdetect2.typing.postprocess import BatDetect2Prediction, RawPrediction
 from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
@@ -115,7 +115,7 @@ class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[Sequence[RawPrediction]],
+        predictions: Sequence[BatDetect2Prediction],
     ) -> EvaluationOutput: ...
 
     def compute_metrics(

@@ -84,7 +84,7 @@ class AOEFAnnotations(AnnotatedDataset):
 
 def load_aoef_annotated_dataset(
     dataset: AOEFAnnotations,
-    base_dir: Optional[Path] = None,
+    base_dir: Optional[data.PathLike] = None,
 ) -> data.AnnotationSet:
     """Load annotations from an AnnotationSet or AnnotationProject file.
 

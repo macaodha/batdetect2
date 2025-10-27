@@ -97,7 +97,7 @@ def train(
     )
 
     module = build_training_module(
-        config,
+        config.model_dump(mode="json"),
         t_max=config.train.optimizer.t_max * len(train_dataloader),
     )
 

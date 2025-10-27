@@ -1,4 +1,4 @@
-from typing import List, Literal, Sequence
+from typing import List, Literal
 
 from pydantic import Field
 from soundevent import data
@@ -18,7 +18,8 @@ from batdetect2.evaluate.tasks.base import (
     BaseTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import RawPrediction, TargetProtocol
+from batdetect2.typing import TargetProtocol
+from batdetect2.typing.postprocess import BatDetect2Prediction
 
 
 class ClipDetectionTaskConfig(BaseTaskConfig):
@@ -36,7 +37,7 @@ class ClipDetectionTask(BaseTask[ClipEval]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        predictions: Sequence[RawPrediction],
+        prediction: BatDetect2Prediction,
     ) -> ClipEval:
         clip = clip_annotation.clip
 
@@ -46,7 +47,7 @@ class ClipDetectionTask(BaseTask[ClipEval]):
         )
 
         pred_score = 0
-        for pred in predictions:
+        for pred in prediction.predictions:
             if not self.include_prediction(pred, clip):
                 continue
 

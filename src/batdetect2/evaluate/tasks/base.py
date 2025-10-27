@@ -23,7 +23,7 @@ from batdetect2.evaluate.match import (
     build_matcher,
 )
 from batdetect2.typing.evaluate import EvaluatorProtocol, MatcherProtocol
-from batdetect2.typing.postprocess import RawPrediction
+from batdetect2.typing.postprocess import BatDetect2Prediction, RawPrediction
 from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
@@ -99,7 +99,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[Sequence[RawPrediction]],
+        predictions: Sequence[BatDetect2Prediction],
     ) -> List[T_Output]:
         return [
             self.evaluate_clip(clip_annotation, preds)
@@ -109,7 +109,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        predictions: Sequence[RawPrediction],
+        prediction: BatDetect2Prediction,
     ) -> T_Output: ...
 
     def include_sound_event_annotation(

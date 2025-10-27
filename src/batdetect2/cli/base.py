@@ -1,9 +1,8 @@
 """BatDetect2 command line interface."""
 
-import sys
-
 import click
-from loguru import logger
+
+from batdetect2.logging import enable_logging
 
 # from batdetect2.cli.ascii import BATDETECT_ASCII_ART
 
@@ -27,22 +26,9 @@ BatDetect2 - Detection and Classification
     count=True,
     help="Increase verbosity. -v for INFO, -vv for DEBUG.",
 )
-def cli(
-    verbose: int = 0,
-):
+def cli(verbose: int = 0):
     """BatDetect2 - Bat Call Detection and Classification."""
     click.echo(INFO_STR)
 
-    logger.remove()
-
-    if verbose == 0:
-        log_level = "WARNING"
-    elif verbose == 1:
-        log_level = "INFO"
-    else:
-        log_level = "DEBUG"
-
-    logger.add(sys.stderr, level=log_level)
-
-    logger.enable("batdetect2")
+    enable_logging(verbose)
     # click.echo(BATDETECT_ASCII_ART)

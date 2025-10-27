@@ -19,7 +19,7 @@ The core components are:
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from loguru import logger
 from pydantic import Field
@@ -53,7 +53,7 @@ __all__ = [
 ]
 
 
-Dataset = List[data.ClipAnnotation]
+Dataset = Sequence[data.ClipAnnotation]
 """Type alias for a loaded dataset representation.
 
 Represents an entire dataset *after loading* as a flat Python list containing
@@ -77,7 +77,7 @@ class DatasetConfig(BaseConfig):
 
 def load_dataset(
     config: DatasetConfig,
-    base_dir: Optional[Path] = None,
+    base_dir: Optional[data.PathLike] = None,
 ) -> Dataset:
     """Load all clip annotations from the sources defined in a DatasetConfig."""
     clip_annotations = []
@@ -168,7 +168,7 @@ def load_dataset_config(path: data.PathLike, field: Optional[str] = None):
 def load_dataset_from_config(
     path: data.PathLike,
     field: Optional[str] = None,
-    base_dir: Optional[Path] = None,
+    base_dir: Optional[data.PathLike] = None,
 ) -> Dataset:
     """Load dataset annotation metadata from a configuration file.
 
@@ -250,6 +250,6 @@ def save_dataset(
     annotation_set = data.AnnotationSet(
         name=name,
         description=description,
-        clip_annotations=dataset,
+        clip_annotations=list(dataset),
     )
     io.save(annotation_set, path, audio_dir=audio_dir)

@@ -1,4 +1,5 @@
 import io
+import sys
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
@@ -30,6 +31,20 @@ from soundevent import data
 from batdetect2.core.configs import BaseConfig
 
 DEFAULT_LOGS_DIR: Path = Path("outputs") / "logs"
+
+
+def enable_logging(level: int):
+    logger.remove()
+
+    if level == 0:
+        log_level = "WARNING"
+    elif level == 1:
+        log_level = "INFO"
+    else:
+        log_level = "DEBUG"
+
+    logger.add(sys.stderr, level=log_level)
+    logger.enable("batdetect2")
 
 
 class BaseLoggerConfig(BaseConfig):

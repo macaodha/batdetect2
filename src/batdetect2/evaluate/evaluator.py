@@ -6,7 +6,8 @@ from soundevent import data
 from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.tasks import build_task
 from batdetect2.targets import build_targets
-from batdetect2.typing import EvaluatorProtocol, RawPrediction, TargetProtocol
+from batdetect2.typing import EvaluatorProtocol, TargetProtocol
+from batdetect2.typing.postprocess import BatDetect2Prediction
 
 __all__ = [
     "Evaluator",
@@ -26,7 +27,7 @@ class Evaluator:
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[Sequence[RawPrediction]],
+        predictions: Sequence[BatDetect2Prediction],
     ) -> List[Any]:
         return [
             task.evaluate(clip_annotations, predictions) for task in self.tasks

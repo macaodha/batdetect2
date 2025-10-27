@@ -1,5 +1,6 @@
+import json
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -9,6 +10,14 @@ from soundevent.audio.files import get_audio_files
 from batdetect2.audio import build_audio_loader
 from batdetect2.config import BatDetect2Config
 from batdetect2.core import merge_configs
+from batdetect2.data import (
+    OutputFormatConfig,
+    build_output_formatter,
+    get_output_formatter,
+    load_dataset_from_config,
+)
+from batdetect2.data.datasets import Dataset
+from batdetect2.data.predictions.base import OutputFormatterProtocol
 from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
@@ -41,6 +50,7 @@ class BatDetect2API:
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
         evaluator: EvaluatorProtocol,
+        formatter: OutputFormatterProtocol,
         model: Model,
     ):
         self.config = config
@@ -50,8 +60,16 @@ class BatDetect2API:
         self.postprocessor = postprocessor
         self.evaluator = evaluator
         self.model = model
+        self.formatter = formatter
 
         self.model.eval()
+
+    def load_annotations(
+        self,
+        path: data.PathLike,
+        base_dir: Optional[data.PathLike] = None,
+    ) -> Dataset:
+        return load_dataset_from_config(path, base_dir=base_dir)
 
     def train(
         self,
@@ -91,7 +109,8 @@ class BatDetect2API:
         output_dir: data.PathLike = DEFAULT_EVAL_DIR,
         experiment_name: Optional[str] = None,
         run_name: Optional[str] = None,
-    ):
+        save_predictions: bool = True,
+    ) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
         return evaluate(
             self.model,
             test_annotations,
@@ -103,7 +122,40 @@ class BatDetect2API:
             output_dir=output_dir,
             experiment_name=experiment_name,
             run_name=run_name,
+            formatter=self.formatter if save_predictions else None,
         )
+
+    def evaluate_predictions(
+        self,
+        annotations: Sequence[data.ClipAnnotation],
+        predictions: Sequence[BatDetect2Prediction],
+        output_dir: Optional[data.PathLike] = None,
+    ):
+        clip_evals = self.evaluator.evaluate(
+            annotations,
+            predictions,
+        )
+
+        metrics = self.evaluator.compute_metrics(clip_evals)
+
+        if output_dir is not None:
+            output_dir = Path(output_dir)
+
+            if not output_dir.is_dir():
+                output_dir.mkdir(parents=True)
+
+            metrics_path = output_dir / "metrics.json"
+            metrics_path.write_text(json.dumps(metrics))
+
+            for figure_name, fig in self.evaluator.generate_plots(clip_evals):
+                fig_path = output_dir / figure_name
+
+                if not fig_path.parent.is_dir():
+                    fig_path.parent.mkdir(parents=True)
+
+                fig.savefig(fig_path)
+
+        return metrics
 
     def load_audio(self, path: data.PathLike) -> np.ndarray:
         return self.audio_loader.load_file(path)
@@ -194,8 +246,38 @@ class BatDetect2API:
             config=self.config,
         )
 
+    def save_predictions(
+        self,
+        predictions: Sequence[BatDetect2Prediction],
+        path: data.PathLike,
+        audio_dir: Optional[data.PathLike] = None,
+        format: Optional[str] = None,
+        config: Optional[OutputFormatConfig] = None,
+    ):
+        formatter = self.formatter
+
+        if format is not None or config is not None:
+            format = format or config.name  # type: ignore
+            formatter = get_output_formatter(
+                name=format,
+                targets=self.targets,
+                config=config,
+            )
+
+        outs = formatter.format(predictions)
+        formatter.save(outs, audio_dir=audio_dir, path=path)
+
+    def load_predictions(
+        self,
+        path: data.PathLike,
+    ) -> List[BatDetect2Prediction]:
+        return self.formatter.load(path)
+
     @classmethod
-    def from_config(cls, config: BatDetect2Config):
+    def from_config(
+        cls,
+        config: BatDetect2Config,
+    ):
         targets = build_targets(config=config.targets)
 
         audio_loader = build_audio_loader(config=config.audio)
@@ -228,6 +310,8 @@ class BatDetect2API:
             ),
         )
 
+        formatter = build_output_formatter(targets, config=config.output)
+
         return cls(
             config=config,
             targets=targets,
@@ -236,6 +320,7 @@ class BatDetect2API:
             postprocessor=postprocessor,
             evaluator=evaluator,
             model=model,
+            formatter=formatter,
         )
 
     @classmethod
@@ -266,6 +351,8 @@ class BatDetect2API:
 
         evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
+        formatter = build_output_formatter(targets, config=config.output)
+
         return cls(
             config=config,
             targets=targets,
@@ -274,4 +361,5 @@ class BatDetect2API:
             postprocessor=postprocessor,
             evaluator=evaluator,
             model=model,
+            formatter=formatter,
         )

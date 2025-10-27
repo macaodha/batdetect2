@@ -12,7 +12,7 @@ classification probability maps, size prediction maps, and potentially
 intermediate features.
 """
 
-from typing import List
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -28,6 +28,55 @@ __all__ = [
     "classification_to_xarray",
     "sizes_to_xarray",
 ]
+
+
+def to_xarray(
+    array: Union[torch.Tensor, np.ndarray],
+    start_time: float,
+    end_time: float,
+    min_freq: float = MIN_FREQ,
+    max_freq: float = MAX_FREQ,
+    name: str = "xarray",
+    extra_dims: Optional[List[str]] = None,
+    extra_coords: Optional[Dict[str, np.ndarray]] = None,
+) -> xr.DataArray:
+    if isinstance(array, torch.Tensor):
+        array = array.detach().cpu().numpy()
+
+    extra_ndims = array.ndim - 2
+
+    if extra_ndims < 0:
+        raise ValueError(
+            "Input array must have at least 2 dimensions, "
+            f"got shape {array.shape}"
+        )
+
+    width = array.shape[-1]
+    height = array.shape[-2]
+
+    times = np.linspace(start_time, end_time, width, endpoint=False)
+    freqs = np.linspace(min_freq, max_freq, height, endpoint=False)
+
+    if extra_dims is None:
+        extra_dims = [f"dim_{i}" for i in range(extra_ndims)]
+
+    if extra_coords is None:
+        extra_coords = {}
+
+    return xr.DataArray(
+        data=array,
+        dims=[
+            *extra_dims,
+            Dimensions.frequency.value,
+            Dimensions.time.value,
+        ],
+        coords={
+            **extra_coords,
+            Dimensions.frequency.value: freqs,
+            Dimensions.time.value: times,
+        },
+        name=name,
+    )
 
 
 def map_detection_to_clip(

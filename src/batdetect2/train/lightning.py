@@ -6,11 +6,10 @@ from soundevent.data import PathLike
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from batdetect2.audio import TARGET_SAMPLERATE_HZ
 from batdetect2.models import Model, build_model
-from batdetect2.plotting.clips import build_preprocessor
 from batdetect2.postprocess import build_postprocessor
-from batdetect2.targets.targets import build_targets
+from batdetect2.preprocess import build_preprocessor
+from batdetect2.targets import build_targets
 from batdetect2.train.losses import build_loss
 from batdetect2.typing import ModelOutput, TrainExample
 
@@ -27,20 +26,20 @@ class TrainingModule(L.LightningModule):
 
     def __init__(
         self,
-        config: "BatDetect2Config",
-        input_samplerate: int = TARGET_SAMPLERATE_HZ,
-        learning_rate: float = 0.001,
+        config: Optional[dict] = None,
         t_max: int = 100,
         model: Optional[Model] = None,
         loss: Optional[torch.nn.Module] = None,
     ):
+        from batdetect2.config import validate_config
+
         super().__init__()
 
         self.save_hyperparameters(logger=False)
 
-        self.input_samplerate = input_samplerate
-        self.config = config
-        self.learning_rate = learning_rate
+        self.config = validate_config(config)
+        self.input_samplerate = self.config.audio.samplerate
+        self.learning_rate = self.config.train.optimizer.learning_rate
         self.t_max = t_max
 
         if loss is None:
@@ -104,14 +103,7 @@ def load_model_from_checkpoint(
 
 
 def build_training_module(
-    config: Optional["BatDetect2Config"] = None,
+    config: Optional[dict] = None,
     t_max: int = 200,
 ) -> TrainingModule:
-    from batdetect2.config import BatDetect2Config
-
-    config = config or BatDetect2Config()
-    return TrainingModule(
-        config=config,
-        learning_rate=config.train.optimizer.learning_rate,
-        t_max=t_max,
-    )
+    return TrainingModule(config=config, t_max=t_max)

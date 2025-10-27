@@ -1,3 +1,4 @@
+from batdetect2.typing.data import OutputFormatterProtocol
 from batdetect2.typing.evaluate import (
     AffinityFunction,
     ClipMatches,
@@ -10,6 +11,7 @@ from batdetect2.typing.evaluate import (
 from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 from batdetect2.typing.postprocess import (
     BatDetect2Prediction,
+    ClipDetectionsTensor,
     GeometryDecoder,
     PostprocessorProtocol,
     RawPrediction,
@@ -43,8 +45,9 @@ __all__ = [
     "Augmentation",
     "BackboneModel",
     "BatDetect2Prediction",
-    "ClipMatches",
+    "ClipDetectionsTensor",
     "ClipLabeller",
+    "ClipMatches",
     "ClipperProtocol",
     "DetectionModel",
     "EvaluatorProtocol",
@@ -56,6 +59,7 @@ __all__ = [
     "MatcherProtocol",
     "MetricsProtocol",
     "ModelOutput",
+    "OutputFormatterProtocol",
     "PlotterProtocol",
     "Position",
     "PostprocessorProtocol",

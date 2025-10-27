@@ -30,10 +30,7 @@ from typing import List, Optional
 
 import torch
 
-from batdetect2.models.backbones import (
-    Backbone,
-    build_backbone,
-)
+from batdetect2.models.backbones import Backbone, build_backbone
 from batdetect2.models.blocks import (
     ConvConfig,
     FreqCoordConvDownConfig,
@@ -62,16 +59,13 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
-from batdetect2.postprocess import build_postprocessor
-from batdetect2.preprocess import build_preprocessor
-from batdetect2.targets import build_targets
-from batdetect2.typing.models import DetectionModel
-from batdetect2.typing.postprocess import (
+from batdetect2.typing import (
     ClipDetectionsTensor,
+    DetectionModel,
     PostprocessorProtocol,
+    PreprocessorProtocol,
+    TargetProtocol,
 )
-from batdetect2.typing.preprocess import PreprocessorProtocol
-from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "BBoxHead",
@@ -133,6 +127,10 @@ def build_model(
     preprocessor: Optional[PreprocessorProtocol] = None,
     postprocessor: Optional[PostprocessorProtocol] = None,
 ):
+    from batdetect2.postprocess import build_postprocessor
+    from batdetect2.preprocess import build_preprocessor
+    from batdetect2.targets import build_targets
+
     config = config or BackboneConfig()
     targets = targets or build_targets()
     preprocessor = preprocessor or build_preprocessor()

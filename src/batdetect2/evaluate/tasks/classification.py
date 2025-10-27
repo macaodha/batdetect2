@@ -1,7 +1,6 @@
 from typing import (
     List,
     Literal,
-    Sequence,
 )
 
 from pydantic import Field
@@ -23,7 +22,7 @@ from batdetect2.evaluate.tasks.base import (
     BaseTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import RawPrediction, TargetProtocol
+from batdetect2.typing import BatDetect2Prediction, TargetProtocol
 
 
 class ClassificationTaskConfig(BaseTaskConfig):
@@ -49,12 +48,14 @@ class ClassificationTask(BaseTask[ClipEval]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        predictions: Sequence[RawPrediction],
+        prediction: BatDetect2Prediction,
     ) -> ClipEval:
         clip = clip_annotation.clip
 
         preds = [
-            pred for pred in predictions if self.include_prediction(pred, clip)
+            pred
+            for pred in prediction.predictions
+            if self.include_prediction(pred, clip)
         ]
 
         all_gts = [

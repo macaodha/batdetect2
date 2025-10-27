@@ -27,6 +27,28 @@ class EvaluationConfig(BaseConfig):
     logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 
+def get_default_eval_config() -> EvaluationConfig:
+    return EvaluationConfig.model_validate(
+        {
+            "tasks": [
+                {
+                    "name": "sound_event_detection",
+                    "plots": [
+                        {"name": "pr_curve"},
+                        {"name": "score_distribution"},
+                    ],
+                },
+                {
+                    "name": "sound_event_classification",
+                    "plots": [
+                        {"name": "pr_curve"},
+                    ],
+                },
+            ]
+        }
+    )
+
+
 def load_evaluation_config(
     path: data.PathLike,
     field: Optional[str] = None,

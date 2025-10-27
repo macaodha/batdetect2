@@ -159,6 +159,7 @@ def compute_class_summary(
         exclude_generic=False,
         exclude_non_target=True,
     )
+
     recordings = extract_recordings_df(dataset)
 
     num_calls = (

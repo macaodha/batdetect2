@@ -13,7 +13,6 @@ format-specific loading function to retrieve the annotations as a standard
 `soundevent.data.AnnotationSet`.
 """
 
-from pathlib import Path
 from typing import Annotated, Optional, Union
 
 from pydantic import Field
@@ -64,7 +63,7 @@ source configuration represents.
 
 def load_annotated_dataset(
     dataset: AnnotatedDataset,
-    base_dir: Optional[Path] = None,
+    base_dir: Optional[data.PathLike] = None,
 ) -> data.AnnotationSet:
     """Load annotations for a single data source based on its configuration.
 
@@ -97,6 +96,7 @@ def load_annotated_dataset(
         known format-specific loading functions implemented in the dispatch
         logic.
     """
+
     if isinstance(dataset, AOEFAnnotations):
         return load_aoef_annotated_dataset(dataset, base_dir=base_dir)
 

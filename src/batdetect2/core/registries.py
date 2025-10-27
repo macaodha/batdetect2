@@ -77,6 +77,15 @@ class Registry(Generic[T_Type, P_Type]):
     def get_config_types(self) -> Tuple[Type[BaseModel], ...]:
         return tuple(self._config_types.values())
 
+    def get_config_type(self, name: str) -> Type[BaseModel]:
+        try:
+            return self._config_types[name]
+        except KeyError as err:
+            raise ValueError(
+                f"No config type with name '{name}' is registered. "
+                f"Existing config types: {list(self._config_types.keys())}"
+            ) from err
+
     def build(
         self,
         config: BaseModel,

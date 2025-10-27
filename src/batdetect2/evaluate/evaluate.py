@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
 from lightning import Trainer
 from soundevent import data
@@ -12,11 +12,13 @@ from batdetect2.logging import build_logger
 from batdetect2.models import Model
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
+from batdetect2.typing.postprocess import RawPrediction
 
 if TYPE_CHECKING:
     from batdetect2.config import BatDetect2Config
     from batdetect2.typing import (
         AudioLoader,
+        OutputFormatterProtocol,
         PreprocessorProtocol,
         TargetProtocol,
     )
@@ -31,11 +33,12 @@ def evaluate(
     audio_loader: Optional["AudioLoader"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
+    formatter: Optional["OutputFormatterProtocol"] = None,
     num_workers: Optional[int] = None,
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
-):
+) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
     from batdetect2.config import BatDetect2Config
 
     config = config or BatDetect2Config()
@@ -66,4 +69,12 @@ def evaluate(
     )
     module = EvaluationModule(model, evaluator)
     trainer = Trainer(logger=logger, enable_checkpointing=False)
-    return trainer.test(module, loader)
+    metrics = trainer.test(module, loader)
+
+    if formatter is not None and logger.log_dir is not None:
+        formatter.save(
+            module.predictions,
+            path=Path(logger.log_dir) / "predictions",
+        )
+
+    return metrics, module.predictions  # type: ignore
