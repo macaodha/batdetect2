@@ -236,6 +236,8 @@ class BatDetect2API:
     def process_clips(
         self,
         clips: Sequence[data.Clip],
+        batch_size: Optional[int] = None,
+        num_workers: Optional[int] = None,
     ) -> List[BatDetect2Prediction]:
         return run_batch_inference(
             self.model,
@@ -244,6 +246,8 @@ class BatDetect2API:
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             config=self.config,
+            batch_size=batch_size,
+            num_workers=num_workers,
         )
 
     def save_predictions(

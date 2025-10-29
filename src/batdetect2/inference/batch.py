@@ -29,6 +29,7 @@ def run_batch_inference(
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
     num_workers: Optional[int] = None,
+    batch_size: Optional[int] = None,
 ) -> List[BatDetect2Prediction]:
     from batdetect2.config import BatDetect2Config
 
@@ -48,6 +49,7 @@ def run_batch_inference(
         preprocessor=preprocessor,
         config=config.inference.loader,
         num_workers=num_workers,
+        batch_size=batch_size,
     )
 
     module = InferenceModule(model)

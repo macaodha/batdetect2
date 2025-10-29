@@ -70,6 +70,7 @@ def build_inference_loader(
     preprocessor: Optional[PreprocessorProtocol] = None,
     config: Optional[InferenceLoaderConfig] = None,
     num_workers: Optional[int] = None,
+    batch_size: Optional[int] = None,
 ) -> DataLoader[DatasetItem]:
     logger.info("Building inference data loader...")
     config = config or InferenceLoaderConfig()
@@ -80,10 +81,12 @@ def build_inference_loader(
         preprocessor=preprocessor,
     )
 
+    batch_size = batch_size or config.batch_size
+
     num_workers = num_workers or config.num_workers
     return DataLoader(
         inference_dataset,
-        batch_size=config.batch_size,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         collate_fn=_collate_fn,

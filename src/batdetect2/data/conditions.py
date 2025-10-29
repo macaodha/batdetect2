@@ -25,7 +25,10 @@ class HasTag:
     def __call__(
         self, sound_event_annotation: data.SoundEventAnnotation
     ) -> bool:
-        return self.tag in sound_event_annotation.tags
+        return any(
+            self.tag.term.name == tag.term.name and self.tag.value == tag.value
+            for tag in sound_event_annotation.tags
+        )
 
     @conditions.register(HasTagConfig)
     @staticmethod
@@ -43,12 +46,14 @@ class HasAllTags:
         if not tags:
             raise ValueError("Need to specify at least one tag")
 
-        self.tags = set(tags)
+        self.tags = {(tag.term.name, tag.value) for tag in tags}
 
     def __call__(
         self, sound_event_annotation: data.SoundEventAnnotation
     ) -> bool:
-        return self.tags.issubset(sound_event_annotation.tags)
+        return self.tags.issubset(
+            {(tag.term.name, tag.value) for tag in sound_event_annotation.tags}
+        )
 
     @conditions.register(HasAllTagsConfig)
     @staticmethod
@@ -66,12 +71,19 @@ class HasAnyTag:
         if not tags:
             raise ValueError("Need to specify at least one tag")
 
-        self.tags = set(tags)
+        self.tags = {(tag.term.name, tag.value) for tag in tags}
 
     def __call__(
         self, sound_event_annotation: data.SoundEventAnnotation
     ) -> bool:
-        return bool(self.tags.intersection(sound_event_annotation.tags))
+        return bool(
+            self.tags.intersection(
+                {
+                    (tag.term.name, tag.value)
+                    for tag in sound_event_annotation.tags
+                }
+            )
+        )
 
     @conditions.register(HasAnyTagConfig)
     @staticmethod
