@@ -88,12 +88,33 @@ def annotation_to_sound_event(
     return data.SoundEventAnnotation(
         uuid=uuid.uuid5(NAMESPACE, f"{sound_event.uuid}_annotation"),
         sound_event=sound_event,
-        tags=[
-            data.Tag(key=label_key, value=annotation.label),
-            data.Tag(key=event_key, value=annotation.event),
-            data.Tag(key=individual_key, value=str(annotation.individual)),
-        ],
+        tags=get_sound_event_tags(
+            annotation, label_key, event_key, individual_key
+        ),
     )
+
+
+def get_sound_event_tags(
+    annotation: Annotation,
+    label_key: str = "class",
+    event_key: str = "event",
+    individual_key: str = "individual",
+) -> List[data.Tag]:
+    """Get the tags for a sound event annotation."""
+    tags = []
+
+    if annotation.label:
+        tags.append(data.Tag(key=label_key, value=annotation.label))
+
+    if annotation.event:
+        tags.append(data.Tag(key=event_key, value=annotation.event))
+
+    if annotation.individual:
+        tags.append(
+            data.Tag(key=individual_key, value=str(annotation.individual))
+        )
+
+    return tags
 
 
 def file_annotation_to_clip(
@@ -109,10 +130,14 @@ def file_annotation_to_clip(
     if not full_path.exists():
         raise FileNotFoundError(f"File {full_path} not found.")
 
+    tags = []
+    if file_annotation.label:
+        tags.append(data.Tag(key=label_key, value=file_annotation.label))
+
     recording = data.Recording.from_file(
         full_path,
         time_expansion=file_annotation.time_exp,
-        tags=[data.Tag(key=label_key, value=file_annotation.label)],
+        tags=tags,
     )
 
     return data.Clip(
@@ -135,11 +160,15 @@ def file_annotation_to_clip_annotation(
     if file_annotation.notes:
         notes.append(data.Note(message=file_annotation.notes))
 
+    tags = []
+    if file_annotation.label:
+        tags.append(data.Tag(key=label_key, value=file_annotation.label))
+
     return data.ClipAnnotation(
         uuid=uuid.uuid5(NAMESPACE, f"{file_annotation.id}_clip_annotation"),
         clip=clip,
         notes=notes,
-        tags=[data.Tag(key=label_key, value=file_annotation.label)],
+        tags=tags,
         sound_events=[
             annotation_to_sound_event(
                 annotation,
