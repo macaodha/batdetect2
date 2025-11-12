@@ -336,7 +336,7 @@ class BatDetect2API:
         model, stored_config = load_model_from_checkpoint(path)
 
         config = (
-            merge_configs(config, stored_config) if config else stored_config
+            merge_configs(stored_config, config) if config else stored_config
         )
 
         targets = build_targets(config=config.targets)
