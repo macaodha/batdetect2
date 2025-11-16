@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 import numpy as np
 import xarray as xr
+from loguru import logger
 from soundevent import data
 from soundevent.geometry import compute_bounds
 
@@ -36,11 +37,13 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
         include_class_scores: bool = True,
         include_features: bool = True,
         include_geometry: bool = True,
+        parse_full_geometry: bool = False,
     ):
         self.targets = targets
         self.include_class_scores = include_class_scores
         self.include_features = include_features
         self.include_geometry = include_geometry
+        self.parse_full_geometry = parse_full_geometry
 
     def format(
         self,
@@ -169,6 +172,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
         predictions: List[BatDetect2Prediction] = []
 
         for _, clip_data in root.items():
+            logger.debug(f"Loading clip {clip_data.clip_id.item()}")
             recording = data.Recording.model_validate_json(
                 clip_data.attrs["recording"]
             )
@@ -183,37 +187,36 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
 
             sound_events = []
 
-            for detection in clip_data.detection:
-                score = clip_data.score.sel(detection=detection).item()
+            for detection in clip_data.coords["detection"]:
+                detection_data = clip_data.sel(detection=detection)
+                score = detection_data.score.item()
 
-                if "geometry" in clip_data:
+                if "geometry" in clip_data and self.parse_full_geometry:
                     geometry = data.geometry_validate(
-                        clip_data.geometry.sel(detection=detection).item()
+                        detection_data.geometry.item()
                     )
                 else:
-                    start_time = clip_data.start_time.sel(detection=detection)
-                    end_time = clip_data.end_time.sel(detection=detection)
-                    low_freq = clip_data.low_freq.sel(detection=detection)
-                    high_freq = clip_data.high_freq.sel(detection=detection)
-                    geometry = data.BoundingBox(
+                    start_time = detection_data.start_time
+                    end_time = detection_data.end_time
+                    low_freq = detection_data.low_freq
+                    high_freq = detection_data.high_freq
+                    geometry = data.BoundingBox.model_construct(
                         coordinates=[start_time, low_freq, end_time, high_freq]
                     )
 
-                if "class_scores" in clip_data:
-                    class_scores = clip_data.class_scores.sel(
-                        detection=detection
-                    ).data
+                if "class_scores" in detection_data:
+                    class_scores = detection_data.class_scores.data
                 else:
                     class_scores = np.zeros(len(self.targets.class_names))
                     class_index = self.targets.class_names.index(
-                        clip_data.top_class.sel(detection=detection).item()
+                        detection_data.top_class.item()
                     )
-                    class_scores[class_index] = clip_data.top_class_score.sel(
-                        detection=detection
-                    ).item()
+                    class_scores[class_index] = (
+                        detection_data.top_class_score.item()
+                    )
 
-                if "features" in clip_data:
-                    features = clip_data.features.sel(detection=detection).data
+                if "features" in detection_data:
+                    features = detection_data.features.data
                 else:
                     features = np.zeros(0)
 

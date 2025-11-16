@@ -19,6 +19,7 @@ from batdetect2.data.predictions import (
     SoundEventOutputConfig,
     build_output_formatter,
     get_output_formatter,
+    load_predictions,
 )
 from batdetect2.data.summary import (
     compute_class_summary,
@@ -46,4 +47,5 @@ __all__ = [
     "load_dataset",
     "load_dataset_config",
     "load_dataset_from_config",
+    "load_predictions",
 ]

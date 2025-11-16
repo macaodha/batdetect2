@@ -18,6 +18,14 @@ UNKNOWN_CLASS = "__UNKNOWN__"
 
 NAMESPACE = uuid.UUID("97a9776b-c0fd-4c68-accb-0b0ecd719242")
 
+CLIP_NAMESPACE = uuid.uuid5(NAMESPACE, "clip")
+CLIP_ANNOTATION_NAMESPACE = uuid.uuid5(NAMESPACE, "clip_annotation")
+RECORDING_NAMESPACE = uuid.uuid5(NAMESPACE, "recording")
+SOUND_EVENT_NAMESPACE = uuid.uuid5(NAMESPACE, "sound_event")
+SOUND_EVENT_ANNOTATION_NAMESPACE = uuid.uuid5(
+    NAMESPACE, "sound_event_annotation"
+)
+
 
 EventFn = Callable[[data.SoundEventAnnotation], Optional[str]]
 
@@ -71,8 +79,8 @@ def annotation_to_sound_event(
     """Convert annotation to sound event annotation."""
     sound_event = data.SoundEvent(
         uuid=uuid.uuid5(
-            NAMESPACE,
-            f"{recording.hash}_{annotation.start_time}_{annotation.end_time}",
+            SOUND_EVENT_NAMESPACE,
+            f"{recording.uuid}_{annotation.start_time}_{annotation.end_time}",
         ),
         recording=recording,
         geometry=data.BoundingBox(
@@ -86,7 +94,10 @@ def annotation_to_sound_event(
     )
 
     return data.SoundEventAnnotation(
-        uuid=uuid.uuid5(NAMESPACE, f"{sound_event.uuid}_annotation"),
+        uuid=uuid.uuid5(
+            SOUND_EVENT_ANNOTATION_NAMESPACE,
+            f"{sound_event.uuid}",
+        ),
         sound_event=sound_event,
         tags=get_sound_event_tags(
             annotation, label_key, event_key, individual_key
@@ -139,12 +150,18 @@ def file_annotation_to_clip(
         time_expansion=file_annotation.time_exp,
         tags=tags,
     )
+    recording.uuid = uuid.uuid5(RECORDING_NAMESPACE, f"{recording.hash}")
 
+    start_time = 0
+    end_time = recording.duration
     return data.Clip(
-        uuid=uuid.uuid5(NAMESPACE, f"{file_annotation.id}_clip"),
+        uuid=uuid.uuid5(
+            CLIP_NAMESPACE,
+            f"{recording.uuid}_{start_time}_{end_time}",
+        ),
         recording=recording,
-        start_time=0,
-        end_time=recording.duration,
+        start_time=start_time,
+        end_time=end_time,
     )
 
 
@@ -165,7 +182,7 @@ def file_annotation_to_clip_annotation(
         tags.append(data.Tag(key=label_key, value=file_annotation.label))
 
     return data.ClipAnnotation(
-        uuid=uuid.uuid5(NAMESPACE, f"{file_annotation.id}_clip_annotation"),
+        uuid=uuid.uuid5(CLIP_ANNOTATION_NAMESPACE, f"{clip.uuid}"),
         clip=clip,
         notes=notes,
         tags=tags,

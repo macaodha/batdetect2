@@ -1,6 +1,7 @@
 from typing import Annotated, Optional, Union
 
 from pydantic import Field
+from soundevent.data import PathLike
 
 from batdetect2.data.predictions.base import (
     OutputFormatterProtocol,
@@ -21,7 +22,11 @@ __all__ = [
 
 
 OutputFormatConfig = Annotated[
-    Union[BatDetect2OutputConfig, SoundEventOutputConfig, RawOutputConfig],
+    Union[
+        BatDetect2OutputConfig,
+        SoundEventOutputConfig,
+        RawOutputConfig,
+    ],
     Field(discriminator="name"),
 ]
 
@@ -40,13 +45,16 @@ def build_output_formatter(
 
 
 def get_output_formatter(
-    name: str,
+    name: Optional[str] = None,
     targets: Optional[TargetProtocol] = None,
     config: Optional[OutputFormatConfig] = None,
 ) -> OutputFormatterProtocol:
     """Get the output formatter by name."""
 
     if config is None:
+        if name is None:
+            raise ValueError("Either config or name must be provided.")
+
         config_class = prediction_formatters.get_config_type(name)
         config = config_class()  # type: ignore
 
@@ -56,3 +64,17 @@ def get_output_formatter(
         )
 
     return build_output_formatter(targets, config)
+
+
+def load_predictions(
+    path: PathLike,
+    format: Optional[str] = "raw",
+    config: Optional[OutputFormatConfig] = None,
+    targets: Optional[TargetProtocol] = None,
+):
+    """Load predictions from a file."""
+    from batdetect2.targets import build_targets
+
+    targets = targets or build_targets()
+    formatter = get_output_formatter(format, targets, config)
+    return formatter.load(path)
