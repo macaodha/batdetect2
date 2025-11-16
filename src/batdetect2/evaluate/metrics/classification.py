@@ -9,6 +9,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -18,7 +19,10 @@ from sklearn import metrics
 from soundevent import data
 
 from batdetect2.core import BaseConfig, Registry
-from batdetect2.evaluate.metrics.common import average_precision
+from batdetect2.evaluate.metrics.common import (
+    average_precision,
+    compute_precision_recall,
+)
 from batdetect2.typing import RawPrediction, TargetProtocol
 
 __all__ = [
@@ -265,3 +269,24 @@ def _extract_per_class_metric_data(
                 y_score[class_name].append(m.score)
 
     return y_true, y_score, num_positives
+
+
+def compute_precision_recall_curves(
+    clip_evaluations: Sequence[ClipEval],
+    ignore_non_predictions: bool = True,
+    ignore_generic: bool = True,
+) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    y_true, y_score, num_positives = _extract_per_class_metric_data(
+        clip_evaluations,
+        ignore_non_predictions=ignore_non_predictions,
+        ignore_generic=ignore_generic,
+    )
+
+    return {
+        class_name: compute_precision_recall(
+            y_true[class_name],
+            y_score[class_name],
+            num_positives=num_positives[class_name],
+        )
+        for class_name in y_true
+    }

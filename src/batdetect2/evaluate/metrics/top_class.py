@@ -18,6 +18,7 @@ from soundevent import data
 from batdetect2.core import BaseConfig, Registry
 from batdetect2.evaluate.metrics.common import average_precision
 from batdetect2.typing import RawPrediction
+from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
     "TopClassMetricConfig",
@@ -312,3 +313,61 @@ TopClassMetricConfig = Annotated[
 
 def build_top_class_metric(config: TopClassMetricConfig):
     return top_class_metrics.build(config)
+
+
+def compute_confusion_matrix(
+    clip_evaluations: Sequence[ClipEval],
+    targets: TargetProtocol,
+    threshold: float = 0.2,
+    normalize: Literal["true", "pred", "all", "none"] = "true",
+    exclude_generic: bool = True,
+    exclude_false_positives: bool = True,
+    exclude_false_negatives: bool = True,
+    noise_class: str = "noise",
+):
+    y_true: List[str] = []
+    y_pred: List[str] = []
+
+    for clip_eval in clip_evaluations:
+        for m in clip_eval.matches:
+            true_class = m.true_class
+            pred_class = m.pred_class
+
+            if not m.is_prediction and exclude_false_negatives:
+                # Ignore matches that don't correspond to a prediction
+                continue
+
+            if not m.is_ground_truth and exclude_false_positives:
+                # Ignore matches that don't correspond to a ground truth
+                continue
+
+            if m.score < threshold:
+                if exclude_false_negatives:
+                    continue
+
+                pred_class = noise_class
+
+            if m.is_generic:
+                if exclude_generic:
+                    # Ignore gt sounds with unknown class
+                    continue
+
+                true_class = targets.detection_class_name
+
+            y_true.append(true_class or noise_class)
+            y_pred.append(pred_class or noise_class)
+
+    labels = sorted(targets.class_names)
+
+    if not exclude_generic:
+        labels.append(targets.detection_class_name)
+
+    if not exclude_false_positives or not exclude_false_negatives:
+        labels.append(noise_class)
+
+    return metrics.confusion_matrix(
+        y_true,
+        y_pred,
+        labels=labels,
+        normalize=normalize,
+    ), labels

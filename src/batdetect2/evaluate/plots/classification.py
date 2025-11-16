@@ -18,8 +18,8 @@ from batdetect2.core import Registry
 from batdetect2.evaluate.metrics.classification import (
     ClipEval,
     _extract_per_class_metric_data,
+    compute_precision_recall_curves,
 )
-from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
 from batdetect2.plotting.metrics import (
     plot_pr_curve,
@@ -69,20 +69,11 @@ class PRCurve(BasePlot):
         self,
         clip_evaluations: Sequence[ClipEval],
     ) -> Iterable[Tuple[str, Figure]]:
-        y_true, y_score, num_positives = _extract_per_class_metric_data(
+        data = compute_precision_recall_curves(
             clip_evaluations,
             ignore_non_predictions=self.ignore_non_predictions,
             ignore_generic=self.ignore_generic,
         )
-
-        data = {
-            class_name: compute_precision_recall(
-                y_true[class_name],
-                y_score[class_name],
-                num_positives=num_positives[class_name],
-            )
-            for class_name in self.targets.class_names
-        }
 
         if not self.separate_figures:
             fig = self.create_figure()
@@ -141,20 +132,11 @@ class ThresholdPrecisionCurve(BasePlot):
         self,
         clip_evaluations: Sequence[ClipEval],
     ) -> Iterable[Tuple[str, Figure]]:
-        y_true, y_score, num_positives = _extract_per_class_metric_data(
+        data = compute_precision_recall_curves(
             clip_evaluations,
             ignore_non_predictions=self.ignore_non_predictions,
             ignore_generic=self.ignore_generic,
         )
-
-        data = {
-            class_name: compute_precision_recall(
-                y_true[class_name],
-                y_score[class_name],
-                num_positives[class_name],
-            )
-            for class_name in self.targets.class_names
-        }
 
         if not self.separate_figures:
             fig = self.create_figure()
@@ -223,20 +205,11 @@ class ThresholdRecallCurve(BasePlot):
         self,
         clip_evaluations: Sequence[ClipEval],
     ) -> Iterable[Tuple[str, Figure]]:
-        y_true, y_score, num_positives = _extract_per_class_metric_data(
+        data = compute_precision_recall_curves(
             clip_evaluations,
             ignore_non_predictions=self.ignore_non_predictions,
             ignore_generic=self.ignore_generic,
         )
-
-        data = {
-            class_name: compute_precision_recall(
-                y_true[class_name],
-                y_score[class_name],
-                num_positives[class_name],
-            )
-            for class_name in self.targets.class_names
-        }
 
         if not self.separate_figures:
             fig = self.create_figure()

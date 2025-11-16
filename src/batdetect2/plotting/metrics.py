@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import seaborn as sns
@@ -34,8 +34,14 @@ def plot_pr_curve(
     thresholds: np.ndarray,
     ax: Optional[axes.Axes] = None,
     figsize: Optional[Tuple[int, int]] = None,
+    color: Union[str, Tuple[float, float, float], None] = None,
     add_labels: bool = True,
     add_legend: bool = False,
+    marker: Union[str, Tuple[int, int, float], None] = "o",
+    markeredgecolor: Union[str, Tuple[float, float, float], None] = None,
+    markersize: Optional[float] = None,
+    linestyle: Union[str, Tuple[int, ...], None] = None,
+    linewidth: Optional[float] = None,
     label: str = "PR Curve",
 ) -> axes.Axes:
     ax = create_ax(ax=ax, figsize=figsize)
@@ -45,9 +51,14 @@ def plot_pr_curve(
     ax.plot(
         recall,
         precision,
+        color=color,
         label=label,
-        marker="o",
+        marker=marker,
+        markeredgecolor=markeredgecolor,
         markevery=_get_marker_positions(thresholds),
+        markersize=markersize,
+        linestyle=linestyle,
+        linewidth=linewidth,
     )
 
     ax.set_xlim(0, 1.05)

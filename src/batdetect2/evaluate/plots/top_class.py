@@ -23,7 +23,11 @@ from sklearn import metrics
 from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.core import Registry
 from batdetect2.evaluate.metrics.common import compute_precision_recall
-from batdetect2.evaluate.metrics.top_class import ClipEval, MatchEval
+from batdetect2.evaluate.metrics.top_class import (
+    ClipEval,
+    MatchEval,
+    compute_confusion_matrix,
+)
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
 from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
@@ -186,6 +190,8 @@ class ConfusionMatrix(BasePlot):
         self,
         *args,
         exclude_generic: bool = True,
+        exclude_false_positives: bool = True,
+        exclude_false_negatives: bool = True,
         exclude_noise: bool = False,
         noise_class: str = "noise",
         add_colorbar: bool = True,
@@ -196,9 +202,11 @@ class ConfusionMatrix(BasePlot):
     ):
         super().__init__(*args, **kwargs)
         self.exclude_generic = exclude_generic
+        self.exclude_false_positives = exclude_false_positives
+        self.exclude_false_negatives = exclude_false_negatives
         self.exclude_noise = exclude_noise
         self.noise_class = noise_class
-        self.normalize = normalize
+        self.normalize: Literal["true", "pred", "all", "none"] = normalize
         self.add_colorbar = add_colorbar
         self.threshold = threshold
         self.cmap = cmap
@@ -207,58 +215,25 @@ class ConfusionMatrix(BasePlot):
         self,
         clip_evaluations: Sequence[ClipEval],
     ) -> Iterable[Tuple[str, Figure]]:
-        y_true: List[str] = []
-        y_pred: List[str] = []
-
-        for clip_eval in clip_evaluations:
-            for m in clip_eval.matches:
-                true_class = m.true_class
-                pred_class = m.pred_class
-
-                if not m.is_prediction and self.exclude_noise:
-                    # Ignore matches that don't correspond to a prediction
-                    continue
-
-                if not m.is_ground_truth and self.exclude_noise:
-                    # Ignore matches that don't correspond to a ground truth
-                    continue
-
-                if m.score < self.threshold:
-                    if self.exclude_noise:
-                        continue
-
-                    pred_class = self.noise_class
-
-                if m.is_generic:
-                    if self.exclude_generic:
-                        # Ignore gt sounds with unknown class
-                        continue
-
-                    true_class = self.targets.detection_class_name
-
-                y_true.append(true_class or self.noise_class)
-                y_pred.append(pred_class or self.noise_class)
+        cm, labels = compute_confusion_matrix(
+            clip_evaluations,
+            self.targets,
+            threshold=self.threshold,
+            normalize=self.normalize,
+            exclude_generic=self.exclude_generic,
+            exclude_false_positives=self.exclude_false_positives,
+            exclude_false_negatives=self.exclude_false_negatives,
+            noise_class=self.noise_class,
+        )
 
         fig = self.create_figure()
         ax = fig.subplots()
 
-        class_names = [*self.targets.class_names]
-
-        if not self.exclude_generic:
-            class_names.append(self.targets.detection_class_name)
-
-        if not self.exclude_noise:
-            class_names.append(self.noise_class)
-
-        metrics.ConfusionMatrixDisplay.from_predictions(
-            y_true,
-            y_pred,
-            labels=class_names,
+        metrics.ConfusionMatrixDisplay(cm, display_labels=labels).plot(
             ax=ax,
             xticks_rotation="vertical",
             cmap=self.cmap,
             colorbar=self.add_colorbar,
-            normalize=self.normalize if self.normalize != "none" else None,
             values_format=".2f",
         )
 
