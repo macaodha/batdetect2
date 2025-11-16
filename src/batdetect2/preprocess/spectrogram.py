@@ -146,14 +146,18 @@ class FrequencyCrop(torch.nn.Module):
         low_index = None
         if min_freq is not None:
             low_index = _frequency_to_index(
-                min_freq, self.samplerate, self.n_fft
+                min_freq,
+                n_fft=self.n_fft,
+                samplerate=self.samplerate,
             )
         self.low_index = low_index
 
         high_index = None
         if max_freq is not None:
             high_index = _frequency_to_index(
-                max_freq, self.samplerate, self.n_fft
+                max_freq,
+                n_fft=self.n_fft,
+                samplerate=self.samplerate,
             )
         self.high_index = high_index
 
