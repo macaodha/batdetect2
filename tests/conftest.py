@@ -9,17 +9,17 @@ import soundfile as sf
 from scipy import signal
 from soundevent import data, terms
 
+from batdetect2.audio import build_audio_loader
+from batdetect2.audio.clips import build_clipper
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
-from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.targets import (
     TargetConfig,
     build_targets,
     call_type,
 )
 from batdetect2.targets.classes import TargetClassConfig
-from batdetect2.train.clips import build_clipper
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.typing import (
     ClipLabeller,
@@ -442,7 +442,7 @@ def example_annotations(
 ) -> List[data.ClipAnnotation]:
     annotations = load_dataset(example_dataset)
     assert len(annotations) == 3
-    return annotations
+    return list(annotations)
 
 
 @pytest.fixture
