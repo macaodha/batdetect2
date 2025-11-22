@@ -29,6 +29,7 @@ __all__ = [
     "ClassificationMetric",
     "ClassificationMetricConfig",
     "build_classification_metric",
+    "compute_precision_recall_curves",
 ]
 
 

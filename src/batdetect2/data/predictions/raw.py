@@ -194,10 +194,10 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
                     detection_data.geometry.item()
                 )
             else:
-                start_time = detection_data.start_time
-                end_time = detection_data.end_time
-                low_freq = detection_data.low_freq
-                high_freq = detection_data.high_freq
+                start_time = detection_data.start_time.item()
+                end_time = detection_data.end_time.item()
+                low_freq = detection_data.low_freq.item()
+                high_freq = detection_data.high_freq.item()
                 geometry = data.BoundingBox.model_construct(
                     coordinates=[start_time, low_freq, end_time, high_freq]
                 )

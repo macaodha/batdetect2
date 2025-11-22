@@ -53,11 +53,18 @@ def average_precision(
     )
 
     # pascal 12 way
+    return _average_precision(recall, precision)
+
+
+def _average_precision(
+    recall: np.ndarray,
+    precision: np.ndarray,
+) -> float:
+    # pascal 12 way
     mprec = np.hstack((0, precision, 0))
     mrec = np.hstack((0, recall, 1))
     for ii in range(mprec.shape[0] - 2, -1, -1):
         mprec[ii] = np.maximum(mprec[ii], mprec[ii + 1])
     inds = np.where(np.not_equal(mrec[1:], mrec[:-1]))[0] + 1
     ave_prec = ((mrec[inds] - mrec[inds - 1]) * mprec[inds]).sum()
-
     return ave_prec
