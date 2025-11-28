@@ -27,8 +27,8 @@ dependencies = [
   "seaborn>=0.13.2",
   "soundevent[audio,geometry,plot]>=2.9.1",
   "tensorboard>=2.16.2",
-  "torch>=1.13.1,<2.5.0",
-  "torchaudio>=1.13.1,<2.5.0",
+  "torch>=1.13.1",
+  "torchaudio>=1.13.1",
   "torchvision>=0.14.0",
   "tqdm>=4.66.2",
 ]
