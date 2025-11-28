@@ -331,6 +331,7 @@ _scalers = {
 
 class ScaleAmplitude(torch.nn.Module):
     def __init__(self, scale: Literal["power", "db"]):
+        super().__init__()
         self.scale = scale
         self.scaler = _scalers[scale]()
 

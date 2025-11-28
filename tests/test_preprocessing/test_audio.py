@@ -6,7 +6,7 @@ import pytest
 import soundfile as sf
 from soundevent import data
 
-from batdetect2.preprocess import audio
+from batdetect2.audio import AudioConfig
 
 
 def create_dummy_wave(
@@ -56,5 +56,5 @@ def dummy_clip(dummy_recording: data.Recording) -> data.Clip:
 
 
 @pytest.fixture
-def default_audio_config() -> audio.AudioConfig:
-    return audio.AudioConfig()
+def default_audio_config() -> AudioConfig:
+    return AudioConfig()

@@ -40,7 +40,7 @@ def test_can_save_checkpoint(
 
     torch.testing.assert_close(spec1, spec2, rtol=0, atol=0)
 
-    output1 = module(spec1.unsqueeze(0))
-    output2 = recovered(spec2.unsqueeze(0))
+    output1 = module.model(wav.unsqueeze(0))
+    output2 = recovered.model(wav.unsqueeze(0))
 
     torch.testing.assert_close(output1, output2, rtol=0, atol=0)

@@ -40,11 +40,13 @@ def dummy_targets() -> TargetProtocol:
 
         dimension_names = ["width", "height"]
 
-        generic_class_tags = [
+        detection_class_tags = [
             data.Tag(
                 term=data.term_from_key(key="detector"), value="batdetect2"
             )
         ]
+
+        detection_class_name = "bat"
 
         def filter(self, sound_event: data.SoundEventAnnotation):
             return True
@@ -80,7 +82,8 @@ def dummy_targets() -> TargetProtocol:
                 ]
             )
 
-    return DummyTargets()
+    t: TargetProtocol = DummyTargets()
+    return t
 
 
 @pytest.fixture
@@ -278,9 +281,9 @@ def sample_raw_predictions() -> List[RawPrediction]:
 
 
 def test_convert_raw_to_sound_event_basic(
-    sample_raw_predictions,
-    sample_recording,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_recording: data.Recording,
+    dummy_targets: TargetProtocol,
 ):
     """Test basic conversion, default threshold, multi-label."""
 
@@ -308,7 +311,7 @@ def test_convert_raw_to_sound_event_basic(
     )
     assert feat_dict["batdetect2:f0"] == 7.0
 
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
         ("category", "noise", 0.85),
@@ -321,7 +324,9 @@ def test_convert_raw_to_sound_event_basic(
 
 
 def test_convert_raw_to_sound_event_thresholding(
-    sample_raw_predictions, sample_recording, dummy_targets
+    sample_raw_predictions: List[RawPrediction],
+    sample_recording: data.Recording,
+    dummy_targets: TargetProtocol,
 ):
     """Test effect of classification threshold."""
     raw_pred = sample_raw_predictions[0]
@@ -335,7 +340,7 @@ def test_convert_raw_to_sound_event_thresholding(
         top_class_only=False,
     )
 
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
         ("category", "noise", 0.85),
@@ -347,9 +352,9 @@ def test_convert_raw_to_sound_event_thresholding(
 
 
 def test_convert_raw_to_sound_event_no_threshold(
-    sample_raw_predictions,
-    sample_recording,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_recording: data.Recording,
+    dummy_targets: TargetProtocol,
 ):
     """Test when classification_threshold is None."""
     raw_pred = sample_raw_predictions[2]
@@ -362,7 +367,7 @@ def test_convert_raw_to_sound_event_no_threshold(
         top_class_only=False,
     )
 
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
         ("dwc:scientificName", "Myotis", 0.05),
@@ -375,9 +380,9 @@ def test_convert_raw_to_sound_event_no_threshold(
 
 
 def test_convert_raw_to_sound_event_top_class(
-    sample_raw_predictions,
-    sample_recording,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_recording: data.Recording,
+    dummy_targets: TargetProtocol,
 ):
     """Test top_class_only=True behavior."""
     raw_pred = sample_raw_predictions[0]
@@ -390,7 +395,7 @@ def test_convert_raw_to_sound_event_top_class(
         top_class_only=True,
     )
 
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
         ("category", "noise", 0.85),
@@ -402,9 +407,9 @@ def test_convert_raw_to_sound_event_top_class(
 
 
 def test_convert_raw_to_sound_event_all_below_threshold(
-    sample_raw_predictions,
-    sample_recording,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_recording: data.Recording,
+    dummy_targets: TargetProtocol,
 ):
     """Test when all class scores are below the default threshold."""
     raw_pred = sample_raw_predictions[2]
@@ -417,7 +422,7 @@ def test_convert_raw_to_sound_event_all_below_threshold(
         top_class_only=False,
     )
 
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
     }
@@ -428,9 +433,9 @@ def test_convert_raw_to_sound_event_all_below_threshold(
 
 
 def test_convert_raw_list_to_clip_basic(
-    sample_raw_predictions,
-    sample_clip,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_clip: data.Clip,
+    dummy_targets: TargetProtocol,
 ):
     """Test converting a list of RawPredictions to a ClipPrediction."""
     clip_pred = convert_raw_predictions_to_clip_prediction(
@@ -459,7 +464,7 @@ def test_convert_raw_list_to_clip_basic(
         (pt.tag.term.name, pt.tag.value, pt.score)
         for pt in clip_pred.sound_events[2].tags
     }
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags3 = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.15),
     }
@@ -480,9 +485,9 @@ def test_convert_raw_list_to_clip_empty(sample_clip, dummy_targets):
 
 
 def test_convert_raw_list_to_clip_passes_args(
-    sample_raw_predictions,
-    sample_clip,
-    dummy_targets,
+    sample_raw_predictions: List[RawPrediction],
+    sample_clip: data.Clip,
+    dummy_targets: TargetProtocol,
 ):
     """Test that arguments like top_class_only are passed through."""
 
@@ -500,7 +505,7 @@ def test_convert_raw_list_to_clip_passes_args(
         (pt.tag.term.name, pt.tag.value, pt.score)
         for pt in clip_pred.sound_events[0].tags
     }
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     expected_tags1 = {
         (generic_tags[0].term.name, generic_tags[0].value, 0.9),
         ("category", "noise", 0.85),
@@ -508,10 +513,10 @@ def test_convert_raw_list_to_clip_passes_args(
     assert se_pred1_tags == expected_tags1
 
 
-def test_get_generic_tags_basic(dummy_targets):
+def test_get_generic_tags_basic(dummy_targets: TargetProtocol):
     """Test creation of generic tags with score."""
     detection_score = 0.75
-    generic_tags = dummy_targets.generic_class_tags
+    generic_tags = dummy_targets.detection_class_tags
     predicted_tags = get_generic_tags(
         detection_score=detection_score, generic_class_tags=generic_tags
     )

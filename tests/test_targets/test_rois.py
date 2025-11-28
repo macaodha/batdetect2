@@ -3,15 +3,14 @@ import pytest
 import soundfile as sf
 from soundevent import data
 
+from batdetect2.audio import build_audio_loader
 from batdetect2.preprocess import (
     PreprocessingConfig,
     build_preprocessor,
 )
-from batdetect2.preprocess.audio import build_audio_loader
 from batdetect2.preprocess.spectrogram import (
     ScaleAmplitudeConfig,
     SpectralMeanSubstractionConfig,
-    SpectrogramConfig,
 )
 from batdetect2.targets.rois import (
     DEFAULT_ANCHOR,
@@ -457,7 +456,7 @@ def test_peak_energy_bbox_mapper_encode(generate_whistle):
 
     # Instantiate the mapper with a preprocessor
     preprocessor = build_preprocessor(
-        PreprocessingConfig.model_validate({"spectrogram": {"transforms": []}})
+        PreprocessingConfig(spectrogram_transforms=[])
     )
     mapper = PeakEnergyBBoxMapper(
         preprocessor=preprocessor,
@@ -553,7 +552,7 @@ def test_peak_energy_bbox_mapper_encode_decode_roundtrip(generate_whistle):
 
     # Instantiate the mapper.
     preprocessor = build_preprocessor(
-        PreprocessingConfig(spectrogram=SpectrogramConfig(transforms=[]))
+        PreprocessingConfig(spectrogram_transforms=[])
     )
     audio_loader = build_audio_loader()
     mapper = PeakEnergyBBoxMapper(
@@ -596,12 +595,10 @@ def test_build_roi_mapper_for_anchor_bbox():
 def test_build_roi_mapper_for_peak_energy_bbox():
     # Given
     preproc_config = PreprocessingConfig(
-        spectrogram=SpectrogramConfig(
-            transforms=[
-                ScaleAmplitudeConfig(scale="db"),
-                SpectralMeanSubstractionConfig(),
-            ]
-        ),
+        spectrogram_transforms=[
+            ScaleAmplitudeConfig(scale="db"),
+            SpectralMeanSubstractionConfig(),
+        ]
     )
     config = PeakEnergyBBoxMapperConfig(
         loading_buffer=0.99,

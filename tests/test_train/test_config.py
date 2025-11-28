@@ -1,10 +1,10 @@
-from batdetect2.configs import load_config
-from batdetect2.train import FullTrainingConfig
+from batdetect2.config import BatDetect2Config
+from batdetect2.core import load_config
 
 
 def test_example_config_is_valid(example_data_dir):
     conf = load_config(
         example_data_dir / "config.yaml",
-        schema=FullTrainingConfig,
+        schema=BatDetect2Config,
     )
-    assert isinstance(conf, FullTrainingConfig)
+    assert isinstance(conf, BatDetect2Config)

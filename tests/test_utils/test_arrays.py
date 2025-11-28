@@ -1,6 +1,6 @@
 import torch
 
-from batdetect2.utils.arrays import adjust_width, extend_width
+from batdetect2.core.arrays import adjust_width, extend_width
 
 
 def test_extend_width():

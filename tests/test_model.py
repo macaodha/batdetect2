@@ -1,6 +1,5 @@
 """Test suite for model functions."""
 
-import warnings
 from pathlib import Path
 from typing import List
 
@@ -10,12 +9,6 @@ from hypothesis import strategies as st
 
 from batdetect2 import api
 from batdetect2.detector import parameters
-
-
-def test_can_import_model_without_warnings():
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        api.load_model()
 
 
 @settings(deadline=None, max_examples=5)

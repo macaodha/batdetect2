@@ -120,7 +120,7 @@ def get_sound_event_tags(
     if annotation.event:
         tags.append(data.Tag(key=event_key, value=annotation.event))
 
-    if annotation.individual:
+    if annotation.individual is not None:
         tags.append(
             data.Tag(key=individual_key, value=str(annotation.individual))
         )
