@@ -25,14 +25,14 @@ dependencies = [
   "scikit-learn>=1.2.2",
   "scipy>=1.10.1",
   "seaborn>=0.13.2",
-  "soundevent[audio,geometry,plot]>=2.9.1",
+  "soundevent[audio,geometry,plot]>=2.10.0",
   "tensorboard>=2.16.2",
   "torch>=1.13.1",
   "torchaudio>=1.13.1",
   "torchvision>=0.14.0",
   "tqdm>=4.66.2",
 ]
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.10,<3.14"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
