@@ -8,6 +8,7 @@ from batdetect2.data.predictions.base import (
     prediction_formatters,
 )
 from batdetect2.data.predictions.batdetect2 import BatDetect2OutputConfig
+from batdetect2.data.predictions.parquet import ParquetOutputConfig
 from batdetect2.data.predictions.raw import RawOutputConfig
 from batdetect2.data.predictions.soundevent import SoundEventOutputConfig
 from batdetect2.typing import TargetProtocol
@@ -16,6 +17,7 @@ __all__ = [
     "build_output_formatter",
     "get_output_formatter",
     "BatDetect2OutputConfig",
+    "ParquetOutputConfig",
     "RawOutputConfig",
     "SoundEventOutputConfig",
 ]
@@ -24,6 +26,7 @@ __all__ = [
 OutputFormatConfig = Annotated[
     Union[
         BatDetect2OutputConfig,
+        ParquetOutputConfig,
         SoundEventOutputConfig,
         RawOutputConfig,
     ],
