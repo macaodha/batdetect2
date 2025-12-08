@@ -41,7 +41,7 @@ clip_detection_plots: Registry[ClipDetectionPlotter, [TargetProtocol]] = (
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Clip Detection Precision-Recall Curve"
+    title: str | None = "Clip Detection Precision-Recall Curve"
 
 
 class PRCurve(BasePlot):
@@ -74,7 +74,7 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "Clip Detection ROC Curve"
+    title: str | None = "Clip Detection ROC Curve"
 
 
 class ROCCurve(BasePlot):
@@ -107,7 +107,7 @@ class ROCCurve(BasePlot):
 class ScoreDistributionPlotConfig(BasePlotConfig):
     name: Literal["score_distribution"] = "score_distribution"
     label: str = "score_distribution"
-    title: Optional[str] = "Clip Detection Score Distribution"
+    title: str | None = "Clip Detection Score Distribution"
 
 
 class ScoreDistributionPlot(BasePlot):
@@ -147,11 +147,7 @@ class ScoreDistributionPlot(BasePlot):
 
 
 ClipDetectionPlotConfig = Annotated[
-    Union[
-        PRCurveConfig,
-        ROCCurveConfig,
-        ScoreDistributionPlotConfig,
-    ],
+    PRCurveConfig | ROCCurveConfig | ScoreDistributionPlotConfig,
     Field(discriminator="name"),
 ]
 

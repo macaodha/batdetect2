@@ -30,16 +30,16 @@ class TargetClassConfig(BaseConfig):
 
     name: str
 
-    condition_input: Optional[SoundEventConditionConfig] = Field(
+    condition_input: SoundEventConditionConfig | None = Field(
         alias="match_if",
         default=None,
     )
 
-    tags: Optional[List[data.Tag]] = Field(default=None, exclude=True)
+    tags: List[data.Tag] | None = Field(default=None, exclude=True)
 
     assign_tags: List[data.Tag] = Field(default_factory=list)
 
-    roi: Optional[ROIMapperConfig] = None
+    roi: ROIMapperConfig | None = None
 
     _match_if: SoundEventConditionConfig = PrivateAttr()
 
@@ -202,7 +202,7 @@ class SoundEventClassifier:
 
     def __call__(
         self, sound_event_annotation: data.SoundEventAnnotation
-    ) -> Optional[str]:
+    ) -> str | None:
         for name, condition in self.mapping.items():
             if condition(sound_event_annotation):
                 return name

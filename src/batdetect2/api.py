@@ -165,7 +165,7 @@ def load_audio(
     time_exp_fact: float = 1,
     target_samp_rate: int = TARGET_SAMPLERATE_HZ,
     scale: bool = False,
-    max_duration: Optional[float] = None,
+    max_duration: float | None = None,
 ) -> np.ndarray:
     """Load audio from file.
 
@@ -203,7 +203,7 @@ def load_audio(
 def generate_spectrogram(
     audio: np.ndarray,
     samp_rate: int = TARGET_SAMPLERATE_HZ,
-    config: Optional[SpectrogramParameters] = None,
+    config: SpectrogramParameters | None = None,
     device: torch.device = DEVICE,
 ) -> torch.Tensor:
     """Generate spectrogram from audio array.
@@ -240,7 +240,7 @@ def generate_spectrogram(
 def process_file(
     audio_file: str,
     model: DetectionModel = MODEL,
-    config: Optional[ProcessingConfiguration] = None,
+    config: ProcessingConfiguration | None = None,
     device: torch.device = DEVICE,
 ) -> du.RunResults:
     """Process audio file with model.
@@ -271,7 +271,7 @@ def process_spectrogram(
     spec: torch.Tensor,
     samp_rate: int = TARGET_SAMPLERATE_HZ,
     model: DetectionModel = MODEL,
-    config: Optional[ProcessingConfiguration] = None,
+    config: ProcessingConfiguration | None = None,
 ) -> Tuple[List[Annotation], np.ndarray]:
     """Process spectrogram with model.
 
@@ -312,7 +312,7 @@ def process_audio(
     audio: np.ndarray,
     samp_rate: int = TARGET_SAMPLERATE_HZ,
     model: DetectionModel = MODEL,
-    config: Optional[ProcessingConfiguration] = None,
+    config: ProcessingConfiguration | None = None,
     device: torch.device = DEVICE,
 ) -> Tuple[List[Annotation], np.ndarray, torch.Tensor]:
     """Process audio array with model.
@@ -356,7 +356,7 @@ def process_audio(
 def postprocess(
     outputs: ModelOutput,
     samp_rate: int = TARGET_SAMPLERATE_HZ,
-    config: Optional[ProcessingConfiguration] = None,
+    config: ProcessingConfiguration | None = None,
 ) -> Tuple[List[Annotation], np.ndarray]:
     """Postprocess model outputs.
 

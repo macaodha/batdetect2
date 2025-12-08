@@ -86,7 +86,7 @@ def compute_bandwidth(
 
 def compute_max_power_bb(
     prediction: types.Prediction,
-    spec: Optional[np.ndarray] = None,
+    spec: np.ndarray | None = None,
     min_freq: int = MIN_FREQ_HZ,
     max_freq: int = MAX_FREQ_HZ,
     **_,
@@ -131,7 +131,7 @@ def compute_max_power_bb(
 
 def compute_max_power(
     prediction: types.Prediction,
-    spec: Optional[np.ndarray] = None,
+    spec: np.ndarray | None = None,
     min_freq: int = MIN_FREQ_HZ,
     max_freq: int = MAX_FREQ_HZ,
     **_,
@@ -157,7 +157,7 @@ def compute_max_power(
 
 def compute_max_power_first(
     prediction: types.Prediction,
-    spec: Optional[np.ndarray] = None,
+    spec: np.ndarray | None = None,
     min_freq: int = MIN_FREQ_HZ,
     max_freq: int = MAX_FREQ_HZ,
     **_,
@@ -184,7 +184,7 @@ def compute_max_power_first(
 
 def compute_max_power_second(
     prediction: types.Prediction,
-    spec: Optional[np.ndarray] = None,
+    spec: np.ndarray | None = None,
     min_freq: int = MIN_FREQ_HZ,
     max_freq: int = MAX_FREQ_HZ,
     **_,
@@ -211,7 +211,7 @@ def compute_max_power_second(
 
 def compute_call_interval(
     prediction: types.Prediction,
-    previous: Optional[types.Prediction] = None,
+    previous: types.Prediction | None = None,
     **_,
 ) -> float:
     """Compute time between this call and the previous call in seconds."""

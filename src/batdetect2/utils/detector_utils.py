@@ -84,7 +84,7 @@ def list_audio_files(ip_dir: str) -> List[str]:
 def load_model(
     model_path: str = DEFAULT_MODEL_PATH,
     load_weights: bool = True,
-    device: Union[torch.device, str, None] = None,
+    device: torch.device | str | None = None,
     weights_only: bool = True,
 ) -> Tuple[DetectionModel, ModelParameters]:
     """Load model from file.
@@ -279,7 +279,7 @@ def convert_results(
     spec_feats,
     cnn_feats,
     spec_slices,
-    nyquist_freq: Optional[float] = None,
+    nyquist_freq: float | None = None,
 ) -> RunResults:
     """Convert results to dictionary as expected by the annotation tool.
 
@@ -717,7 +717,7 @@ def process_file(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Union[RunResults, Any]:
+) -> RunResults | Any:
     """Process a single audio file with detection model.
 
     Will split the audio file into chunks if it is too long and

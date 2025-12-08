@@ -27,7 +27,7 @@ BatDetect2.
 
 def non_max_suppression(
     tensor: torch.Tensor,
-    kernel_size: Union[int, Tuple[int, int]] = NMS_KERNEL_SIZE,
+    kernel_size: int | Tuple[int, int] = NMS_KERNEL_SIZE,
 ) -> torch.Tensor:
     """Apply Non-Maximum Suppression (NMS) to a tensor, typically a heatmap.
 

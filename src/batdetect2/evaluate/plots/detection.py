@@ -37,7 +37,7 @@ detection_plots: Registry[DetectionPlotter, [TargetProtocol]] = Registry(
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Detection Precision-Recall Curve"
+    title: str | None = "Detection Precision-Recall Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -100,7 +100,7 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "Detection ROC Curve"
+    title: str | None = "Detection ROC Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -159,7 +159,7 @@ class ROCCurve(BasePlot):
 class ScoreDistributionPlotConfig(BasePlotConfig):
     name: Literal["score_distribution"] = "score_distribution"
     label: str = "score_distribution"
-    title: Optional[str] = "Detection Score Distribution"
+    title: str | None = "Detection Score Distribution"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -226,7 +226,7 @@ class ScoreDistributionPlot(BasePlot):
 class ExampleDetectionPlotConfig(BasePlotConfig):
     name: Literal["example_detection"] = "example_detection"
     label: str = "example_detection"
-    title: Optional[str] = "Example Detection"
+    title: str | None = "Example Detection"
     figsize: tuple[int, int] = (10, 4)
     num_examples: int = 5
     threshold: float = 0.2
@@ -292,12 +292,7 @@ class ExampleDetectionPlot(BasePlot):
 
 
 DetectionPlotConfig = Annotated[
-    Union[
-        PRCurveConfig,
-        ROCCurveConfig,
-        ScoreDistributionPlotConfig,
-        ExampleDetectionPlotConfig,
-    ],
+    PRCurveConfig | ROCCurveConfig | ScoreDistributionPlotConfig | ExampleDetectionPlotConfig,
     Field(discriminator="name"),
 ]
 

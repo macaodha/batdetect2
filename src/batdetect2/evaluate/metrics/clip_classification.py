@@ -123,10 +123,7 @@ class ClipClassificationROCAUC:
 
 
 ClipClassificationMetricConfig = Annotated[
-    Union[
-        ClipClassificationAveragePrecisionConfig,
-        ClipClassificationROCAUCConfig,
-    ],
+    ClipClassificationAveragePrecisionConfig | ClipClassificationROCAUCConfig,
     Field(discriminator="name"),
 ]
 

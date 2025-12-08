@@ -245,16 +245,12 @@ class FixedDurationClip:
 
 
 ClipConfig = Annotated[
-    Union[
-        RandomClipConfig,
-        PaddedClipConfig,
-        FixedDurationClipConfig,
-    ],
+    RandomClipConfig | PaddedClipConfig | FixedDurationClipConfig,
     Field(discriminator="name"),
 ]
 
 
-def build_clipper(config: Optional[ClipConfig] = None) -> ClipperProtocol:
+def build_clipper(config: ClipConfig | None = None) -> ClipperProtocol:
     config = config or RandomClipConfig()
 
     logger.opt(lazy=True).debug(

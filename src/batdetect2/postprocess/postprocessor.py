@@ -24,7 +24,7 @@ __all__ = [
 
 def build_postprocessor(
     preprocessor: PreprocessorProtocol,
-    config: Optional[PostprocessConfig] = None,
+    config: PostprocessConfig | None = None,
 ) -> PostprocessorProtocol:
     """Factory function to build the standard postprocessor."""
     config = config or PostprocessConfig()
@@ -51,7 +51,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         max_freq: float,
         top_k_per_sec: int = 200,
         detection_threshold: float = 0.01,
-        nms_kernel_size: Union[int, Tuple[int, int]] = NMS_KERNEL_SIZE,
+        nms_kernel_size: int | Tuple[int, int] = NMS_KERNEL_SIZE,
     ):
         """Initialize the Postprocessor."""
         super().__init__()
@@ -66,7 +66,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
     def forward(
         self,
         output: ModelOutput,
-        start_times: Optional[List[float]] = None,
+        start_times: List[float] | None = None,
     ) -> List[ClipDetectionsTensor]:
         detection_heatmap = non_max_suppression(
             output.detection_probs.detach(),

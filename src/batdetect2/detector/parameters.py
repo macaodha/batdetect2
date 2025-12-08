@@ -198,8 +198,8 @@ class TrainingParameters(BaseModel):
 def get_params(
     make_dirs: bool = False,
     exps_dir: str = "../../experiments/",
-    model_name: Optional[str] = None,
-    experiment: Union[Path, str, None] = None,
+    model_name: str | None = None,
+    experiment: Path | str | None = None,
     **kwargs,
 ) -> TrainingParameters:
     experiments_dir = Path(exps_dir)

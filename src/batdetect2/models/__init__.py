@@ -43,10 +43,7 @@ from batdetect2.models.bottleneck import (
     BottleneckConfig,
     build_bottleneck,
 )
-from batdetect2.models.config import (
-    BackboneConfig,
-    load_backbone_config,
-)
+from batdetect2.models.config import BackboneConfig, load_backbone_config
 from batdetect2.models.decoder import (
     DEFAULT_DECODER_CONFIG,
     DecoderConfig,
@@ -122,10 +119,10 @@ class Model(torch.nn.Module):
 
 
 def build_model(
-    config: Optional[BackboneConfig] = None,
-    targets: Optional[TargetProtocol] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    postprocessor: Optional[PostprocessorProtocol] = None,
+    config: BackboneConfig | None = None,
+    targets: TargetProtocol | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    postprocessor: PostprocessorProtocol | None = None,
 ):
     from batdetect2.postprocess import build_postprocessor
     from batdetect2.preprocess import build_preprocessor

@@ -50,7 +50,7 @@ class AudioConfig(BaseConfig):
     resample: ResampleConfig = Field(default_factory=ResampleConfig)
 
 
-def build_audio_loader(config: Optional[AudioConfig] = None) -> AudioLoader:
+def build_audio_loader(config: AudioConfig | None = None) -> AudioLoader:
     """Factory function to create an AudioLoader based on configuration."""
     config = config or AudioConfig()
     return SoundEventAudioLoader(
@@ -65,7 +65,7 @@ class SoundEventAudioLoader(AudioLoader):
     def __init__(
         self,
         samplerate: int = TARGET_SAMPLERATE_HZ,
-        config: Optional[ResampleConfig] = None,
+        config: ResampleConfig | None = None,
     ):
         self.samplerate = samplerate
         self.config = config or ResampleConfig()
@@ -73,7 +73,7 @@ class SoundEventAudioLoader(AudioLoader):
     def load_file(
         self,
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess audio directly from a file path."""
         return load_file_audio(
@@ -86,7 +86,7 @@ class SoundEventAudioLoader(AudioLoader):
     def load_recording(
         self,
         recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess the entire audio for a Recording object."""
         return load_recording_audio(
@@ -99,7 +99,7 @@ class SoundEventAudioLoader(AudioLoader):
     def load_clip(
         self,
         clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess the audio segment defined by a Clip object."""
         return load_clip_audio(
@@ -112,9 +112,9 @@ class SoundEventAudioLoader(AudioLoader):
 
 def load_file_audio(
     path: data.PathLike,
-    samplerate: Optional[int] = None,
-    config: Optional[ResampleConfig] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    samplerate: int | None = None,
+    config: ResampleConfig | None = None,
+    audio_dir: data.PathLike | None = None,
     dtype: DTypeLike = np.float32,  # type: ignore
 ) -> np.ndarray:
     """Load and preprocess audio from a file path using specified config."""
@@ -136,9 +136,9 @@ def load_file_audio(
 
 def load_recording_audio(
     recording: data.Recording,
-    samplerate: Optional[int] = None,
-    config: Optional[ResampleConfig] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    samplerate: int | None = None,
+    config: ResampleConfig | None = None,
+    audio_dir: data.PathLike | None = None,
     dtype: DTypeLike = np.float32,  # type: ignore
 ) -> np.ndarray:
     """Load and preprocess the entire audio content of a recording using config."""
@@ -158,9 +158,9 @@ def load_recording_audio(
 
 def load_clip_audio(
     clip: data.Clip,
-    samplerate: Optional[int] = None,
-    config: Optional[ResampleConfig] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    samplerate: int | None = None,
+    config: ResampleConfig | None = None,
+    audio_dir: data.PathLike | None = None,
     dtype: DTypeLike = np.float32,  # type: ignore
 ) -> np.ndarray:
     """Load and preprocess a specific audio clip segment based on config."""

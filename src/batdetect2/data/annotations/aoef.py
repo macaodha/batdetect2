@@ -77,14 +77,14 @@ class AOEFAnnotations(AnnotatedDataset):
 
     annotations_path: Path
 
-    filter: Optional[AnnotationTaskFilter] = Field(
+    filter: AnnotationTaskFilter | None = Field(
         default_factory=AnnotationTaskFilter
     )
 
 
 def load_aoef_annotated_dataset(
     dataset: AOEFAnnotations,
-    base_dir: Optional[data.PathLike] = None,
+    base_dir: data.PathLike | None = None,
 ) -> data.AnnotationSet:
     """Load annotations from an AnnotationSet or AnnotationProject file.
 

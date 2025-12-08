@@ -67,9 +67,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]],
         prefix: str,
         ignore_start_end: float = 0.01,
-        plots: Optional[
-            List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]]
-        ] = None,
+        plots: List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]] | None = None,
     ):
         self.matcher = matcher
         self.metrics = metrics
@@ -147,9 +145,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         config: BaseTaskConfig,
         targets: TargetProtocol,
         metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]],
-        plots: Optional[
-            List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]]
-        ] = None,
+        plots: List[Callable[[Sequence[T_Output]], Iterable[Tuple[str, Figure]]]] | None = None,
         **kwargs,
     ):
         matcher = build_matcher(config.matching_strategy)

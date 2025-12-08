@@ -13,7 +13,7 @@ from batdetect2 import types
 
 def print_dataset_stats(
     data: List[types.FileAnnotation],
-    classes_to_ignore: Optional[List[str]] = None,
+    classes_to_ignore: List[str] | None = None,
 ) -> Counter[str]:
     print("Num files:", len(data))
     counts, _ = tu.get_class_names(data, classes_to_ignore)

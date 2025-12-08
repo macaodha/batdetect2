@@ -18,16 +18,16 @@ from batdetect2.typing import (
 
 class SoundEventOutputConfig(BaseConfig):
     name: Literal["soundevent"] = "soundevent"
-    top_k: Optional[int] = 1
-    min_score: Optional[float] = None
+    top_k: int | None = 1
+    min_score: float | None = None
 
 
 class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
     def __init__(
         self,
         targets: TargetProtocol,
-        top_k: Optional[int] = 1,
-        min_score: Optional[float] = 0,
+        top_k: int | None = 1,
+        min_score: float | None = 0,
     ):
         self.targets = targets
         self.top_k = top_k
@@ -45,7 +45,7 @@ class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
         self,
         predictions: Sequence[data.ClipPrediction],
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> None:
         run = data.PredictionSet(clip_predictions=list(predictions))
 

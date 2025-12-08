@@ -43,7 +43,7 @@ class BatDetect2Config(BaseConfig):
     output: OutputFormatConfig = Field(default_factory=RawOutputConfig)
 
 
-def validate_config(config: Optional[dict]) -> BatDetect2Config:
+def validate_config(config: dict | None) -> BatDetect2Config:
     if config is None:
         return BatDetect2Config()
 
@@ -52,6 +52,6 @@ def validate_config(config: Optional[dict]) -> BatDetect2Config:
 
 def load_full_config(
     path: PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> BatDetect2Config:
     return load_config(path, schema=BatDetect2Config, field=field)

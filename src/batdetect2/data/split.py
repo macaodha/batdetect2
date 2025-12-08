@@ -14,7 +14,7 @@ def split_dataset_by_recordings(
     dataset: Dataset,
     targets: TargetProtocol,
     train_size: float = 0.75,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> Tuple[Dataset, Dataset]:
     recordings = extract_recordings_df(dataset)
 

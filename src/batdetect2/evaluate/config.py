@@ -51,6 +51,6 @@ def get_default_eval_config() -> EvaluationConfig:
 
 def load_evaluation_config(
     path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> EvaluationConfig:
     return load_config(path, schema=EvaluationConfig, field=field)

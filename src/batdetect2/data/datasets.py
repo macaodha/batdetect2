@@ -69,7 +69,7 @@ class DatasetConfig(BaseConfig):
     description: str
     sources: List[AnnotationFormats]
 
-    sound_event_filter: Optional[SoundEventConditionConfig] = None
+    sound_event_filter: SoundEventConditionConfig | None = None
     sound_event_transforms: List[SoundEventTransformConfig] = Field(
         default_factory=list
     )
@@ -77,7 +77,7 @@ class DatasetConfig(BaseConfig):
 
 def load_dataset(
     config: DatasetConfig,
-    base_dir: Optional[data.PathLike] = None,
+    base_dir: data.PathLike | None = None,
 ) -> Dataset:
     """Load all clip annotations from the sources defined in a DatasetConfig."""
     clip_annotations = []
@@ -161,14 +161,14 @@ def insert_source_tag(
     )
 
 
-def load_dataset_config(path: data.PathLike, field: Optional[str] = None):
+def load_dataset_config(path: data.PathLike, field: str | None = None):
     return load_config(path=path, schema=DatasetConfig, field=field)
 
 
 def load_dataset_from_config(
     path: data.PathLike,
-    field: Optional[str] = None,
-    base_dir: Optional[data.PathLike] = None,
+    field: str | None = None,
+    base_dir: data.PathLike | None = None,
 ) -> Dataset:
     """Load dataset annotation metadata from a configuration file.
 
@@ -215,9 +215,9 @@ def load_dataset_from_config(
 def save_dataset(
     dataset: Dataset,
     path: data.PathLike,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    audio_dir: Optional[Path] = None,
+    name: str | None = None,
+    description: str | None = None,
+    audio_dir: Path | None = None,
 ) -> None:
     """Save a loaded dataset (list of ClipAnnotations) to a file.
 

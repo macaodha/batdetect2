@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 
 def extend_width(
-    array: Union[np.ndarray, torch.Tensor],
+    array: np.ndarray | torch.Tensor,
     extra: int,
     axis: int = -1,
     value: float = 0,
@@ -28,7 +28,7 @@ def extend_width(
 
 
 def make_width_divisible(
-    array: Union[np.ndarray, torch.Tensor],
+    array: np.ndarray | torch.Tensor,
     factor: int,
     axis: int = -1,
     value: float = 0,
@@ -46,7 +46,7 @@ def make_width_divisible(
 
 
 def adjust_width(
-    array: Union[np.ndarray, torch.Tensor],
+    array: np.ndarray | torch.Tensor,
     width: int,
     axis: int = -1,
     value: float = 0,

@@ -34,10 +34,10 @@ def evaluate(
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
     formatter: Optional["OutputFormatterProtocol"] = None,
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
     from batdetect2.config import BatDetect2Config
 

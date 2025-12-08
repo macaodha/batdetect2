@@ -17,10 +17,10 @@ __all__ = [
 
 def plot_clip_prediction(
     clip_prediction: data.ClipPrediction,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    figsize: Optional[Tuple[int, int]] = None,
-    ax: Optional[Axes] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    figsize: Tuple[int, int] | None = None,
+    ax: Axes | None = None,
+    audio_dir: data.PathLike | None = None,
     add_legend: bool = False,
     spec_cmap: str = "gray",
     linewidth: float = 1,
@@ -50,14 +50,14 @@ def plot_clip_prediction(
 
 def plot_predictions(
     predictions: Iterable[data.SoundEventPrediction],
-    ax: Optional[Axes] = None,
+    ax: Axes | None = None,
     position: Positions = "top-right",
-    color_mapper: Optional[TagColorMapper] = None,
+    color_mapper: TagColorMapper | None = None,
     time_offset: float = 0.001,
     freq_offset: float = 1000,
     legend: bool = True,
     max_alpha: float = 0.5,
-    color: Optional[str] = None,
+    color: str | None = None,
     **kwargs,
 ):
     """Plot an prediction."""
@@ -88,14 +88,14 @@ def plot_predictions(
 
 def plot_prediction(
     prediction: data.SoundEventPrediction,
-    ax: Optional[Axes] = None,
+    ax: Axes | None = None,
     position: Positions = "top-right",
-    color_mapper: Optional[TagColorMapper] = None,
+    color_mapper: TagColorMapper | None = None,
     time_offset: float = 0.001,
     freq_offset: float = 1000,
     max_alpha: float = 0.5,
-    alpha: Optional[float] = None,
-    color: Optional[str] = None,
+    alpha: float | None = None,
+    color: str | None = None,
     **kwargs,
 ) -> Axes:
     """Plot an annotation."""

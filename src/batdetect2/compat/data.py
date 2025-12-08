@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, List
 
 import numpy as np
 from soundevent import data
@@ -17,7 +17,7 @@ from batdetect2.types import (
     FileAnnotation,
 )
 
-PathLike = Union[Path, str, os.PathLike]
+PathLike = Path | str | os.PathLike
 
 __all__ = [
     "convert_to_annotation_group",
@@ -33,7 +33,7 @@ UNKNOWN_CLASS = "__UNKNOWN__"
 NAMESPACE = uuid.UUID("97a9776b-c0fd-4c68-accb-0b0ecd719242")
 
 
-EventFn = Callable[[data.SoundEventAnnotation], Optional[str]]
+EventFn = Callable[[data.SoundEventAnnotation], str | None]
 
 ClassFn = Callable[[data.Recording], int]
 
@@ -221,7 +221,7 @@ def annotation_to_sound_event_prediction(
 
 def file_annotation_to_clip(
     file_annotation: FileAnnotation,
-    audio_dir: Optional[PathLike] = None,
+    audio_dir: PathLike | None = None,
     label_key: str = "class",
 ) -> data.Clip:
     """Convert file annotation to recording."""

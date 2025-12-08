@@ -12,13 +12,13 @@ from batdetect2.plotting.common import create_ax
 
 
 def plot_detection_heatmap(
-    heatmap: Union[torch.Tensor, np.ndarray],
-    ax: Optional[axes.Axes] = None,
+    heatmap: torch.Tensor | np.ndarray,
+    ax: axes.Axes | None = None,
     figsize: Tuple[int, int] = (10, 10),
-    threshold: Optional[float] = None,
+    threshold: float | None = None,
     alpha: float = 1,
-    cmap: Union[str, Colormap] = "jet",
-    color: Optional[str] = None,
+    cmap: str | Colormap = "jet",
+    color: str | None = None,
 ) -> axes.Axes:
     ax = create_ax(ax, figsize=figsize)
 
@@ -48,13 +48,13 @@ def plot_detection_heatmap(
 
 
 def plot_classification_heatmap(
-    heatmap: Union[torch.Tensor, np.ndarray],
-    ax: Optional[axes.Axes] = None,
+    heatmap: torch.Tensor | np.ndarray,
+    ax: axes.Axes | None = None,
     figsize: Tuple[int, int] = (10, 10),
-    class_names: Optional[List[str]] = None,
-    threshold: Optional[float] = 0.1,
+    class_names: List[str] | None = None,
+    threshold: float | None = 0.1,
     alpha: float = 1,
-    cmap: Union[str, Colormap] = "tab20",
+    cmap: str | Colormap = "tab20",
 ):
     ax = create_ax(ax, figsize=figsize)
 

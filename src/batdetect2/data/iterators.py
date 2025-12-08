@@ -10,7 +10,7 @@ from batdetect2.typing.targets import TargetProtocol
 def iterate_over_sound_events(
     dataset: Dataset,
     targets: TargetProtocol,
-) -> Generator[Tuple[Optional[str], data.SoundEventAnnotation], None, None]:
+) -> Generator[Tuple[str | None, data.SoundEventAnnotation], None, None]:
     """Iterate over sound events in a dataset.
 
     Parameters

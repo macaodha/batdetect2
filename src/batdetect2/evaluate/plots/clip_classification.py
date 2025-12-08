@@ -44,7 +44,7 @@ clip_classification_plots: Registry[
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Clip Classification Precision-Recall Curve"
+    title: str | None = "Clip Classification Precision-Recall Curve"
     separate_figures: bool = False
 
 
@@ -111,7 +111,7 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "Clip Classification ROC Curve"
+    title: str | None = "Clip Classification ROC Curve"
     separate_figures: bool = False
 
 
@@ -174,10 +174,7 @@ class ROCCurve(BasePlot):
 
 
 ClipClassificationPlotConfig = Annotated[
-    Union[
-        PRCurveConfig,
-        ROCCurveConfig,
-    ],
+    PRCurveConfig | ROCCurveConfig,
     Field(discriminator="name"),
 ]
 

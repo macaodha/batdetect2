@@ -10,7 +10,7 @@ from batdetect2.typing import TargetProtocol
 class BasePlotConfig(BaseConfig):
     label: str = "plot"
     theme: str = "default"
-    title: Optional[str] = None
+    title: str | None = None
     figsize: tuple[int, int] = (10, 10)
     dpi: int = 100
 
@@ -21,7 +21,7 @@ class BasePlot:
         targets: TargetProtocol,
         label: str = "plot",
         figsize: tuple[int, int] = (10, 10),
-        title: Optional[str] = None,
+        title: str | None = None,
         dpi: int = 100,
         theme: str = "default",
     ):

@@ -414,10 +414,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
 
 ROIMapperConfig = Annotated[
-    Union[
-        AnchorBBoxMapperConfig,
-        PeakEnergyBBoxMapperConfig,
-    ],
+    AnchorBBoxMapperConfig | PeakEnergyBBoxMapperConfig,
     Field(discriminator="name"),
 ]
 """A discriminated union of all supported ROI mapper configurations.
@@ -428,7 +425,7 @@ implementations by using the `name` field as a discriminator.
 
 
 def build_roi_mapper(
-    config: Optional[ROIMapperConfig] = None,
+    config: ROIMapperConfig | None = None,
 ) -> ROITargetMapper:
     """Factory function to create an ROITargetMapper from a config object.
 
@@ -572,9 +569,9 @@ def get_peak_energy_coordinates(
     audio_loader: AudioLoader,
     preprocessor: PreprocessorProtocol,
     start_time: float = 0,
-    end_time: Optional[float] = None,
+    end_time: float | None = None,
     low_freq: float = 0,
-    high_freq: Optional[float] = None,
+    high_freq: float | None = None,
     loading_buffer: float = 0.05,
 ) -> Position:
     """Find the coordinates of the highest energy point in a spectrogram.

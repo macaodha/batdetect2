@@ -42,7 +42,7 @@ __all__ = [
 
 AudioSource = Callable[[float], tuple[torch.Tensor, data.ClipAnnotation]]
 
-audio_augmentations: Registry[Augmentation, [int, Optional[AudioSource]]] = (
+audio_augmentations: Registry[Augmentation, [int, AudioSource | None]] = (
     Registry(name="audio_augmentation")
 )
 
@@ -103,7 +103,7 @@ class MixAudio(torch.nn.Module):
     def from_config(
         config: MixAudioConfig,
         samplerate: int,
-        source: Optional[AudioSource],
+        source: AudioSource | None,
     ):
         if source is None:
             warnings.warn(
@@ -207,7 +207,7 @@ class AddEcho(torch.nn.Module):
     def from_config(
         config: AddEchoConfig,
         samplerate: int,
-        source: Optional[AudioSource],
+        source: AudioSource | None,
     ):
         return AddEcho(
             samplerate=samplerate,
@@ -487,33 +487,18 @@ def mask_frequency(
 
 
 AudioAugmentationConfig = Annotated[
-    Union[
-        MixAudioConfig,
-        AddEchoConfig,
-    ],
+    MixAudioConfig | AddEchoConfig,
     Field(discriminator="name"),
 ]
 
 
 SpectrogramAugmentationConfig = Annotated[
-    Union[
-        ScaleVolumeConfig,
-        WarpConfig,
-        MaskFrequencyConfig,
-        MaskTimeConfig,
-    ],
+    ScaleVolumeConfig | WarpConfig | MaskFrequencyConfig | MaskTimeConfig,
     Field(discriminator="name"),
 ]
 
 AugmentationConfig = Annotated[
-    Union[
-        MixAudioConfig,
-        AddEchoConfig,
-        ScaleVolumeConfig,
-        WarpConfig,
-        MaskFrequencyConfig,
-        MaskTimeConfig,
-    ],
+    MixAudioConfig | AddEchoConfig | ScaleVolumeConfig | WarpConfig | MaskFrequencyConfig | MaskTimeConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of individual augmentation config."""
@@ -559,8 +544,8 @@ class MaybeApply(torch.nn.Module):
 def build_augmentation_from_config(
     config: AugmentationConfig,
     samplerate: int,
-    audio_source: Optional[AudioSource] = None,
-) -> Optional[Augmentation]:
+    audio_source: AudioSource | None = None,
+) -> Augmentation | None:
     """Factory function to build a single augmentation from its config."""
     if config.name == "mix_audio":
         if audio_source is None:
@@ -645,10 +630,10 @@ class AugmentationSequence(torch.nn.Module):
 
 
 def build_audio_augmentations(
-    steps: Optional[Sequence[AudioAugmentationConfig]] = None,
+    steps: Sequence[AudioAugmentationConfig] | None = None,
     samplerate: int = TARGET_SAMPLERATE_HZ,
-    audio_source: Optional[AudioSource] = None,
-) -> Optional[Augmentation]:
+    audio_source: AudioSource | None = None,
+) -> Augmentation | None:
     if not steps:
         return None
 
@@ -673,8 +658,8 @@ def build_audio_augmentations(
 
 
 def build_spectrogram_augmentations(
-    steps: Optional[Sequence[SpectrogramAugmentationConfig]] = None,
-) -> Optional[Augmentation]:
+    steps: Sequence[SpectrogramAugmentationConfig] | None = None,
+) -> Augmentation | None:
     if not steps:
         return None
 
@@ -698,9 +683,9 @@ def build_spectrogram_augmentations(
 
 def build_augmentations(
     samplerate: int,
-    config: Optional[AugmentationsConfig] = None,
-    audio_source: Optional[AudioSource] = None,
-) -> Tuple[Optional[Augmentation], Optional[Augmentation]]:
+    config: AugmentationsConfig | None = None,
+    audio_source: AudioSource | None = None,
+) -> Tuple[Augmentation | None, Augmentation | None]:
     """Build a composite augmentation pipeline function from configuration."""
     config = config or DEFAULT_AUGMENTATION_CONFIG
 
@@ -723,7 +708,7 @@ def build_augmentations(
 
 
 def load_augmentation_config(
-    path: data.PathLike, field: Optional[str] = None
+    path: data.PathLike, field: str | None = None
 ) -> AugmentationsConfig:
     """Load the augmentations configuration from a file."""
     return load_config(path, schema=AugmentationsConfig, field=field)

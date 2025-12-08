@@ -93,7 +93,7 @@ mlflow = ["mlflow>=3.1.1"]
 
 [tool.ruff]
 line-length = 79
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -107,7 +107,7 @@ convention = "numpy"
 
 [tool.pyright]
 include = ["src", "tests"]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 pythonPlatform = "All"
 exclude = [
   "src/batdetect2/detector/",

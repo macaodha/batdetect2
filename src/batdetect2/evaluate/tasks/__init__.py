@@ -26,20 +26,14 @@ __all__ = [
 
 
 TaskConfig = Annotated[
-    Union[
-        ClassificationTaskConfig,
-        DetectionTaskConfig,
-        ClipDetectionTaskConfig,
-        ClipClassificationTaskConfig,
-        TopClassDetectionTaskConfig,
-    ],
+    ClassificationTaskConfig | DetectionTaskConfig | ClipDetectionTaskConfig | ClipClassificationTaskConfig | TopClassDetectionTaskConfig,
     Field(discriminator="name"),
 ]
 
 
 def build_task(
     config: TaskConfig,
-    targets: Optional[TargetProtocol] = None,
+    targets: TargetProtocol | None = None,
 ) -> EvaluatorProtocol:
     targets = targets or build_targets()
     return tasks_registry.build(config, targets)
@@ -49,8 +43,8 @@ def evaluate_task(
     clip_annotations: Sequence[data.ClipAnnotation],
     predictions: Sequence[BatDetect2Prediction],
     task: Optional["str"] = None,
-    targets: Optional[TargetProtocol] = None,
-    config: Optional[Union[TaskConfig, dict]] = None,
+    targets: TargetProtocol | None = None,
+    config: TaskConfig | dict | None = None,
 ):
     if isinstance(config, BaseTaskConfig):
         task_obj = build_task(config, targets)

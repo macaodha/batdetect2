@@ -44,10 +44,10 @@ class TrainingDataset(Dataset):
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         labeller: ClipLabeller,
-        clipper: Optional[ClipperProtocol] = None,
-        audio_augmentation: Optional[Augmentation] = None,
-        spectrogram_augmentation: Optional[Augmentation] = None,
-        audio_dir: Optional[data.PathLike] = None,
+        clipper: ClipperProtocol | None = None,
+        audio_augmentation: Augmentation | None = None,
+        spectrogram_augmentation: Augmentation | None = None,
+        audio_dir: data.PathLike | None = None,
     ):
         self.clip_annotations = clip_annotations
         self.clipper = clipper
@@ -108,8 +108,8 @@ class ValidationDataset(Dataset):
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         labeller: ClipLabeller,
-        clipper: Optional[ClipperProtocol] = None,
-        audio_dir: Optional[data.PathLike] = None,
+        clipper: ClipperProtocol | None = None,
+        audio_dir: data.PathLike | None = None,
     ):
         self.clip_annotations = clip_annotations
         self.labeller = labeller
@@ -165,11 +165,11 @@ class TrainLoaderConfig(BaseConfig):
 
 def build_train_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    labeller: Optional[ClipLabeller] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[TrainLoaderConfig] = None,
-    num_workers: Optional[int] = None,
+    audio_loader: AudioLoader | None = None,
+    labeller: ClipLabeller | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: TrainLoaderConfig | None = None,
+    num_workers: int | None = None,
 ) -> DataLoader:
     config = config or TrainLoaderConfig()
 
@@ -207,11 +207,11 @@ class ValLoaderConfig(BaseConfig):
 
 def build_val_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    labeller: Optional[ClipLabeller] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[ValLoaderConfig] = None,
-    num_workers: Optional[int] = None,
+    audio_loader: AudioLoader | None = None,
+    labeller: ClipLabeller | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: ValLoaderConfig | None = None,
+    num_workers: int | None = None,
 ):
     logger.info("Building validation data loader...")
     config = config or ValLoaderConfig()
@@ -240,10 +240,10 @@ def build_val_loader(
 
 def build_train_dataset(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    labeller: Optional[ClipLabeller] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[TrainLoaderConfig] = None,
+    audio_loader: AudioLoader | None = None,
+    labeller: ClipLabeller | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: TrainLoaderConfig | None = None,
 ) -> TrainingDataset:
     logger.info("Building training dataset...")
     config = config or TrainLoaderConfig()
@@ -291,10 +291,10 @@ def build_train_dataset(
 
 def build_val_dataset(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    labeller: Optional[ClipLabeller] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[ValLoaderConfig] = None,
+    audio_loader: AudioLoader | None = None,
+    labeller: ClipLabeller | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: ValLoaderConfig | None = None,
 ) -> ValidationDataset:
     logger.info("Building validation dataset...")
     config = config or ValLoaderConfig()

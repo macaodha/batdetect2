@@ -53,7 +53,7 @@ class ParquetFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
         self,
         predictions: Sequence[BatDetect2Prediction],
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> None:
         path = Path(path)
 

@@ -142,7 +142,7 @@ class MapTagValueConfig(BaseConfig):
     name: Literal["map_tag_value"] = "map_tag_value"
     tag_key: str
     value_mapping: Dict[str, str]
-    target_key: Optional[str] = None
+    target_key: str | None = None
 
 
 class MapTagValue:
@@ -150,7 +150,7 @@ class MapTagValue:
         self,
         tag_key: str,
         value_mapping: Dict[str, str],
-        target_key: Optional[str] = None,
+        target_key: str | None = None,
     ):
         self.tag_key = tag_key
         self.value_mapping = value_mapping
@@ -221,13 +221,7 @@ class ApplyAll:
 
 
 SoundEventTransformConfig = Annotated[
-    Union[
-        SetFrequencyBoundConfig,
-        ReplaceTagConfig,
-        MapTagValueConfig,
-        ApplyIfConfig,
-        ApplyAllConfig,
-    ],
+    SetFrequencyBoundConfig | ReplaceTagConfig | MapTagValueConfig | ApplyIfConfig | ApplyAllConfig,
     Field(discriminator="name"),
 ]
 

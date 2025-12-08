@@ -19,9 +19,9 @@ __all__ = [
 def plot_clip_detections(
     clip_eval: ClipEval,
     figsize: tuple[int, int] = (10, 10),
-    ax: Optional[axes.Axes] = None,
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
+    ax: axes.Axes | None = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
     threshold: float = 0.2,
     add_legend: bool = True,
     add_title: bool = True,

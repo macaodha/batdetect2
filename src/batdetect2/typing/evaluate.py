@@ -28,19 +28,19 @@ __all__ = [
 class MatchEvaluation:
     clip: data.Clip
 
-    sound_event_annotation: Optional[data.SoundEventAnnotation]
+    sound_event_annotation: data.SoundEventAnnotation | None
     gt_det: bool
-    gt_class: Optional[str]
-    gt_geometry: Optional[data.Geometry]
+    gt_class: str | None
+    gt_geometry: data.Geometry | None
 
     pred_score: float
     pred_class_scores: Dict[str, float]
-    pred_geometry: Optional[data.Geometry]
+    pred_geometry: data.Geometry | None
 
     affinity: float
 
     @property
-    def top_class(self) -> Optional[str]:
+    def top_class(self) -> str | None:
         if not self.pred_class_scores:
             return None
 
@@ -76,7 +76,7 @@ class MatcherProtocol(Protocol):
         ground_truth: Sequence[data.Geometry],
         predictions: Sequence[data.Geometry],
         scores: Sequence[float],
-    ) -> Iterable[Tuple[Optional[int], Optional[int], float]]: ...
+    ) -> Iterable[Tuple[int | None, int | None, float]]: ...
 
 
 Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)

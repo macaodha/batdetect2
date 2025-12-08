@@ -151,7 +151,7 @@ def run_nms(
 
 def non_max_suppression(
     heat: torch.Tensor,
-    kernel_size: Union[int, Tuple[int, int]],
+    kernel_size: int | Tuple[int, int],
 ):
     # kernel can be an int or list/tuple
     if isinstance(kernel_size, int):

@@ -22,20 +22,20 @@ class PLTrainerConfig(BaseConfig):
     accumulate_grad_batches: int = 1
     deterministic: bool = True
     check_val_every_n_epoch: int = 1
-    devices: Union[str, int] = "auto"
+    devices: str | int = "auto"
     enable_checkpointing: bool = True
-    gradient_clip_val: Optional[float] = None
-    limit_train_batches: Optional[Union[int, float]] = None
-    limit_test_batches: Optional[Union[int, float]] = None
-    limit_val_batches: Optional[Union[int, float]] = None
-    log_every_n_steps: Optional[int] = None
-    max_epochs: Optional[int] = 200
-    min_epochs: Optional[int] = None
-    max_steps: Optional[int] = None
-    min_steps: Optional[int] = None
-    max_time: Optional[str] = None
-    precision: Optional[str] = None
-    val_check_interval: Optional[Union[int, float]] = None
+    gradient_clip_val: float | None = None
+    limit_train_batches: int | float | None = None
+    limit_test_batches: int | float | None = None
+    limit_val_batches: int | float | None = None
+    log_every_n_steps: int | None = None
+    max_epochs: int | None = 200
+    min_epochs: int | None = None
+    max_steps: int | None = None
+    min_steps: int | None = None
+    max_time: str | None = None
+    precision: str | None = None
+    val_check_interval: int | float | None = None
 
 
 class OptimizerConfig(BaseConfig):
@@ -57,6 +57,6 @@ class TrainingConfig(BaseConfig):
 
 def load_train_config(
     path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> TrainingConfig:
     return load_config(path, schema=TrainingConfig, field=field)

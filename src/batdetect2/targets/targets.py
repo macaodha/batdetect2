@@ -107,7 +107,7 @@ class Targets(TargetProtocol):
 
     def encode_class(
         self, sound_event: data.SoundEventAnnotation
-    ) -> Optional[str]:
+    ) -> str | None:
         """Encode a sound event annotation to its target class name.
 
         Applies the configured class definition rules (including priority)
@@ -182,7 +182,7 @@ class Targets(TargetProtocol):
         self,
         position: Position,
         size: Size,
-        class_name: Optional[str] = None,
+        class_name: str | None = None,
     ) -> data.Geometry:
         """Recover an approximate geometric ROI from a position and dimensions.
 
@@ -219,7 +219,7 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
 )
 
 
-def build_targets(config: Optional[TargetConfig] = None) -> Targets:
+def build_targets(config: TargetConfig | None = None) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
 
     Parameters
@@ -251,7 +251,7 @@ def build_targets(config: Optional[TargetConfig] = None) -> Targets:
 
 def load_targets(
     config_path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> Targets:
     """Load a Targets object directly from a configuration file.
 
@@ -292,7 +292,7 @@ def load_targets(
 def iterate_encoded_sound_events(
     sound_events: Iterable[data.SoundEventAnnotation],
     targets: TargetProtocol,
-) -> Iterable[Tuple[Optional[str], Position, Size]]:
+) -> Iterable[Tuple[str | None, Position, Size]]:
     for sound_event in sound_events:
         if not targets.filter(sound_event):
             continue

@@ -44,7 +44,7 @@ top_class_plots: Registry[TopClassPlotter, [TargetProtocol]] = Registry(
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Top Class Precision-Recall Curve"
+    title: str | None = "Top Class Precision-Recall Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -111,7 +111,7 @@ class PRCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "Top Class ROC Curve"
+    title: str | None = "Top Class ROC Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
 
@@ -173,7 +173,7 @@ class ROCCurve(BasePlot):
 
 class ConfusionMatrixConfig(BasePlotConfig):
     name: Literal["confusion_matrix"] = "confusion_matrix"
-    title: Optional[str] = "Top Class Confusion Matrix"
+    title: str | None = "Top Class Confusion Matrix"
     figsize: tuple[int, int] = (10, 10)
     label: str = "confusion_matrix"
     exclude_generic: bool = True
@@ -257,7 +257,7 @@ class ConfusionMatrix(BasePlot):
 class ExampleClassificationPlotConfig(BasePlotConfig):
     name: Literal["example_classification"] = "example_classification"
     label: str = "example_classification"
-    title: Optional[str] = "Example Classification"
+    title: str | None = "Example Classification"
     num_examples: int = 4
     threshold: float = 0.2
     audio: AudioConfig = Field(default_factory=AudioConfig)
@@ -348,12 +348,7 @@ class ExampleClassificationPlot(BasePlot):
 
 
 TopClassPlotConfig = Annotated[
-    Union[
-        PRCurveConfig,
-        ROCCurveConfig,
-        ConfusionMatrixConfig,
-        ExampleClassificationPlotConfig,
-    ],
+    PRCurveConfig | ROCCurveConfig | ConfusionMatrixConfig | ExampleClassificationPlotConfig,
     Field(discriminator="name"),
 ]
 

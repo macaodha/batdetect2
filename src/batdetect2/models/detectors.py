@@ -127,7 +127,7 @@ class Detector(DetectionModel):
 
 
 def build_detector(
-    num_classes: int, config: Optional[BackboneConfig] = None
+    num_classes: int, config: BackboneConfig | None = None
 ) -> DetectionModel:
     """Build the complete BatDetect2 detection model.
 

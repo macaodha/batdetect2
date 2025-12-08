@@ -78,11 +78,7 @@ class FixDuration(torch.nn.Module):
 
 
 AudioTransform = Annotated[
-    Union[
-        FixDurationConfig,
-        ScaleAudioConfig,
-        CenterAudioConfig,
-    ],
+    FixDurationConfig | ScaleAudioConfig | CenterAudioConfig,
     Field(discriminator="name"),
 ]
 

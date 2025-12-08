@@ -28,8 +28,8 @@ def run_batch_inference(
     audio_loader: Optional["AudioLoader"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
-    num_workers: Optional[int] = None,
-    batch_size: Optional[int] = None,
+    num_workers: int | None = None,
+    batch_size: int | None = None,
 ) -> List[BatDetect2Prediction]:
     from batdetect2.config import BatDetect2Config
 
@@ -69,7 +69,7 @@ def process_file_list(
     targets: Optional["TargetProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
 ) -> List[BatDetect2Prediction]:
     clip_config = config.inference.clipping
     clips = get_clips_from_files(

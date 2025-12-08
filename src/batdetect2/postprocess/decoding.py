@@ -88,9 +88,7 @@ def convert_raw_prediction_to_sound_event_prediction(
     raw_prediction: RawPrediction,
     recording: data.Recording,
     targets: TargetProtocol,
-    classification_threshold: Optional[
-        float
-    ] = DEFAULT_CLASSIFICATION_THRESHOLD,
+    classification_threshold: float | None = DEFAULT_CLASSIFICATION_THRESHOLD,
     top_class_only: bool = False,
 ):
     """Convert a single RawPrediction into a soundevent SoundEventPrediction."""
@@ -150,7 +148,7 @@ def get_class_tags(
     class_scores: np.ndarray,
     targets: TargetProtocol,
     top_class_only: bool = False,
-    threshold: Optional[float] = DEFAULT_CLASSIFICATION_THRESHOLD,
+    threshold: float | None = DEFAULT_CLASSIFICATION_THRESHOLD,
 ) -> List[data.PredictedTag]:
     """Generate specific PredictedTags based on class scores and decoder.
 

@@ -26,10 +26,10 @@ class TrainingModule(L.LightningModule):
 
     def __init__(
         self,
-        config: Optional[dict] = None,
+        config: dict | None = None,
         t_max: int = 100,
-        model: Optional[Model] = None,
-        loss: Optional[torch.nn.Module] = None,
+        model: Model | None = None,
+        loss: torch.nn.Module | None = None,
     ):
         from batdetect2.config import validate_config
 
@@ -103,7 +103,7 @@ def load_model_from_checkpoint(
 
 
 def build_training_module(
-    config: Optional[dict] = None,
+    config: dict | None = None,
     t_max: int = 200,
 ) -> TrainingModule:
     return TrainingModule(config=config, t_max=t_max)

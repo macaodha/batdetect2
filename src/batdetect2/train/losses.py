@@ -151,7 +151,7 @@ class FocalLoss(nn.Module):
         eps: float = 1e-5,
         beta: float = 4,
         alpha: float = 2,
-        class_weights: Optional[torch.Tensor] = None,
+        class_weights: torch.Tensor | None = None,
         mask_zero: bool = False,
     ):
         super().__init__()
@@ -422,8 +422,8 @@ class LossFunction(nn.Module, LossProtocol):
 
 
 def build_loss(
-    config: Optional[LossConfig] = None,
-    class_weights: Optional[np.ndarray] = None,
+    config: LossConfig | None = None,
+    class_weights: np.ndarray | None = None,
 ) -> nn.Module:
     """Factory function to build the main LossFunction from configuration.
 

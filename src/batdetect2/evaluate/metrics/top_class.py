@@ -31,14 +31,14 @@ __all__ = [
 @dataclass
 class MatchEval:
     clip: data.Clip
-    gt: Optional[data.SoundEventAnnotation]
-    pred: Optional[RawPrediction]
+    gt: data.SoundEventAnnotation | None
+    pred: RawPrediction | None
 
     is_ground_truth: bool
     is_generic: bool
     is_prediction: bool
-    pred_class: Optional[str]
-    true_class: Optional[str]
+    pred_class: str | None
+    true_class: str | None
     score: float
 
 
@@ -301,13 +301,7 @@ class BalancedAccuracy:
 
 
 TopClassMetricConfig = Annotated[
-    Union[
-        TopClassAveragePrecisionConfig,
-        TopClassROCAUCConfig,
-        TopClassRecallConfig,
-        TopClassPrecisionConfig,
-        BalancedAccuracyConfig,
-    ],
+    TopClassAveragePrecisionConfig | TopClassROCAUCConfig | TopClassRecallConfig | TopClassPrecisionConfig | BalancedAccuracyConfig,
     Field(discriminator="name"),
 ]
 

@@ -63,7 +63,7 @@ class BackboneConfig(BaseConfig):
 
 def load_backbone_config(
     path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> BackboneConfig:
     """Load the backbone configuration from a file.
 

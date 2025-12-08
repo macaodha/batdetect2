@@ -98,8 +98,8 @@ def load_annotations(
     dataset_name: str,
     ann_path: str,
     audio_path: str,
-    classes_to_ignore: Optional[List[str]] = None,
-    events_of_interest: Optional[List[str]] = None,
+    classes_to_ignore: List[str] | None = None,
+    events_of_interest: List[str] | None = None,
 ) -> List[types.FileAnnotation]:
     train_sets: List[types.DatasetDict] = []
     train_sets.append(

@@ -146,7 +146,7 @@ def load_audio(
     time_exp_fact: float,
     target_samp_rate: int,
     scale: bool = False,
-    max_duration: Optional[float] = None,
+    max_duration: float | None = None,
 ) -> Tuple[int, np.ndarray]:
     """Load an audio file and resample it to the target sampling rate.
 
@@ -241,7 +241,7 @@ def pad_audio(
     window_overlap: float = parameters.FFT_OVERLAP,
     resize_factor: float = parameters.RESIZE_FACTOR,
     divide_factor: int = parameters.SPEC_DIVIDE_FACTOR,
-    fixed_width: Optional[int] = None,
+    fixed_width: int | None = None,
 ):
     """Pad audio to be evenly divisible by `divide_factor`.
 

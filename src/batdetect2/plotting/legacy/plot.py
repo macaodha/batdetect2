@@ -24,10 +24,10 @@ __all__ = [
 
 
 def spectrogram(
-    spec: Union[torch.Tensor, np.ndarray],
-    config: Optional[ProcessingConfiguration] = None,
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    spec: torch.Tensor | np.ndarray,
+    config: ProcessingConfiguration | None = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     cmap: str = "plasma",
     start_time: float = 0,
 ) -> axes.Axes:
@@ -103,11 +103,11 @@ def spectrogram(
 
 
 def spectrogram_with_detections(
-    spec: Union[torch.Tensor, np.ndarray],
+    spec: torch.Tensor | np.ndarray,
     dets: List[Annotation],
-    config: Optional[ProcessingConfiguration] = None,
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    config: ProcessingConfiguration | None = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     cmap: str = "plasma",
     with_names: bool = True,
     start_time: float = 0,
@@ -168,8 +168,8 @@ def spectrogram_with_detections(
 
 def detections(
     dets: List[Annotation],
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     with_names: bool = True,
     **kwargs,
 ) -> axes.Axes:
@@ -213,8 +213,8 @@ def detections(
 
 def detection(
     det: Annotation,
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     linewidth: float = 1,
     edgecolor: str = "w",
     facecolor: str = "none",

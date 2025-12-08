@@ -42,7 +42,7 @@ class GeometryDecoder(Protocol):
     """
 
     def __call__(
-        self, position: Position, size: Size, class_name: Optional[str] = None
+        self, position: Position, size: Size, class_name: str | None = None
     ) -> data.Geometry: ...
 
 
@@ -93,5 +93,5 @@ class PostprocessorProtocol(Protocol):
     def __call__(
         self,
         output: ModelOutput,
-        start_times: Optional[Sequence[float]] = None,
+        start_times: Sequence[float] | None = None,
     ) -> List[ClipDetectionsTensor]: ...

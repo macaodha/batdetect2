@@ -102,7 +102,7 @@ def compute_output_samplerate(
 
 
 def build_preprocessor(
-    config: Optional[PreprocessingConfig] = None,
+    config: PreprocessingConfig | None = None,
     input_samplerate: int = TARGET_SAMPLERATE_HZ,
 ) -> PreprocessorProtocol:
     """Factory function to build the standard preprocessor from configuration."""

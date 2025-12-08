@@ -55,7 +55,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
         self,
         predictions: Sequence[BatDetect2Prediction],
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> None:
         path = Path(path)
 
@@ -84,7 +84,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
     def pred_to_xr(
         self,
         prediction: BatDetect2Prediction,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> xr.Dataset:
         clip = prediction.clip
         recording = clip.recording

@@ -27,7 +27,7 @@ aggregated into a `soundevent.data.AnnotationSet`.
 import json
 import os
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from loguru import logger
 from pydantic import Field, ValidationError
@@ -43,7 +43,7 @@ from batdetect2.data.annotations.legacy import (
 )
 from batdetect2.data.annotations.types import AnnotatedDataset
 
-PathLike = Union[Path, str, os.PathLike]
+PathLike = Path | str | os.PathLike
 
 
 __all__ = [
@@ -102,7 +102,7 @@ class BatDetect2FilesAnnotations(AnnotatedDataset):
     format: Literal["batdetect2"] = "batdetect2"
     annotations_dir: Path
 
-    filter: Optional[AnnotationFilter] = Field(
+    filter: AnnotationFilter | None = Field(
         default_factory=AnnotationFilter,
     )
 
@@ -133,14 +133,14 @@ class BatDetect2MergedAnnotations(AnnotatedDataset):
     format: Literal["batdetect2_file"] = "batdetect2_file"
     annotations_path: Path
 
-    filter: Optional[AnnotationFilter] = Field(
+    filter: AnnotationFilter | None = Field(
         default_factory=AnnotationFilter,
     )
 
 
 def load_batdetect2_files_annotated_dataset(
     dataset: BatDetect2FilesAnnotations,
-    base_dir: Optional[PathLike] = None,
+    base_dir: PathLike | None = None,
 ) -> data.AnnotationSet:
     """Load and convert 'batdetect2_file' annotations into an AnnotationSet.
 
@@ -244,7 +244,7 @@ def load_batdetect2_files_annotated_dataset(
 
 def load_batdetect2_merged_annotated_dataset(
     dataset: BatDetect2MergedAnnotations,
-    base_dir: Optional[PathLike] = None,
+    base_dir: PathLike | None = None,
 ) -> data.AnnotationSet:
     """Load and convert 'batdetect2_merged' annotations into an AnnotationSet.
 

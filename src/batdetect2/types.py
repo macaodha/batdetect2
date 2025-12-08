@@ -240,7 +240,7 @@ class ProcessingConfiguration(TypedDict):
     detection_threshold: float
     """Threshold for detection probability."""
 
-    time_expansion: Optional[float]
+    time_expansion: float | None
     """Time expansion factor of the processed recordings."""
 
     top_n: int
@@ -249,7 +249,7 @@ class ProcessingConfiguration(TypedDict):
     return_raw_preds: bool
     """Whether to return raw predictions."""
 
-    max_duration: Optional[float]
+    max_duration: float | None
     """Maximum duration of audio file to process in seconds."""
 
     nms_kernel_size: int

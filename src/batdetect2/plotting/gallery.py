@@ -20,11 +20,11 @@ def plot_match_gallery(
     false_positives: Sequence[MatchProtocol],
     false_negatives: Sequence[MatchProtocol],
     cross_triggers: Sequence[MatchProtocol],
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
     n_examples: int = 5,
     duration: float = 0.1,
-    fig: Optional[Figure] = None,
+    fig: Figure | None = None,
 ):
     if fig is None:
         fig = plt.figure(figsize=(20, 20))

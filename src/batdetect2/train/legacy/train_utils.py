@@ -106,10 +106,10 @@ def standardize_low_freq(
 
 def format_annotation(
     annotation: types.FileAnnotation,
-    events_of_interest: Optional[List[str]] = None,
-    name_replace: Optional[Dict[str, str]] = None,
+    events_of_interest: List[str] | None = None,
+    name_replace: Dict[str, str] | None = None,
     convert_to_genus: bool = False,
-    classes_to_ignore: Optional[List[str]] = None,
+    classes_to_ignore: List[str] | None = None,
 ) -> types.FileAnnotation:
     formated = []
     for aa in annotation["annotation"]:
@@ -154,7 +154,7 @@ def format_annotation(
 
 def get_class_names(
     data: List[types.FileAnnotation],
-    classes_to_ignore: Optional[List[str]] = None,
+    classes_to_ignore: List[str] | None = None,
 ) -> Tuple[StringCounter, List[float]]:
     """Extracts class names and their inverse frequencies.
 
@@ -201,9 +201,9 @@ def load_set_of_anns(
     *,
     convert_to_genus: bool = False,
     filter_issues: bool = False,
-    events_of_interest: Optional[List[str]] = None,
-    classes_to_ignore: Optional[List[str]] = None,
-    name_replace: Optional[Dict[str, str]] = None,
+    events_of_interest: List[str] | None = None,
+    classes_to_ignore: List[str] | None = None,
+    name_replace: Dict[str, str] | None = None,
 ) -> List[types.FileAnnotation]:
     # load the annotations
     anns = []

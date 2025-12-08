@@ -37,7 +37,7 @@ class AudioLoader(Protocol):
     def load_file(
         self,
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess audio directly from a file path.
 
@@ -60,7 +60,7 @@ class AudioLoader(Protocol):
     def load_recording(
         self,
         recording: data.Recording,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess the entire audio for a Recording object.
 
@@ -90,7 +90,7 @@ class AudioLoader(Protocol):
     def load_clip(
         self,
         clip: data.Clip,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ) -> np.ndarray:
         """Load and preprocess the audio segment defined by a Clip object.
 

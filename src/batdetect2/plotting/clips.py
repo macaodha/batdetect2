@@ -17,11 +17,11 @@ __all__ = [
 
 def plot_clip(
     clip: data.Clip,
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    figsize: Optional[Tuple[int, int]] = None,
-    ax: Optional[Axes] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    figsize: Tuple[int, int] | None = None,
+    ax: Axes | None = None,
+    audio_dir: data.PathLike | None = None,
     spec_cmap: str = "gray",
 ) -> Axes:
     if ax is None:

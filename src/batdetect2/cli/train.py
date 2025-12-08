@@ -26,19 +26,19 @@ __all__ = ["train_command"]
 @click.option("--seed", type=int)
 def train_command(
     train_dataset: Path,
-    val_dataset: Optional[Path] = None,
-    model_path: Optional[Path] = None,
-    ckpt_dir: Optional[Path] = None,
-    log_dir: Optional[Path] = None,
-    config: Optional[Path] = None,
-    targets_config: Optional[Path] = None,
-    config_field: Optional[str] = None,
-    seed: Optional[int] = None,
-    num_epochs: Optional[int] = None,
+    val_dataset: Path | None = None,
+    model_path: Path | None = None,
+    ckpt_dir: Path | None = None,
+    log_dir: Path | None = None,
+    config: Path | None = None,
+    targets_config: Path | None = None,
+    config_field: str | None = None,
+    seed: int | None = None,
+    num_epochs: int | None = None,
     train_workers: int = 0,
     val_workers: int = 0,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ):
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.config import (

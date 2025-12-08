@@ -213,18 +213,13 @@ class GeometricIOU(AffinityFunction):
 
 
 AffinityConfig = Annotated[
-    Union[
-        TimeAffinityConfig,
-        IntervalIOUConfig,
-        BBoxIOUConfig,
-        GeometricIOUConfig,
-    ],
+    TimeAffinityConfig | IntervalIOUConfig | BBoxIOUConfig | GeometricIOUConfig,
     Field(discriminator="name"),
 ]
 
 
 def build_affinity_function(
-    config: Optional[AffinityConfig] = None,
+    config: AffinityConfig | None = None,
 ) -> AffinityFunction:
     config = config or GeometricIOUConfig()
     return affinity_functions.build(config)

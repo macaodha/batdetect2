@@ -67,22 +67,22 @@ class BatDetect2API:
     def load_annotations(
         self,
         path: data.PathLike,
-        base_dir: Optional[data.PathLike] = None,
+        base_dir: data.PathLike | None = None,
     ) -> Dataset:
         return load_dataset_from_config(path, base_dir=base_dir)
 
     def train(
         self,
         train_annotations: Sequence[data.ClipAnnotation],
-        val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
-        train_workers: Optional[int] = None,
-        val_workers: Optional[int] = None,
-        checkpoint_dir: Optional[Path] = DEFAULT_CHECKPOINT_DIR,
-        log_dir: Optional[Path] = DEFAULT_LOGS_DIR,
-        experiment_name: Optional[str] = None,
-        num_epochs: Optional[int] = None,
-        run_name: Optional[str] = None,
-        seed: Optional[int] = None,
+        val_annotations: Sequence[data.ClipAnnotation] | None = None,
+        train_workers: int | None = None,
+        val_workers: int | None = None,
+        checkpoint_dir: Path | None = DEFAULT_CHECKPOINT_DIR,
+        log_dir: Path | None = DEFAULT_LOGS_DIR,
+        experiment_name: str | None = None,
+        num_epochs: int | None = None,
+        run_name: str | None = None,
+        seed: int | None = None,
     ):
         train(
             train_annotations=train_annotations,
@@ -105,10 +105,10 @@ class BatDetect2API:
     def evaluate(
         self,
         test_annotations: Sequence[data.ClipAnnotation],
-        num_workers: Optional[int] = None,
+        num_workers: int | None = None,
         output_dir: data.PathLike = DEFAULT_EVAL_DIR,
-        experiment_name: Optional[str] = None,
-        run_name: Optional[str] = None,
+        experiment_name: str | None = None,
+        run_name: str | None = None,
         save_predictions: bool = True,
     ) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
         return evaluate(
@@ -129,7 +129,7 @@ class BatDetect2API:
         self,
         annotations: Sequence[data.ClipAnnotation],
         predictions: Sequence[BatDetect2Prediction],
-        output_dir: Optional[data.PathLike] = None,
+        output_dir: data.PathLike | None = None,
     ):
         clip_evals = self.evaluator.evaluate(
             annotations,
@@ -221,7 +221,7 @@ class BatDetect2API:
     def process_files(
         self,
         audio_files: Sequence[data.PathLike],
-        num_workers: Optional[int] = None,
+        num_workers: int | None = None,
     ) -> List[BatDetect2Prediction]:
         return process_file_list(
             self.model,
@@ -236,8 +236,8 @@ class BatDetect2API:
     def process_clips(
         self,
         clips: Sequence[data.Clip],
-        batch_size: Optional[int] = None,
-        num_workers: Optional[int] = None,
+        batch_size: int | None = None,
+        num_workers: int | None = None,
     ) -> List[BatDetect2Prediction]:
         return run_batch_inference(
             self.model,
@@ -254,9 +254,9 @@ class BatDetect2API:
         self,
         predictions: Sequence[BatDetect2Prediction],
         path: data.PathLike,
-        audio_dir: Optional[data.PathLike] = None,
-        format: Optional[str] = None,
-        config: Optional[OutputFormatConfig] = None,
+        audio_dir: data.PathLike | None = None,
+        format: str | None = None,
+        config: OutputFormatConfig | None = None,
     ):
         formatter = self.formatter
 
@@ -331,7 +331,7 @@ class BatDetect2API:
     def from_checkpoint(
         cls,
         path: data.PathLike,
-        config: Optional[BatDetect2Config] = None,
+        config: BatDetect2Config | None = None,
     ):
         model, stored_config = load_model_from_checkpoint(path)
 

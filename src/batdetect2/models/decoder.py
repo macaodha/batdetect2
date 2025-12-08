@@ -41,12 +41,7 @@ __all__ = [
 ]
 
 DecoderLayerConfig = Annotated[
-    Union[
-        ConvConfig,
-        FreqCoordConvUpConfig,
-        StandardConvUpConfig,
-        LayerGroupConfig,
-    ],
+    ConvConfig | FreqCoordConvUpConfig | StandardConvUpConfig | LayerGroupConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""
@@ -216,7 +211,7 @@ convolutional block.
 def build_decoder(
     in_channels: int,
     input_height: int,
-    config: Optional[DecoderConfig] = None,
+    config: DecoderConfig | None = None,
 ) -> Decoder:
     """Factory function to build a Decoder instance from configuration.
 

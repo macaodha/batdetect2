@@ -98,7 +98,7 @@ def _frequency_to_index(
     freq: float,
     n_fft: int,
     samplerate: int = TARGET_SAMPLERATE_HZ,
-) -> Optional[int]:
+) -> int | None:
     alpha = freq * 2 / samplerate
     height = np.floor(n_fft / 2) + 1
     index = int(np.floor(alpha * height))
@@ -134,8 +134,8 @@ class FrequencyCrop(torch.nn.Module):
         self,
         samplerate: int,
         n_fft: int,
-        min_freq: Optional[int] = None,
-        max_freq: Optional[int] = None,
+        min_freq: int | None = None,
+        max_freq: int | None = None,
     ):
         super().__init__()
         self.n_fft = n_fft
@@ -181,7 +181,7 @@ class FrequencyCrop(torch.nn.Module):
 
 def build_spectrogram_crop(
     config: FrequencyConfig,
-    stft: Optional[STFTConfig] = None,
+    stft: STFTConfig | None = None,
     samplerate: int = TARGET_SAMPLERATE_HZ,
 ) -> torch.nn.Module:
     stft = stft or STFTConfig()
@@ -377,12 +377,7 @@ class PeakNormalize(torch.nn.Module):
 
 
 SpectrogramTransform = Annotated[
-    Union[
-        PcenConfig,
-        ScaleAmplitudeConfig,
-        SpectralMeanSubstractionConfig,
-        PeakNormalizeConfig,
-    ],
+    PcenConfig | ScaleAmplitudeConfig | SpectralMeanSubstractionConfig | PeakNormalizeConfig,
     Field(discriminator="name"),
 ]
 

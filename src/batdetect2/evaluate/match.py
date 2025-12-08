@@ -35,9 +35,9 @@ def match(
     sound_event_annotations: Sequence[data.SoundEventAnnotation],
     raw_predictions: Sequence[RawPrediction],
     clip: data.Clip,
-    scores: Optional[Sequence[float]] = None,
-    targets: Optional[TargetProtocol] = None,
-    matcher: Optional[MatcherProtocol] = None,
+    scores: Sequence[float] | None = None,
+    targets: TargetProtocol | None = None,
+    matcher: MatcherProtocol | None = None,
 ) -> ClipMatches:
     if matcher is None:
         matcher = build_matcher()
@@ -151,7 +151,7 @@ def match_start_times(
     predictions: Sequence[data.Geometry],
     scores: Sequence[float],
     distance_threshold: float = 0.01,
-) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
+) -> Iterable[Tuple[int | None, int | None, float]]:
     if not ground_truth:
         for index in range(len(predictions)):
             yield index, None, 0
@@ -287,7 +287,7 @@ def greedy_match(
     scores: Sequence[float],
     affinity_threshold: float = 0.5,
     affinity_function: AffinityFunction = compute_affinity,
-) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
+) -> Iterable[Tuple[int | None, int | None, float]]:
     """Performs a greedy, one-to-one matching of source to target geometries.
 
     Iterates through source geometries, prioritizing by score if provided. Each
@@ -514,12 +514,7 @@ class OptimalMatcher(MatcherProtocol):
 
 
 MatchConfig = Annotated[
-    Union[
-        GreedyMatchConfig,
-        StartTimeMatchConfig,
-        OptimalMatchConfig,
-        GreedyAffinityMatchConfig,
-    ],
+    GreedyMatchConfig | StartTimeMatchConfig | OptimalMatchConfig | GreedyAffinityMatchConfig,
     Field(discriminator="name"),
 ]
 
@@ -558,7 +553,7 @@ def compute_affinity_matrix(
 def select_optimal_matches(
     affinity_matrix: np.ndarray,
     affinity_threshold: float = 0.5,
-) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
+) -> Iterable[Tuple[int | None, int | None, float]]:
     num_gt, num_pred = affinity_matrix.shape
     gts = set(range(num_gt))
     preds = set(range(num_pred))
@@ -588,7 +583,7 @@ def select_optimal_matches(
 def select_greedy_matches(
     affinity_matrix: np.ndarray,
     affinity_threshold: float = 0.5,
-) -> Iterable[Tuple[Optional[int], Optional[int], float]]:
+) -> Iterable[Tuple[int | None, int | None, float]]:
     num_gt, num_pred = affinity_matrix.shape
     unmatched_pred = set(range(num_pred))
 
@@ -612,6 +607,6 @@ def select_greedy_matches(
         yield pred_idx, None, 0
 
 
-def build_matcher(config: Optional[MatchConfig] = None) -> MatcherProtocol:
+def build_matcher(config: MatchConfig | None = None) -> MatcherProtocol:
     config = config or StartTimeMatchConfig()
     return matching_strategies.build(config)

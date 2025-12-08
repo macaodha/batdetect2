@@ -96,7 +96,7 @@ def extract_matches_dataframe(
 
 
 EvaluationTableConfig = Annotated[
-    Union[FullEvaluationTableConfig,], Field(discriminator="name")
+    FullEvaluationTableConfig, Field(discriminator="name")
 ]
 
 

@@ -48,7 +48,7 @@ class TargetConfig(BaseConfig):
 
 def load_target_config(
     path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> TargetConfig:
     """Load the unified target configuration from a file.
 

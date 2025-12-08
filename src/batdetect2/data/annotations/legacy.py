@@ -3,12 +3,12 @@
 import os
 import uuid
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, List
 
 from pydantic import BaseModel, Field
 from soundevent import data
 
-PathLike = Union[Path, str, os.PathLike]
+PathLike = Path | str | os.PathLike
 
 __all__ = []
 
@@ -27,7 +27,7 @@ SOUND_EVENT_ANNOTATION_NAMESPACE = uuid.uuid5(
 )
 
 
-EventFn = Callable[[data.SoundEventAnnotation], Optional[str]]
+EventFn = Callable[[data.SoundEventAnnotation], str | None]
 
 ClassFn = Callable[[data.Recording], int]
 
@@ -130,7 +130,7 @@ def get_sound_event_tags(
 
 def file_annotation_to_clip(
     file_annotation: FileAnnotation,
-    audio_dir: Optional[PathLike] = None,
+    audio_dir: PathLike | None = None,
     label_key: str = "class",
 ) -> data.Clip:
     """Convert file annotation to recording."""

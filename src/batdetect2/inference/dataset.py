@@ -36,7 +36,7 @@ class InferenceDataset(Dataset[DatasetItem]):
         clips: Sequence[data.Clip],
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
-        audio_dir: Optional[data.PathLike] = None,
+        audio_dir: data.PathLike | None = None,
     ):
         self.clips = list(clips)
         self.preprocessor = preprocessor
@@ -66,11 +66,11 @@ class InferenceLoaderConfig(BaseConfig):
 
 def build_inference_loader(
     clips: Sequence[data.Clip],
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[InferenceLoaderConfig] = None,
-    num_workers: Optional[int] = None,
-    batch_size: Optional[int] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: InferenceLoaderConfig | None = None,
+    num_workers: int | None = None,
+    batch_size: int | None = None,
 ) -> DataLoader[DatasetItem]:
     logger.info("Building inference data loader...")
     config = config or InferenceLoaderConfig()
@@ -95,8 +95,8 @@ def build_inference_loader(
 
 def build_inference_dataset(
     clips: Sequence[data.Clip],
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
 ) -> InferenceDataset:
     if audio_loader is None:
         audio_loader = build_audio_loader()

@@ -11,7 +11,7 @@ __all__ = [
 def compute_precision_recall(
     y_true,
     y_score,
-    num_positives: Optional[int] = None,
+    num_positives: int | None = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     y_true = np.array(y_true)
     y_score = np.array(y_score)
@@ -41,7 +41,7 @@ def compute_precision_recall(
 def average_precision(
     y_true,
     y_score,
-    num_positives: Optional[int] = None,
+    num_positives: int | None = None,
 ) -> float:
     if num_positives == 0:
         return np.nan

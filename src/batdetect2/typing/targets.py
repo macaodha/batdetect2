@@ -27,7 +27,7 @@ __all__ = [
     "Size",
 ]
 
-SoundEventEncoder = Callable[[data.SoundEventAnnotation], Optional[str]]
+SoundEventEncoder = Callable[[data.SoundEventAnnotation], str | None]
 """Type alias for a sound event class encoder function.
 
 An encoder function takes a sound event annotation and returns the string name
@@ -125,7 +125,7 @@ class TargetProtocol(Protocol):
     def encode_class(
         self,
         sound_event: data.SoundEventAnnotation,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Encode a sound event annotation to its target class name.
 
         Parameters
@@ -198,7 +198,7 @@ class TargetProtocol(Protocol):
         self,
         position: Position,
         size: Size,
-        class_name: Optional[str] = None,
+        class_name: str | None = None,
     ) -> data.Geometry:
         """Recover the ROI geometry from a position and dimensions.
 

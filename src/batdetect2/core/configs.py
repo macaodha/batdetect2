@@ -128,7 +128,7 @@ def get_object_field(obj: dict, current_key: str) -> Any:
 def load_config(
     path: PathLike,
     schema: Type[T],
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> T:
     """Load and validate configuration data from a file against a schema.
 

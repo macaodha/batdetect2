@@ -34,9 +34,9 @@ def data(): ...
 )
 def summary(
     dataset_config: Path,
-    field: Optional[str] = None,
-    targets_path: Optional[Path] = None,
-    base_dir: Optional[Path] = None,
+    field: str | None = None,
+    targets_path: Path | None = None,
+    base_dir: Path | None = None,
 ):
     from batdetect2.data import compute_class_summary, load_dataset_from_config
     from batdetect2.targets import load_targets
@@ -83,9 +83,9 @@ def summary(
 )
 def convert(
     dataset_config: Path,
-    field: Optional[str] = None,
+    field: str | None = None,
     output: Path = Path("annotations.json"),
-    base_dir: Optional[Path] = None,
+    base_dir: Path | None = None,
 ):
     """Convert a dataset config file to soundevent format."""
     from soundevent import data, io

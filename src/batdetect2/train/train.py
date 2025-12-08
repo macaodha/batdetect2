@@ -35,21 +35,21 @@ __all__ = [
 
 def train(
     train_annotations: Sequence[data.ClipAnnotation],
-    val_annotations: Optional[Sequence[data.ClipAnnotation]] = None,
+    val_annotations: Sequence[data.ClipAnnotation] | None = None,
     targets: Optional["TargetProtocol"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
     labeller: Optional["ClipLabeller"] = None,
     config: Optional["BatDetect2Config"] = None,
-    trainer: Optional[Trainer] = None,
-    train_workers: Optional[int] = None,
-    val_workers: Optional[int] = None,
-    checkpoint_dir: Optional[Path] = None,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    num_epochs: Optional[int] = None,
-    run_name: Optional[str] = None,
-    seed: Optional[int] = None,
+    trainer: Trainer | None = None,
+    train_workers: int | None = None,
+    val_workers: int | None = None,
+    checkpoint_dir: Path | None = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    num_epochs: int | None = None,
+    run_name: str | None = None,
+    seed: int | None = None,
 ):
     from batdetect2.config import BatDetect2Config
 
@@ -126,11 +126,11 @@ def train(
 def build_trainer(
     config: "BatDetect2Config",
     evaluator: "EvaluatorProtocol",
-    checkpoint_dir: Optional[Path] = None,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
-    num_epochs: Optional[int] = None,
+    checkpoint_dir: Path | None = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
+    num_epochs: int | None = None,
 ) -> Trainer:
     trainer_conf = config.train.trainer
     logger.opt(lazy=True).debug(

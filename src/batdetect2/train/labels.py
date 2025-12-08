@@ -42,10 +42,10 @@ class LabelConfig(BaseConfig):
 
 
 def build_clip_labeler(
-    targets: Optional[TargetProtocol] = None,
+    targets: TargetProtocol | None = None,
     min_freq: float = MIN_FREQ,
     max_freq: float = MAX_FREQ,
-    config: Optional[LabelConfig] = None,
+    config: LabelConfig | None = None,
 ) -> ClipLabeller:
     """Construct the final clip labelling function."""
     config = config or LabelConfig()
@@ -153,7 +153,7 @@ def generate_heatmaps(
 
 
 def load_label_config(
-    path: data.PathLike, field: Optional[str] = None
+    path: data.PathLike, field: str | None = None
 ) -> LabelConfig:
     """Load the heatmap label generation configuration from a file.
 

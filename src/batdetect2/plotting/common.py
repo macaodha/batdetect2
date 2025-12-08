@@ -13,8 +13,8 @@ __all__ = [
 
 
 def create_ax(
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     **kwargs,
 ) -> axes.Axes:
     """Create a new axis if none is provided"""
@@ -25,17 +25,17 @@ def create_ax(
 
 
 def plot_spectrogram(
-    spec: Union[torch.Tensor, np.ndarray],
-    start_time: Optional[float] = None,
-    end_time: Optional[float] = None,
-    min_freq: Optional[float] = None,
-    max_freq: Optional[float] = None,
-    ax: Optional[axes.Axes] = None,
-    figsize: Optional[Tuple[int, int]] = None,
+    spec: torch.Tensor | np.ndarray,
+    start_time: float | None = None,
+    end_time: float | None = None,
+    min_freq: float | None = None,
+    max_freq: float | None = None,
+    ax: axes.Axes | None = None,
+    figsize: Tuple[int, int] | None = None,
     add_colorbar: bool = False,
-    colorbar_kwargs: Optional[dict] = None,
-    vmin: Optional[float] = None,
-    vmax: Optional[float] = None,
+    colorbar_kwargs: dict | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
     cmap="gray",
 ) -> axes.Axes:
     if isinstance(spec, torch.Tensor):

@@ -57,6 +57,6 @@ class PreprocessingConfig(BaseConfig):
 
 def load_preprocessing_config(
     path: PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> PreprocessingConfig:
     return load_config(path, schema=PreprocessingConfig, field=field)

@@ -43,11 +43,7 @@ __all__ = [
 
 
 AnnotationFormats = Annotated[
-    Union[
-        BatDetect2MergedAnnotations,
-        BatDetect2FilesAnnotations,
-        AOEFAnnotations,
-    ],
+    BatDetect2MergedAnnotations | BatDetect2FilesAnnotations | AOEFAnnotations,
     Field(discriminator="format"),
 ]
 """Type Alias representing all supported data source configurations.
@@ -63,7 +59,7 @@ source configuration represents.
 
 def load_annotated_dataset(
     dataset: AnnotatedDataset,
-    base_dir: Optional[data.PathLike] = None,
+    base_dir: data.PathLike | None = None,
 ) -> data.AnnotationSet:
     """Load annotations for a single data source based on its configuration.
 

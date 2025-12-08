@@ -28,8 +28,8 @@ __all__ = [
 
 @dataclass
 class MatchEval:
-    gt: Optional[data.SoundEventAnnotation]
-    pred: Optional[RawPrediction]
+    gt: data.SoundEventAnnotation | None
+    pred: RawPrediction | None
 
     is_prediction: bool
     is_ground_truth: bool
@@ -212,12 +212,7 @@ class DetectionPrecision:
 
 
 DetectionMetricConfig = Annotated[
-    Union[
-        DetectionAveragePrecisionConfig,
-        DetectionROCAUCConfig,
-        DetectionRecallConfig,
-        DetectionPrecisionConfig,
-    ],
+    DetectionAveragePrecisionConfig | DetectionROCAUCConfig | DetectionRecallConfig | DetectionPrecisionConfig,
     Field(discriminator="name"),
 ]
 

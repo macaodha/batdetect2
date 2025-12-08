@@ -43,12 +43,7 @@ __all__ = [
 ]
 
 EncoderLayerConfig = Annotated[
-    Union[
-        ConvConfig,
-        FreqCoordConvDownConfig,
-        StandardConvDownConfig,
-        LayerGroupConfig,
-    ],
+    ConvConfig | FreqCoordConvDownConfig | StandardConvDownConfig | LayerGroupConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Encoder."""
@@ -252,7 +247,7 @@ Specifies an architecture typically used in BatDetect2:
 def build_encoder(
     in_channels: int,
     input_height: int,
-    config: Optional[EncoderConfig] = None,
+    config: EncoderConfig | None = None,
 ) -> Encoder:
     """Factory function to build an Encoder instance from configuration.
 

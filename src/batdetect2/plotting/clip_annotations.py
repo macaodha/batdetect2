@@ -15,10 +15,10 @@ __all__ = [
 
 def plot_clip_annotation(
     clip_annotation: data.ClipAnnotation,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    figsize: Optional[Tuple[int, int]] = None,
-    ax: Optional[Axes] = None,
-    audio_dir: Optional[data.PathLike] = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    figsize: Tuple[int, int] | None = None,
+    ax: Axes | None = None,
+    audio_dir: data.PathLike | None = None,
     add_points: bool = False,
     cmap: str = "gray",
     alpha: float = 1,
@@ -50,8 +50,8 @@ def plot_clip_annotation(
 def plot_anchor_points(
     clip_annotation: data.ClipAnnotation,
     targets: TargetProtocol,
-    figsize: Optional[Tuple[int, int]] = None,
-    ax: Optional[Axes] = None,
+    figsize: Tuple[int, int] | None = None,
+    ax: Axes | None = None,
     size: int = 1,
     color: str = "red",
     marker: str = "x",

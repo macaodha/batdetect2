@@ -21,7 +21,7 @@ def train_loop(
     model: DetectionModel,
     train_dataset: LabeledDataset[TrainInputs],
     validation_dataset: LabeledDataset[TrainInputs],
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
     num_epochs: int = 100,
     learning_rate: float = 1e-4,
 ):

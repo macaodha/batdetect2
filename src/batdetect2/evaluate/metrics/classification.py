@@ -36,13 +36,13 @@ __all__ = [
 @dataclass
 class MatchEval:
     clip: data.Clip
-    gt: Optional[data.SoundEventAnnotation]
-    pred: Optional[RawPrediction]
+    gt: data.SoundEventAnnotation | None
+    pred: RawPrediction | None
 
     is_prediction: bool
     is_ground_truth: bool
     is_generic: bool
-    true_class: Optional[str]
+    true_class: str | None
     score: float
 
 
@@ -61,16 +61,16 @@ classification_metrics: Registry[ClassificationMetric, [TargetProtocol]] = (
 
 
 class BaseClassificationConfig(BaseConfig):
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
+    include: List[str] | None = None
+    exclude: List[str] | None = None
 
 
 class BaseClassificationMetric:
     def __init__(
         self,
         targets: TargetProtocol,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: List[str] | None = None,
+        exclude: List[str] | None = None,
     ):
         self.targets = targets
         self.include = include
@@ -100,8 +100,8 @@ class ClassificationAveragePrecision(BaseClassificationMetric):
         ignore_non_predictions: bool = True,
         ignore_generic: bool = True,
         label: str = "average_precision",
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: List[str] | None = None,
+        exclude: List[str] | None = None,
     ):
         super().__init__(include=include, exclude=exclude, targets=targets)
         self.ignore_non_predictions = ignore_non_predictions
@@ -169,8 +169,8 @@ class ClassificationROCAUC(BaseClassificationMetric):
         ignore_non_predictions: bool = True,
         ignore_generic: bool = True,
         label: str = "roc_auc",
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: List[str] | None = None,
+        exclude: List[str] | None = None,
     ):
         self.targets = targets
         self.ignore_non_predictions = ignore_non_predictions
@@ -225,10 +225,7 @@ class ClassificationROCAUC(BaseClassificationMetric):
 
 
 ClassificationMetricConfig = Annotated[
-    Union[
-        ClassificationAveragePrecisionConfig,
-        ClassificationROCAUCConfig,
-    ],
+    ClassificationAveragePrecisionConfig | ClassificationROCAUCConfig,
     Field(discriminator="name"),
 ]
 

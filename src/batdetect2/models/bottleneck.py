@@ -78,8 +78,8 @@ class Bottleneck(nn.Module):
         input_height: int,
         in_channels: int,
         out_channels: int,
-        bottleneck_channels: Optional[int] = None,
-        layers: Optional[List[torch.nn.Module]] = None,
+        bottleneck_channels: int | None = None,
+        layers: List[torch.nn.Module] | None = None,
     ) -> None:
         """Initialize the base Bottleneck layer."""
         super().__init__()
@@ -127,7 +127,7 @@ class Bottleneck(nn.Module):
 
 
 BottleneckLayerConfig = Annotated[
-    Union[SelfAttentionConfig,],
+    SelfAttentionConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""
@@ -171,7 +171,7 @@ DEFAULT_BOTTLENECK_CONFIG: BottleneckConfig = BottleneckConfig(
 def build_bottleneck(
     input_height: int,
     in_channels: int,
-    config: Optional[BottleneckConfig] = None,
+    config: BottleneckConfig | None = None,
 ) -> nn.Module:
     """Factory function to build the Bottleneck module from configuration.
 

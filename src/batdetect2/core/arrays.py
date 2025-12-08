@@ -86,8 +86,8 @@ def adjust_width(
 
 def slice_tensor(
     tensor: torch.Tensor,
-    start: Optional[int] = None,
-    end: Optional[int] = None,
+    start: int | None = None,
+    end: int | None = None,
     dim: int = -1,
 ) -> torch.Tensor:
     slices = [slice(None)] * tensor.ndim

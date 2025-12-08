@@ -39,8 +39,8 @@ class TestDataset(Dataset[TestExample]):
         clip_annotations: Sequence[data.ClipAnnotation],
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
-        clipper: Optional[ClipperProtocol] = None,
-        audio_dir: Optional[data.PathLike] = None,
+        clipper: ClipperProtocol | None = None,
+        audio_dir: data.PathLike | None = None,
     ):
         self.clip_annotations = list(clip_annotations)
         self.clipper = clipper
@@ -78,10 +78,10 @@ class TestLoaderConfig(BaseConfig):
 
 def build_test_loader(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[TestLoaderConfig] = None,
-    num_workers: Optional[int] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: TestLoaderConfig | None = None,
+    num_workers: int | None = None,
 ) -> DataLoader[TestExample]:
     logger.info("Building test data loader...")
     config = config or TestLoaderConfig()
@@ -109,9 +109,9 @@ def build_test_loader(
 
 def build_test_dataset(
     clip_annotations: Sequence[data.ClipAnnotation],
-    audio_loader: Optional[AudioLoader] = None,
-    preprocessor: Optional[PreprocessorProtocol] = None,
-    config: Optional[TestLoaderConfig] = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    config: TestLoaderConfig | None = None,
 ) -> TestDataset:
     logger.info("Building training dataset...")
     config = config or TestLoaderConfig()

@@ -20,7 +20,7 @@ class OutputFormatterProtocol(Protocol, Generic[T]):
         self,
         predictions: Sequence[T],
         path: PathLike,
-        audio_dir: Optional[PathLike] = None,
+        audio_dir: PathLike | None = None,
     ) -> None: ...
 
     def load(self, path: PathLike) -> List[T]: ...

@@ -18,14 +18,14 @@ class CheckpointConfig(BaseConfig):
     monitor: str = "classification/mean_average_precision"
     mode: str = "max"
     save_top_k: int = 1
-    filename: Optional[str] = None
+    filename: str | None = None
 
 
 def build_checkpoint_callback(
-    config: Optional[CheckpointConfig] = None,
-    checkpoint_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    config: CheckpointConfig | None = None,
+    checkpoint_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Callback:
     config = config or CheckpointConfig()
 

@@ -25,11 +25,11 @@ def evaluate_command(
     model_path: Path,
     test_dataset: Path,
     base_dir: Path,
-    config_path: Optional[Path],
+    config_path: Path | None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
-    num_workers: Optional[int] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    num_workers: int | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ):
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.config import load_full_config

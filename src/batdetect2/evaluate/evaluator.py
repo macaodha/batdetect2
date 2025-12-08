@@ -51,8 +51,8 @@ class Evaluator:
 
 
 def build_evaluator(
-    config: Optional[Union[EvaluationConfig, dict]] = None,
-    targets: Optional[TargetProtocol] = None,
+    config: EvaluationConfig | dict | None = None,
+    targets: TargetProtocol | None = None,
 ) -> EvaluatorProtocol:
     targets = targets or build_targets()
 

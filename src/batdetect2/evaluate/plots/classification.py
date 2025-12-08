@@ -45,7 +45,7 @@ classification_plots: Registry[ClassificationPlotter, [TargetProtocol]] = (
 class PRCurveConfig(BasePlotConfig):
     name: Literal["pr_curve"] = "pr_curve"
     label: str = "pr_curve"
-    title: Optional[str] = "Classification Precision-Recall Curve"
+    title: str | None = "Classification Precision-Recall Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
     separate_figures: bool = False
@@ -108,7 +108,7 @@ class PRCurve(BasePlot):
 class ThresholdPrecisionCurveConfig(BasePlotConfig):
     name: Literal["threshold_precision_curve"] = "threshold_precision_curve"
     label: str = "threshold_precision_curve"
-    title: Optional[str] = "Classification Threshold-Precision Curve"
+    title: str | None = "Classification Threshold-Precision Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
     separate_figures: bool = False
@@ -181,7 +181,7 @@ class ThresholdPrecisionCurve(BasePlot):
 class ThresholdRecallCurveConfig(BasePlotConfig):
     name: Literal["threshold_recall_curve"] = "threshold_recall_curve"
     label: str = "threshold_recall_curve"
-    title: Optional[str] = "Classification Threshold-Recall Curve"
+    title: str | None = "Classification Threshold-Recall Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
     separate_figures: bool = False
@@ -254,7 +254,7 @@ class ThresholdRecallCurve(BasePlot):
 class ROCCurveConfig(BasePlotConfig):
     name: Literal["roc_curve"] = "roc_curve"
     label: str = "roc_curve"
-    title: Optional[str] = "Classification ROC Curve"
+    title: str | None = "Classification ROC Curve"
     ignore_non_predictions: bool = True
     ignore_generic: bool = True
     separate_figures: bool = False
@@ -326,12 +326,7 @@ class ROCCurve(BasePlot):
 
 
 ClassificationPlotConfig = Annotated[
-    Union[
-        PRCurveConfig,
-        ROCCurveConfig,
-        ThresholdPrecisionCurveConfig,
-        ThresholdRecallCurveConfig,
-    ],
+    PRCurveConfig | ROCCurveConfig | ThresholdPrecisionCurveConfig | ThresholdRecallCurveConfig,
     Field(discriminator="name"),
 ]
 

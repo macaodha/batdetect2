@@ -24,19 +24,14 @@ __all__ = [
 
 
 OutputFormatConfig = Annotated[
-    Union[
-        BatDetect2OutputConfig,
-        ParquetOutputConfig,
-        SoundEventOutputConfig,
-        RawOutputConfig,
-    ],
+    BatDetect2OutputConfig | ParquetOutputConfig | SoundEventOutputConfig | RawOutputConfig,
     Field(discriminator="name"),
 ]
 
 
 def build_output_formatter(
-    targets: Optional[TargetProtocol] = None,
-    config: Optional[OutputFormatConfig] = None,
+    targets: TargetProtocol | None = None,
+    config: OutputFormatConfig | None = None,
 ) -> OutputFormatterProtocol:
     """Construct the final output formatter."""
     from batdetect2.targets import build_targets
@@ -48,9 +43,9 @@ def build_output_formatter(
 
 
 def get_output_formatter(
-    name: Optional[str] = None,
-    targets: Optional[TargetProtocol] = None,
-    config: Optional[OutputFormatConfig] = None,
+    name: str | None = None,
+    targets: TargetProtocol | None = None,
+    config: OutputFormatConfig | None = None,
 ) -> OutputFormatterProtocol:
     """Get the output formatter by name."""
 
@@ -71,9 +66,9 @@ def get_output_formatter(
 
 def load_predictions(
     path: PathLike,
-    format: Optional[str] = "raw",
-    config: Optional[OutputFormatConfig] = None,
-    targets: Optional[TargetProtocol] = None,
+    format: str | None = "raw",
+    config: OutputFormatConfig | None = None,
+    targets: TargetProtocol | None = None,
 ):
     """Load predictions from a file."""
     from batdetect2.targets import build_targets

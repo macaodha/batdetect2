@@ -57,7 +57,7 @@ class PostprocessConfig(BaseConfig):
 
 def load_postprocess_config(
     path: data.PathLike,
-    field: Optional[str] = None,
+    field: str | None = None,
 ) -> PostprocessConfig:
     """Load the postprocessing configuration from a file.
 

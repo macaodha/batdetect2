@@ -32,7 +32,7 @@ def extract_detection_peaks(
     feature_heatmap: torch.Tensor,
     classification_heatmap: torch.Tensor,
     max_detections: int = 200,
-    threshold: Optional[float] = None,
+    threshold: float | None = None,
 ) -> List[ClipDetectionsTensor]:
     height = detection_heatmap.shape[-2]
     width = detection_heatmap.shape[-1]

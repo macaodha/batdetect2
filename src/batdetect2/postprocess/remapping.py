@@ -31,14 +31,14 @@ __all__ = [
 
 
 def to_xarray(
-    array: Union[torch.Tensor, np.ndarray],
+    array: torch.Tensor | np.ndarray,
     start_time: float,
     end_time: float,
     min_freq: float = MIN_FREQ,
     max_freq: float = MAX_FREQ,
     name: str = "xarray",
-    extra_dims: Optional[List[str]] = None,
-    extra_coords: Optional[Dict[str, np.ndarray]] = None,
+    extra_dims: List[str] | None = None,
+    extra_coords: Dict[str, np.ndarray] | None = None,
 ) -> xr.DataArray:
     if isinstance(array, torch.Tensor):
         array = array.detach().cpu().numpy()

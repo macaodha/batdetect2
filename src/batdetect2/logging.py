@@ -49,14 +49,14 @@ def enable_logging(level: int):
 
 class BaseLoggerConfig(BaseConfig):
     log_dir: Path = DEFAULT_LOGS_DIR
-    experiment_name: Optional[str] = None
-    run_name: Optional[str] = None
+    experiment_name: str | None = None
+    run_name: str | None = None
 
 
 class DVCLiveConfig(BaseLoggerConfig):
     name: Literal["dvclive"] = "dvclive"
     prefix: str = ""
-    log_model: Union[bool, Literal["all"]] = False
+    log_model: bool | Literal["all"] = False
     monitor_system: bool = False
 
 
@@ -72,18 +72,13 @@ class TensorBoardLoggerConfig(BaseLoggerConfig):
 
 class MLFlowLoggerConfig(BaseLoggerConfig):
     name: Literal["mlflow"] = "mlflow"
-    tracking_uri: Optional[str] = "http://localhost:5000"
-    tags: Optional[dict[str, Any]] = None
+    tracking_uri: str | None = "http://localhost:5000"
+    tags: dict[str, Any] | None = None
     log_model: bool = False
 
 
 LoggerConfig = Annotated[
-    Union[
-        DVCLiveConfig,
-        CSVLoggerConfig,
-        TensorBoardLoggerConfig,
-        MLFlowLoggerConfig,
-    ],
+    DVCLiveConfig | CSVLoggerConfig | TensorBoardLoggerConfig | MLFlowLoggerConfig,
     Field(discriminator="name"),
 ]
 
@@ -95,17 +90,17 @@ class LoggerBuilder(Protocol, Generic[T]):
     def __call__(
         self,
         config: T,
-        log_dir: Optional[Path] = None,
-        experiment_name: Optional[str] = None,
-        run_name: Optional[str] = None,
+        log_dir: Path | None = None,
+        experiment_name: str | None = None,
+        run_name: str | None = None,
     ) -> Logger: ...
 
 
 def create_dvclive_logger(
     config: DVCLiveConfig,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Logger:
     try:
         from dvclive.lightning import DVCLiveLogger  # type: ignore
@@ -130,9 +125,9 @@ def create_dvclive_logger(
 
 def create_csv_logger(
     config: CSVLoggerConfig,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Logger:
     from lightning.pytorch.loggers import CSVLogger
 
@@ -159,9 +154,9 @@ def create_csv_logger(
 
 def create_tensorboard_logger(
     config: TensorBoardLoggerConfig,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Logger:
     from lightning.pytorch.loggers import TensorBoardLogger
 
@@ -191,9 +186,9 @@ def create_tensorboard_logger(
 
 def create_mlflow_logger(
     config: MLFlowLoggerConfig,
-    log_dir: Optional[data.PathLike] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    log_dir: data.PathLike | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Logger:
     try:
         from lightning.pytorch.loggers import MLFlowLogger
@@ -232,9 +227,9 @@ LOGGER_FACTORY: Dict[str, LoggerBuilder] = {
 
 def build_logger(
     config: LoggerConfig,
-    log_dir: Optional[Path] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    log_dir: Path | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
 ) -> Logger:
     logger.opt(lazy=True).debug(
         "Building logger with config: \n{}",
@@ -257,7 +252,7 @@ def build_logger(
 PlotLogger = Callable[[str, Figure, int], None]
 
 
-def get_image_logger(logger: Logger) -> Optional[PlotLogger]:
+def get_image_logger(logger: Logger) -> PlotLogger | None:
     if isinstance(logger, TensorBoardLogger):
         return logger.experiment.add_figure
 
@@ -282,7 +277,7 @@ def get_image_logger(logger: Logger) -> Optional[PlotLogger]:
 TableLogger = Callable[[str, pd.DataFrame, int], None]
 
 
-def get_table_logger(logger: Logger) -> Optional[TableLogger]:
+def get_table_logger(logger: Logger) -> TableLogger | None:
     if isinstance(logger, TensorBoardLogger):
         return partial(save_table, dir=Path(logger.log_dir))
 
