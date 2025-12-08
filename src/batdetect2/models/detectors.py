@@ -14,7 +14,6 @@ logic for preprocessing inputs and postprocessing/decoding outputs resides in
 the `batdetect2.preprocess` and `batdetect2.postprocess` packages, respectively.
 """
 
-from typing import Optional
 
 import torch
 from loguru import logger

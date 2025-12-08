@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Sequence, Union
+from typing import Annotated, Optional, Sequence
 
 from pydantic import Field
 from soundevent import data
@@ -26,7 +26,11 @@ __all__ = [
 
 
 TaskConfig = Annotated[
-    ClassificationTaskConfig | DetectionTaskConfig | ClipDetectionTaskConfig | ClipClassificationTaskConfig | TopClassDetectionTaskConfig,
+    ClassificationTaskConfig
+    | DetectionTaskConfig
+    | ClipDetectionTaskConfig
+    | ClipClassificationTaskConfig
+    | TopClassDetectionTaskConfig,
     Field(discriminator="name"),
 ]
 

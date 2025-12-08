@@ -43,7 +43,7 @@ def _read_fmt_chunk(fid):
     size, comp, noc, rate, sbytes, ba, bits = res
     if comp not in KNOWN_WAVE_FORMATS or size > 16:
         comp = WAVE_FORMAT_PCM
-        warnings.warn("Unknown wave file format", WavFileWarning)
+        warnings.warn("Unknown wave file format", WavFileWarning, stacklevel=2)
         if size > 16:
             fid.read(size - 16)
 

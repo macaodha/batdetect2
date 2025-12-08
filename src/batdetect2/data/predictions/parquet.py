@@ -1,6 +1,5 @@
-import json
 from pathlib import Path
-from typing import List, Literal, Optional, Sequence
+from typing import List, Literal, Sequence
 from uuid import UUID
 
 import numpy as np

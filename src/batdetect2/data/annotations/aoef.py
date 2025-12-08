@@ -12,7 +12,7 @@ that meet specific status criteria (e.g., completed, verified, without issues).
 """
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 from uuid import uuid5
 
 from pydantic import Field

@@ -2,7 +2,7 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Tuple
 
 import numpy as np
 

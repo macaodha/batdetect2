@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Literal, Optional, Sequence
+from typing import List, Literal, Sequence
 from uuid import UUID, uuid4
 
 import numpy as np

@@ -87,7 +87,7 @@ def save_ann_spec(
     y_extent = [0, duration, min_freq, max_freq]
 
     plt.close("all")
-    fig = plt.figure(
+    plt.figure(
         0, figsize=(spec.shape[1] / 100, spec.shape[0] / 100), dpi=100
     )
     plt.imshow(
@@ -369,7 +369,7 @@ def plot_pr_curve_class(
 
         # print(class_name)
         # plot the location of the confidence threshold values
-        for jj, tt in enumerate(rr["thresholds"]):
+        for jj, _tt in enumerate(rr["thresholds"]):
             ind = rr["thresholds_inds"][jj]
             if ind > -1:
                 plt.plot(

@@ -12,7 +12,7 @@ system that deal with model predictions.
 """
 
 from dataclasses import dataclass
-from typing import List, NamedTuple, Optional, Protocol, Sequence
+from typing import List, NamedTuple, Protocol, Sequence
 
 import numpy as np
 import torch

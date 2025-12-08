@@ -8,10 +8,8 @@ from typing import (
     Iterable,
     List,
     Literal,
-    Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import matplotlib.pyplot as plt
@@ -405,7 +403,7 @@ def get_binned_sample(matches: List[MatchEval], n_examples: int = 5):
         return matches
 
     indices, pred_scores = zip(
-        *[(index, match.score) for index, match in enumerate(matches)]
+        *[(index, match.score) for index, match in enumerate(matches)], strict=False
     )
 
     bins = pd.qcut(pred_scores, q=n_examples, labels=False, duplicates="drop")

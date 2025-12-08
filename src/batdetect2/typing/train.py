@@ -1,4 +1,4 @@
-from typing import Callable, List, NamedTuple, Protocol, Tuple
+from typing import Callable, NamedTuple, Protocol, Tuple
 
 import torch
 from soundevent import data

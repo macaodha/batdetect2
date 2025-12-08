@@ -1,6 +1,6 @@
 """Plot functions to visualize detections and spectrograms."""
 
-from typing import List, Optional, Tuple, Union, cast
+from typing import List, Tuple, cast
 
 import matplotlib.ticker as tick
 import numpy as np

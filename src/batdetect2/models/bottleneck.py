@@ -14,7 +14,7 @@ A factory function `build_bottleneck` constructs the appropriate bottleneck
 module based on the provided configuration.
 """
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List
 
 import torch
 from pydantic import Field

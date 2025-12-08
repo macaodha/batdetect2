@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Tuple
 
 from matplotlib.axes import Axes
 from soundevent import data

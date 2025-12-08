@@ -1,4 +1,4 @@
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Literal
 
 import numpy as np
 from loguru import logger

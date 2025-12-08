@@ -11,7 +11,7 @@ activations that have lower scores than a local maximum. This helps prevent
 multiple, overlapping detections originating from the same sound event.
 """
 
-from typing import Tuple, Union
+from typing import Tuple
 
 import torch
 

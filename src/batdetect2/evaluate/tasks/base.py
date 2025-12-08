@@ -4,7 +4,6 @@ from typing import (
     Generic,
     Iterable,
     List,
-    Optional,
     Sequence,
     Tuple,
     TypeVar,
@@ -101,7 +100,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
     ) -> List[T_Output]:
         return [
             self.evaluate_clip(clip_annotation, preds)
-            for clip_annotation, preds in zip(clip_annotations, predictions)
+            for clip_annotation, preds in zip(clip_annotations, predictions, strict=False)
         ]
 
     def evaluate_clip(

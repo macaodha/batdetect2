@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple
+from typing import Tuple
 
 import librosa
 import librosa.core.spectrum

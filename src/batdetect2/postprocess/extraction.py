@@ -15,7 +15,7 @@ precise time-frequency location of each detection. The final output aggregates
 all extracted information into a structured `xarray.Dataset`.
 """
 
-from typing import List, Optional
+from typing import List
 
 import torch
 

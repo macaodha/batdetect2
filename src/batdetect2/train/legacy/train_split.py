@@ -10,7 +10,7 @@ def get_train_test_data(ann_dir, wav_dir, split_name, load_extra=True):
         train_sets, test_sets = split_same(ann_dir, wav_dir, load_extra)
     else:
         print("Split not defined")
-        assert False
+        raise AssertionError()
 
     return train_sets, test_sets
 

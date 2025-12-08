@@ -9,10 +9,8 @@ from typing import (
     Dict,
     Generic,
     Literal,
-    Optional,
     Protocol,
     TypeVar,
-    Union,
 )
 
 import numpy as np

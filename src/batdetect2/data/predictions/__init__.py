@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Union
+from typing import Annotated
 
 from pydantic import Field
 from soundevent.data import PathLike
@@ -24,7 +24,10 @@ __all__ = [
 
 
 OutputFormatConfig = Annotated[
-    BatDetect2OutputConfig | ParquetOutputConfig | SoundEventOutputConfig | RawOutputConfig,
+    BatDetect2OutputConfig
+    | ParquetOutputConfig
+    | SoundEventOutputConfig
+    | RawOutputConfig,
     Field(discriminator="name"),
 ]
 

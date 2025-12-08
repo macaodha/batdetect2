@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Tuple
 
 from loguru import logger
 from soundevent import data

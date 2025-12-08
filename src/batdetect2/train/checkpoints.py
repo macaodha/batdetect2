@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 

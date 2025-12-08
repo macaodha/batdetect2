@@ -1,6 +1,6 @@
 """Decodes extracted detection data into standard soundevent predictions."""
 
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 from soundevent import data
@@ -39,7 +39,7 @@ def to_raw_predictions(
         detections.times,
         detections.frequencies,
         detections.sizes,
-        detections.features,
+        detections.features, strict=False,
     ):
         highest_scoring_class = targets.class_names[class_scores.argmax()]
 

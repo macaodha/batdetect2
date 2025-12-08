@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Literal, Optional, Sequence, TypedDict
+from typing import List, Literal, Sequence, TypedDict
 
 import numpy as np
 from soundevent import data

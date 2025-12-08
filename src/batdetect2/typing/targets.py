@@ -13,7 +13,7 @@ throughout BatDetect2.
 """
 
 from collections.abc import Callable
-from typing import List, Optional, Protocol
+from typing import List, Protocol
 
 import numpy as np
 from soundevent import data

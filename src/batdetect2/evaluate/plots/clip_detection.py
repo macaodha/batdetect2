@@ -3,10 +3,8 @@ from typing import (
     Callable,
     Iterable,
     Literal,
-    Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import pandas as pd

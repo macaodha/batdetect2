@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, Dict, Literal, Sequence, Union
+from typing import Annotated, Callable, Dict, Literal, Sequence
 
 import numpy as np
 from pydantic import Field

@@ -2,6 +2,10 @@ import argparse
 import json
 import warnings
 
+import batdetect2.train.audio_dataloader as adl
+import batdetect2.train.evaluate as evl
+import batdetect2.train.train_split as ts
+import batdetect2.train.train_utils as tu
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -9,10 +13,6 @@ import torch.utils.data
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 import batdetect2.detector.post_process as pp
-import batdetect2.train.audio_dataloader as adl
-import batdetect2.train.evaluate as evl
-import batdetect2.train.train_split as ts
-import batdetect2.train.train_utils as tu
 import batdetect2.utils.plot_utils as pu
 from batdetect2.detector import models, parameters
 from batdetect2.train import losses

@@ -18,7 +18,7 @@ The `Decoder`'s `forward` method is designed to accept skip connection tensors
 at each stage.
 """
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List
 
 import torch
 from pydantic import Field
@@ -182,7 +182,7 @@ class Decoder(nn.Module):
                 f"but got {len(residuals)}."
             )
 
-        for layer, res in zip(self.layers, residuals[::-1]):
+        for layer, res in zip(self.layers, residuals[::-1], strict=False):
             x = layer(x + res)
 
         return x

@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Optional, Tuple
+from typing import Tuple
 
 from soundevent import data
 

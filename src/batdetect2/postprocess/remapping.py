@@ -12,7 +12,7 @@ classification probability maps, size prediction maps, and potentially
 intermediate features.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 
 import numpy as np
 import torch

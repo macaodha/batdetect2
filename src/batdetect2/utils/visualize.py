@@ -133,7 +133,7 @@ class InteractivePlotter:
         self.fig.canvas.mpl_connect("key_press_event", self.key_press)
 
     def mouse_hover(self, event):
-        vis = self.annot.get_visible()
+        self.annot.get_visible()
         if event.inaxes == self.ax[0]:
             cont, ind = self.low_dim_plt.contains(event)
             if cont:

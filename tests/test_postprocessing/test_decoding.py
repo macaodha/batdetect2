@@ -540,6 +540,7 @@ def test_get_prediction_features_basic():
         features,
         ["f0", "f1", "f2"],
         [1.1, 2.2, 3.3],
+        strict=True,
     ):
         assert isinstance(feature, data.Feature)
         assert feature.term.name == f"batdetect2:{feat_name}"

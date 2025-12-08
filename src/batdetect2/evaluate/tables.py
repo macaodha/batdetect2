@@ -1,4 +1,4 @@
-from typing import Annotated, Callable, Literal, Sequence, Union
+from typing import Annotated, Callable, Literal, Sequence
 
 import pandas as pd
 from pydantic import Field

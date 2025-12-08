@@ -2,7 +2,7 @@
 
 import warnings
 from collections.abc import Sequence
-from typing import Annotated, Callable, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Callable, List, Literal, Tuple
 
 import numpy as np
 import torch
@@ -394,7 +394,7 @@ class MaskTime(torch.nn.Module):
             size=num_masks,
         )
         masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size)
+            (start, start + size) for start, size in zip(mask_start, mask_size, strict=False)
         ]
         return mask_time(spec, masks), clip_annotation
 
@@ -460,7 +460,7 @@ class MaskFrequency(torch.nn.Module):
             size=num_masks,
         )
         masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size)
+            (start, start + size) for start, size in zip(mask_start, mask_size, strict=False)
         ]
         return mask_frequency(spec, masks), clip_annotation
 

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Annotated, List, Literal, Sequence, Union
+from typing import Annotated, List, Literal, Sequence
 
 from pydantic import Field
 from soundevent import data

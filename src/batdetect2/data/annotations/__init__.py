@@ -13,7 +13,7 @@ format-specific loading function to retrieve the annotations as a standard
 `soundevent.data.AnnotationSet`.
 """
 
-from typing import Annotated, Optional, Union
+from typing import Annotated
 
 from pydantic import Field
 from soundevent import data

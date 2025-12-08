@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import (
     Annotated,
@@ -6,9 +5,7 @@ from typing import (
     Dict,
     List,
     Literal,
-    Optional,
     Sequence,
-    Union,
 )
 
 import numpy as np

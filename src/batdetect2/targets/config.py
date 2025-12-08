@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Optional
+from typing import List
 
 from pydantic import Field, field_validator
 from soundevent import data

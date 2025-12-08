@@ -26,7 +26,7 @@ for creating a standard BatDetect2 model instance is the `build_model` function
 provided here.
 """
 
-from typing import List, Optional
+from typing import List
 
 import torch
 

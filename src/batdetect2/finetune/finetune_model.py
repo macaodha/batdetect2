@@ -1,7 +1,7 @@
 import argparse
 import os
 import warnings
-from typing import List, Optional
+from typing import List
 
 import torch
 import torch.utils.data
@@ -88,7 +88,7 @@ def select_device(warn=True) -> str:
     if warn:
         warnings.warn(
             "No GPU available, using the CPU instead. Please consider using a GPU "
-            "to speed up training."
+            "to speed up training.", stacklevel=2
         )
 
     return "cpu"

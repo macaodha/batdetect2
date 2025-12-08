@@ -1,4 +1,4 @@
-from typing import Generic, List, Optional, Protocol, Sequence, TypeVar
+from typing import Generic, List, Protocol, Sequence, TypeVar
 
 from soundevent.data import PathLike
 

@@ -39,7 +39,7 @@ class InferenceModule(LightningModule):
                     targets=self.model.targets,
                 ),
             )
-            for clip, clip_dets in zip(clips, clip_detections)
+            for clip, clip_dets in zip(clips, clip_detections, strict=False)
         ]
 
         return predictions

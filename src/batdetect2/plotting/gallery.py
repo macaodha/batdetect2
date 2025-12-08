@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -36,7 +36,7 @@ def plot_match_gallery(
         sharey="row",
     )
 
-    for tp_ax, tp_match in zip(axes[0], true_positives[:n_examples]):
+    for tp_ax, tp_match in zip(axes[0], true_positives[:n_examples], strict=False):
         try:
             plot_true_positive_match(
                 tp_match,
@@ -53,7 +53,7 @@ def plot_match_gallery(
         ):
             continue
 
-    for fp_ax, fp_match in zip(axes[1], false_positives[:n_examples]):
+    for fp_ax, fp_match in zip(axes[1], false_positives[:n_examples], strict=False):
         try:
             plot_false_positive_match(
                 fp_match,
@@ -70,7 +70,7 @@ def plot_match_gallery(
         ):
             continue
 
-    for fn_ax, fn_match in zip(axes[2], false_negatives[:n_examples]):
+    for fn_ax, fn_match in zip(axes[2], false_negatives[:n_examples], strict=False):
         try:
             plot_false_negative_match(
                 fn_match,
@@ -87,7 +87,7 @@ def plot_match_gallery(
         ):
             continue
 
-    for ct_ax, ct_match in zip(axes[3], cross_triggers[:n_examples]):
+    for ct_ax, ct_match in zip(axes[3], cross_triggers[:n_examples], strict=False):
         try:
             plot_cross_trigger_match(
                 ct_match,

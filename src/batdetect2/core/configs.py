@@ -8,7 +8,7 @@ configuration data from files, with optional support for accessing nested
 configuration sections.
 """
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Type, TypeVar
 
 import yaml
 from deepmerge.merger import Merger

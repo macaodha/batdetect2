@@ -4,10 +4,8 @@ from typing import (
     Callable,
     Iterable,
     Literal,
-    Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import matplotlib.pyplot as plt

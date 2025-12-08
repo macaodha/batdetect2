@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pydantic import Field, PrivateAttr, computed_field, model_validator
 from soundevent import data

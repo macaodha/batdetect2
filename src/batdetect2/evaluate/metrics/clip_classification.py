@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Annotated, Callable, Dict, Literal, Sequence, Set, Union
+from typing import Annotated, Callable, Dict, Literal, Sequence, Set
 
 import numpy as np
 from pydantic import Field

@@ -1,6 +1,6 @@
 """Types used in the code base."""
 
-from typing import Any, List, NamedTuple, Optional, TypedDict
+from typing import Any, List, NamedTuple, TypedDict
 
 import numpy as np
 import torch

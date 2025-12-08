@@ -5,9 +5,7 @@ from typing import (
     Dict,
     List,
     Literal,
-    Optional,
     Sequence,
-    Union,
 )
 
 import numpy as np

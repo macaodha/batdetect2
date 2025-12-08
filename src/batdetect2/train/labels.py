@@ -6,7 +6,6 @@ the specific multi-channel heatmap formats required by the neural network.
 """
 
 from functools import partial
-from typing import Optional
 
 import numpy as np
 import torch

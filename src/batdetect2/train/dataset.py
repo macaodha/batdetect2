@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 import torch
 from loguru import logger

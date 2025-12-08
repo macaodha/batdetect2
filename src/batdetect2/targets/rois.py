@@ -20,7 +20,7 @@ selecting and configuring the desired mapper. This module separates the
 *geometric* aspect of target definition from *semantic* classification.
 """
 
-from typing import Annotated, Literal, Optional, Tuple, Union
+from typing import Annotated, Literal, Tuple
 
 import numpy as np
 from pydantic import Field

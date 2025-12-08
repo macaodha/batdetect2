@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterator, List, Tuple
 
 import librosa
 import numpy as np
@@ -220,7 +220,7 @@ def get_annotations_from_preds(
             predictions["high_freqs"],
             class_ind_best,
             class_prob_best,
-            predictions["det_probs"],
+            predictions["det_probs"], strict=False,
         )
     ]
     return annotations

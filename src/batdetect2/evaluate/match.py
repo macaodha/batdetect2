@@ -1,5 +1,5 @@
 from collections.abc import Callable, Iterable, Mapping
-from typing import Annotated, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Annotated, List, Literal, Sequence, Tuple
 
 import numpy as np
 from pydantic import Field
@@ -94,7 +94,7 @@ def match(
                 class_name: score
                 for class_name, score in zip(
                     targets.class_names,
-                    prediction.class_scores,
+                    prediction.class_scores, strict=False,
                 )
             }
             if prediction is not None
@@ -563,7 +563,7 @@ def select_optimal_matches(
         maximize=True,
     )
 
-    for gt_idx, pred_idx in zip(assiged_rows, assigned_columns):
+    for gt_idx, pred_idx in zip(assiged_rows, assigned_columns, strict=False):
         affinity = float(affinity_matrix[gt_idx, pred_idx])
 
         if affinity <= affinity_threshold:

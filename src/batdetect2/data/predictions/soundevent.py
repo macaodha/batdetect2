@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Literal, Optional, Sequence
+from typing import List, Literal, Sequence
 
 import numpy as np
 from soundevent import data, io

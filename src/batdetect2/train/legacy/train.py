@@ -1,12 +1,12 @@
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import torch
+from batdetect2.models.types import DetectionModel
 from soundevent import data
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
-from batdetect2.models.types import DetectionModel
 from batdetect2.train.dataset import LabeledDataset
 
 
@@ -26,7 +26,7 @@ def train_loop(
     learning_rate: float = 1e-4,
 ):
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    validation_loader = DataLoader(validation_dataset, batch_size=32)
+    DataLoader(validation_dataset, batch_size=32)
 
     model.to(device)
 
@@ -36,8 +36,8 @@ def train_loop(
         num_epochs * len(train_loader),
     )
 
-    for epoch in range(num_epochs):
-        train_loss = train_single_epoch(
+    for _epoch in range(num_epochs):
+        train_single_epoch(
             model,
             train_loader,
             optimizer,
@@ -60,9 +60,9 @@ def train_single_epoch(
         optimizer.zero_grad()
 
         spec = batch.spec.to(device)
-        detection_heatmap = batch.detection_heatmap.to(device)
-        class_heatmap = batch.class_heatmap.to(device)
-        size_heatmap = batch.size_heatmap.to(device)
+        batch.detection_heatmap.to(device)
+        batch.class_heatmap.to(device)
+        batch.size_heatmap.to(device)
 
         outputs = model(spec)
 

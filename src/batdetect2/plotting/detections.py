@@ -1,4 +1,3 @@
-from typing import Optional
 
 from matplotlib import axes, patches
 from soundevent.plot import plot_geometry

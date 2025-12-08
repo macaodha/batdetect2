@@ -1,6 +1,6 @@
 """Computes spectrograms from audio waveforms with configurable parameters."""
 
-from typing import Annotated, Callable, Literal, Optional, Union
+from typing import Annotated, Callable, Literal
 
 import numpy as np
 import torch

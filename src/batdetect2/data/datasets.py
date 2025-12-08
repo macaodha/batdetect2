@@ -19,7 +19,7 @@ The core components are:
 """
 
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 from loguru import logger
 from pydantic import Field

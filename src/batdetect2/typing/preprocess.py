@@ -10,7 +10,7 @@ pipeline can interact consistently, regardless of the specific underlying
 implementation (e.g., different libraries or custom configurations).
 """
 
-from typing import Optional, Protocol
+from typing import Protocol
 
 import numpy as np
 import torch

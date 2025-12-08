@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from collections import Counter
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from sklearn.model_selection import StratifiedGroupKFold
@@ -162,7 +162,7 @@ def main():
         # change the names of the classes
         ip_names = args.input_class_names.split(";")
         op_names = args.output_class_names.split(";")
-        name_dict = dict(zip(ip_names, op_names))
+        name_dict = dict(zip(ip_names, op_names, strict=False))
 
     # load annotations
     data_all = tu.load_set_of_anns(

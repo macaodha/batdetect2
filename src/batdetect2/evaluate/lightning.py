@@ -47,7 +47,7 @@ class EvaluationModule(LightningModule):
                 ),
             )
             for clip_annotation, clip_dets in zip(
-                clip_annotations, clip_detections
+                clip_annotations, clip_detections, strict=False
             )
         ]
 

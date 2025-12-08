@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Tuple, Union
+from typing import Protocol, Tuple
 
 from matplotlib.axes import Axes
 from soundevent import data, plot

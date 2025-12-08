@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 from matplotlib.figure import Figure
 from soundevent import data
@@ -36,7 +36,7 @@ class Evaluator:
     def compute_metrics(self, eval_outputs: List[Any]) -> Dict[str, float]:
         results = {}
 
-        for task, outputs in zip(self.tasks, eval_outputs):
+        for task, outputs in zip(self.tasks, eval_outputs, strict=False):
             results.update(task.compute_metrics(outputs))
 
         return results
@@ -45,7 +45,7 @@ class Evaluator:
         self,
         eval_outputs: List[Any],
     ) -> Iterable[Tuple[str, Figure]]:
-        for task, outputs in zip(self.tasks, eval_outputs):
+        for task, outputs in zip(self.tasks, eval_outputs, strict=False):
             for name, fig in task.generate_plots(outputs):
                 yield name, fig
 

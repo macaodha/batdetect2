@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Tuple
 
 from matplotlib.axes import Axes
 from soundevent import data, plot
@@ -68,6 +68,6 @@ def plot_anchor_points(
         position, _ = targets.encode_roi(sound_event)
         positions.append(position)
 
-    X, Y = zip(*positions)
+    X, Y = zip(*positions, strict=False)
     ax.scatter(X, Y, s=size, c=color, marker=marker, alpha=alpha)
     return ax

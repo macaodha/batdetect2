@@ -20,7 +20,7 @@ bottleneck output. A default configuration (`DEFAULT_ENCODER_CONFIG`) is also
 provided.
 """
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List
 
 import torch
 from pydantic import Field

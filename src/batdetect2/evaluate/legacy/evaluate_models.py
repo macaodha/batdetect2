@@ -357,7 +357,7 @@ def train_rf_model(x_train, y_train, num_classes, seed=2001):
     clf = RandomForestClassifier(random_state=seed, n_jobs=-1)
     clf.fit(x_train, y_train)
     y_pred = clf.predict(x_train)
-    tr_acc = (y_pred == y_train).mean()
+    (y_pred == y_train).mean()
     # print('Train acc', round(tr_acc*100, 2))
     return clf, un_train_class
 
@@ -450,7 +450,7 @@ def add_root_path_back(data_sets, ann_path, wav_path):
 
 
 def check_classes_in_train(gt_list, class_names):
-    num_gt_total = np.sum([gg["start_times"].shape[0] for gg in gt_list])
+    np.sum([gg["start_times"].shape[0] for gg in gt_list])
     num_with_no_class = 0
     for gt in gt_list:
         for cc in gt["class_names"]:
@@ -569,7 +569,7 @@ if __name__ == "__main__":
     num_with_no_class = check_classes_in_train(gt_test, class_names)
     if total_num_calls == num_with_no_class:
         print("Classes from the test set are not in the train set.")
-        assert False
+        raise AssertionError()
 
     # only need the train data if evaluating Sonobat or Tadarida
     if args["sb_ip_dir"] != "" or args["td_ip_dir"] != "":
@@ -743,7 +743,7 @@ if __name__ == "__main__":
         # check if the class names are the same
         if params_bd["class_names"] != class_names:
             print("Warning: Class names are not the same as the trained model")
-            assert False
+            raise AssertionError()
 
         run_config = {
             **bd_args,
@@ -753,7 +753,7 @@ if __name__ == "__main__":
 
         preds_bd = []
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        for ii, gg in enumerate(gt_test):
+        for gg in gt_test:
             pred = du.process_file(
                 gg["file_path"],
                 model,

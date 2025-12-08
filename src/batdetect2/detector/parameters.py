@@ -1,7 +1,7 @@
 import datetime
 import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List
 
 from pydantic import BaseModel, Field, computed_field
 

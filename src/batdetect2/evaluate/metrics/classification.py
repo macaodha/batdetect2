@@ -7,10 +7,8 @@ from typing import (
     List,
     Literal,
     Mapping,
-    Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import numpy as np
