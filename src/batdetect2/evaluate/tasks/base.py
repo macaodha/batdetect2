@@ -23,8 +23,8 @@ from batdetect2.evaluate.affinity import (
 from batdetect2.typing import (
     AffinityFunction,
     ClipDetections,
-    EvaluatorProtocol,
     Detection,
+    EvaluatorProtocol,
     TargetProtocol,
 )
 

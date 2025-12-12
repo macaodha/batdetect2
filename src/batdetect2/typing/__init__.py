@@ -12,9 +12,9 @@ from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 from batdetect2.typing.postprocess import (
     ClipDetections,
     ClipDetectionsTensor,
+    Detection,
     GeometryDecoder,
     PostprocessorProtocol,
-    Detection,
 )
 from batdetect2.typing.preprocess import (
     AudioLoader,

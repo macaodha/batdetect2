@@ -7,8 +7,8 @@ from soundevent.geometry import compute_bounds
 from batdetect2.plotting.clips import plot_clip
 from batdetect2.typing import (
     AudioLoader,
-    PreprocessorProtocol,
     Detection,
+    PreprocessorProtocol,
 )
 
 __all__ = [

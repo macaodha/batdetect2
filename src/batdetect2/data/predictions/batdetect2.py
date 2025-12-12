@@ -14,8 +14,8 @@ from batdetect2.data.predictions.base import (
 from batdetect2.targets import terms
 from batdetect2.typing import (
     ClipDetections,
-    OutputFormatterProtocol,
     Detection,
+    OutputFormatterProtocol,
     TargetProtocol,
 )
 

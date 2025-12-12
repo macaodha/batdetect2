@@ -33,10 +33,10 @@ from batdetect2.train import (
 from batdetect2.typing import (
     AudioLoader,
     ClipDetections,
+    Detection,
     EvaluatorProtocol,
     PostprocessorProtocol,
     PreprocessorProtocol,
-    Detection,
     TargetProtocol,
 )
 
