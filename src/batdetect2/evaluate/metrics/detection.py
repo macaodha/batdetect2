@@ -77,7 +77,7 @@ class DetectionAveragePrecision:
                 y_score.append(m.score)
 
         ap = average_precision(y_true, y_score, num_positives=num_positives)
-        return {self.label: ap}
+        return {self.label: float(ap)}
 
     @detection_metrics.register(DetectionAveragePrecisionConfig)
     @staticmethod
