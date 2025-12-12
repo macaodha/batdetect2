@@ -15,7 +15,11 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core import BaseConfig, Registry
-from batdetect2.evaluate.affinity import AffinityConfig, TimeAffinityConfig
+from batdetect2.evaluate.affinity import (
+    AffinityConfig,
+    TimeAffinityConfig,
+    build_affinity_function,
+)
 from batdetect2.typing import (
     AffinityFunction,
     BatDetect2Prediction,
@@ -39,6 +43,8 @@ T_Output = TypeVar("T_Output")
 
 class BaseTaskConfig(BaseConfig):
     prefix: str
+
+    ignore_start_end: float = 0.01
 
 
 class BaseTask(EvaluatorProtocol, Generic[T_Output]):
@@ -165,6 +171,24 @@ class BaseSEDTask(BaseTask[T_Output]):
         self.affinity = affinity
         self.affinity_threshold = affinity_threshold
         self.strict_match = strict_match
+
+    @classmethod
+    def build(
+        cls,
+        config: BaseSEDTaskConfig,
+        targets: TargetProtocol,
+        **kwargs,
+    ):
+        affinity = build_affinity_function(config.affinity)
+        return cls(
+            affinity=affinity,
+            affinity_threshold=config.affinity_threshold,
+            prefix=config.prefix,
+            ignore_start_end=config.ignore_start_end,
+            strict_match=config.strict_match,
+            targets=targets,
+            **kwargs,
+        )
 
 
 def is_in_bounds(

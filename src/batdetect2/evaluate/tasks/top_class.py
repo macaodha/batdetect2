@@ -4,7 +4,6 @@ from pydantic import Field
 from soundevent import data
 from soundevent.evaluation import match_detections_and_gts
 
-from batdetect2.evaluate.affinity import build_affinity_function
 from batdetect2.evaluate.metrics.top_class import (
     ClipEval,
     MatchEval,
@@ -59,6 +58,7 @@ class TopClassDetectionTask(BaseSEDTask[ClipEval]):
             affinity=self.affinity,
             score=lambda pred: pred.class_scores.max(),
             strict_match=self.strict_match,
+            affinity_threshold=self.affinity_threshold,
         ):
             gt = match.annotation
             pred = match.prediction
@@ -101,12 +101,9 @@ class TopClassDetectionTask(BaseSEDTask[ClipEval]):
         plots = [
             build_top_class_plotter(plot, targets) for plot in config.plots
         ]
-        affinity = build_affinity_function(config.affinity)
-        return TopClassDetectionTask(
-            prefix=config.prefix,
+        return TopClassDetectionTask.build(
+            config=config,
             plots=plots,
             metrics=metrics,
             targets=targets,
-            affinity=affinity,
-            strict_match=config.strict_match,
         )

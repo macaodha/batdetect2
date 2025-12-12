@@ -4,7 +4,6 @@ from pydantic import Field
 from soundevent import data
 from soundevent.evaluation import match_detections_and_gts
 
-from batdetect2.evaluate.affinity import build_affinity_function
 from batdetect2.evaluate.metrics.detection import (
     ClipEval,
     DetectionAveragePrecisionConfig,
@@ -60,6 +59,7 @@ class DetectionTask(BaseSEDTask[ClipEval]):
             affinity=self.affinity,
             score=lambda pred: pred.detection_score,
             strict_match=self.strict_match,
+            affinity_threshold=self.affinity_threshold,
         ):
             matches.append(
                 MatchEval(
@@ -83,12 +83,9 @@ class DetectionTask(BaseSEDTask[ClipEval]):
         plots = [
             build_detection_plotter(plot, targets) for plot in config.plots
         ]
-        affinity = build_affinity_function(config.affinity)
-        return DetectionTask(
-            prefix=config.prefix,
-            affinity=affinity,
+        return DetectionTask.build(
+            config=config,
             metrics=metrics,
             targets=targets,
             plots=plots,
-            strict_match=config.strict_match,
         )

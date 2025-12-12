@@ -86,9 +86,7 @@ class PRCurve(BasePlot):
 
             ax = plot_pr_curve(precision, recall, thresholds, ax=ax)
             ax.set_title(class_name)
-
             yield f"{self.label}/{class_name}", fig
-
             plt.close(fig)
 
     @classification_plots.register(PRCurveConfig)
