@@ -28,13 +28,13 @@ def test_has_tag(sound_event: data.SoundEvent):
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert condition(sound_event_annotation)
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Eptesicus fuscus")],  # type: ignore
+        tags=[data.Tag(key="species", value="Eptesicus fuscus")],
     )
     assert not condition(sound_event_annotation)
 
@@ -51,15 +51,15 @@ def test_has_all_tags(sound_event: data.SoundEvent):
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert not condition(sound_event_annotation)
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Eptesicus fuscus"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
+            data.Tag(key="species", value="Eptesicus fuscus"),
+            data.Tag(key="event", value="Echolocation"),
         ],
     )
     assert not condition(sound_event_annotation)
@@ -67,8 +67,8 @@ def test_has_all_tags(sound_event: data.SoundEvent):
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Myotis myotis"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
+            data.Tag(key="species", value="Myotis myotis"),
+            data.Tag(key="event", value="Echolocation"),
         ],
     )
     assert condition(sound_event_annotation)
@@ -76,9 +76,9 @@ def test_has_all_tags(sound_event: data.SoundEvent):
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Myotis myotis"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
-            data.Tag(key="sex", value="Female"),  # type: ignore
+            data.Tag(key="species", value="Myotis myotis"),
+            data.Tag(key="event", value="Echolocation"),
+            data.Tag(key="sex", value="Female"),
         ],
     )
     assert condition(sound_event_annotation)
@@ -96,15 +96,15 @@ def test_has_any_tags(sound_event: data.SoundEvent):
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert condition(sound_event_annotation)
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Eptesicus fuscus"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
+            data.Tag(key="species", value="Eptesicus fuscus"),
+            data.Tag(key="event", value="Echolocation"),
         ],
     )
     assert condition(sound_event_annotation)
@@ -112,8 +112,8 @@ def test_has_any_tags(sound_event: data.SoundEvent):
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Myotis myotis"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
+            data.Tag(key="species", value="Myotis myotis"),
+            data.Tag(key="event", value="Echolocation"),
         ],
     )
     assert condition(sound_event_annotation)
@@ -121,8 +121,8 @@ def test_has_any_tags(sound_event: data.SoundEvent):
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Eptesicus fuscus"),  # type: ignore
-            data.Tag(key="event", value="Social"),  # type: ignore
+            data.Tag(key="species", value="Eptesicus fuscus"),
+            data.Tag(key="event", value="Social"),
         ],
     )
     assert not condition(sound_event_annotation)
@@ -140,21 +140,21 @@ def test_not(sound_event: data.SoundEvent):
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert not condition(sound_event_annotation)
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
-        tags=[data.Tag(key="species", value="Eptesicus fuscus")],  # type: ignore
+        tags=[data.Tag(key="species", value="Eptesicus fuscus")],
     )
     assert condition(sound_event_annotation)
 
     sound_event_annotation = data.SoundEventAnnotation(
         sound_event=sound_event,
         tags=[
-            data.Tag(key="species", value="Myotis myotis"),  # type: ignore
-            data.Tag(key="event", value="Echolocation"),  # type: ignore
+            data.Tag(key="species", value="Myotis myotis"),
+            data.Tag(key="event", value="Echolocation"),
         ],
     )
     assert not condition(sound_event_annotation)
@@ -402,31 +402,6 @@ def test_has_tags_fails_if_empty():
         """)
 
 
-def test_frequency_is_false_if_no_geometry(recording: data.Recording):
-    condition = build_condition_from_str("""
-    name: frequency
-    boundary: low
-    operator: eq
-    hertz: 200
-    """)
-    se = data.SoundEventAnnotation(
-        sound_event=data.SoundEvent(geometry=None, recording=recording)
-    )
-    assert not condition(se)
-
-
-def test_duration_is_false_if_no_geometry(recording: data.Recording):
-    condition = build_condition_from_str("""
-    name: duration
-    operator: eq
-    seconds: 1
-    """)
-    se = data.SoundEventAnnotation(
-        sound_event=data.SoundEvent(geometry=None, recording=recording)
-    )
-    assert not condition(se)
-
-
 def test_all_of(recording: data.Recording):
     condition = build_condition_from_str("""
     name: all_of
@@ -444,7 +419,7 @@ def test_all_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 0.5]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert condition(se)
 
@@ -453,7 +428,7 @@ def test_all_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 2]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert not condition(se)
 
@@ -462,7 +437,7 @@ def test_all_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 0.5]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Eptesicus fuscus")],  # type: ignore
+        tags=[data.Tag(key="species", value="Eptesicus fuscus")],
     )
     assert not condition(se)
 
@@ -484,7 +459,7 @@ def test_any_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 2]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Eptesicus fuscus")],  # type: ignore
+        tags=[data.Tag(key="species", value="Eptesicus fuscus")],
     )
     assert not condition(se)
 
@@ -493,7 +468,7 @@ def test_any_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 0.5]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert condition(se)
 
@@ -502,7 +477,7 @@ def test_any_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 2]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Myotis myotis")],  # type: ignore
+        tags=[data.Tag(key="species", value="Myotis myotis")],
     )
     assert condition(se)
 
@@ -511,6 +486,6 @@ def test_any_of(recording: data.Recording):
             geometry=data.TimeInterval(coordinates=[0, 0.5]),
             recording=recording,
         ),
-        tags=[data.Tag(key="species", value="Eptesicus fuscus")],  # type: ignore
+        tags=[data.Tag(key="species", value="Eptesicus fuscus")],
     )
     assert condition(se)

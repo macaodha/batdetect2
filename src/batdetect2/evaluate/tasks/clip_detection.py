@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field
 from soundevent import data
@@ -18,19 +18,18 @@ from batdetect2.evaluate.tasks.base import (
     BaseTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import TargetProtocol
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing import BatDetect2Prediction, TargetProtocol
 
 
 class ClipDetectionTaskConfig(BaseTaskConfig):
     name: Literal["clip_detection"] = "clip_detection"
     prefix: str = "clip_detection"
-    metrics: List[ClipDetectionMetricConfig] = Field(
+    metrics: list[ClipDetectionMetricConfig] = Field(
         default_factory=lambda: [
             ClipDetectionAveragePrecisionConfig(),
         ]
     )
-    plots: List[ClipDetectionPlotConfig] = Field(default_factory=list)
+    plots: list[ClipDetectionPlotConfig] = Field(default_factory=list)
 
 
 class ClipDetectionTask(BaseTask[ClipEval]):
@@ -69,8 +68,8 @@ class ClipDetectionTask(BaseTask[ClipEval]):
             build_clip_detection_plotter(plot, targets)
             for plot in config.plots
         ]
-        return ClipDetectionTask.build(
-            config=config,
+        return ClipDetectionTask(
+            prefix=config.prefix,
             metrics=metrics,
             targets=targets,
             plots=plots,

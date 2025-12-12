@@ -1,8 +1,10 @@
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field
 from soundevent import data
+from soundevent.evaluation import match_detections_and_gts
 
+from batdetect2.evaluate.affinity import build_affinity_function
 from batdetect2.evaluate.metrics.top_class import (
     ClipEval,
     MatchEval,
@@ -15,24 +17,23 @@ from batdetect2.evaluate.plots.top_class import (
     build_top_class_plotter,
 )
 from batdetect2.evaluate.tasks.base import (
-    BaseTask,
-    BaseTaskConfig,
+    BaseSEDTask,
+    BaseSEDTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import TargetProtocol
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing import BatDetect2Prediction, TargetProtocol
 
 
-class TopClassDetectionTaskConfig(BaseTaskConfig):
+class TopClassDetectionTaskConfig(BaseSEDTaskConfig):
     name: Literal["top_class_detection"] = "top_class_detection"
     prefix: str = "top_class"
-    metrics: List[TopClassMetricConfig] = Field(
+    metrics: list[TopClassMetricConfig] = Field(
         default_factory=lambda: [TopClassAveragePrecisionConfig()]
     )
-    plots: List[TopClassPlotConfig] = Field(default_factory=list)
+    plots: list[TopClassPlotConfig] = Field(default_factory=list)
 
 
-class TopClassDetectionTask(BaseTask[ClipEval]):
+class TopClassDetectionTask(BaseSEDTask[ClipEval]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
@@ -50,18 +51,17 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
             for pred in prediction.predictions
             if self.include_prediction(pred, clip)
         ]
-        # Take the highest score for each prediction
-        scores = [pred.class_scores.max() for pred in preds]
 
         matches = []
-        for pred_idx, gt_idx, _ in self.matcher(
-            ground_truth=[se.sound_event.geometry for se in gts],  # type: ignore
-            predictions=[pred.geometry for pred in preds],
-            scores=scores,
+        for match in match_detections_and_gts(
+            ground_truths=gts,
+            detections=preds,
+            affinity=self.affinity,
+            score=lambda pred: pred.class_scores.max(),
+            strict_match=self.strict_match,
         ):
-            gt = gts[gt_idx] if gt_idx is not None else None
-            pred = preds[pred_idx] if pred_idx is not None else None
-
+            gt = match.annotation
+            pred = match.prediction
             true_class = (
                 self.targets.encode_class(gt) if gt is not None else None
             )
@@ -69,11 +69,6 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
             class_idx = (
                 pred.class_scores.argmax() if pred is not None else None
             )
-
-            score = (
-                float(pred.class_scores[class_idx]) if pred is not None else 0
-            )
-
             pred_class = (
                 self.targets.class_names[class_idx]
                 if class_idx is not None
@@ -90,7 +85,7 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
                     true_class=true_class,
                     is_generic=gt is not None and true_class is None,
                     pred_class=pred_class,
-                    score=score,
+                    score=match.prediction_score,
                 )
             )
 
@@ -106,9 +101,12 @@ class TopClassDetectionTask(BaseTask[ClipEval]):
         plots = [
             build_top_class_plotter(plot, targets) for plot in config.plots
         ]
-        return TopClassDetectionTask.build(
-            config=config,
+        affinity = build_affinity_function(config.affinity)
+        return TopClassDetectionTask(
+            prefix=config.prefix,
             plots=plots,
             metrics=metrics,
             targets=targets,
+            affinity=affinity,
+            strict_match=config.strict_match,
         )

@@ -62,6 +62,10 @@ class BaseConfig(BaseModel):
             )
         )
 
+    @classmethod
+    def from_yaml(cls, yaml_str: str):
+        return cls.model_validate(yaml.safe_load(yaml_str))
+
 
 T = TypeVar("T", bound=BaseModel)
 

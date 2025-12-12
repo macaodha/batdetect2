@@ -210,7 +210,10 @@ class DetectionPrecision:
 
 
 DetectionMetricConfig = Annotated[
-    DetectionAveragePrecisionConfig | DetectionROCAUCConfig | DetectionRecallConfig | DetectionPrecisionConfig,
+    DetectionAveragePrecisionConfig
+    | DetectionROCAUCConfig
+    | DetectionRecallConfig
+    | DetectionPrecisionConfig,
     Field(discriminator="name"),
 ]
 

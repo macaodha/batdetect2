@@ -81,11 +81,11 @@ class MatcherProtocol(Protocol):
 Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)
 
 
-class AffinityFunction(Protocol, Generic[Geom]):
+class AffinityFunction(Protocol):
     def __call__(
         self,
-        geometry1: Geom,
-        geometry2: Geom,
+        detection: RawPrediction,
+        ground_truth: data.SoundEventAnnotation,
     ) -> float: ...
 
 
