@@ -22,9 +22,9 @@ from batdetect2.evaluate.affinity import (
 )
 from batdetect2.typing import (
     AffinityFunction,
-    BatDetect2Prediction,
+    ClipDetections,
     EvaluatorProtocol,
-    RawPrediction,
+    Detection,
     TargetProtocol,
 )
 
@@ -96,7 +96,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
     ) -> List[T_Output]:
         return [
             self.evaluate_clip(clip_annotation, preds)
@@ -108,7 +108,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        prediction: BatDetect2Prediction,
+        prediction: ClipDetections,
     ) -> T_Output: ...
 
     def include_sound_event_annotation(
@@ -128,7 +128,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
 
     def include_prediction(
         self,
-        prediction: RawPrediction,
+        prediction: Detection,
         clip: data.Clip,
     ) -> bool:
         return is_in_bounds(

@@ -7,7 +7,7 @@ from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.tasks import build_task
 from batdetect2.targets import build_targets
 from batdetect2.typing import EvaluatorProtocol, TargetProtocol
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing.postprocess import ClipDetections
 
 __all__ = [
     "Evaluator",
@@ -27,7 +27,7 @@ class Evaluator:
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
     ) -> List[Any]:
         return [
             task.evaluate(clip_annotations, predictions) for task in self.tasks

@@ -10,11 +10,11 @@ from batdetect2.typing.evaluate import (
 )
 from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 from batdetect2.typing.postprocess import (
-    BatDetect2Prediction,
+    ClipDetections,
     ClipDetectionsTensor,
     GeometryDecoder,
     PostprocessorProtocol,
-    RawPrediction,
+    Detection,
 )
 from batdetect2.typing.preprocess import (
     AudioLoader,
@@ -44,7 +44,7 @@ __all__ = [
     "AudioLoader",
     "Augmentation",
     "BackboneModel",
-    "BatDetect2Prediction",
+    "ClipDetections",
     "ClipDetectionsTensor",
     "ClipLabeller",
     "ClipMatches",
@@ -65,7 +65,7 @@ __all__ = [
     "PostprocessorProtocol",
     "PreprocessorProtocol",
     "ROITargetMapper",
-    "RawPrediction",
+    "Detection",
     "Size",
     "SoundEventDecoder",
     "SoundEventEncoder",

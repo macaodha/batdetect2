@@ -87,9 +87,7 @@ def save_ann_spec(
     y_extent = [0, duration, min_freq, max_freq]
 
     plt.close("all")
-    plt.figure(
-        0, figsize=(spec.shape[1] / 100, spec.shape[0] / 100), dpi=100
-    )
+    plt.figure(0, figsize=(spec.shape[1] / 100, spec.shape[0] / 100), dpi=100)
     plt.imshow(
         spec,
         aspect="auto",

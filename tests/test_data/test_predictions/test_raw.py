@@ -6,8 +6,8 @@ from soundevent import data
 
 from batdetect2.data.predictions import RawOutputConfig, build_output_formatter
 from batdetect2.typing import (
-    BatDetect2Prediction,
-    RawPrediction,
+    ClipDetections,
+    Detection,
     TargetProtocol,
 )
 
@@ -27,7 +27,7 @@ def test_roundtrip(
     tmp_path: Path,
 ):
     detections = [
-        RawPrediction(
+        Detection(
             geometry=data.BoundingBox(
                 coordinates=list(np.random.uniform(size=[4]))
             ),
@@ -40,7 +40,7 @@ def test_roundtrip(
         for _ in range(10)
     ]
 
-    prediction = BatDetect2Prediction(clip=clip, predictions=detections)
+    prediction = ClipDetections(clip=clip, detections=detections)
 
     path = tmp_path / "predictions"
 
@@ -52,7 +52,9 @@ def test_roundtrip(
     assert recovered[0].clip == prediction.clip
 
     for recovered_prediction, detection in zip(
-        recovered[0].predictions, detections
+        recovered[0].detections,
+        detections,
+        strict=True,
     ):
         assert (
             recovered_prediction.detection_score == detection.detection_score

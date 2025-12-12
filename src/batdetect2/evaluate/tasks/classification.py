@@ -22,8 +22,8 @@ from batdetect2.evaluate.tasks.base import (
     tasks_registry,
 )
 from batdetect2.typing import (
-    BatDetect2Prediction,
-    RawPrediction,
+    ClipDetections,
+    Detection,
     TargetProtocol,
 )
 
@@ -51,13 +51,13 @@ class ClassificationTask(BaseSEDTask[ClipEval]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        prediction: BatDetect2Prediction,
+        prediction: ClipDetections,
     ) -> ClipEval:
         clip = clip_annotation.clip
 
         preds = [
             pred
-            for pred in prediction.predictions
+            for pred in prediction.detections
             if self.include_prediction(pred, clip)
         ]
 
@@ -140,7 +140,7 @@ class ClassificationTask(BaseSEDTask[ClipEval]):
         )
 
 
-def get_class_score(pred: RawPrediction, class_idx: int) -> float:
+def get_class_score(pred: Detection, class_idx: int) -> float:
     return pred.class_scores[class_idx]
 
 

@@ -15,9 +15,9 @@ from batdetect2.data.predictions.base import (
     prediction_formatters,
 )
 from batdetect2.typing import (
-    BatDetect2Prediction,
+    ClipDetections,
     OutputFormatterProtocol,
-    RawPrediction,
+    Detection,
     TargetProtocol,
 )
 
@@ -30,7 +30,7 @@ class RawOutputConfig(BaseConfig):
     include_geometry: bool = True
 
 
-class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
+class RawFormatter(OutputFormatterProtocol[ClipDetections]):
     def __init__(
         self,
         targets: TargetProtocol,
@@ -47,13 +47,13 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
 
     def format(
         self,
-        predictions: Sequence[BatDetect2Prediction],
-    ) -> List[BatDetect2Prediction]:
+        predictions: Sequence[ClipDetections],
+    ) -> List[ClipDetections]:
         return list(predictions)
 
     def save(
         self,
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
         path: data.PathLike,
         audio_dir: data.PathLike | None = None,
     ) -> None:
@@ -68,10 +68,10 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
             dataset = self.pred_to_xr(prediction, audio_dir)
             dataset.to_netcdf(path / f"{clip.uuid}.nc")
 
-    def load(self, path: data.PathLike) -> List[BatDetect2Prediction]:
+    def load(self, path: data.PathLike) -> List[ClipDetections]:
         path = Path(path)
         files = list(path.glob("*.nc"))
-        predictions: List[BatDetect2Prediction] = []
+        predictions: List[ClipDetections] = []
 
         for filepath in files:
             logger.debug(f"Loading clip predictions {filepath}")
@@ -83,7 +83,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
 
     def pred_to_xr(
         self,
-        prediction: BatDetect2Prediction,
+        prediction: ClipDetections,
         audio_dir: data.PathLike | None = None,
     ) -> xr.Dataset:
         clip = prediction.clip
@@ -97,7 +97,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
 
         data = defaultdict(list)
 
-        for pred in prediction.predictions:
+        for pred in prediction.detections:
             detection_id = str(uuid4())
 
             data["detection_id"].append(detection_id)
@@ -167,7 +167,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
             },
         )
 
-    def pred_from_xr(self, dataset: xr.Dataset) -> BatDetect2Prediction:
+    def pred_from_xr(self, dataset: xr.Dataset) -> ClipDetections:
         clip_data = dataset
         clip_id = clip_data.clip_id.item()
 
@@ -219,7 +219,7 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
                 features = np.zeros(0)
 
             sound_events.append(
-                RawPrediction(
+                Detection(
                     geometry=geometry,
                     detection_score=score,
                     class_scores=class_scores,
@@ -227,9 +227,9 @@ class RawFormatter(OutputFormatterProtocol[BatDetect2Prediction]):
                 )
             )
 
-        return BatDetect2Prediction(
+        return ClipDetections(
             clip=clip,
-            predictions=sound_events,
+            detections=sound_events,
         )
 
     @prediction_formatters.register(RawOutputConfig)

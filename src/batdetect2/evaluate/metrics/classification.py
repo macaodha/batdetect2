@@ -21,7 +21,7 @@ from batdetect2.evaluate.metrics.common import (
     average_precision,
     compute_precision_recall,
 )
-from batdetect2.typing import RawPrediction, TargetProtocol
+from batdetect2.typing import Detection, TargetProtocol
 
 __all__ = [
     "ClassificationMetric",
@@ -35,7 +35,7 @@ __all__ = [
 class MatchEval:
     clip: data.Clip
     gt: data.SoundEventAnnotation | None
-    pred: RawPrediction | None
+    pred: Detection | None
 
     is_prediction: bool
     is_ground_truth: bool

@@ -13,9 +13,9 @@ from batdetect2.data.predictions.base import (
 )
 from batdetect2.targets import terms
 from batdetect2.typing import (
-    BatDetect2Prediction,
+    ClipDetections,
     OutputFormatterProtocol,
-    RawPrediction,
+    Detection,
     TargetProtocol,
 )
 
@@ -113,7 +113,7 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
         self.annotation_note = annotation_note
 
     def format(
-        self, predictions: Sequence[BatDetect2Prediction]
+        self, predictions: Sequence[ClipDetections]
     ) -> List[FileAnnotation]:
         return [
             self.format_prediction(prediction) for prediction in predictions
@@ -164,14 +164,12 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
         highest_scoring = max(annotations, key=lambda x: x["class_prob"])
         return highest_scoring["class"]
 
-    def format_prediction(
-        self, prediction: BatDetect2Prediction
-    ) -> FileAnnotation:
+    def format_prediction(self, prediction: ClipDetections) -> FileAnnotation:
         recording = prediction.clip.recording
 
         annotations = [
             self.format_sound_event_prediction(pred)
-            for pred in prediction.predictions
+            for pred in prediction.detections
         ]
 
         return FileAnnotation(
@@ -196,7 +194,7 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
         )  # type: ignore
 
     def format_sound_event_prediction(
-        self, prediction: RawPrediction
+        self, prediction: Detection
     ) -> Annotation:
         start_time, low_freq, end_time, high_freq = compute_bounds(
             prediction.geometry

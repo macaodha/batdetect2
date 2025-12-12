@@ -22,7 +22,7 @@ from batdetect2.typing.models import ModelOutput
 from batdetect2.typing.targets import Position, Size
 
 __all__ = [
-    "RawPrediction",
+    "Detection",
     "PostprocessorProtocol",
     "GeometryDecoder",
 ]
@@ -46,7 +46,8 @@ class GeometryDecoder(Protocol):
     ) -> data.Geometry: ...
 
 
-class RawPrediction(NamedTuple):
+@dataclass
+class Detection:
     geometry: data.Geometry
     detection_score: float
     class_scores: np.ndarray
@@ -82,9 +83,16 @@ class ClipDetectionsTensor(NamedTuple):
 
 
 @dataclass
-class BatDetect2Prediction:
+class ClipDetections:
     clip: data.Clip
-    predictions: List[RawPrediction]
+    detections: List[Detection]
+
+
+@dataclass
+class ClipPrediction:
+    clip: data.Clip
+    detection_score: float
+    class_scores: np.ndarray
 
 
 class PostprocessorProtocol(Protocol):

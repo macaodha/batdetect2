@@ -10,7 +10,7 @@ from batdetect2.postprocess import to_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.typing import (
-    BatDetect2Prediction,
+    ClipDetections,
     EvaluatorProtocol,
     ModelOutput,
     TrainExample,
@@ -24,7 +24,7 @@ class ValidationMetrics(Callback):
         self.evaluator = evaluator
 
         self._clip_annotations: List[data.ClipAnnotation] = []
-        self._predictions: List[BatDetect2Prediction] = []
+        self._predictions: List[ClipDetections] = []
 
     def get_dataset(self, trainer: Trainer) -> ValidationDataset:
         dataloaders = trainer.val_dataloaders
@@ -100,9 +100,9 @@ class ValidationMetrics(Callback):
             start_times=[ca.clip.start_time for ca in clip_annotations],
         )
         predictions = [
-            BatDetect2Prediction(
+            ClipDetections(
                 clip=clip_annotation.clip,
-                predictions=to_raw_predictions(
+                detections=to_raw_predictions(
                     clip_dets.numpy(), targets=model.targets
                 ),
             )

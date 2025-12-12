@@ -9,9 +9,9 @@ from batdetect2.data.predictions.base import (
     prediction_formatters,
 )
 from batdetect2.typing import (
-    BatDetect2Prediction,
+    ClipDetections,
     OutputFormatterProtocol,
-    RawPrediction,
+    Detection,
     TargetProtocol,
 )
 
@@ -35,7 +35,7 @@ class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
 
     def format(
         self,
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
     ) -> List[data.ClipPrediction]:
         return [
             self.format_prediction(prediction) for prediction in predictions
@@ -63,20 +63,20 @@ class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
 
     def format_prediction(
         self,
-        prediction: BatDetect2Prediction,
+        prediction: ClipDetections,
     ) -> data.ClipPrediction:
         recording = prediction.clip.recording
         return data.ClipPrediction(
             clip=prediction.clip,
             sound_events=[
                 self.format_sound_event_prediction(pred, recording)
-                for pred in prediction.predictions
+                for pred in prediction.detections
             ],
         )
 
     def format_sound_event_prediction(
         self,
-        prediction: RawPrediction,
+        prediction: Detection,
         recording: data.Recording,
     ) -> data.SoundEventPrediction:
         return data.SoundEventPrediction(
@@ -89,7 +89,7 @@ class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
         )
 
     def get_sound_event_tags(
-        self, prediction: RawPrediction
+        self, prediction: Detection
     ) -> List[data.PredictedTag]:
         sorted_indices = np.argsort(prediction.class_scores)[::-1]
 

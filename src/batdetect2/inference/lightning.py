@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from batdetect2.inference.dataset import DatasetItem, InferenceDataset
 from batdetect2.models import Model
 from batdetect2.postprocess import to_raw_predictions
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing.postprocess import ClipDetections
 
 
 class InferenceModule(LightningModule):
@@ -19,7 +19,7 @@ class InferenceModule(LightningModule):
         batch: DatasetItem,
         batch_idx: int,
         dataloader_idx: int = 0,
-    ) -> Sequence[BatDetect2Prediction]:
+    ) -> Sequence[ClipDetections]:
         dataset = self.get_dataset()
 
         clips = [dataset.clips[int(example_idx)] for example_idx in batch.idx]
@@ -32,9 +32,9 @@ class InferenceModule(LightningModule):
         )
 
         predictions = [
-            BatDetect2Prediction(
+            ClipDetections(
                 clip=clip,
-                predictions=to_raw_predictions(
+                detections=to_raw_predictions(
                     clip_dets.numpy(),
                     targets=self.model.targets,
                 ),

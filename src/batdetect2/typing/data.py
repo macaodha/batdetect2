@@ -2,7 +2,7 @@ from typing import Generic, List, Protocol, Sequence, TypeVar
 
 from soundevent.data import PathLike
 
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing.postprocess import ClipDetections
 
 __all__ = [
     "OutputFormatterProtocol",
@@ -12,9 +12,7 @@ T = TypeVar("T")
 
 
 class OutputFormatterProtocol(Protocol, Generic[T]):
-    def format(
-        self, predictions: Sequence[BatDetect2Prediction]
-    ) -> List[T]: ...
+    def format(self, predictions: Sequence[ClipDetections]) -> List[T]: ...
 
     def save(
         self,

@@ -41,7 +41,10 @@ __all__ = [
 ]
 
 DecoderLayerConfig = Annotated[
-    ConvConfig | FreqCoordConvUpConfig | StandardConvUpConfig | LayerGroupConfig,
+    ConvConfig
+    | FreqCoordConvUpConfig
+    | StandardConvUpConfig
+    | LayerGroupConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Decoder."""

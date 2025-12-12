@@ -76,7 +76,10 @@ class MLFlowLoggerConfig(BaseLoggerConfig):
 
 
 LoggerConfig = Annotated[
-    DVCLiveConfig | CSVLoggerConfig | TensorBoardLoggerConfig | MLFlowLoggerConfig,
+    DVCLiveConfig
+    | CSVLoggerConfig
+    | TensorBoardLoggerConfig
+    | MLFlowLoggerConfig,
     Field(discriminator="name"),
 ]
 

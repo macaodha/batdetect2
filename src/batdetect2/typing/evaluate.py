@@ -13,7 +13,7 @@ from typing import (
 from matplotlib.figure import Figure
 from soundevent import data
 
-from batdetect2.typing.postprocess import BatDetect2Prediction, RawPrediction
+from batdetect2.typing.postprocess import ClipDetections, Detection
 from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
@@ -84,7 +84,7 @@ Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)
 class AffinityFunction(Protocol):
     def __call__(
         self,
-        detection: RawPrediction,
+        detection: Detection,
         ground_truth: data.SoundEventAnnotation,
     ) -> float: ...
 
@@ -93,7 +93,7 @@ class MetricsProtocol(Protocol):
     def __call__(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[Sequence[RawPrediction]],
+        predictions: Sequence[Sequence[Detection]],
     ) -> Dict[str, float]: ...
 
 
@@ -101,7 +101,7 @@ class PlotterProtocol(Protocol):
     def __call__(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[Sequence[RawPrediction]],
+        predictions: Sequence[Sequence[Detection]],
     ) -> Iterable[Tuple[str, Figure]]: ...
 
 
@@ -114,7 +114,7 @@ class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
     def evaluate(
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
     ) -> EvaluationOutput: ...
 
     def compute_metrics(

@@ -15,7 +15,7 @@ from soundevent import data
 
 from batdetect2.core import BaseConfig, Registry
 from batdetect2.evaluate.metrics.common import average_precision
-from batdetect2.typing import RawPrediction
+from batdetect2.typing import Detection
 
 __all__ = [
     "DetectionMetricConfig",
@@ -27,7 +27,7 @@ __all__ = [
 @dataclass
 class MatchEval:
     gt: data.SoundEventAnnotation | None
-    pred: RawPrediction | None
+    pred: Detection | None
 
     is_prediction: bool
     is_ground_truth: bool

@@ -377,7 +377,10 @@ class PeakNormalize(torch.nn.Module):
 
 
 SpectrogramTransform = Annotated[
-    PcenConfig | ScaleAmplitudeConfig | SpectralMeanSubstractionConfig | PeakNormalizeConfig,
+    PcenConfig
+    | ScaleAmplitudeConfig
+    | SpectralMeanSubstractionConfig
+    | PeakNormalizeConfig,
     Field(discriminator="name"),
 ]
 

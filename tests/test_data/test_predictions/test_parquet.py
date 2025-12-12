@@ -10,8 +10,8 @@ from batdetect2.data.predictions import (
     build_output_formatter,
 )
 from batdetect2.typing import (
-    BatDetect2Prediction,
-    RawPrediction,
+    ClipDetections,
+    Detection,
     TargetProtocol,
 )
 
@@ -31,7 +31,7 @@ def test_roundtrip(
     tmp_path: Path,
 ):
     detections = [
-        RawPrediction(
+        Detection(
             geometry=data.BoundingBox(
                 coordinates=list(np.random.uniform(size=[4]))
             ),
@@ -44,7 +44,7 @@ def test_roundtrip(
         for _ in range(10)
     ]
 
-    prediction = BatDetect2Prediction(clip=clip, predictions=detections)
+    prediction = ClipDetections(clip=clip, detections=detections)
 
     path = tmp_path / "predictions.parquet"
 
@@ -58,7 +58,7 @@ def test_roundtrip(
     assert recovered[0].clip == prediction.clip
 
     for recovered_prediction, detection in zip(
-        recovered[0].predictions, detections
+        recovered[0].detections, detections, strict=True
     ):
         assert (
             recovered_prediction.detection_score == detection.detection_score
@@ -79,9 +79,9 @@ def test_multiple_clips(
 ):
     # Create a second clip
     clip2 = clip.model_copy(update={"uuid": uuid4()})
-    
+
     detections1 = [
-        RawPrediction(
+        Detection(
             geometry=data.BoundingBox(
                 coordinates=list(np.random.uniform(size=[4]))
             ),
@@ -92,9 +92,9 @@ def test_multiple_clips(
             features=np.random.uniform(size=32),
         )
     ]
-    
+
     detections2 = [
-        RawPrediction(
+        Detection(
             geometry=data.BoundingBox(
                 coordinates=list(np.random.uniform(size=[4]))
             ),
@@ -107,19 +107,19 @@ def test_multiple_clips(
     ]
 
     predictions = [
-        BatDetect2Prediction(clip=clip, predictions=detections1),
-        BatDetect2Prediction(clip=clip2, predictions=detections2),
+        ClipDetections(clip=clip, detections=detections1),
+        ClipDetections(clip=clip2, detections=detections2),
     ]
 
     path = tmp_path / "multi_predictions.parquet"
     sample_formatter.save(predictions=predictions, path=path)
-    
+
     recovered = sample_formatter.load(path=path)
-    
+
     assert len(recovered) == 2
     # Order might not be preserved if we don't sort, but implementation appends so it should be
     # However, let's sort by clip uuid to be safe if needed, or just check existence
-    
+
     recovered_uuids = {p.clip.uuid for p in recovered}
     expected_uuids = {clip.uuid, clip2.uuid}
     assert recovered_uuids == expected_uuids
@@ -133,16 +133,18 @@ def test_complex_geometry(
 ):
     # Create a polygon geometry
     polygon = data.Polygon(
-        coordinates=[[
-            [0.0, 10000.0],
-            [0.1, 20000.0],
-            [0.2, 10000.0],
-            [0.0, 10000.0],
-        ]]
+        coordinates=[
+            [
+                [0.0, 10000.0],
+                [0.1, 20000.0],
+                [0.2, 10000.0],
+                [0.0, 10000.0],
+            ]
+        ]
     )
-    
+
     detections = [
-        RawPrediction(
+        Detection(
             geometry=polygon,
             detection_score=0.95,
             class_scores=np.random.uniform(
@@ -152,18 +154,18 @@ def test_complex_geometry(
         )
     ]
 
-    prediction = BatDetect2Prediction(clip=clip, predictions=detections)
+    prediction = ClipDetections(clip=clip, detections=detections)
 
     path = tmp_path / "complex_geometry.parquet"
     sample_formatter.save(predictions=[prediction], path=path)
-    
+
     recovered = sample_formatter.load(path=path)
-    
+
     assert len(recovered) == 1
-    assert len(recovered[0].predictions) == 1
-    
-    recovered_pred = recovered[0].predictions[0]
-    
+    assert len(recovered[0].detections) == 1
+
+    recovered_pred = recovered[0].detections[0]
+
     # Check if geometry is recovered correctly as a Polygon
     assert isinstance(recovered_pred.geometry, data.Polygon)
     assert recovered_pred.geometry == polygon

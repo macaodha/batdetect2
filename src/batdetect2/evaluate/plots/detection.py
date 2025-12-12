@@ -290,7 +290,10 @@ class ExampleDetectionPlot(BasePlot):
 
 
 DetectionPlotConfig = Annotated[
-    PRCurveConfig | ROCCurveConfig | ScoreDistributionPlotConfig | ExampleDetectionPlotConfig,
+    PRCurveConfig
+    | ROCCurveConfig
+    | ScoreDistributionPlotConfig
+    | ExampleDetectionPlotConfig,
     Field(discriminator="name"),
 ]
 

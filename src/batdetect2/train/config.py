@@ -1,4 +1,3 @@
-
 from pydantic import Field
 from soundevent import data
 

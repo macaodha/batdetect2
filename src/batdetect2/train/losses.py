@@ -18,7 +18,6 @@ The primary entry points are:
 - `LossConfig`: The Pydantic model for configuring loss weights and parameters.
 """
 
-
 import numpy as np
 import torch
 import torch.nn.functional as F

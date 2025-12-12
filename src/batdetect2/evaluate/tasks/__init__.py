@@ -13,7 +13,7 @@ from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
 from batdetect2.evaluate.tasks.top_class import TopClassDetectionTaskConfig
 from batdetect2.targets import build_targets
 from batdetect2.typing import (
-    BatDetect2Prediction,
+    ClipDetections,
     EvaluatorProtocol,
     TargetProtocol,
 )
@@ -45,7 +45,7 @@ def build_task(
 
 def evaluate_task(
     clip_annotations: Sequence[data.ClipAnnotation],
-    predictions: Sequence[BatDetect2Prediction],
+    predictions: Sequence[ClipDetections],
     task: Optional["str"] = None,
     targets: TargetProtocol | None = None,
     config: TaskConfig | dict | None = None,

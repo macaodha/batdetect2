@@ -346,7 +346,10 @@ class ExampleClassificationPlot(BasePlot):
 
 
 TopClassPlotConfig = Annotated[
-    PRCurveConfig | ROCCurveConfig | ConfusionMatrixConfig | ExampleClassificationPlotConfig,
+    PRCurveConfig
+    | ROCCurveConfig
+    | ConfusionMatrixConfig
+    | ExampleClassificationPlotConfig,
     Field(discriminator="name"),
 ]
 
@@ -403,7 +406,8 @@ def get_binned_sample(matches: List[MatchEval], n_examples: int = 5):
         return matches
 
     indices, pred_scores = zip(
-        *[(index, match.score) for index, match in enumerate(matches)], strict=False
+        *[(index, match.score) for index, match in enumerate(matches)],
+        strict=False,
     )
 
     bins = pd.qcut(pred_scores, q=n_examples, labels=False, duplicates="drop")

@@ -8,7 +8,7 @@ from batdetect2.plotting.clips import plot_clip
 from batdetect2.typing import (
     AudioLoader,
     PreprocessorProtocol,
-    RawPrediction,
+    Detection,
 )
 
 __all__ = [
@@ -22,7 +22,7 @@ __all__ = [
 class MatchProtocol(Protocol):
     clip: data.Clip
     gt: data.SoundEventAnnotation | None
-    pred: RawPrediction | None
+    pred: Detection | None
     score: float
     true_class: str | None
 
@@ -341,4 +341,3 @@ def plot_cross_trigger_match(
         ax.set_title("Cross Trigger")
 
     return ax
-

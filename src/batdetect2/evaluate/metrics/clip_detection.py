@@ -159,7 +159,10 @@ class ClipDetectionPrecision:
 
 
 ClipDetectionMetricConfig = Annotated[
-    ClipDetectionAveragePrecisionConfig | ClipDetectionROCAUCConfig | ClipDetectionRecallConfig | ClipDetectionPrecisionConfig,
+    ClipDetectionAveragePrecisionConfig
+    | ClipDetectionROCAUCConfig
+    | ClipDetectionRecallConfig
+    | ClipDetectionPrecisionConfig,
     Field(discriminator="name"),
 ]
 

@@ -88,7 +88,8 @@ def select_device(warn=True) -> str:
     if warn:
         warnings.warn(
             "No GPU available, using the CPU instead. Please consider using a GPU "
-            "to speed up training.", stacklevel=2
+            "to speed up training.",
+            stacklevel=2,
         )
 
     return "cpu"

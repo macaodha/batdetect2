@@ -43,7 +43,10 @@ __all__ = [
 ]
 
 EncoderLayerConfig = Annotated[
-    ConvConfig | FreqCoordConvDownConfig | StandardConvDownConfig | LayerGroupConfig,
+    ConvConfig
+    | FreqCoordConvDownConfig
+    | StandardConvDownConfig
+    | LayerGroupConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configs usable in Encoder."""

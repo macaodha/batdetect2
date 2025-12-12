@@ -12,7 +12,7 @@ from batdetect2.logging import build_logger
 from batdetect2.models import Model
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
-from batdetect2.typing.postprocess import RawPrediction
+from batdetect2.typing import Detection
 
 if TYPE_CHECKING:
     from batdetect2.config import BatDetect2Config
@@ -38,7 +38,7 @@ def evaluate(
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
     experiment_name: str | None = None,
     run_name: str | None = None,
-) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
+) -> Tuple[Dict[str, float], List[List[Detection]]]:
     from batdetect2.config import BatDetect2Config
 
     config = config or BatDetect2Config()

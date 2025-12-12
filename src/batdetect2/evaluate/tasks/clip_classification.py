@@ -19,7 +19,7 @@ from batdetect2.evaluate.tasks.base import (
     BaseTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import BatDetect2Prediction, TargetProtocol
+from batdetect2.typing import ClipDetections, TargetProtocol
 
 
 class ClipClassificationTaskConfig(BaseTaskConfig):
@@ -37,7 +37,7 @@ class ClipClassificationTask(BaseTask[ClipEval]):
     def evaluate_clip(
         self,
         clip_annotation: data.ClipAnnotation,
-        prediction: BatDetect2Prediction,
+        prediction: ClipDetections,
     ) -> ClipEval:
         clip = clip_annotation.clip
 
@@ -54,7 +54,7 @@ class ClipClassificationTask(BaseTask[ClipEval]):
             gt_classes.add(class_name)
 
         pred_scores = defaultdict(float)
-        for pred in prediction.predictions:
+        for pred in prediction.detections:
             if not self.include_prediction(pred, clip):
                 continue
 

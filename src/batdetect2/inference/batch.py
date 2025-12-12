@@ -10,7 +10,7 @@ from batdetect2.inference.lightning import InferenceModule
 from batdetect2.models import Model
 from batdetect2.preprocess.preprocessor import build_preprocessor
 from batdetect2.targets.targets import build_targets
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing.postprocess import ClipDetections
 
 if TYPE_CHECKING:
     from batdetect2.config import BatDetect2Config
@@ -30,7 +30,7 @@ def run_batch_inference(
     config: Optional["BatDetect2Config"] = None,
     num_workers: int | None = None,
     batch_size: int | None = None,
-) -> List[BatDetect2Prediction]:
+) -> List[ClipDetections]:
     from batdetect2.config import BatDetect2Config
 
     config = config or BatDetect2Config()
@@ -70,7 +70,7 @@ def process_file_list(
     audio_loader: Optional["AudioLoader"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     num_workers: int | None = None,
-) -> List[BatDetect2Prediction]:
+) -> List[ClipDetections]:
     clip_config = config.inference.clipping
     clips = get_clips_from_files(
         paths,

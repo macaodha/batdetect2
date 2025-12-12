@@ -32,11 +32,11 @@ from batdetect2.train import (
 )
 from batdetect2.typing import (
     AudioLoader,
-    BatDetect2Prediction,
+    ClipDetections,
     EvaluatorProtocol,
     PostprocessorProtocol,
     PreprocessorProtocol,
-    RawPrediction,
+    Detection,
     TargetProtocol,
 )
 
@@ -110,7 +110,7 @@ class BatDetect2API:
         experiment_name: str | None = None,
         run_name: str | None = None,
         save_predictions: bool = True,
-    ) -> Tuple[Dict[str, float], List[List[RawPrediction]]]:
+    ) -> Tuple[Dict[str, float], List[List[Detection]]]:
         return evaluate(
             self.model,
             test_annotations,
@@ -128,7 +128,7 @@ class BatDetect2API:
     def evaluate_predictions(
         self,
         annotations: Sequence[data.ClipAnnotation],
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
         output_dir: data.PathLike | None = None,
     ):
         clip_evals = self.evaluator.evaluate(
@@ -170,24 +170,24 @@ class BatDetect2API:
         tensor = torch.tensor(audio).unsqueeze(0)
         return self.preprocessor(tensor)
 
-    def process_file(self, audio_file: str) -> BatDetect2Prediction:
+    def process_file(self, audio_file: str) -> ClipDetections:
         recording = data.Recording.from_file(audio_file, compute_hash=False)
         wav = self.audio_loader.load_recording(recording)
         detections = self.process_audio(wav)
-        return BatDetect2Prediction(
+        return ClipDetections(
             clip=data.Clip(
                 uuid=recording.uuid,
                 recording=recording,
                 start_time=0,
                 end_time=recording.duration,
             ),
-            predictions=detections,
+            detections=detections,
         )
 
     def process_audio(
         self,
         audio: np.ndarray,
-    ) -> List[RawPrediction]:
+    ) -> List[Detection]:
         spec = self.generate_spectrogram(audio)
         return self.process_spectrogram(spec)
 
@@ -195,7 +195,7 @@ class BatDetect2API:
         self,
         spec: torch.Tensor,
         start_time: float = 0,
-    ) -> List[RawPrediction]:
+    ) -> List[Detection]:
         if spec.ndim == 4 and spec.shape[0] > 1:
             raise ValueError("Batched spectrograms not supported.")
 
@@ -214,7 +214,7 @@ class BatDetect2API:
     def process_directory(
         self,
         audio_dir: data.PathLike,
-    ) -> List[BatDetect2Prediction]:
+    ) -> List[ClipDetections]:
         files = list(get_audio_files(audio_dir))
         return self.process_files(files)
 
@@ -222,7 +222,7 @@ class BatDetect2API:
         self,
         audio_files: Sequence[data.PathLike],
         num_workers: int | None = None,
-    ) -> List[BatDetect2Prediction]:
+    ) -> List[ClipDetections]:
         return process_file_list(
             self.model,
             audio_files,
@@ -238,7 +238,7 @@ class BatDetect2API:
         clips: Sequence[data.Clip],
         batch_size: int | None = None,
         num_workers: int | None = None,
-    ) -> List[BatDetect2Prediction]:
+    ) -> List[ClipDetections]:
         return run_batch_inference(
             self.model,
             clips,
@@ -252,7 +252,7 @@ class BatDetect2API:
 
     def save_predictions(
         self,
-        predictions: Sequence[BatDetect2Prediction],
+        predictions: Sequence[ClipDetections],
         path: data.PathLike,
         audio_dir: data.PathLike | None = None,
         format: str | None = None,
@@ -274,7 +274,7 @@ class BatDetect2API:
     def load_predictions(
         self,
         path: data.PathLike,
-    ) -> List[BatDetect2Prediction]:
+    ) -> List[ClipDetections]:
         return self.formatter.load(path)
 
     @classmethod

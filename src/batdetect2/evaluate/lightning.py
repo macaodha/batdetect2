@@ -9,7 +9,7 @@ from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
 from batdetect2.postprocess import to_raw_predictions
 from batdetect2.typing import EvaluatorProtocol
-from batdetect2.typing.postprocess import BatDetect2Prediction
+from batdetect2.typing.postprocess import ClipDetections
 
 
 class EvaluationModule(LightningModule):
@@ -24,7 +24,7 @@ class EvaluationModule(LightningModule):
         self.evaluator = evaluator
 
         self.clip_annotations: List[data.ClipAnnotation] = []
-        self.predictions: List[BatDetect2Prediction] = []
+        self.predictions: List[ClipDetections] = []
 
     def test_step(self, batch: TestExample, batch_idx: int):
         dataset = self.get_dataset()
@@ -39,9 +39,9 @@ class EvaluationModule(LightningModule):
             start_times=[ca.clip.start_time for ca in clip_annotations],
         )
         predictions = [
-            BatDetect2Prediction(
+            ClipDetections(
                 clip=clip_annotation.clip,
-                predictions=to_raw_predictions(
+                detections=to_raw_predictions(
                     clip_dets.numpy(),
                     targets=self.evaluator.targets,
                 ),

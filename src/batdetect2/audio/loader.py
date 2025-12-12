@@ -1,4 +1,3 @@
-
 import numpy as np
 from numpy.typing import DTypeLike
 from pydantic import Field

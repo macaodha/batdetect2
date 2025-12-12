@@ -15,7 +15,7 @@ from soundevent import data
 
 from batdetect2.core import BaseConfig, Registry
 from batdetect2.evaluate.metrics.common import average_precision
-from batdetect2.typing import RawPrediction
+from batdetect2.typing import Detection
 from batdetect2.typing.targets import TargetProtocol
 
 __all__ = [
@@ -29,7 +29,7 @@ __all__ = [
 class MatchEval:
     clip: data.Clip
     gt: data.SoundEventAnnotation | None
-    pred: RawPrediction | None
+    pred: Detection | None
 
     is_ground_truth: bool
     is_generic: bool
@@ -298,7 +298,11 @@ class BalancedAccuracy:
 
 
 TopClassMetricConfig = Annotated[
-    TopClassAveragePrecisionConfig | TopClassROCAUCConfig | TopClassRecallConfig | TopClassPrecisionConfig | BalancedAccuracyConfig,
+    TopClassAveragePrecisionConfig
+    | TopClassROCAUCConfig
+    | TopClassRecallConfig
+    | TopClassPrecisionConfig
+    | BalancedAccuracyConfig,
     Field(discriminator="name"),
 ]
 

@@ -11,7 +11,7 @@ from soundevent.geometry import (
 )
 
 from batdetect2.core import BaseConfig, Registry
-from batdetect2.typing import AffinityFunction, RawPrediction
+from batdetect2.typing import AffinityFunction, Detection
 
 affinity_functions: Registry[AffinityFunction, []] = Registry(
     "affinity_function"
@@ -42,7 +42,7 @@ class TimeAffinity(AffinityFunction):
 
     def __call__(
         self,
-        detection: RawPrediction,
+        detection: Detection,
         ground_truth: data.SoundEventAnnotation,
     ) -> float:
         target_geometry = ground_truth.sound_event.geometry
@@ -77,7 +77,7 @@ class IntervalIOU(AffinityFunction):
 
     def __call__(
         self,
-        detection: RawPrediction,
+        detection: Detection,
         ground_truth: data.SoundEventAnnotation,
     ) -> float:
         target_geometry = ground_truth.sound_event.geometry
@@ -120,7 +120,7 @@ class BBoxIOU(AffinityFunction):
 
     def __call__(
         self,
-        prediction: RawPrediction,
+        prediction: Detection,
         gt: data.SoundEventAnnotation,
     ):
         target_geometry = gt.sound_event.geometry
@@ -168,7 +168,7 @@ class GeometricIOU(AffinityFunction):
 
     def __call__(
         self,
-        prediction: RawPrediction,
+        prediction: Detection,
         gt: data.SoundEventAnnotation,
     ):
         target_geometry = gt.sound_event.geometry

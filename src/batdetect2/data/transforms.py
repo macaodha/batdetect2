@@ -221,7 +221,11 @@ class ApplyAll:
 
 
 SoundEventTransformConfig = Annotated[
-    SetFrequencyBoundConfig | ReplaceTagConfig | MapTagValueConfig | ApplyIfConfig | ApplyAllConfig,
+    SetFrequencyBoundConfig
+    | ReplaceTagConfig
+    | MapTagValueConfig
+    | ApplyIfConfig
+    | ApplyAllConfig,
     Field(discriminator="name"),
 ]
 

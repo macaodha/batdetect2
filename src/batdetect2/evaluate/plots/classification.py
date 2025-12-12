@@ -322,7 +322,10 @@ class ROCCurve(BasePlot):
 
 
 ClassificationPlotConfig = Annotated[
-    PRCurveConfig | ROCCurveConfig | ThresholdPrecisionCurveConfig | ThresholdRecallCurveConfig,
+    PRCurveConfig
+    | ROCCurveConfig
+    | ThresholdPrecisionCurveConfig
+    | ThresholdRecallCurveConfig,
     Field(discriminator="name"),
 ]
 

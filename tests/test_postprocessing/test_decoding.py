@@ -14,7 +14,7 @@ from batdetect2.postprocess.decoding import (
     get_generic_tags,
     get_prediction_features,
 )
-from batdetect2.typing import RawPrediction, TargetProtocol
+from batdetect2.typing import Detection, TargetProtocol
 
 
 @pytest.fixture
@@ -209,7 +209,7 @@ def empty_detection_dataset() -> xr.Dataset:
 
 
 @pytest.fixture
-def sample_raw_predictions() -> List[RawPrediction]:
+def sample_raw_predictions() -> List[Detection]:
     """Manually crafted RawPrediction objects using the actual type."""
 
     pred1_classes = xr.DataArray(
@@ -220,7 +220,7 @@ def sample_raw_predictions() -> List[RawPrediction]:
         coords={"feature": ["f0", "f1", "f2", "f3"]},
         dims=["feature"],
     )
-    pred1 = RawPrediction(
+    pred1 = Detection(
         detection_score=0.9,
         geometry=data.BoundingBox(
             coordinates=[
@@ -242,7 +242,7 @@ def sample_raw_predictions() -> List[RawPrediction]:
         coords={"feature": ["f0", "f1", "f2", "f3"]},
         dims=["feature"],
     )
-    pred2 = RawPrediction(
+    pred2 = Detection(
         detection_score=0.8,
         geometry=data.BoundingBox(
             coordinates=[
@@ -264,7 +264,7 @@ def sample_raw_predictions() -> List[RawPrediction]:
         coords={"feature": ["f0", "f1", "f2", "f3"]},
         dims=["feature"],
     )
-    pred3 = RawPrediction(
+    pred3 = Detection(
         detection_score=0.15,
         geometry=data.BoundingBox(
             coordinates=[
@@ -281,7 +281,7 @@ def sample_raw_predictions() -> List[RawPrediction]:
 
 
 def test_convert_raw_to_sound_event_basic(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_recording: data.Recording,
     dummy_targets: TargetProtocol,
 ):
@@ -324,7 +324,7 @@ def test_convert_raw_to_sound_event_basic(
 
 
 def test_convert_raw_to_sound_event_thresholding(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_recording: data.Recording,
     dummy_targets: TargetProtocol,
 ):
@@ -352,7 +352,7 @@ def test_convert_raw_to_sound_event_thresholding(
 
 
 def test_convert_raw_to_sound_event_no_threshold(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_recording: data.Recording,
     dummy_targets: TargetProtocol,
 ):
@@ -380,7 +380,7 @@ def test_convert_raw_to_sound_event_no_threshold(
 
 
 def test_convert_raw_to_sound_event_top_class(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_recording: data.Recording,
     dummy_targets: TargetProtocol,
 ):
@@ -407,7 +407,7 @@ def test_convert_raw_to_sound_event_top_class(
 
 
 def test_convert_raw_to_sound_event_all_below_threshold(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_recording: data.Recording,
     dummy_targets: TargetProtocol,
 ):
@@ -433,7 +433,7 @@ def test_convert_raw_to_sound_event_all_below_threshold(
 
 
 def test_convert_raw_list_to_clip_basic(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_clip: data.Clip,
     dummy_targets: TargetProtocol,
 ):
@@ -485,7 +485,7 @@ def test_convert_raw_list_to_clip_empty(sample_clip, dummy_targets):
 
 
 def test_convert_raw_list_to_clip_passes_args(
-    sample_raw_predictions: List[RawPrediction],
+    sample_raw_predictions: List[Detection],
     sample_clip: data.Clip,
     dummy_targets: TargetProtocol,
 ):

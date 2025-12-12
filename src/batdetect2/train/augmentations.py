@@ -394,7 +394,8 @@ class MaskTime(torch.nn.Module):
             size=num_masks,
         )
         masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size, strict=False)
+            (start, start + size)
+            for start, size in zip(mask_start, mask_size, strict=False)
         ]
         return mask_time(spec, masks), clip_annotation
 
@@ -460,7 +461,8 @@ class MaskFrequency(torch.nn.Module):
             size=num_masks,
         )
         masks = [
-            (start, start + size) for start, size in zip(mask_start, mask_size, strict=False)
+            (start, start + size)
+            for start, size in zip(mask_start, mask_size, strict=False)
         ]
         return mask_frequency(spec, masks), clip_annotation
 
@@ -498,7 +500,12 @@ SpectrogramAugmentationConfig = Annotated[
 ]
 
 AugmentationConfig = Annotated[
-    MixAudioConfig | AddEchoConfig | ScaleVolumeConfig | WarpConfig | MaskFrequencyConfig | MaskTimeConfig,
+    MixAudioConfig
+    | AddEchoConfig
+    | ScaleVolumeConfig
+    | WarpConfig
+    | MaskFrequencyConfig
+    | MaskTimeConfig,
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of individual augmentation config."""

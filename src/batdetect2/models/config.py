@@ -1,4 +1,3 @@
-
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config

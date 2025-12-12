@@ -220,7 +220,8 @@ def get_annotations_from_preds(
             predictions["high_freqs"],
             class_ind_best,
             class_prob_best,
-            predictions["det_probs"], strict=False,
+            predictions["det_probs"],
+            strict=False,
         )
     ]
     return annotations

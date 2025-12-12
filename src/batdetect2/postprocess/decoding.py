@@ -7,7 +7,7 @@ from soundevent import data
 
 from batdetect2.typing.postprocess import (
     ClipDetectionsArray,
-    RawPrediction,
+    Detection,
 )
 from batdetect2.typing.targets import TargetProtocol
 
@@ -30,7 +30,7 @@ decoding.
 def to_raw_predictions(
     detections: ClipDetectionsArray,
     targets: TargetProtocol,
-) -> List[RawPrediction]:
+) -> List[Detection]:
     predictions = []
 
     for score, class_scores, time, freq, dims, feats in zip(
@@ -39,7 +39,8 @@ def to_raw_predictions(
         detections.times,
         detections.frequencies,
         detections.sizes,
-        detections.features, strict=False,
+        detections.features,
+        strict=False,
     ):
         highest_scoring_class = targets.class_names[class_scores.argmax()]
 
@@ -50,7 +51,7 @@ def to_raw_predictions(
         )
 
         predictions.append(
-            RawPrediction(
+            Detection(
                 detection_score=score,
                 geometry=geom,
                 class_scores=class_scores,
@@ -62,7 +63,7 @@ def to_raw_predictions(
 
 
 def convert_raw_predictions_to_clip_prediction(
-    raw_predictions: List[RawPrediction],
+    raw_predictions: List[Detection],
     clip: data.Clip,
     targets: TargetProtocol,
     classification_threshold: float = DEFAULT_CLASSIFICATION_THRESHOLD,
@@ -85,7 +86,7 @@ def convert_raw_predictions_to_clip_prediction(
 
 
 def convert_raw_prediction_to_sound_event_prediction(
-    raw_prediction: RawPrediction,
+    raw_prediction: Detection,
     recording: data.Recording,
     targets: TargetProtocol,
     classification_threshold: float | None = DEFAULT_CLASSIFICATION_THRESHOLD,

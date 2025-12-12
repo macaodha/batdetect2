@@ -264,7 +264,14 @@ class Not:
 
 
 SoundEventConditionConfig = Annotated[
-    HasTagConfig | HasAllTagsConfig | HasAnyTagConfig | DurationConfig | FrequencyConfig | AllOfConfig | AnyOfConfig | NotConfig,
+    HasTagConfig
+    | HasAllTagsConfig
+    | HasAnyTagConfig
+    | DurationConfig
+    | FrequencyConfig
+    | AllOfConfig
+    | AnyOfConfig
+    | NotConfig,
     Field(discriminator="name"),
 ]
 
