@@ -1,12 +1,13 @@
-import sys
-from typing import Callable, Dict, Generic, Tuple, Type, TypeVar
+from typing import (
+    Callable,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    Type,
+    TypeVar,
+)
 
 from pydantic import BaseModel
-
-if sys.version_info >= (3, 10):
-    from typing import Concatenate, ParamSpec
-else:
-    from typing_extensions import Concatenate, ParamSpec
 
 __all__ = [
     "Registry",
@@ -45,10 +46,10 @@ class Registry(Generic[T_Type, P_Type]):
 
     def __init__(self, name: str):
         self._name = name
-        self._registry: Dict[
+        self._registry: dict[
             str, Callable[Concatenate[..., P_Type], T_Type]
         ] = {}
-        self._config_types: Dict[str, Type[BaseModel]] = {}
+        self._config_types: dict[str, Type[BaseModel]] = {}
 
     def register(
         self,
@@ -74,7 +75,7 @@ class Registry(Generic[T_Type, P_Type]):
 
         return decorator
 
-    def get_config_types(self) -> Tuple[Type[BaseModel], ...]:
+    def get_config_types(self) -> tuple[Type[BaseModel], ...]:
         return tuple(self._config_types.values())
 
     def get_config_type(self, name: str) -> Type[BaseModel]:

@@ -123,3 +123,4 @@ example_data/preprocessed
 
 # Dev notebooks
 notebooks/tmp
+/tmp

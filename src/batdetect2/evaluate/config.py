@@ -4,9 +4,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.evaluate.tasks import (
-    TaskConfig,
-)
+from batdetect2.evaluate.tasks import TaskConfig
 from batdetect2.evaluate.tasks.classification import ClassificationTaskConfig
 from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
 from batdetect2.logging import CSVLoggerConfig, LoggerConfig
