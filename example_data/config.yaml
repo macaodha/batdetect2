@@ -21,7 +21,7 @@ preprocess:
       gain: 0.98
       bias: 2
       power: 0.5
-    - name: spectral_mean_substraction
+    - name: spectral_mean_subtraction
 
 postprocess:
   nms_kernel_size: 9

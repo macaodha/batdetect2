@@ -10,7 +10,7 @@ from batdetect2.preprocess import (
 )
 from batdetect2.preprocess.spectrogram import (
     ScaleAmplitudeConfig,
-    SpectralMeanSubstractionConfig,
+    SpectralMeanSubtractionConfig,
 )
 from batdetect2.targets.rois import (
     DEFAULT_ANCHOR,
@@ -597,7 +597,7 @@ def test_build_roi_mapper_for_peak_energy_bbox():
     preproc_config = PreprocessingConfig(
         spectrogram_transforms=[
             ScaleAmplitudeConfig(scale="db"),
-            SpectralMeanSubstractionConfig(),
+            SpectralMeanSubtractionConfig(),
         ]
     )
     config = PeakEnergyBBoxMapperConfig(
