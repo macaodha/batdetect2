@@ -26,15 +26,17 @@ class ResampleConfig(BaseConfig):
 
     Attributes
     ----------
-    samplerate : int, default=256000
-        The target sample rate in Hz to resample the audio to. Must be > 0.
+    enabled : bool, default=True
+        Whether to resample the audio to the target sample rate. If
+        ``False``, the audio is returned at its original sample rate.
     method : str, default="poly"
         The resampling algorithm to use. Options:
-        - "poly": Polyphase resampling using `scipy.signal.resample_poly`.
-                  Generally fast.
-        - "fourier": Resampling via Fourier method using
-                     `scipy.signal.resample`. May handle non-integer
-                     resampling factors differently.
+
+        - ``"poly"``: Polyphase resampling via
+          ``scipy.signal.resample_poly``. Generally fast and accurate.
+        - ``"fourier"``: FFT-based resampling via
+          ``scipy.signal.resample``. May be preferred for non-integer
+          resampling ratios.
     """
 
     enabled: bool = True
@@ -192,7 +194,31 @@ def resample_audio(
     samplerate: int = TARGET_SAMPLERATE_HZ,
     method: str = "poly",
 ) -> np.ndarray:
-    """Resample an audio waveform DataArray to a target sample rate."""
+    """Resample an audio waveform to a target sample rate.
+
+    Parameters
+    ----------
+    wav : np.ndarray
+        Input waveform array. The last axis is assumed to be time.
+    sr : int
+        Original sample rate of ``wav`` in Hz.
+    samplerate : int, default=256000
+        Target sample rate in Hz.
+    method : str, default="poly"
+        Resampling algorithm: ``"poly"`` (polyphase) or
+        ``"fourier"`` (FFT-based).
+
+    Returns
+    -------
+    np.ndarray
+        Resampled waveform. If ``sr == samplerate`` the input array is
+        returned unchanged.
+
+    Raises
+    ------
+    NotImplementedError
+        If ``method`` is not ``"poly"`` or ``"fourier"``.
+    """
     if sr == samplerate:
         return wav
 
@@ -262,7 +288,7 @@ def resample_audio_fourier(
     sr_new: int,
     axis: int = -1,
 ) -> np.ndarray:
-    """Resample a numpy array using `scipy.signal.resample`.
+    """Resample a numpy array using ``scipy.signal.resample``.
 
     This method uses FFTs to resample the signal.
 
@@ -270,20 +296,17 @@ def resample_audio_fourier(
     ----------
     array : np.ndarray
         The input array to resample.
-    num : int
-        The desired number of samples in the output array along `axis`.
+    sr_orig : int
+        The original sample rate in Hz.
+    sr_new : int
+        The target sample rate in Hz.
     axis : int, default=-1
-        The axis of `array` along which to resample.
+        The axis of ``array`` along which to resample.
 
     Returns
     -------
     np.ndarray
-        The array resampled to have `num` samples along `axis`.
-
-    Raises
-    ------
-    ValueError
-        If `num` is negative.
+        The array resampled to the target sample rate.
     """
     ratio = sr_new / sr_orig
     return resample(
