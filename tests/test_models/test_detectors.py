@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from batdetect2.models.config import BackboneConfig
+from batdetect2.models.backbones import BackboneConfig
 from batdetect2.models.detectors import Detector, build_detector
 from batdetect2.models.heads import BBoxHead, ClassifierHead
 from batdetect2.typing.models import ModelOutput

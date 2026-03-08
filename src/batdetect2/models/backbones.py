@@ -18,16 +18,20 @@ automatic padding to handle input sizes not perfectly divisible by the
 network's total downsampling factor.
 """
 
-from typing import Tuple
+
+from typing import Annotated, Literal, Tuple
 
 import torch
 import torch.nn.functional as F
-from torch import nn
+from pydantic import Field
 
-from batdetect2.models.bottleneck import build_bottleneck
-from batdetect2.models.config import BackboneConfig
-from batdetect2.models.decoder import build_decoder
-from batdetect2.models.encoder import build_encoder
+from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.registries import Registry
+from soundevent import data
+from batdetect2.models.bottleneck import BottleneckConfig, DEFAULT_BOTTLENECK_CONFIG, build_bottleneck
+from batdetect2.models.decoder import DecoderConfig, DEFAULT_DECODER_CONFIG, build_decoder
+from batdetect2.models.encoder import EncoderConfig, DEFAULT_ENCODER_CONFIG, build_encoder
+
 from batdetect2.typing.models import (
     BackboneModel,
     BottleneckProtocol,
@@ -35,13 +39,38 @@ from batdetect2.typing.models import (
     EncoderProtocol,
 )
 
+
+class UNetBackboneConfig(BaseConfig):
+    name: Literal["UNetBackbone"] = "UNetBackbone"
+    input_height: int = 128
+    in_channels: int = 1
+    encoder: EncoderConfig = DEFAULT_ENCODER_CONFIG
+    bottleneck: BottleneckConfig = DEFAULT_BOTTLENECK_CONFIG
+    decoder: DecoderConfig = DEFAULT_DECODER_CONFIG
+    out_channels: int = 32
+
+BackboneConfig = Annotated[
+    UNetBackboneConfig,
+    Field(discriminator="name")
+]
+
+def load_backbone_config(
+    path: data.PathLike,
+    field: str | None = None,
+) -> BackboneConfig:
+    return load_config(path, schema=BackboneConfig, field=field)
+
+backbone_registry: Registry[BackboneModel, []] = Registry("backbone")
+
 __all__ = [
-    "Backbone",
+    "UNetBackbone",
+    "BackboneConfig",
+    "load_backbone_config",
     "build_backbone",
 ]
 
 
-class Backbone(BackboneModel):
+class UNetBackbone(BackboneModel):
     """Encoder-Decoder Backbone Network Implementation.
 
     Combines an Encoder, Bottleneck, and Decoder module sequentially, using
@@ -149,66 +178,46 @@ class Backbone(BackboneModel):
         return x
 
 
-def build_backbone(config: BackboneConfig) -> BackboneModel:
-    """Factory function to build a Backbone from configuration.
-
-    Constructs the `Encoder`, `Bottleneck`, and `Decoder` components based on
-    the provided `BackboneConfig`, validates their compatibility, and assembles
-    them into a `Backbone` instance.
-
-    Parameters
-    ----------
-    config : BackboneConfig
-        The configuration object detailing the backbone architecture, including
-        input dimensions and configurations for encoder, bottleneck, and
-        decoder.
-
-    Returns
-    -------
-    BackboneModel
-        An initialized `Backbone` module ready for use.
-
-    Raises
-    ------
-    ValueError
-        If sub-component configurations are incompatible
-        (e.g., channel mismatches, decoder output height doesn't match backbone
-        input height).
-    NotImplementedError
-        If an unknown block type is specified in sub-configs.
-    """
-    encoder = build_encoder(
-        in_channels=config.in_channels,
-        input_height=config.input_height,
-        config=config.encoder,
-    )
-
-    bottleneck = build_bottleneck(
-        input_height=encoder.output_height,
-        in_channels=encoder.out_channels,
-        config=config.bottleneck,
-    )
-
-    decoder = build_decoder(
-        in_channels=bottleneck.out_channels,
-        input_height=encoder.output_height,
-        config=config.decoder,
-    )
-
-    if decoder.output_height != config.input_height:
-        raise ValueError(
-            "Invalid configuration: Decoder output height "
-            f"({decoder.output_height}) must match the Backbone input height "
-            f"({config.input_height}). Check encoder/decoder layer "
-            "configurations and input/bottleneck heights."
+    @backbone_registry.register(UNetBackboneConfig)
+    @staticmethod
+    def from_config(config: UNetBackboneConfig) -> BackboneModel:
+        encoder = build_encoder(
+            in_channels=config.in_channels,
+            input_height=config.input_height,
+            config=config.encoder,
         )
 
-    return Backbone(
-        input_height=config.input_height,
-        encoder=encoder,
-        decoder=decoder,
-        bottleneck=bottleneck,
-    )
+        bottleneck = build_bottleneck(
+            input_height=encoder.output_height,
+            in_channels=encoder.out_channels,
+            config=config.bottleneck,
+        )
+
+        decoder = build_decoder(
+            in_channels=bottleneck.out_channels,
+            input_height=encoder.output_height,
+            config=config.decoder,
+        )
+
+        if decoder.output_height != config.input_height:
+            raise ValueError(
+                "Invalid configuration: Decoder output height "
+                f"({decoder.output_height}) must match the Backbone input height "
+                f"({config.input_height}). Check encoder/decoder layer "
+                "configurations and input/bottleneck heights."
+            )
+
+        return UNetBackbone(
+            input_height=config.input_height,
+            encoder=encoder,
+            decoder=decoder,
+            bottleneck=bottleneck,
+        )
+
+
+def build_backbone(config: BackboneConfig | None = None) -> BackboneModel:
+    config = config or UNetBackboneConfig()
+    return backbone_registry.build(config)
 
 
 def _pad_adjust(

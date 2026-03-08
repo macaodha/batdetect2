@@ -17,7 +17,11 @@ the `batdetect2.preprocess` and `batdetect2.postprocess` packages, respectively.
 import torch
 from loguru import logger
 
-from batdetect2.models.backbones import BackboneConfig, build_backbone
+from batdetect2.models.backbones import (
+    BackboneConfig,
+    UNetBackboneConfig,
+    build_backbone,
+)
 from batdetect2.models.heads import BBoxHead, ClassifierHead
 from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
 
@@ -152,7 +156,7 @@ def build_detector(
         construction of the backbone or detector components (e.g., incompatible
         configurations, invalid parameters).
     """
-    config = config or BackboneConfig()
+    config = config or UNetBackboneConfig()
 
     logger.opt(lazy=True).debug(
         "Building model with config: \n{}",

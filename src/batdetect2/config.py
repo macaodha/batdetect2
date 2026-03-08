@@ -12,7 +12,7 @@ from batdetect2.evaluate.config import (
     get_default_eval_config,
 )
 from batdetect2.inference.config import InferenceConfig
-from batdetect2.models.config import BackboneConfig
+from batdetect2.models.backbones import BackboneConfig
 from batdetect2.postprocess.config import PostprocessConfig
 from batdetect2.preprocess.config import PreprocessingConfig
 from batdetect2.targets.config import TargetConfig

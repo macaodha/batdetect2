@@ -30,7 +30,13 @@ from typing import List
 
 import torch
 
-from batdetect2.models.backbones import Backbone, build_backbone
+from batdetect2.models.backbones import (
+    UNetBackbone,
+    UNetBackboneConfig,
+    BackboneConfig,
+    build_backbone,
+    load_backbone_config,
+)
 from batdetect2.models.blocks import (
     ConvConfig,
     FreqCoordConvDownConfig,
@@ -43,7 +49,6 @@ from batdetect2.models.bottleneck import (
     BottleneckConfig,
     build_bottleneck,
 )
-from batdetect2.models.config import BackboneConfig, load_backbone_config
 from batdetect2.models.decoder import (
     DEFAULT_DECODER_CONFIG,
     DecoderConfig,
@@ -66,7 +71,7 @@ from batdetect2.typing import (
 
 __all__ = [
     "BBoxHead",
-    "Backbone",
+    "UNetBackbone",
     "BackboneConfig",
     "Bottleneck",
     "BottleneckConfig",
@@ -128,7 +133,7 @@ def build_model(
     from batdetect2.preprocess import build_preprocessor
     from batdetect2.targets import build_targets
 
-    config = config or BackboneConfig()
+    config = config or UNetBackboneConfig()
     targets = targets or build_targets()
     preprocessor = preprocessor or build_preprocessor()
     postprocessor = postprocessor or build_postprocessor(
