@@ -1,23 +1,24 @@
-"""Constructs the Encoder part of a configurable neural network backbone.
+"""Encoder (downsampling path) for the BatDetect2 backbone.
 
-This module defines the configuration structure (`EncoderConfig`) and provides
-the `Encoder` class (an `nn.Module`) along with a factory function
-(`build_encoder`) to create sequential encoders. Encoders typically form the
-downsampling path in architectures like U-Nets, processing input feature maps
-(like spectrograms) to produce lower-resolution, higher-dimensionality feature
-representations (bottleneck features).
+This module defines ``EncoderConfig`` and the ``Encoder`` ``nn.Module``,
+together with the ``build_encoder`` factory function.
 
-The encoder is built dynamically by stacking neural network blocks based on a
-list of configuration objects provided in `EncoderConfig.layers`. Each
-configuration object specifies the type of block (e.g., standard convolution,
-coordinate-feature convolution with downsampling) and its parameters
-(e.g., output channels). This allows for flexible definition of encoder
-architectures via configuration files.
+In a U-Net-style network the encoder progressively reduces the spatial
+resolution of the spectrogram whilst increasing the number of feature
+channels. Each layer in the encoder produces a feature map that is stored
+for use as a skip connection in the corresponding decoder layer.
 
-The `Encoder`'s `forward` method returns outputs from all intermediate layers,
-suitable for skip connections, while the `encode` method returns only the final
-bottleneck output. A default configuration (`DEFAULT_ENCODER_CONFIG`) is also
-provided.
+The encoder is fully configurable: the type, number, and parameters of the
+downsampling blocks are described by an ``EncoderConfig`` object containing
+an ordered list of block configuration objects (see ``batdetect2.models.blocks``
+for available block types).
+
+``Encoder.forward`` returns the outputs of *all* encoder layers as a list,
+so that skip connections are available to the decoder.
+``Encoder.encode`` returns only the final output (the input to the bottleneck).
+
+A default configuration ``DEFAULT_ENCODER_CONFIG`` is provided and used by
+``build_encoder`` when no explicit configuration is supplied.
 """
 
 from typing import Annotated, List
@@ -53,35 +54,32 @@ EncoderLayerConfig = Annotated[
 
 
 class EncoderConfig(BaseConfig):
-    """Configuration for building the sequential Encoder module.
-
-    Defines the sequence of neural network blocks that constitute the encoder
-    (downsampling path).
+    """Configuration for the sequential ``Encoder`` module.
 
     Attributes
     ----------
     layers : List[EncoderLayerConfig]
-        An ordered list of configuration objects, each defining one layer or
-        block in the encoder sequence. Each item must be a valid block config
-        (e.g., `ConvConfig`, `FreqCoordConvDownConfig`,
-        `StandardConvDownConfig`) including a `name` field and necessary
-        parameters like `out_channels`. Input channels for each layer are
-        inferred sequentially. The list must contain at least one layer.
+        Ordered list of block configuration objects defining the encoder's
+        downsampling stages. Each entry specifies the block type (via its
+        ``name`` field) and any block-specific parameters such as
+        ``out_channels``. Input channels for each block are inferred
+        automatically from the output of the previous block. Must contain
+        at least one entry.
     """
 
     layers: List[EncoderLayerConfig] = Field(min_length=1)
 
 
 class Encoder(nn.Module):
-    """Sequential Encoder module composed of configurable downscaling layers.
+    """Sequential encoder module composed of configurable downsampling layers.
 
-    Constructs the downsampling path of an encoder-decoder network by stacking
-    multiple downscaling blocks.
+    Executes a series of downsampling blocks in order, storing the output of
+    each block so that it can be passed as a skip connection to the
+    corresponding decoder layer.
 
-    The `forward` method executes the sequence and returns the output feature
-    map from *each* downscaling stage, facilitating the implementation of skip
-    connections in U-Net-like architectures. The `encode` method returns only
-    the final output tensor (bottleneck features).
+    ``forward`` returns the outputs of *all* layers (useful when skip
+    connections are needed). ``encode`` returns only the final output
+    (the input to the bottleneck).
 
     Attributes
     ----------
@@ -89,14 +87,14 @@ class Encoder(nn.Module):
         Number of channels expected in the input tensor.
     input_height : int
         Height (frequency bins) expected in the input tensor.
-    output_channels : int
-        Number of channels in the final output tensor (bottleneck).
+    out_channels : int
+        Number of channels in the final output tensor (bottleneck input).
     output_height : int
-        Height (frequency bins) expected in the output tensor.
+        Height (frequency bins) of the final output tensor.
     layers : nn.ModuleList
-        The sequence of instantiated downscaling layer modules.
+        Sequence of instantiated downsampling block modules.
     depth : int
-        The number of downscaling layers in the encoder.
+        Number of downsampling layers.
     """
 
     def __init__(
@@ -107,23 +105,22 @@ class Encoder(nn.Module):
         input_height: int = 128,
         in_channels: int = 1,
     ):
-        """Initialize the Encoder module.
+        """Initialise the Encoder module.
 
-        Note: This constructor is typically called internally by the
-        `build_encoder` factory function, which prepares the `layers` list.
+        This constructor is typically called by the ``build_encoder`` factory
+        function, which takes care of building the ``layers`` list from a
+        configuration object.
 
         Parameters
         ----------
         output_channels : int
             Number of channels produced by the final layer.
         output_height : int
-            The expected height of the output tensor.
+            Height of the output tensor after all layers have been applied.
         layers : List[nn.Module]
-            A list of pre-instantiated downscaling layer modules (e.g.,
-            `StandardConvDownBlock` or `FreqCoordConvDownBlock`) in the desired
-            sequence.
+            Pre-built downsampling block modules in execution order.
         input_height : int, default=128
-            Expected height of the input tensor.
+            Expected height of the input tensor (frequency bins).
         in_channels : int, default=1
             Expected number of channels in the input tensor.
         """
@@ -138,29 +135,30 @@ class Encoder(nn.Module):
         self.depth = len(self.layers)
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
-        """Pass input through encoder layers, returns all intermediate outputs.
+        """Pass input through all encoder layers and return every output.
 
-        This method is typically used when the Encoder is part of a U-Net or
-        similar architecture requiring skip connections.
+        Used when skip connections are needed (e.g. in a U-Net decoder).
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor, shape `(B, C_in, H_in, W)`, where `C_in` must match
-            `self.in_channels` and `H_in` must match `self.input_height`.
+            Input spectrogram feature map, shape ``(B, C_in, H_in, W)``.
+            ``C_in`` must match ``self.in_channels`` and ``H_in`` must
+            match ``self.input_height``.
 
         Returns
         -------
         List[torch.Tensor]
-            A list containing the output tensors from *each* downscaling layer
-            in the sequence. `outputs[0]` is the output of the first layer,
-            `outputs[-1]` is the final output (bottleneck) of the encoder.
+            Output tensors from every layer in order.
+            ``outputs[0]`` is the output of the first (shallowest) layer;
+            ``outputs[-1]`` is the output of the last (deepest) layer,
+            which serves as the input to the bottleneck.
 
         Raises
         ------
         ValueError
-            If input tensor channel count or height does not match expected
-            values.
+            If the input channel count or height does not match the
+            expected values.
         """
         if x.shape[1] != self.in_channels:
             raise ValueError(
@@ -183,28 +181,29 @@ class Encoder(nn.Module):
         return outputs
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        """Pass input through encoder layers, returning only the final output.
+        """Pass input through all encoder layers and return only the final output.
 
-        This method provides access to the bottleneck features produced after
-        the last downscaling layer.
+        Use this when skip connections are not needed and you only require
+        the bottleneck feature map.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor, shape `(B, C_in, H_in, W)`. Must match expected
-            `in_channels` and `input_height`.
+            Input spectrogram feature map, shape ``(B, C_in, H_in, W)``.
+            Must satisfy the same shape requirements as ``forward``.
 
         Returns
         -------
         torch.Tensor
-            The final output tensor (bottleneck features) from the last layer
-            of the encoder. Shape `(B, C_out, H_out, W_out)`.
+            Output of the last encoder layer, shape
+            ``(B, C_out, H_out, W)``, where ``C_out`` is
+            ``self.out_channels`` and ``H_out`` is ``self.output_height``.
 
         Raises
         ------
         ValueError
-            If input tensor channel count or height does not match expected
-            values.
+            If the input channel count or height does not match the
+            expected values.
         """
         if x.shape[1] != self.in_channels:
             raise ValueError(
@@ -236,14 +235,17 @@ DEFAULT_ENCODER_CONFIG: EncoderConfig = EncoderConfig(
         ),
     ],
 )
-"""Default configuration for the Encoder.
+"""Default encoder configuration used in standard BatDetect2 models.
 
-Specifies an architecture typically used in BatDetect2:
-- Input: 1 channel, 128 frequency bins.
-- Layer 1: FreqCoordConvDown -> 32 channels, H=64
-- Layer 2: FreqCoordConvDown -> 64 channels, H=32
-- Layer 3: FreqCoordConvDown -> 128 channels, H=16
-- Layer 4: ConvBlock -> 256 channels, H=16 (Bottleneck)
+Assumes a 1-channel input with 128 frequency bins and produces the
+following feature maps:
+
+- Stage 1 (``FreqCoordConvDown``): 32 channels, height 64.
+- Stage 2 (``FreqCoordConvDown``): 64 channels, height 32.
+- Stage 3 (``LayerGroup``):
+
+  - ``FreqCoordConvDown``: 128 channels, height 16.
+  - ``ConvBlock``: 256 channels, height 16 (bottleneck input).
 """
 
 
@@ -252,42 +254,38 @@ def build_encoder(
     input_height: int,
     config: EncoderConfig | None = None,
 ) -> Encoder:
-    """Factory function to build an Encoder instance from configuration.
+    """Build an ``Encoder`` from configuration.
 
-    Constructs a sequential `Encoder` module based on the layer sequence
-    defined in an `EncoderConfig` object and the provided input dimensions.
-    If no config is provided, uses the default layer sequence from
-    `DEFAULT_ENCODER_CONFIG`.
-
-    It iteratively builds the layers using the unified
-    `build_layer_from_config` factory (from `.blocks`), tracking the changing
-    number of channels and feature map height required for each subsequent
-    layer, especially for coordinate- aware blocks.
+    Constructs a sequential ``Encoder`` by iterating over the block
+    configurations in ``config.layers``, building each block with
+    ``build_layer``, and tracking the channel count and feature-map height
+    as they change through the sequence.
 
     Parameters
     ----------
     in_channels : int
-        The number of channels expected in the input tensor to the encoder.
-        Must be > 0.
+        Number of channels in the input spectrogram tensor. Must be
+        positive.
     input_height : int
-        The height (frequency bins) expected in the input tensor. Must be > 0.
-        Crucial for initializing coordinate-aware layers correctly.
+        Height (number of frequency bins) of the input spectrogram.
+        Must be positive and should be divisible by
+        ``2 ** (number of downsampling stages)`` to avoid size mismatches
+        later in the network.
     config : EncoderConfig, optional
-        The configuration object detailing the sequence of layers and their
-        parameters. If None, `DEFAULT_ENCODER_CONFIG` is used.
+        Configuration specifying the layer sequence. Defaults to
+        ``DEFAULT_ENCODER_CONFIG`` if not provided.
 
     Returns
     -------
     Encoder
-        An initialized `Encoder` module.
+        An initialised ``Encoder`` module.
 
     Raises
     ------
     ValueError
-        If `in_channels` or `input_height` are not positive, or if the layer
-        configuration is invalid (e.g., empty list, unknown `name`).
-    NotImplementedError
-        If `build_layer_from_config` encounters an unknown `name`.
+        If ``in_channels`` or ``input_height`` are not positive.
+    KeyError
+        If a layer configuration specifies an unknown block type.
     """
     if in_channels <= 0 or input_height <= 0:
         raise ValueError("in_channels and input_height must be positive.")

@@ -1,17 +1,21 @@
-"""Defines the Bottleneck component of an Encoder-Decoder architecture.
+"""Bottleneck component for encoder-decoder network architectures.
 
-This module provides the configuration (`BottleneckConfig`) and
-`torch.nn.Module` implementations (`Bottleneck`, `BottleneckAttn`) for the
-bottleneck layer(s) that typically connect the Encoder (downsampling path) and
-Decoder (upsampling path) in networks like U-Nets.
+The bottleneck sits between the encoder (downsampling path) and the decoder
+(upsampling path) and processes the lowest-resolution, highest-channel feature
+map produced by the encoder.
 
-The bottleneck processes the lowest-resolution, highest-dimensionality feature
-map produced by the Encoder. This module offers a configurable option to include
-a `SelfAttention` layer within the bottleneck, allowing the model to capture
-global temporal context before features are passed to the Decoder.
+This module provides:
 
-A factory function `build_bottleneck` constructs the appropriate bottleneck
-module based on the provided configuration.
+- ``BottleneckConfig`` – configuration dataclass describing the number of
+  internal channels and an optional sequence of additional layers (currently
+  only ``SelfAttention`` is supported).
+- ``Bottleneck`` – the ``torch.nn.Module`` implementation. It first applies a
+  ``VerticalConv`` to collapse the frequency axis to a single bin, optionally
+  runs one or more additional layers (e.g. self-attention along the time axis),
+  then repeats the output along the height dimension to restore the original
+  frequency resolution before passing features to the decoder.
+- ``build_bottleneck`` – factory function that constructs a ``Bottleneck``
+  instance from a ``BottleneckConfig`` and the encoder's output dimensions.
 """
 
 from typing import Annotated, List
@@ -37,42 +41,51 @@ __all__ = [
 
 
 class Bottleneck(Block):
-    """Base Bottleneck module for Encoder-Decoder architectures.
+    """Bottleneck module for encoder-decoder architectures.
 
-    This implementation represents the simplest bottleneck structure
-    considered, primarily consisting of a `VerticalConv` layer. This layer
-    collapses the frequency dimension (height) to 1, summarizing information
-    across frequencies at each time step. The output is then repeated along the
-    height dimension to match the original bottleneck input height before being
-    passed to the decoder.
+    Processes the lowest-resolution feature map that links the encoder and
+    decoder. The sequence of operations is:
 
-    This base version does *not* include self-attention.
+    1. ``VerticalConv`` – collapses the frequency axis (height) to a single
+       bin by applying a convolution whose kernel spans the full height.
+    2. Optional additional layers (e.g. ``SelfAttention``) – applied while
+       the feature map has height 1, so they operate purely along the time
+       axis.
+    3. Height restoration – the single-bin output is repeated along the
+       height axis to restore the original frequency resolution, producing
+       a tensor that the decoder can accept.
 
     Parameters
     ----------
     input_height : int
-        Height (frequency bins) of the input tensor. Must be positive.
+        Height (number of frequency bins) of the input tensor. Must be
+        positive.
     in_channels : int
         Number of channels in the input tensor from the encoder. Must be
         positive.
     out_channels : int
-        Number of output channels. Must be positive.
+        Number of output channels after the bottleneck. Must be positive.
+    bottleneck_channels : int, optional
+        Number of internal channels used by the ``VerticalConv`` layer.
+        Defaults to ``out_channels`` if not provided.
+    layers : List[torch.nn.Module], optional
+        Additional modules (e.g. ``SelfAttention``) to apply after the
+        ``VerticalConv`` and before height restoration.
 
     Attributes
     ----------
     in_channels : int
         Number of input channels accepted by the bottleneck.
+    out_channels : int
+        Number of output channels produced by the bottleneck.
     input_height : int
         Expected height of the input tensor.
-    channels : int
-        Number of output channels.
+    bottleneck_channels : int
+        Number of channels used internally by the vertical convolution.
     conv_vert : VerticalConv
         The vertical convolution layer.
-
-    Raises
-    ------
-    ValueError
-        If `input_height`, `in_channels`, or `out_channels` are not positive.
+    layers : nn.ModuleList
+        Additional layers applied after the vertical convolution.
     """
 
     def __init__(
@@ -83,7 +96,23 @@ class Bottleneck(Block):
         bottleneck_channels: int | None = None,
         layers: List[torch.nn.Module] | None = None,
     ) -> None:
-        """Initialize the base Bottleneck layer."""
+        """Initialise the Bottleneck layer.
+
+        Parameters
+        ----------
+        input_height : int
+            Height (number of frequency bins) of the input tensor.
+        in_channels : int
+            Number of channels in the input tensor.
+        out_channels : int
+            Number of channels in the output tensor.
+        bottleneck_channels : int, optional
+            Number of internal channels for the ``VerticalConv``. Defaults
+            to ``out_channels``.
+        layers : List[torch.nn.Module], optional
+            Additional modules applied after the ``VerticalConv``, such as
+            a ``SelfAttention`` block.
+        """
         super().__init__()
         self.in_channels = in_channels
         self.input_height = input_height
@@ -103,23 +132,24 @@ class Bottleneck(Block):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input features through the bottleneck.
+        """Process the encoder's bottleneck features.
 
-        Applies vertical convolution and repeats the output height.
+        Applies vertical convolution, optional additional layers, then
+        restores the height dimension by repetition.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor from the encoder bottleneck, shape
-            `(B, C_in, H_in, W)`. `C_in` must match `self.in_channels`,
-            `H_in` must match `self.input_height`.
+            Input tensor from the encoder, shape
+            ``(B, C_in, H_in, W)``. ``C_in`` must match
+            ``self.in_channels`` and ``H_in`` must match
+            ``self.input_height``.
 
         Returns
         -------
         torch.Tensor
-            Output tensor, shape `(B, C_out, H_in, W)`. Note that the height
-            dimension `H_in` is restored via repetition after the vertical
-            convolution.
+            Output tensor with shape ``(B, C_out, H_in, W)``. The height
+            ``H_in`` is restored by repeating the single-bin result.
         """
         x = self.conv_vert(x)
 
@@ -133,28 +163,22 @@ BottleneckLayerConfig = Annotated[
     SelfAttentionConfig,
     Field(discriminator="name"),
 ]
-"""Type alias for the discriminated union of block configs usable in Decoder."""
+"""Type alias for the discriminated union of block configs usable in the Bottleneck."""
 
 
 class BottleneckConfig(BaseConfig):
-    """Configuration for the bottleneck layer(s).
-
-    Defines the number of channels within the bottleneck and whether to include
-    a self-attention mechanism.
+    """Configuration for the bottleneck component.
 
     Attributes
     ----------
     channels : int
-        The number of output channels produced by the main convolutional layer
-        within the bottleneck. This often matches the number of channels coming
-        from the last encoder stage, but can be different. Must be positive.
-        This also defines the channel dimensions used within the optional
-        `SelfAttention` layer.
-    self_attention : bool
-        If True, includes a `SelfAttention` layer operating on the time
-        dimension after an initial `VerticalConv` layer within the bottleneck.
-        If False, only the initial `VerticalConv` (and height repetition) is
-        performed.
+        Number of output channels produced by the bottleneck. This value
+        is also used as the dimensionality of any optional layers (e.g.
+        self-attention). Must be positive.
+    layers : List[BottleneckLayerConfig]
+        Ordered list of additional block configurations to apply after the
+        initial ``VerticalConv``. Currently only ``SelfAttentionConfig`` is
+        supported. Defaults to an empty list (no extra layers).
     """
 
     channels: int
@@ -174,30 +198,37 @@ def build_bottleneck(
     in_channels: int,
     config: BottleneckConfig | None = None,
 ) -> BottleneckProtocol:
-    """Factory function to build the Bottleneck module from configuration.
+    """Build a ``Bottleneck`` module from configuration.
 
-    Constructs either a base `Bottleneck` or a `BottleneckAttn` instance based
-    on the `config.self_attention` flag.
+    Constructs a ``Bottleneck`` instance whose internal channel count and
+    optional extra layers (e.g. self-attention) are controlled by
+    ``config``. If no configuration is provided, the default
+    ``DEFAULT_BOTTLENECK_CONFIG`` is used, which includes a
+    ``SelfAttention`` layer.
 
     Parameters
     ----------
     input_height : int
-        Height (frequency bins) of the input tensor. Must be positive.
+        Height (number of frequency bins) of the input tensor from the
+        encoder. Must be positive.
     in_channels : int
-        Number of channels in the input tensor. Must be positive.
+        Number of channels in the input tensor from the encoder. Must be
+        positive.
     config : BottleneckConfig, optional
-        Configuration object specifying the bottleneck channels and whether
-        to use self-attention. Uses `DEFAULT_BOTTLENECK_CONFIG` if None.
+        Configuration specifying the output channel count and any
+        additional layers. Uses ``DEFAULT_BOTTLENECK_CONFIG`` if ``None``.
 
     Returns
     -------
-    nn.Module
-        An initialized bottleneck module (`Bottleneck` or `BottleneckAttn`).
+    BottleneckProtocol
+        An initialised ``Bottleneck`` module.
 
     Raises
     ------
-    ValueError
-        If `input_height` or `in_channels` are not positive.
+    AssertionError
+        If any configured layer changes the height of the feature map
+        (bottleneck layers must preserve height so that it can be restored
+        by repetition).
     """
     config = config or DEFAULT_BOTTLENECK_CONFIG
 

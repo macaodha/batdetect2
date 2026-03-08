@@ -1,17 +1,20 @@
-"""Assembles the complete BatDetect2 Detection Model.
+"""Assembles the complete BatDetect2 detection model.
 
-This module defines the concrete `Detector` class, which implements the
-`DetectionModel` interface defined in `.types`. It combines a feature
-extraction backbone with specific prediction heads to create the end-to-end
-neural network used for detecting bat calls, predicting their size, and
-classifying them.
+This module defines the ``Detector`` class, which combines a backbone
+feature extractor with prediction heads for detection, classification, and
+bounding-box size regression.
 
-The primary components are:
-- `Detector`: The `torch.nn.Module` subclass representing the complete model.
+Components
+----------
+- ``Detector`` – the ``torch.nn.Module`` that wires together a backbone
+  (``BackboneModel``) with a ``ClassifierHead`` and a ``BBoxHead`` to
+  produce a ``ModelOutput`` tuple from an input spectrogram.
+- ``build_detector`` – factory function that builds a ready-to-use
+  ``Detector`` from a backbone configuration and a target class count.
 
-This module focuses purely on the neural network architecture definition. The
-logic for preprocessing inputs and postprocessing/decoding outputs resides in
-the `batdetect2.preprocess` and `batdetect2.postprocess` packages, respectively.
+Note that ``Detector`` operates purely on spectrogram tensors; raw audio
+preprocessing and output postprocessing are handled by
+``batdetect2.preprocess`` and ``batdetect2.postprocess`` respectively.
 """
 
 import torch
@@ -32,25 +35,30 @@ __all__ = [
 
 
 class Detector(DetectionModel):
-    """Concrete implementation of the BatDetect2 Detection Model.
+    """Complete BatDetect2 detection and classification model.
 
-    Assembles a complete detection and classification model by combining a
-    feature extraction backbone network with specific prediction heads for
-    detection probability, bounding box size regression, and class
-    probabilities.
+    Combines a backbone feature extractor with two prediction heads:
+
+    - ``ClassifierHead``: predicts per-class probabilities at each
+      time–frequency location.
+    - ``BBoxHead``: predicts call duration and bandwidth at each location.
+
+    The detection probability map is derived from the class probabilities by
+    summing across the class dimension (i.e. the probability that *any* class
+    is present), rather than from a separate detection head.
+
+    Instances are typically created via ``build_detector``.
 
     Attributes
     ----------
     backbone : BackboneModel
-        The feature extraction backbone network module.
+        The feature extraction backbone.
     num_classes : int
-        The number of specific target classes the model predicts (derived from
-        the `classifier_head`).
+        Number of target classes (inferred from the classifier head).
     classifier_head : ClassifierHead
-        The prediction head responsible for generating class probabilities.
+        Produces per-class probability maps from backbone features.
     bbox_head : BBoxHead
-        The prediction head responsible for generating bounding box size
-        predictions.
+        Produces duration and bandwidth predictions from backbone features.
     """
 
     backbone: BackboneModel
@@ -61,26 +69,21 @@ class Detector(DetectionModel):
         classifier_head: ClassifierHead,
         bbox_head: BBoxHead,
     ):
-        """Initialize the Detector model.
+        """Initialise the Detector model.
 
-        Note: Instances are typically created using the `build_detector`
+        This constructor is typically called by the ``build_detector``
         factory function.
 
         Parameters
         ----------
         backbone : BackboneModel
-            An initialized feature extraction backbone module (e.g., built by
-            `build_backbone` from the `.backbone` module).
+            An initialised backbone module (e.g. built by
+            ``build_backbone``).
         classifier_head : ClassifierHead
-            An initialized classification head module. The number of classes
-            is inferred from this head.
+            An initialised classification head. The ``num_classes``
+            attribute is read from this head.
         bbox_head : BBoxHead
-            An initialized bounding box size prediction head module.
-
-        Raises
-        ------
-        TypeError
-            If the provided modules are not of the expected types.
+            An initialised bounding-box size prediction head.
         """
         super().__init__()
 
@@ -90,31 +93,34 @@ class Detector(DetectionModel):
         self.bbox_head = bbox_head
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:
-        """Perform the forward pass of the complete detection model.
+        """Run the complete detection model on an input spectrogram.
 
-        Processes the input spectrogram through the backbone to extract
-        features, then passes these features through the separate prediction
-        heads to generate detection probabilities, class probabilities, and
-        size predictions.
+        Passes the spectrogram through the backbone to produce a feature
+        map, then applies the classifier and bounding-box heads. The
+        detection probability map is derived by summing the per-class
+        probability maps across the class dimension; no separate detection
+        head is used.
 
         Parameters
         ----------
         spec : torch.Tensor
-            Input spectrogram tensor, typically with shape
-            `(batch_size, input_channels, frequency_bins, time_bins)`. The
-            shape must be compatible with the `self.backbone` input
-            requirements.
+            Input spectrogram tensor, shape
+            ``(batch_size, channels, frequency_bins, time_bins)``.
 
         Returns
         -------
         ModelOutput
-            A NamedTuple containing the four output tensors:
-            - `detection_probs`: Detection probability heatmap `(B, 1, H, W)`.
-            - `size_preds`: Predicted scaled size dimensions `(B, 2, H, W)`.
-            - `class_probs`: Class probabilities (excluding background)
-              `(B, num_classes, H, W)`.
-            - `features`: Output feature map from the backbone
-              `(B, C_out, H, W)`.
+            A named tuple with four fields:
+
+            - ``detection_probs`` – ``(B, 1, H, W)`` – probability that a
+              call of any class is present at each location. Derived by
+              summing ``class_probs`` over the class dimension.
+            - ``size_preds`` – ``(B, 2, H, W)`` – scaled duration (channel
+              0) and bandwidth (channel 1) predictions at each location.
+            - ``class_probs`` – ``(B, num_classes, H, W)`` – per-class
+              probabilities at each location.
+            - ``features`` – ``(B, C_out, H, W)`` – raw backbone feature
+              map.
         """
         features = self.backbone(spec)
         classification = self.classifier_head(features)
@@ -131,30 +137,33 @@ class Detector(DetectionModel):
 def build_detector(
     num_classes: int, config: BackboneConfig | None = None
 ) -> DetectionModel:
-    """Build the complete BatDetect2 detection model.
+    """Build a complete BatDetect2 detection model.
+
+    Constructs a backbone from ``config``, attaches a ``ClassifierHead``
+    and a ``BBoxHead`` sized to the backbone's output channel count, and
+    returns them wrapped in a ``Detector``.
 
     Parameters
     ----------
     num_classes : int
-        The number of specific target classes the model should predict
-        (required for the `ClassifierHead`). Must be positive.
+        Number of target bat species or call types to predict. Must be
+        positive.
     config : BackboneConfig, optional
-        Configuration object specifying the architecture of the backbone
-        (encoder, bottleneck, decoder). If None, default configurations defined
-        within the respective builder functions (`build_encoder`, etc.) will be
-        used to construct a default backbone architecture.
+        Backbone architecture configuration. Defaults to
+        ``UNetBackboneConfig()`` (the standard BatDetect2 architecture) if
+        not provided.
 
     Returns
     -------
     DetectionModel
-        An initialized `Detector` model instance.
+        An initialised ``Detector`` instance ready for training or
+        inference.
 
     Raises
     ------
     ValueError
-        If `num_classes` is not positive, or if errors occur during the
-        construction of the backbone or detector components (e.g., incompatible
-        configurations, invalid parameters).
+        If ``num_classes`` is not positive, or if the backbone
+        configuration is invalid.
     """
     config = config or UNetBackboneConfig()
 

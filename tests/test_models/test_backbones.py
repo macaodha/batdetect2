@@ -1,14 +1,4 @@
-"""Tests for backbone configuration loading and the backbone registry.
-
-Covers:
-- UNetBackboneConfig default construction and field values.
-- build_backbone with default and explicit configs.
-- load_backbone_config loading from a YAML file.
-- load_backbone_config with a nested field path.
-- load_backbone_config round-trip: YAML → config → build_backbone.
-- Registry registration and dispatch for UNetBackbone.
-- BackboneConfig discriminated union validation.
-"""
+"""Tests for backbone configuration loading and the backbone registry."""
 
 from pathlib import Path
 from typing import Callable
@@ -24,10 +14,6 @@ from batdetect2.models.backbones import (
     load_backbone_config,
 )
 from batdetect2.typing.models import BackboneModel
-
-# ---------------------------------------------------------------------------
-# UNetBackboneConfig
-# ---------------------------------------------------------------------------
 
 
 def test_unet_backbone_config_defaults():
@@ -57,11 +43,6 @@ def test_unet_backbone_config_extra_fields_ignored():
     assert not hasattr(config, "unknown_field")
 
 
-# ---------------------------------------------------------------------------
-# build_backbone
-# ---------------------------------------------------------------------------
-
-
 def test_build_backbone_default():
     """Building with no config uses UNetBackbone defaults."""
     backbone = build_backbone()
@@ -83,13 +64,7 @@ def test_build_backbone_custom_config():
 def test_build_backbone_returns_backbone_model():
     """build_backbone always returns a BackboneModel instance."""
     backbone = build_backbone()
-
     assert isinstance(backbone, BackboneModel)
-
-
-# ---------------------------------------------------------------------------
-# Registry
-# ---------------------------------------------------------------------------
 
 
 def test_registry_has_unet_backbone():
@@ -124,11 +99,6 @@ def test_registry_build_unknown_name_raises():
         backbone_registry.build(FakeConfig())  # type: ignore[arg-type]
 
 
-# ---------------------------------------------------------------------------
-# BackboneConfig discriminated union
-# ---------------------------------------------------------------------------
-
-
 def test_backbone_config_validates_unet_from_dict():
     """BackboneConfig TypeAdapter resolves to UNetBackboneConfig via name."""
     from pydantic import TypeAdapter
@@ -149,11 +119,6 @@ def test_backbone_config_invalid_name_raises():
     adapter = TypeAdapter(BackboneConfig)
     with pytest.raises(ValidationError):
         adapter.validate_python({"name": "NonExistentBackbone"})
-
-
-# ---------------------------------------------------------------------------
-# load_backbone_config
-# ---------------------------------------------------------------------------
 
 
 def test_load_backbone_config_from_yaml(
@@ -216,11 +181,6 @@ deprecated_field: 99
 
     assert isinstance(config, UNetBackboneConfig)
     assert config.input_height == 128
-
-
-# ---------------------------------------------------------------------------
-# Round-trip: YAML → config → build_backbone
-# ---------------------------------------------------------------------------
 
 
 def test_round_trip_yaml_to_build_backbone(

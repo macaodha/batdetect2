@@ -1,21 +1,26 @@
-"""Assembles a complete Encoder-Decoder Backbone network.
+"""Assembles a complete encoder-decoder backbone network.
 
-This module defines the configuration (`BackboneConfig`) and implementation
-(`Backbone`) for a standard encoder-decoder style neural network backbone.
+This module defines ``UNetBackboneConfig`` and the ``UNetBackbone``
+``nn.Module``, together with the ``build_backbone`` and
+``load_backbone_config`` helpers.
 
-It orchestrates the connection between three main components, built using their
-respective configurations and factory functions from sibling modules:
-1.  Encoder (`batdetect2.models.encoder`): Downsampling path, extracts features
-    at multiple resolutions and provides skip connections.
-2.  Bottleneck (`batdetect2.models.bottleneck`): Processes features at the
-    lowest resolution, optionally applying self-attention.
-3.  Decoder (`batdetect2.models.decoder`): Upsampling path, reconstructs high-
-    resolution features using bottleneck features and skip connections.
+A backbone combines three components built from the sibling modules:
 
-The resulting `Backbone` module takes a spectrogram as input and outputs a
-final feature map, typically used by subsequent prediction heads. It includes
-automatic padding to handle input sizes not perfectly divisible by the
-network's total downsampling factor.
+1. **Encoder** (``batdetect2.models.encoder``) – reduces spatial resolution
+   while extracting hierarchical features and storing skip-connection tensors.
+2. **Bottleneck** (``batdetect2.models.bottleneck``) – processes the
+   lowest-resolution features, optionally applying self-attention.
+3. **Decoder** (``batdetect2.models.decoder``) – restores spatial resolution
+   using bottleneck features and skip connections from the encoder.
+
+The resulting ``UNetBackbone`` takes a spectrogram tensor as input and returns
+a high-resolution feature map consumed by the prediction heads in
+``batdetect2.models.detectors``.
+
+Input padding is handled automatically: the backbone pads the input to be
+divisible by the total downsampling factor and strips the padding from the
+output so that the output spatial dimensions always match the input spatial
+dimensions.
 """
 
 from typing import Annotated, Literal, Tuple, Union
@@ -51,6 +56,34 @@ from batdetect2.typing.models import (
 
 
 class UNetBackboneConfig(BaseConfig):
+    """Configuration for a U-Net-style encoder-decoder backbone.
+
+    All fields have sensible defaults that reproduce the standard BatDetect2
+    architecture, so you can start with ``UNetBackboneConfig()`` and override
+    only the fields you want to change.
+
+    Attributes
+    ----------
+    name : str
+        Discriminator field used by the backbone registry; always
+        ``"UNetBackbone"``.
+    input_height : int
+        Number of frequency bins in the input spectrogram. Defaults to
+        ``128``.
+    in_channels : int
+        Number of channels in the input spectrogram (e.g. ``1`` for a
+        standard mel-spectrogram). Defaults to ``1``.
+    encoder : EncoderConfig
+        Configuration for the downsampling path. Defaults to
+        ``DEFAULT_ENCODER_CONFIG``.
+    bottleneck : BottleneckConfig
+        Configuration for the bottleneck. Defaults to
+        ``DEFAULT_BOTTLENECK_CONFIG``.
+    decoder : DecoderConfig
+        Configuration for the upsampling path. Defaults to
+        ``DEFAULT_DECODER_CONFIG``.
+    """
+
     name: Literal["UNetBackbone"] = "UNetBackbone"
     input_height: int = 128
     in_channels: int = 1
@@ -70,35 +103,36 @@ __all__ = [
 
 
 class UNetBackbone(BackboneModel):
-    """Encoder-Decoder Backbone Network Implementation.
+    """U-Net-style encoder-decoder backbone network.
 
-    Combines an Encoder, Bottleneck, and Decoder module sequentially, using
-    skip connections between the Encoder and Decoder. Implements the standard
-    U-Net style forward pass. Includes automatic input padding to handle
-    various input sizes and a final convolutional block to adjust the output
-    channels.
+    Combines an encoder, a bottleneck, and a decoder into a single module
+    that produces a high-resolution feature map from an input spectrogram.
+    Skip connections from each encoder stage are added element-wise to the
+    corresponding decoder stage input.
 
-    This class inherits from `BackboneModel` and implements its `forward`
-    method. Instances are typically created using the `build_backbone` factory
-    function.
+    Input spectrograms of arbitrary width are handled automatically: the
+    backbone pads the input so that its dimensions are divisible by
+    ``divide_factor`` and removes the padding from the output.
+
+    Instances are typically created via ``build_backbone``.
 
     Attributes
     ----------
     input_height : int
-        Expected height of the input spectrogram.
+        Expected height (frequency bins) of the input spectrogram.
     out_channels : int
-        Number of channels in the final output feature map.
+        Number of channels in the output feature map (taken from the
+        decoder's output channel count).
     encoder : EncoderProtocol
         The instantiated encoder module.
     decoder : DecoderProtocol
         The instantiated decoder module.
     bottleneck : BottleneckProtocol
         The instantiated bottleneck module.
-    final_conv : ConvBlock
-        Final convolutional block applied after the decoder.
     divide_factor : int
-        The total downsampling factor (2^depth) applied by the encoder,
-        used for automatic input padding.
+        The total spatial downsampling factor applied by the encoder
+        (``input_height // encoder.output_height``). The input width is
+        padded to be a multiple of this value before processing.
     """
 
     def __init__(
@@ -108,25 +142,19 @@ class UNetBackbone(BackboneModel):
         decoder: DecoderProtocol,
         bottleneck: BottleneckProtocol,
     ):
-        """Initialize the Backbone network.
+        """Initialise the backbone network.
 
         Parameters
         ----------
         input_height : int
-            Expected height of the input spectrogram.
-        out_channels : int
-            Desired number of output channels for the backbone's feature map.
+            Expected height (frequency bins) of the input spectrogram.
         encoder : EncoderProtocol
-            An initialized Encoder module.
+            An initialised encoder module.
         decoder : DecoderProtocol
-            An initialized Decoder module.
+            An initialised decoder module. Its ``output_height`` must equal
+            ``input_height``; a ``ValueError`` is raised otherwise.
         bottleneck : BottleneckProtocol
-            An initialized Bottleneck module.
-
-        Raises
-        ------
-        ValueError
-            If component output/input channels or heights are incompatible.
+            An initialised bottleneck module.
         """
         super().__init__()
         self.input_height = input_height
@@ -143,22 +171,25 @@ class UNetBackbone(BackboneModel):
         self.divide_factor = input_height // self.encoder.output_height
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
-        """Perform the forward pass through the encoder-decoder backbone.
+        """Produce a feature map from an input spectrogram.
 
-        Applies padding, runs encoder, bottleneck, decoder (with skip
-        connections), removes padding, and applies a final convolution.
+        Pads the input if necessary, runs it through the encoder, then
+        the bottleneck, then the decoder (incorporating encoder skip
+        connections), and finally removes any padding added earlier.
 
         Parameters
         ----------
         spec : torch.Tensor
-            Input spectrogram tensor, shape `(B, C_in, H_in, W_in)`. Must match
-            `self.encoder.input_channels` and `self.input_height`.
+            Input spectrogram tensor, shape
+            ``(B, C_in, H_in, W_in)``. ``H_in`` must equal
+            ``self.input_height``; ``W_in`` can be any positive integer.
 
         Returns
         -------
         torch.Tensor
-            Output feature map tensor, shape `(B, C_out, H_in, W_in)`, where
-            `C_out` is `self.out_channels`.
+            Feature map tensor, shape ``(B, C_out, H_in, W_in)``, where
+            ``C_out`` is ``self.out_channels``. The spatial dimensions
+            always match those of the input.
         """
         spec, h_pad, w_pad = _pad_adjust(spec, factor=self.divide_factor)
 
@@ -219,6 +250,24 @@ BackboneConfig = Annotated[
 
 
 def build_backbone(config: BackboneConfig | None = None) -> BackboneModel:
+    """Build a backbone network from configuration.
+
+    Looks up the backbone class corresponding to ``config.name`` in the
+    backbone registry and calls its ``from_config`` method. If no
+    configuration is provided, a default ``UNetBackbone`` is returned.
+
+    Parameters
+    ----------
+    config : BackboneConfig, optional
+        A configuration object describing the desired backbone. Currently
+        ``UNetBackboneConfig`` is the only supported type. Defaults to
+        ``UNetBackboneConfig()`` if not provided.
+
+    Returns
+    -------
+    BackboneModel
+        An initialised backbone module.
+    """
     config = config or UNetBackboneConfig()
     return backbone_registry.build(config)
 
@@ -227,26 +276,25 @@ def _pad_adjust(
     spec: torch.Tensor,
     factor: int = 32,
 ) -> Tuple[torch.Tensor, int, int]:
-    """Pad tensor height and width to be divisible by a factor.
+    """Pad a tensor's height and width to be divisible by ``factor``.
 
-    Calculates the required padding for the last two dimensions (H, W) to make
-    them divisible by `factor` and applies right/bottom padding using
-    `torch.nn.functional.pad`.
+    Adds zero-padding to the bottom and right edges of the tensor so that
+    both dimensions are exact multiples of ``factor``. If both dimensions
+    are already divisible, the tensor is returned unchanged.
 
     Parameters
     ----------
     spec : torch.Tensor
-        Input tensor, typically shape `(B, C, H, W)`.
+        Input tensor, typically shape ``(B, C, H, W)``.
     factor : int, default=32
-        The factor to make height and width divisible by.
+        The factor that both H and W should be divisible by after padding.
 
     Returns
     -------
     Tuple[torch.Tensor, int, int]
-        A tuple containing:
-        - The padded tensor.
-        - The amount of padding added to height (`h_pad`).
-        - The amount of padding added to width (`w_pad`).
+        - Padded tensor.
+        - Number of rows added to the height (``h_pad``).
+        - Number of columns added to the width (``w_pad``).
     """
     h, w = spec.shape[-2:]
     h_pad = -h % factor
@@ -261,23 +309,25 @@ def _pad_adjust(
 def _restore_pad(
     x: torch.Tensor, h_pad: int = 0, w_pad: int = 0
 ) -> torch.Tensor:
-    """Remove padding added by _pad_adjust.
+    """Remove padding previously added by ``_pad_adjust``.
 
-    Removes padding from the bottom and right edges of the tensor.
+    Trims ``h_pad`` rows from the bottom and ``w_pad`` columns from the
+    right of the tensor, restoring its original spatial dimensions.
 
     Parameters
     ----------
     x : torch.Tensor
-        Padded tensor, typically shape `(B, C, H_padded, W_padded)`.
+        Padded tensor, typically shape ``(B, C, H_padded, W_padded)``.
     h_pad : int, default=0
-        Amount of padding previously added to the height (bottom).
+        Number of rows to remove from the bottom.
     w_pad : int, default=0
-        Amount of padding previously added to the width (right).
+        Number of columns to remove from the right.
 
     Returns
     -------
     torch.Tensor
-        Tensor with padding removed, shape `(B, C, H_original, W_original)`.
+        Tensor with padding removed, shape
+        ``(B, C, H_padded - h_pad, W_padded - w_pad)``.
     """
     if h_pad > 0:
         x = x[..., :-h_pad, :]
@@ -292,6 +342,36 @@ def load_backbone_config(
     path: data.PathLike,
     field: str | None = None,
 ) -> BackboneConfig:
+    """Load a backbone configuration from a YAML or JSON file.
+
+    Reads the file at ``path``, optionally descends into a named sub-field,
+    and validates the result against the ``BackboneConfig`` discriminated
+    union.
+
+    Parameters
+    ----------
+    path : PathLike
+        Path to the configuration file. Both YAML and JSON formats are
+        supported.
+    field : str, optional
+        Dot-separated key path to the sub-field that contains the backbone
+        configuration (e.g. ``"model"``). If ``None``, the root of the
+        file is used.
+
+    Returns
+    -------
+    BackboneConfig
+        A validated backbone configuration object (currently always a
+        ``UNetBackboneConfig`` instance).
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``path`` does not exist.
+    ValidationError
+        If the loaded data does not conform to a known ``BackboneConfig``
+        schema.
+    """
     return load_config(
         path,
         schema=TypeAdapter(BackboneConfig),

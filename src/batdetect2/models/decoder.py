@@ -1,21 +1,21 @@
-"""Constructs the Decoder part of an Encoder-Decoder neural network.
+"""Decoder (upsampling path) for the BatDetect2 backbone.
 
-This module defines the configuration structure (`DecoderConfig`) for the layer
-sequence and provides the `Decoder` class (an `nn.Module`) along with a factory
-function (`build_decoder`). Decoders typically form the upsampling path in
-architectures like U-Nets, taking bottleneck features
-(usually from an `Encoder`) and skip connections to reconstruct
-higher-resolution feature maps.
+This module defines ``DecoderConfig`` and the ``Decoder`` ``nn.Module``,
+together with the ``build_decoder`` factory function.
 
-The decoder is built dynamically by stacking neural network blocks based on a
-list of configuration objects provided in `DecoderConfig.layers`. Each config
-object specifies the type of block (e.g., standard convolution,
-coordinate-feature convolution with upsampling) and its parameters. This allows
-flexible definition of decoder architectures via configuration files.
+In a U-Net-style network the decoder progressively restores the spatial
+resolution of the feature map back towards the input resolution. At each
+stage it combines the upsampled features with the corresponding skip-connection
+tensor from the encoder (the residual) by element-wise addition before passing
+the result to the upsampling block.
 
-The `Decoder`'s `forward` method is designed to accept skip connection tensors
-(`residuals`) from the encoder, merging them with the upsampled feature maps
-at each stage.
+The decoder is fully configurable: the type, number, and parameters of the
+upsampling blocks are described by a ``DecoderConfig`` object containing an
+ordered list of block configuration objects (see ``batdetect2.models.blocks``
+for available block types).
+
+A default configuration ``DEFAULT_DECODER_CONFIG`` is provided and used by
+``build_decoder`` when no explicit configuration is supplied.
 """
 
 from typing import Annotated, List
@@ -51,51 +51,47 @@ DecoderLayerConfig = Annotated[
 
 
 class DecoderConfig(BaseConfig):
-    """Configuration for the sequence of layers in the Decoder module.
-
-    Defines the types and parameters of the neural network blocks that
-    constitute the decoder's upsampling path.
+    """Configuration for the sequential ``Decoder`` module.
 
     Attributes
     ----------
     layers : List[DecoderLayerConfig]
-        An ordered list of configuration objects, each defining one layer or
-        block in the decoder sequence. Each item must be a valid block
-        config including a `name` field and necessary parameters like
-        `out_channels`. Input channels for each layer are inferred sequentially.
-        The list must contain at least one layer.
+        Ordered list of block configuration objects defining the decoder's
+        upsampling stages (from deepest to shallowest). Each entry
+        specifies the block type (via its ``name`` field) and any
+        block-specific parameters such as ``out_channels``. Input channels
+        for each block are inferred automatically from the output of the
+        previous block. Must contain at least one entry.
     """
 
     layers: List[DecoderLayerConfig] = Field(min_length=1)
 
 
 class Decoder(nn.Module):
-    """Sequential Decoder module composed of configurable upsampling layers.
+    """Sequential decoder module composed of configurable upsampling layers.
 
-    Constructs the upsampling path of an encoder-decoder network by stacking
-    multiple blocks (e.g., `StandardConvUpBlock`, `FreqCoordConvUpBlock`)
-    based on a list of layer modules provided during initialization (typically
-    created by the `build_decoder` factory function).
+    Executes a series of upsampling blocks in order, adding the
+    corresponding encoder skip-connection tensor (residual) to the feature
+    map before each block. The residuals are consumed in reverse order (from
+    deepest encoder layer to shallowest) to match the spatial resolutions at
+    each decoder stage.
 
-    The `forward` method is designed to integrate skip connection tensors
-    (`residuals`) from the corresponding encoder stages, by adding them
-    element-wise to the input of each decoder layer before processing.
+    Instances are typically created by ``build_decoder``.
 
     Attributes
     ----------
     in_channels : int
-        Number of channels expected in the input tensor.
+        Number of channels expected in the input tensor (bottleneck output).
     out_channels : int
-        Number of channels in the final output tensor produced by the last
-        layer.
+        Number of channels in the final output feature map.
     input_height : int
-        Height (frequency bins) expected in the input tensor.
+        Height (frequency bins) of the input tensor.
     output_height : int
-        Height (frequency bins) expected in the output tensor.
+        Height (frequency bins) of the output tensor.
     layers : nn.ModuleList
-        The sequence of instantiated upscaling layer modules.
+        Sequence of instantiated upsampling block modules.
     depth : int
-        The number of upscaling layers (depth) in the decoder.
+        Number of upsampling layers.
     """
 
     def __init__(
@@ -106,23 +102,24 @@ class Decoder(nn.Module):
         output_height: int,
         layers: List[nn.Module],
     ):
-        """Initialize the Decoder module.
+        """Initialise the Decoder module.
 
-        Note: This constructor is typically called internally by the
-        `build_decoder` factory function.
+        This constructor is typically called by the ``build_decoder``
+        factory function.
 
         Parameters
         ----------
+        in_channels : int
+            Number of channels in the input tensor (bottleneck output).
         out_channels : int
             Number of channels produced by the final layer.
         input_height : int
-            Expected height of the input tensor (bottleneck).
-        in_channels : int
-            Expected number of channels in the input tensor (bottleneck).
+            Height of the input tensor (bottleneck output height).
+        output_height : int
+            Height of the output tensor after all layers have been applied.
         layers : List[nn.Module]
-            A list of pre-instantiated upscaling layer modules (e.g.,
-            `StandardConvUpBlock` or `FreqCoordConvUpBlock`) in the desired
-            sequence (from bottleneck towards output resolution).
+            Pre-built upsampling block modules in execution order (deepest
+            stage first).
         """
         super().__init__()
 
@@ -140,43 +137,35 @@ class Decoder(nn.Module):
         x: torch.Tensor,
         residuals: List[torch.Tensor],
     ) -> torch.Tensor:
-        """Pass input through decoder layers, incorporating skip connections.
+        """Pass input through all decoder layers, incorporating skip connections.
 
-        Processes the input tensor `x` sequentially through the upscaling
-        layers. At each stage, the corresponding skip connection tensor from
-        the `residuals` list is added element-wise to the input before passing
-        it to the upscaling block.
+        At each stage the corresponding residual tensor is added
+        element-wise to ``x`` before it is passed to the upsampling block.
+        Residuals are consumed in reverse order — the last element of
+        ``residuals`` (the output of the shallowest encoder layer) is added
+        at the first decoder stage, and the first element (output of the
+        deepest encoder layer) is added at the last decoder stage.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor from the previous stage (e.g., encoder bottleneck).
-            Shape `(B, C_in, H_in, W_in)`, where `C_in` matches
-            `self.in_channels`.
+            Bottleneck feature map, shape ``(B, C_in, H_in, W)``.
         residuals : List[torch.Tensor]
-            List containing the skip connection tensors from the corresponding
-            encoder stages. Should be ordered from the deepest encoder layer
-            output (lowest resolution) to the shallowest (highest resolution
-            near input). The number of tensors in this list must match the
-            number of decoder layers (`self.depth`). Each residual tensor's
-            channel count must be compatible with the input tensor `x` for
-            element-wise addition (or concatenation if the blocks were designed
-            for it).
+            Skip-connection tensors from the encoder, ordered from shallowest
+            (index 0) to deepest (index -1). Must contain exactly
+            ``self.depth`` tensors. Each tensor must have the same spatial
+            dimensions and channel count as ``x`` at the corresponding
+            decoder stage.
 
         Returns
         -------
         torch.Tensor
-            The final decoded feature map tensor produced by the last layer.
-            Shape `(B, C_out, H_out, W_out)`.
+            Decoded feature map, shape ``(B, C_out, H_out, W)``.
 
         Raises
         ------
         ValueError
-            If the number of `residuals` provided does not match the decoder
-            depth.
-        RuntimeError
-            If shapes mismatch during skip connection addition or layer
-            processing.
+            If the number of ``residuals`` does not equal ``self.depth``.
         """
         if len(residuals) != len(self.layers):
             raise ValueError(
@@ -203,11 +192,17 @@ DEFAULT_DECODER_CONFIG: DecoderConfig = DecoderConfig(
         ),
     ],
 )
-"""A default configuration for the Decoder's *layer sequence*.
+"""Default decoder configuration used in standard BatDetect2 models.
 
-Specifies an architecture often used in BatDetect2, consisting of three
-frequency coordinate-aware upsampling blocks followed by a standard
-convolutional block.
+Mirrors ``DEFAULT_ENCODER_CONFIG`` in reverse. Assumes the bottleneck
+output has 256 channels and height 16, and produces:
+
+- Stage 1 (``FreqCoordConvUp``): 64 channels, height 32.
+- Stage 2 (``FreqCoordConvUp``): 32 channels, height 64.
+- Stage 3 (``LayerGroup``):
+
+  - ``FreqCoordConvUp``: 32 channels, height 128.
+  - ``ConvBlock``: 32 channels, height 128 (final feature map).
 """
 
 
@@ -216,40 +211,36 @@ def build_decoder(
     input_height: int,
     config: DecoderConfig | None = None,
 ) -> Decoder:
-    """Factory function to build a Decoder instance from configuration.
+    """Build a ``Decoder`` from configuration.
 
-    Constructs a sequential `Decoder` module based on the layer sequence
-    defined in a `DecoderConfig` object and the provided input dimensions
-    (bottleneck channels and height). If no config is provided, uses the
-    default layer sequence from `DEFAULT_DECODER_CONFIG`.
-
-    It iteratively builds the layers using the unified `build_layer_from_config`
-    factory (from `.blocks`), tracking the changing number of channels and
-    feature map height required for each subsequent layer.
+    Constructs a sequential ``Decoder`` by iterating over the block
+    configurations in ``config.layers``, building each block with
+    ``build_layer``, and tracking the channel count and feature-map height
+    as they change through the sequence.
 
     Parameters
     ----------
     in_channels : int
-        The number of channels in the input tensor to the decoder. Must be > 0.
+        Number of channels in the input tensor (bottleneck output). Must
+        be positive.
     input_height : int
-        The height (frequency bins) of the input tensor to the decoder. Must be
-        > 0.
+        Height (number of frequency bins) of the input tensor. Must be
+        positive.
     config : DecoderConfig, optional
-        The configuration object detailing the sequence of layers and their
-        parameters. If None, `DEFAULT_DECODER_CONFIG` is used.
+        Configuration specifying the layer sequence. Defaults to
+        ``DEFAULT_DECODER_CONFIG`` if not provided.
 
     Returns
     -------
     Decoder
-        An initialized `Decoder` module.
+        An initialised ``Decoder`` module.
 
     Raises
     ------
     ValueError
-        If `in_channels` or `input_height` are not positive, or if the layer
-        configuration is invalid (e.g., empty list, unknown `name`).
-    NotImplementedError
-        If `build_layer_from_config` encounters an unknown `name`.
+        If ``in_channels`` or ``input_height`` are not positive.
+    KeyError
+        If a layer configuration specifies an unknown block type.
     """
     config = config or DEFAULT_DECODER_CONFIG
 

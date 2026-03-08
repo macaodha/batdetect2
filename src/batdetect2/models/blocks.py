@@ -1,30 +1,49 @@
-"""Commonly used neural network building blocks for BatDetect2 models.
+"""Reusable convolutional building blocks for BatDetect2 models.
 
-This module provides various reusable `torch.nn.Module` subclasses that form
-the fundamental building blocks for constructing convolutional neural network
-architectures, particularly encoder-decoder backbones used in BatDetect2.
+This module provides a collection of ``torch.nn.Module`` subclasses that form
+the fundamental building blocks for the encoder-decoder backbone used in
+BatDetect2. All blocks follow a consistent interface: they store
+``in_channels`` and ``out_channels`` as attributes and implement a
+``get_output_height`` method that reports how a given input height maps to an
+output height (e.g., halved by downsampling blocks, doubled by upsampling
+blocks).
 
-It includes standard components like basic convolutional blocks (`ConvBlock`),
-blocks incorporating downsampling (`StandardConvDownBlock`), and blocks with
-upsampling (`StandardConvUpBlock`).
+Available block families
+------------------------
+Standard blocks
+    ``ConvBlock`` – convolution + batch normalisation + ReLU, no change in
+    spatial resolution.
 
-Additionally, it features specialized layers investigated in BatDetect2
-research:
+Downsampling blocks
+    ``StandardConvDownBlock`` – convolution then 2×2 max-pooling, halves H
+    and W.
+    ``FreqCoordConvDownBlock`` – like ``StandardConvDownBlock`` but prepends
+    a normalised frequency-coordinate channel before the convolution
+    (CoordConv concept), helping filters learn frequency-position-dependent
+    patterns.
 
-- `SelfAttention`: Applies self-attention along the time dimension, enabling
-  the model to weigh information across the entire temporal context, often
-  used in the bottleneck of an encoder-decoder.
-- `FreqCoordConvDownBlock` / `FreqCoordConvUpBlock`: Implement the "CoordConv"
-   concept by concatenating normalized frequency coordinate information as an
-   extra channel to the input of convolutional layers. This explicitly provides
-   spatial frequency information to filters, potentially enabling them to learn
-   frequency-dependent patterns more effectively.
+Upsampling blocks
+    ``StandardConvUpBlock`` – bilinear interpolation then convolution,
+    doubles H and W.
+    ``FreqCoordConvUpBlock`` – like ``StandardConvUpBlock`` but prepends a
+    frequency-coordinate channel after upsampling.
 
-These blocks can be used directly in custom PyTorch model definitions or
-assembled into larger architectures.
+Bottleneck blocks
+    ``VerticalConv`` – 1-D convolution whose kernel spans the entire
+    frequency axis, collapsing H to 1 whilst preserving W.
+    ``SelfAttention`` – scaled dot-product self-attention along the time
+    axis; typically follows a ``VerticalConv``.
 
-A unified factory function `build_layer` allows creating instances
-of these blocks based on configuration objects.
+Group block
+    ``LayerGroup`` – chains several blocks sequentially into one unit,
+    useful when a single encoder or decoder "stage" requires more than one
+    operation.
+
+Factory function
+----------------
+``build_layer`` creates any of the above blocks from the matching
+configuration object (one of the ``*Config`` classes exported here), using
+a discriminated-union ``name`` field to dispatch to the correct class.
 """
 
 from typing import Annotated, List, Literal, Tuple, Union
@@ -57,10 +76,43 @@ __all__ = [
 
 
 class Block(nn.Module):
+    """Abstract base class for all BatDetect2 building blocks.
+
+    Subclasses must set ``in_channels`` and ``out_channels`` as integer
+    attributes so that factory functions can wire blocks together without
+    inspecting configuration objects at runtime. They may also override
+    ``get_output_height`` when the block changes the height dimension (e.g.
+    downsampling or upsampling blocks).
+
+    Attributes
+    ----------
+    in_channels : int
+        Number of channels expected in the input tensor.
+    out_channels : int
+        Number of channels produced in the output tensor.
+    """
+
     in_channels: int
     out_channels: int
 
     def get_output_height(self, input_height: int) -> int:
+        """Return the output height for a given input height.
+
+        The default implementation returns ``input_height`` unchanged,
+        which is correct for blocks that do not alter spatial resolution.
+        Override this in downsampling (returns ``input_height // 2``) or
+        upsampling (returns ``input_height * 2``) subclasses.
+
+        Parameters
+        ----------
+        input_height : int
+            Height (number of frequency bins) of the input feature map.
+
+        Returns
+        -------
+        int
+            Height of the output feature map.
+        """
         return input_height
 
 
@@ -68,58 +120,65 @@ block_registry: Registry[Block, [int, int]] = Registry("block")
 
 
 class SelfAttentionConfig(BaseConfig):
+    """Configuration for a ``SelfAttention`` block.
+
+    Attributes
+    ----------
+    name : str
+        Discriminator field; always ``"SelfAttention"``.
+    attention_channels : int
+        Dimensionality of the query, key, and value projections.
+    temperature : float
+        Scaling factor applied to the weighted values before the final
+        linear projection. Defaults to ``1``.
+    """
+
     name: Literal["SelfAttention"] = "SelfAttention"
     attention_channels: int
     temperature: float = 1
 
 
 class SelfAttention(Block):
-    """Self-Attention mechanism operating along the time dimension.
+    """Self-attention block operating along the time axis.
 
-    This module implements a scaled dot-product self-attention mechanism,
-    specifically designed here to operate across the time steps of an input
-    feature map, typically after spatial dimensions (like frequency) have been
-    condensed or squeezed.
+    Applies a scaled dot-product self-attention mechanism across the time
+    steps of an input feature map. Before attention is computed the height
+    dimension (frequency axis) is expected to have been reduced to 1, e.g.
+    by a preceding ``VerticalConv`` layer.
 
-    By calculating attention weights between all pairs of time steps, it allows
-    the model to capture long-range temporal dependencies and focus on relevant
-    parts of the sequence. It's often employed in the bottleneck or
-    intermediate layers of an encoder-decoder architecture to integrate global
-    temporal context.
-
-    The implementation uses linear projections to create query, key, and value
-    representations, computes scaled dot-product attention scores, applies
-    softmax, and produces an output by weighting the values according to the
-    attention scores, followed by a final linear projection. Positional encoding
-    is not explicitly included in this block.
+    For each time step the block computes query, key, and value projections
+    with learned linear weights, then calculates attention weights from the
+    query–key dot products divided by ``temperature × attention_channels``.
+    The weighted sum of values is projected back to ``in_channels`` via a
+    final linear layer, and the height dimension is restored so that the
+    output shape matches the input shape.
 
     Parameters
     ----------
     in_channels : int
-        Number of input channels (features per time step after spatial squeeze).
+        Number of input channels (features per time step). The output will
+        also have ``in_channels`` channels.
     attention_channels : int
-        Number of channels for the query, key, and value projections. Also the
-        dimension of the output projection's input.
+        Dimensionality of the query, key, and value projections.
     temperature : float, default=1.0
-        Scaling factor applied *before* the final projection layer. Can be used
-        to adjust the sharpness or focus of the attention mechanism, although
-        scaling within the softmax (dividing by sqrt(dim)) is more common for
-        standard transformers. Here it scales the weighted values.
+        Divisor applied together with ``attention_channels`` when scaling
+        the dot-product scores before softmax. Larger values produce softer
+        (more uniform) attention distributions.
 
     Attributes
     ----------
     key_fun : nn.Linear
-        Linear layer for key projection.
+        Linear projection for keys.
     value_fun : nn.Linear
-        Linear layer for value projection.
+        Linear projection for values.
     query_fun : nn.Linear
-        Linear layer for query projection.
+        Linear projection for queries.
     pro_fun : nn.Linear
-        Final linear projection layer applied after attention weighting.
+        Final linear projection applied to the attended values.
     temperature : float
-        Scaling factor applied before final projection.
+        Scaling divisor used when computing attention scores.
     att_dim : int
-        Dimensionality of the attention space (`attention_channels`).
+        Dimensionality of the attention space (``attention_channels``).
     """
 
     def __init__(
@@ -148,20 +207,16 @@ class SelfAttention(Block):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor, expected shape `(B, C, H, W)`, where H is typically
-            squeezed (e.g., H=1 after a `VerticalConv` or pooling) before
-            applying attention along the W (time) dimension.
+            Input tensor with shape ``(B, C, 1, W)``. The height dimension
+            must be 1 (i.e. the frequency axis should already have been
+            collapsed by a preceding ``VerticalConv`` layer).
 
         Returns
         -------
         torch.Tensor
-            Output tensor of the same shape as the input `(B, C, H, W)`, where
-            attention has been applied across the W dimension.
-
-        Raises
-        ------
-        RuntimeError
-            If input tensor dimensions are incompatible with operations.
+            Output tensor with the same shape ``(B, C, 1, W)`` as the
+            input, with each time step updated by attended context from all
+            other time steps.
         """
 
         x = x.squeeze(2).permute(0, 2, 1)
@@ -190,6 +245,22 @@ class SelfAttention(Block):
         return op
 
     def compute_attention_weights(self, x: torch.Tensor) -> torch.Tensor:
+        """Return the softmax attention weight matrix.
+
+        Useful for visualising which time steps attend to which others.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with shape ``(B, C, 1, W)``.
+
+        Returns
+        -------
+        torch.Tensor
+            Attention weight matrix with shape ``(B, W, W)``. Entry
+            ``[b, i, j]`` is the attention weight that time step ``i``
+            assigns to time step ``j`` in batch item ``b``.
+        """
         x = x.squeeze(2).permute(0, 2, 1)
 
         key = torch.matmul(
@@ -304,6 +375,16 @@ class ConvBlock(Block):
 
 
 class VerticalConvConfig(BaseConfig):
+    """Configuration for a ``VerticalConv`` block.
+
+    Attributes
+    ----------
+    name : str
+        Discriminator field; always ``"VerticalConv"``.
+    channels : int
+        Number of output channels produced by the vertical convolution.
+    """
+
     name: Literal["VerticalConv"] = "VerticalConv"
     channels: int
 
@@ -844,12 +925,53 @@ LayerConfig = Annotated[
 
 
 class LayerGroupConfig(BaseConfig):
+    """Configuration for a ``LayerGroup`` — a sequential chain of blocks.
+
+    Use this when a single encoder or decoder stage needs more than one
+    block. The blocks are executed in the order they appear in ``layers``,
+    with channel counts and heights propagated automatically.
+
+    Attributes
+    ----------
+    name : str
+        Discriminator field; always ``"LayerGroup"``.
+    layers : List[LayerConfig]
+        Ordered list of block configurations to chain together.
+    """
+
     name: Literal["LayerGroup"] = "LayerGroup"
     layers: List[LayerConfig]
 
 
 class LayerGroup(nn.Module):
-    """Standard implementation of the `LayerGroup` architecture."""
+    """Sequential chain of blocks that acts as a single composite block.
+
+    Wraps multiple ``Block`` instances in an ``nn.Sequential`` container,
+    exposing the same ``in_channels``, ``out_channels``, and
+    ``get_output_height`` interface as a regular ``Block`` so it can be
+    used transparently wherever a single block is expected.
+
+    Instances are typically constructed by ``build_layer`` when given a
+    ``LayerGroupConfig``; you rarely need to create them directly.
+
+    Parameters
+    ----------
+    layers : list[Block]
+        Pre-built block instances to chain, in execution order.
+    input_height : int
+        Height of the tensor entering the first block.
+    input_channels : int
+        Number of channels in the tensor entering the first block.
+
+    Attributes
+    ----------
+    in_channels : int
+        Number of input channels (taken from the first block).
+    out_channels : int
+        Number of output channels (taken from the last block).
+    layers : nn.Sequential
+        The wrapped sequence of block modules.
+    """
 
     def __init__(
         self,
@@ -865,9 +987,33 @@ class LayerGroup(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Pass input through all blocks in sequence.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input feature map, shape ``(B, C_in, H, W)``.
+
+        Returns
+        -------
+        torch.Tensor
+            Output feature map after all blocks have been applied.
+        """
         return self.layers(x)
 
     def get_output_height(self, input_height: int) -> int:
+        """Compute the output height by propagating through all blocks.
+
+        Parameters
+        ----------
+        input_height : int
+            Height of the input feature map.
+
+        Returns
+        -------
+        int
+            Height after all blocks in the group have been applied.
+        """
         for block in self.layers:
             input_height = block.get_output_height(input_height)  # type: ignore
         return input_height
@@ -903,40 +1049,37 @@ def build_layer(
     in_channels: int,
     config: LayerConfig,
 ) -> Block:
-    """Factory function to build a specific nn.Module block from its config.
+    """Build a block from its configuration object.
 
-    Takes configuration object (one of the types included in the `LayerConfig`
-    union) and instantiates the corresponding nn.Module block with the correct
-    parameters derived from the config and the current pipeline state
-    (`input_height`, `in_channels`).
-
-    It uses the `name` field within the `config` object to determine
-    which block class to instantiate.
+    Looks up the block class corresponding to ``config.name`` in the
+    internal block registry and instantiates it with the given input
+    dimensions. This is the standard way to construct blocks when
+    assembling an encoder or decoder from a configuration file.
 
     Parameters
     ----------
     input_height : int
-        Height (frequency bins) of the input tensor *to this layer*.
+        Height (number of frequency bins) of the input tensor to this
+        block. Required for blocks whose kernel size depends on the input
+        height (e.g. ``VerticalConv``) and for coordinate-aware blocks.
     in_channels : int
-        Number of channels in the input tensor *to this layer*.
+        Number of channels in the input tensor to this block.
     config : LayerConfig
-        A Pydantic configuration object for the desired block (e.g., an
-        instance of `ConvConfig`, `FreqCoordConvDownConfig`, etc.), identified
-        by its `name` field.
+        A configuration object for the desired block type. The ``name``
+        field selects the block class; remaining fields supply its
+        parameters.
 
     Returns
     -------
-    Tuple[nn.Module, int, int]
-        A tuple containing:
-        - The instantiated `nn.Module` block.
-        - The number of output channels produced by the block.
-        - The calculated height of the output produced by the block.
+    Block
+        An initialised block module ready to be added to an
+        ``nn.Sequential`` or ``nn.ModuleList``.
 
     Raises
     ------
-    NotImplementedError
-        If the `config.name` does not correspond to a known block type.
+    KeyError
+        If ``config.name`` does not correspond to a registered block type.
     ValueError
-        If parameters derived from the config are invalid for the block.
+        If the configuration parameters are invalid for the chosen block.
     """
     return block_registry.build(config, in_channels, input_height)
