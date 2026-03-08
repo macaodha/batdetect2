@@ -89,6 +89,9 @@ dev = [
 ]
 dvclive = ["dvclive>=3.48.2"]
 mlflow = ["mlflow>=3.1.1"]
+gradio = [
+    "gradio>=6.9.0",
+]
 
 [tool.ruff]
 line-length = 79
