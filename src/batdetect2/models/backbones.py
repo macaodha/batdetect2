@@ -26,9 +26,14 @@ from torch import nn
 
 from batdetect2.models.bottleneck import build_bottleneck
 from batdetect2.models.config import BackboneConfig
-from batdetect2.models.decoder import Decoder, build_decoder
-from batdetect2.models.encoder import Encoder, build_encoder
-from batdetect2.typing.models import BackboneModel
+from batdetect2.models.decoder import build_decoder
+from batdetect2.models.encoder import build_encoder
+from batdetect2.typing.models import (
+    BackboneModel,
+    BottleneckProtocol,
+    DecoderProtocol,
+    EncoderProtocol,
+)
 
 __all__ = [
     "Backbone",
@@ -55,11 +60,11 @@ class Backbone(BackboneModel):
         Expected height of the input spectrogram.
     out_channels : int
         Number of channels in the final output feature map.
-    encoder : Encoder
+    encoder : EncoderProtocol
         The instantiated encoder module.
-    decoder : Decoder
+    decoder : DecoderProtocol
         The instantiated decoder module.
-    bottleneck : nn.Module
+    bottleneck : BottleneckProtocol
         The instantiated bottleneck module.
     final_conv : ConvBlock
         Final convolutional block applied after the decoder.
@@ -71,9 +76,9 @@ class Backbone(BackboneModel):
     def __init__(
         self,
         input_height: int,
-        encoder: Encoder,
-        decoder: Decoder,
-        bottleneck: nn.Module,
+        encoder: EncoderProtocol,
+        decoder: DecoderProtocol,
+        bottleneck: BottleneckProtocol,
     ):
         """Initialize the Backbone network.
 
@@ -83,11 +88,11 @@ class Backbone(BackboneModel):
             Expected height of the input spectrogram.
         out_channels : int
             Desired number of output channels for the backbone's feature map.
-        encoder : Encoder
+        encoder : EncoderProtocol
             An initialized Encoder module.
-        decoder : Decoder
+        decoder : DecoderProtocol
             An initialized Decoder module.
-        bottleneck : nn.Module
+        bottleneck : BottleneckProtocol
             An initialized Bottleneck module.
 
         Raises
@@ -185,7 +190,7 @@ def build_backbone(config: BackboneConfig) -> BackboneModel:
     )
 
     decoder = build_decoder(
-        in_channels=bottleneck.get_output_channels(),
+        in_channels=bottleneck.out_channels,
         input_height=encoder.output_height,
         config=config.decoder,
     )

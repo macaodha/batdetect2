@@ -307,7 +307,7 @@ def build_encoder(
         )
         layers.append(layer)
         current_height = layer.get_output_height(current_height)
-        current_channels = layer.get_output_channels()
+        current_channels = layer.out_channels
 
     return Encoder(
         input_height=input_height,

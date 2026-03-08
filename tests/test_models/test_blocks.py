@@ -53,7 +53,7 @@ def test_standard_block_protocol_methods(
 
     block = block_class(in_channels=in_channels, out_channels=out_channels)
 
-    assert block.get_output_channels() == out_channels
+    assert block.out_channels == out_channels
     assert block.get_output_height(input_height) == int(
         input_height * expected_h_scale
     )
@@ -80,7 +80,7 @@ def test_coord_block_protocol_methods(
         input_height=input_height,
     )
 
-    assert block.get_output_channels() == out_channels
+    assert block.out_channels == out_channels
     assert block.get_output_height(input_height) == int(
         input_height * expected_h_scale
     )
@@ -96,7 +96,7 @@ def test_vertical_conv_forward_shape(dummy_input):
     output = block(dummy_input)
 
     assert output.shape == (2, out_channels, 1, 32)
-    assert block.get_output_channels() == out_channels
+    assert block.out_channels == out_channels
 
 
 def test_self_attention_forward_shape(dummy_bottleneck_input):
@@ -110,7 +110,7 @@ def test_self_attention_forward_shape(dummy_bottleneck_input):
     output = block(dummy_bottleneck_input)
 
     assert output.shape == dummy_bottleneck_input.shape
-    assert block.get_output_channels() == in_channels
+    assert block.out_channels == in_channels
 
 
 def test_self_attention_weights(dummy_bottleneck_input):
@@ -179,7 +179,7 @@ def test_layer_group_from_config_and_forward(dummy_input):
     assert len(layer_group.layers) == 2
 
     # The group should report the output channels of the LAST block
-    assert layer_group.get_output_channels() == 64
+    assert layer_group.out_channels == 64
 
     # The group should report the accumulated height changes
     assert layer_group.get_output_height(input_height) == input_height // 2

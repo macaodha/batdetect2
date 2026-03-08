@@ -56,15 +56,12 @@ __all__ = [
 ]
 
 
-class BlockProtocol(Protocol):
-    def get_output_channels(self) -> int:
-        raise NotImplementedError
+class Block(nn.Module):
+    in_channels: int
+    out_channels: int
 
     def get_output_height(self, input_height: int) -> int:
         return input_height
-
-
-class Block(nn.Module, BlockProtocol): ...
 
 
 block_registry: Registry[Block, [int, int]] = Registry("block")
@@ -132,6 +129,8 @@ class SelfAttention(Block):
         temperature: float = 1.0,
     ):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = in_channels
 
         # Note, does not encode position information (absolute or relative)
         self.temperature = temperature
@@ -206,9 +205,6 @@ class SelfAttention(Block):
         att_weights = F.softmax(kk_qq, 1)
         return att_weights
 
-    def get_output_channels(self) -> int:
-        return self.output_channels
-
     @block_registry.register(SelfAttentionConfig)
     @staticmethod
     def from_config(
@@ -267,6 +263,8 @@ class ConvBlock(Block):
         pad_size: int = 1,
     ):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.conv = nn.Conv2d(
             in_channels,
             out_channels,
@@ -289,9 +287,6 @@ class ConvBlock(Block):
             Output tensor, shape `(B, C_out, H, W)`.
         """
         return F.relu_(self.batch_norm(self.conv(x)))
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     @block_registry.register(ConvConfig)
     @staticmethod
@@ -342,6 +337,8 @@ class VerticalConv(Block):
         input_height: int,
     ):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.conv = nn.Conv2d(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -365,9 +362,6 @@ class VerticalConv(Block):
             Output tensor, shape `(B, C_out, 1, W)`.
         """
         return F.relu_(self.bn(self.conv(x)))
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     @block_registry.register(VerticalConvConfig)
     @staticmethod
@@ -438,6 +432,8 @@ class FreqCoordConvDownBlock(Block):
         pad_size: int = 1,
     ):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.coords = nn.Parameter(
             torch.linspace(-1, 1, input_height)[None, None, ..., None],
@@ -471,9 +467,6 @@ class FreqCoordConvDownBlock(Block):
         x = F.max_pool2d(self.conv(x), 2, 2)
         x = F.relu(self.batch_norm(x), inplace=True)
         return x
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     def get_output_height(self, input_height: int) -> int:
         return input_height // 2
@@ -538,6 +531,8 @@ class StandardConvDownBlock(Block):
         pad_size: int = 1,
     ):
         super(StandardConvDownBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.conv = nn.Conv2d(
             in_channels,
             out_channels,
@@ -562,9 +557,6 @@ class StandardConvDownBlock(Block):
         """
         x = F.max_pool2d(self.conv(x), 2, 2)
         return F.relu(self.batch_norm(x), inplace=True)
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     def get_output_height(self, input_height: int) -> int:
         return input_height // 2
@@ -652,6 +644,8 @@ class FreqCoordConvUpBlock(Block):
         up_scale: Tuple[int, int] = (2, 2),
     ):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.up_scale = up_scale
         self.up_mode = up_mode
@@ -697,9 +691,6 @@ class FreqCoordConvUpBlock(Block):
         op = self.conv(op)
         op = F.relu(self.batch_norm(op), inplace=True)
         return op
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     def get_output_height(self, input_height: int) -> int:
         return input_height * 2
@@ -779,6 +770,8 @@ class StandardConvUpBlock(Block):
         up_scale: Tuple[int, int] = (2, 2),
     ):
         super(StandardConvUpBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.up_scale = up_scale
         self.up_mode = up_mode
         self.conv = nn.Conv2d(
@@ -814,9 +807,6 @@ class StandardConvUpBlock(Block):
         op = self.conv(op)
         op = F.relu(self.batch_norm(op), inplace=True)
         return op
-
-    def get_output_channels(self) -> int:
-        return self.conv.out_channels
 
     def get_output_height(self, input_height: int) -> int:
         return input_height * 2
@@ -868,13 +858,14 @@ class LayerGroup(nn.Module):
         input_channels: int,
     ):
         super().__init__()
+        self.in_channels = input_channels
+        self.out_channels = (
+            layers[-1].out_channels if layers else input_channels
+        )
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
-
-    def get_output_channels(self) -> int:
-        return self.layers[-1].get_output_channels()  # type: ignore
 
     def get_output_height(self, input_height: int) -> int:
         for block in self.layers:
@@ -898,7 +889,7 @@ class LayerGroup(nn.Module):
             )
             layers.append(layer)
             input_height = layer.get_output_height(input_height)
-            input_channels = layer.get_output_channels()
+            input_channels = layer.out_channels
 
         return LayerGroup(
             layers=layers,

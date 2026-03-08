@@ -265,7 +265,7 @@ def build_decoder(
             config=layer_config,
         )
         current_height = layer.get_output_height(current_height)
-        current_channels = layer.get_output_channels()
+        current_channels = layer.out_channels
         layers.append(layer)
 
     return Decoder(

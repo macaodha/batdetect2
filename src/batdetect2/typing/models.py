@@ -16,15 +16,78 @@ Key components:
 """
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import List, NamedTuple, Protocol
 
 import torch
 
 __all__ = [
     "ModelOutput",
     "BackboneModel",
+    "EncoderDecoderModel",
     "DetectionModel",
+    "BlockProtocol",
+    "EncoderProtocol",
+    "BottleneckProtocol",
+    "DecoderProtocol",
 ]
+
+
+class BlockProtocol(Protocol):
+    """Interface for blocks of network layers."""
+
+    in_channels: int
+    out_channels: int
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the block."""
+        ...
+
+    def get_output_height(self, input_height: int) -> int:
+        """Calculate the output height based on input height."""
+        ...
+
+
+class EncoderProtocol(Protocol):
+    """Interface for the downsampling path of a network."""
+
+    in_channels: int
+    out_channels: int
+    input_height: int
+    output_height: int
+
+    def __call__(self, x: torch.Tensor) -> List[torch.Tensor]:
+        """Forward pass must return intermediate tensors for skip connections."""
+        ...
+
+
+class BottleneckProtocol(Protocol):
+    """Interface for the middle part of a U-Net-like network."""
+
+    in_channels: int
+    out_channels: int
+    input_height: int
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Processes the features from the encoder."""
+        ...
+
+
+class DecoderProtocol(Protocol):
+    """Interface for the upsampling reconstruction path."""
+
+    in_channels: int
+    out_channels: int
+    input_height: int
+    output_height: int
+    depth: int
+
+    def __call__(
+        self,
+        x: torch.Tensor,
+        residuals: List[torch.Tensor],
+    ) -> torch.Tensor:
+        """Upsamples features while integrating skip connections."""
+        ...
 
 
 class ModelOutput(NamedTuple):

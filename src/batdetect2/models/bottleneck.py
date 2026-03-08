@@ -28,6 +28,8 @@ from batdetect2.models.blocks import (
     build_layer,
 )
 
+from batdetect2.typing.models import BottleneckProtocol
+
 __all__ = [
     "BottleneckConfig",
     "Bottleneck",
@@ -127,9 +129,6 @@ class Bottleneck(Block):
 
         return x.repeat([1, 1, self.input_height, 1])
 
-    def get_output_channels(self) -> int:
-        return self.layers[-1].get_output_channels()  # type: ignore
-
 
 BottleneckLayerConfig = Annotated[
     SelfAttentionConfig,
@@ -177,7 +176,7 @@ def build_bottleneck(
     input_height: int,
     in_channels: int,
     config: BottleneckConfig | None = None,
-) -> Block:
+) -> BottleneckProtocol:
     """Factory function to build the Bottleneck module from configuration.
 
     Constructs either a base `Bottleneck` or a `BottleneckAttn` instance based
@@ -217,7 +216,7 @@ def build_bottleneck(
             config=layer_config,
         )
         current_height = layer.get_output_height(current_height)
-        current_channels = layer.get_output_channels()
+        current_channels = layer.out_channels
         assert current_height == input_height, (
             "Bottleneck layers should not change the spectrogram height"
         )
