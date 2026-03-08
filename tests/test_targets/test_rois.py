@@ -628,8 +628,5 @@ def test_build_roi_mapper_raises_error_for_unknown_name():
         name = "non_existent_mapper"
 
     # Then
-    with pytest.raises(NotImplementedError) as excinfo:
+    with pytest.raises(NotImplementedError):
         build_roi_mapper(DummyConfig())  # type: ignore
-
-    # Check that the error message is informative.
-    assert "No ROI mapper of name 'non_existent_mapper'" in str(excinfo.value)

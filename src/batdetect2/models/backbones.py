@@ -231,7 +231,7 @@ def _pad_adjust(
         - The amount of padding added to height (`h_pad`).
         - The amount of padding added to width (`w_pad`).
     """
-    h, w = spec.shape[2:]
+    h, w = spec.shape[-2:]
     h_pad = -h % factor
     w_pad = -w % factor
 
@@ -263,9 +263,9 @@ def _restore_pad(
         Tensor with padding removed, shape `(B, C, H_original, W_original)`.
     """
     if h_pad > 0:
-        x = x[:, :, :-h_pad, :]
+        x = x[..., :-h_pad, :]
 
     if w_pad > 0:
-        x = x[:, :, :, :-w_pad]
+        x = x[..., :-w_pad]
 
     return x

@@ -127,6 +127,9 @@ class Bottleneck(Block):
 
         return x.repeat([1, 1, self.input_height, 1])
 
+    def get_output_channels(self) -> int:
+        return self.layers[-1].get_output_channels()  # type: ignore
+
 
 BottleneckLayerConfig = Annotated[
     SelfAttentionConfig,

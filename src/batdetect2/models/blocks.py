@@ -23,7 +23,7 @@ research:
 These blocks can be used directly in custom PyTorch model definitions or
 assembled into larger architectures.
 
-A unified factory function `build_layer_from_config` allows creating instances
+A unified factory function `build_layer` allows creating instances
 of these blocks based on configuration objects.
 """
 
@@ -57,7 +57,8 @@ __all__ = [
 
 
 class BlockProtocol(Protocol):
-    def get_output_channels(self) -> int: ...
+    def get_output_channels(self) -> int:
+        raise NotImplementedError
 
     def get_output_height(self, input_height: int) -> int:
         return input_height
@@ -867,26 +868,25 @@ class LayerGroup(nn.Module):
         input_channels: int,
     ):
         super().__init__()
-        self.blocks = layers
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
 
     def get_output_channels(self) -> int:
-        return self.blocks[-1].get_output_channels()
+        return self.layers[-1].get_output_channels()  # type: ignore
 
     def get_output_height(self, input_height: int) -> int:
-        for block in self.blocks:
-            input_height = block.get_output_height(input_height)
+        for block in self.layers:
+            input_height = block.get_output_height(input_height)  # type: ignore
         return input_height
 
     @block_registry.register(LayerGroupConfig)
     @staticmethod
     def from_config(
         config: LayerGroupConfig,
-        input_height: int,
         input_channels: int,
+        input_height: int,
     ):
         layers = []
 
