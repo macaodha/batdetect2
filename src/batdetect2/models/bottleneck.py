@@ -27,7 +27,6 @@ from batdetect2.models.blocks import (
     VerticalConv,
     build_layer,
 )
-
 from batdetect2.typing.models import BottleneckProtocol
 
 __all__ = [
@@ -159,9 +158,7 @@ class BottleneckConfig(BaseConfig):
     """
 
     channels: int
-    layers: List[BottleneckLayerConfig] = Field(
-        default_factory=list,
-    )
+    layers: List[BottleneckLayerConfig] = Field(default_factory=list)
 
 
 DEFAULT_BOTTLENECK_CONFIG: BottleneckConfig = BottleneckConfig(

@@ -27,7 +27,7 @@ A unified factory function `build_layer` allows creating instances
 of these blocks based on configuration objects.
 """
 
-from typing import Annotated, List, Literal, Protocol, Tuple, Union
+from typing import Annotated, List, Literal, Tuple, Union
 
 import torch
 import torch.nn.functional as F

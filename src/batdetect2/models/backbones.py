@@ -22,7 +22,7 @@ from typing import Annotated, Literal, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
@@ -57,7 +57,6 @@ class UNetBackboneConfig(BaseConfig):
     encoder: EncoderConfig = DEFAULT_ENCODER_CONFIG
     bottleneck: BottleneckConfig = DEFAULT_BOTTLENECK_CONFIG
     decoder: DecoderConfig = DEFAULT_DECODER_CONFIG
-    out_channels: int = 32
 
 
 backbone_registry: Registry[BackboneModel, []] = Registry("backbone")
@@ -293,4 +292,8 @@ def load_backbone_config(
     path: data.PathLike,
     field: str | None = None,
 ) -> BackboneConfig:
-    return load_config(path, schema=BackboneConfig, field=field)
+    return load_config(
+        path,
+        schema=TypeAdapter(BackboneConfig),
+        field=field,
+    )

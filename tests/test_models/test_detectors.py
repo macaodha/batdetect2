@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from batdetect2.models.backbones import BackboneConfig
+from batdetect2.models.backbones import UNetBackboneConfig
 from batdetect2.models.detectors import Detector, build_detector
 from batdetect2.models.heads import BBoxHead, ClassifierHead
 from batdetect2.typing.models import ModelOutput
@@ -28,7 +28,7 @@ def test_build_detector_default():
 def test_build_detector_custom_config():
     """Test building a detector with a custom BackboneConfig."""
     num_classes = 3
-    config = BackboneConfig(in_channels=2, input_height=128)
+    config = UNetBackboneConfig(in_channels=2, input_height=128)
 
     model = build_detector(num_classes=num_classes, config=config)
 
@@ -41,7 +41,7 @@ def test_detector_forward_pass_shapes(dummy_spectrogram):
     """Test that the forward pass produces correctly shaped outputs."""
     num_classes = 4
     # Build model matching the dummy input shape
-    config = BackboneConfig(in_channels=1, input_height=256)
+    config = UNetBackboneConfig(in_channels=1, input_height=256)
     model = build_detector(num_classes=num_classes, config=config)
 
     # Process the spectrogram through the model
@@ -108,7 +108,7 @@ def test_detector_forward_pass_with_preprocessor(sample_preprocessor):
 
     # Build model matching the preprocessor's output shape
     # The preprocessor output is (B, C, H, W) -> spec.shape[1] is C, spec.shape[2] is H
-    config = BackboneConfig(
+    config = UNetBackboneConfig(
         in_channels=spec.shape[1], input_height=spec.shape[2]
     )
     model = build_detector(num_classes=3, config=config)

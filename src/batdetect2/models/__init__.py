@@ -31,9 +31,9 @@ from typing import List
 import torch
 
 from batdetect2.models.backbones import (
+    BackboneConfig,
     UNetBackbone,
     UNetBackboneConfig,
-    BackboneConfig,
     build_backbone,
     load_backbone_config,
 )

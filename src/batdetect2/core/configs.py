@@ -8,11 +8,11 @@ configuration data from files, with optional support for accessing nested
 configuration sections.
 """
 
-from typing import Any, Type, TypeVar
+from typing import Any, Type, TypeVar, Union, overload
 
 import yaml
 from deepmerge.merger import Merger
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 from soundevent.data import PathLike
 
 __all__ = [
@@ -67,7 +67,10 @@ class BaseConfig(BaseModel):
         return cls.model_validate(yaml.safe_load(yaml_str))
 
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T")
+T_Model = TypeVar("T_Model", bound=BaseModel)
+
+Schema = Union[Type[T_Model], TypeAdapter[T]]
 
 
 def get_object_field(obj: dict, current_key: str) -> Any:
@@ -129,24 +132,41 @@ def get_object_field(obj: dict, current_key: str) -> Any:
     return get_object_field(subobj, rest)
 
 
+@overload
 def load_config(
     path: PathLike,
-    schema: Type[T],
+    schema: Type[T_Model],
     field: str | None = None,
-) -> T:
+) -> T_Model: ...
+
+
+@overload
+def load_config(
+    path: PathLike,
+    schema: TypeAdapter[T],
+    field: str | None = None,
+) -> T: ...
+
+
+def load_config(
+    path: PathLike,
+    schema: Type[T_Model] | TypeAdapter[T],
+    field: str | None = None,
+) -> T_Model | T:
     """Load and validate configuration data from a file against a schema.
 
     Reads a YAML file, optionally extracts a specific section using dot
     notation, and then validates the resulting data against the provided
-    Pydantic `schema`.
+    Pydantic schema.
 
     Parameters
     ----------
     path : PathLike
         The path to the configuration file (typically `.yaml`).
-    schema : Type[T]
-        The Pydantic `BaseModel` subclass that defines the expected structure
-        and types for the configuration data.
+    schema : Type[T_Model] | TypeAdapter[T]
+        Either a Pydantic `BaseModel` subclass or a `TypeAdapter` instance
+        that defines the expected structure and types for the configuration
+        data.
     field : str, optional
         A dot-separated string indicating a nested section within the YAML
         file to extract before validation. If None (default), the entire
@@ -156,8 +176,8 @@ def load_config(
 
     Returns
     -------
-    T
-        An instance of the provided `schema`, populated and validated with
+    T_Model | T
+        An instance of the schema type, populated and validated with
         data from the configuration file.
 
     Raises
@@ -183,6 +203,9 @@ def load_config(
     if field:
         config = get_object_field(config, field)
 
+    if isinstance(schema, TypeAdapter):
+        return schema.validate_python(config or {})
+
     return schema.model_validate(config or {})
 
 
@@ -193,7 +216,7 @@ default_merger = Merger(
 )
 
 
-def merge_configs(config1: T, config2: T) -> T:
+def merge_configs(config1: T_Model, config2: T_Model) -> T_Model:
     """Merge two configuration objects."""
     model = type(config1)
     dict1 = config1.model_dump()
