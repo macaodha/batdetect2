@@ -66,7 +66,7 @@ def plot_clip_detections(
         if m.gt is not None:
             color = gt_color if is_match else missed_gt_color
             plot_geometry(
-                m.gt.sound_event.geometry,  # type: ignore
+                m.gt.sound_event.geometry,
                 ax=ax,
                 add_points=False,
                 linewidth=linewidth,

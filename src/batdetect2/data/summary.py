@@ -175,14 +175,14 @@ def compute_class_summary(
         .rename("num recordings")
     )
     durations = (
-        sound_events.groupby("class_name")
+        sound_events.groupby("class_name")  # ty: ignore[no-matching-overload]
         .apply(
             lambda group: recordings[
                 recordings["clip_annotation_id"].isin(
-                    group["clip_annotation_id"]  # type: ignore
+                    group["clip_annotation_id"]
                 )
             ]["duration"].sum(),
-            include_groups=False,  # type: ignore
+            include_groups=False,
         )
         .sort_values(ascending=False)
         .rename("duration")

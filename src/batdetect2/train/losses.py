@@ -472,7 +472,7 @@ def build_loss(
 
     size_loss_fn = BBoxLoss()
 
-    return LossFunction(  # type: ignore
+    return LossFunction(
         size_loss=size_loss_fn,
         classification_loss=classification_loss_fn,
         detection_loss=detection_loss_fn,

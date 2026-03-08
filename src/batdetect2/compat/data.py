@@ -103,17 +103,17 @@ def convert_to_annotation_group(
         y_inds.append(0)
 
         annotations.append(
-            {
-                "start_time": start_time,
-                "end_time": end_time,
-                "low_freq": low_freq,
-                "high_freq": high_freq,
-                "class_prob": 1.0,
-                "det_prob": 1.0,
-                "individual": "0",
-                "event": event,
-                "class_id": class_id,  # type: ignore
-            }
+            Annotation(
+                start_time=start_time,
+                end_time=end_time,
+                low_freq=low_freq,
+                high_freq=high_freq,
+                class_prob=1.0,
+                det_prob=1.0,
+                individual="0",
+                event=event,
+                class_id=class_id,
+            )
         )
 
     return {

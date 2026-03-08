@@ -120,11 +120,11 @@ class BBoxIOU(AffinityFunction):
 
     def __call__(
         self,
-        prediction: Detection,
-        gt: data.SoundEventAnnotation,
+        detection: Detection,
+        ground_truth: data.SoundEventAnnotation,
     ):
-        target_geometry = gt.sound_event.geometry
-        source_geometry = prediction.geometry
+        target_geometry = ground_truth.sound_event.geometry
+        source_geometry = detection.geometry
 
         if self.time_buffer > 0 or self.freq_buffer > 0:
             target_geometry = buffer_geometry(
@@ -168,11 +168,11 @@ class GeometricIOU(AffinityFunction):
 
     def __call__(
         self,
-        prediction: Detection,
-        gt: data.SoundEventAnnotation,
+        detection: Detection,
+        ground_truth: data.SoundEventAnnotation,
     ):
-        target_geometry = gt.sound_event.geometry
-        source_geometry = prediction.geometry
+        target_geometry = ground_truth.sound_event.geometry
+        source_geometry = detection.geometry
 
         if self.time_buffer > 0 or self.freq_buffer > 0:
             target_geometry = buffer_geometry(

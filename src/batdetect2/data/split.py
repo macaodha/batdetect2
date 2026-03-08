@@ -26,15 +26,15 @@ def split_dataset_by_recordings(
     )
 
     majority_class = (
-        sound_events.groupby("recording_id")
+        sound_events.groupby("recording_id")  # type: ignore
         .apply(
             lambda group: (
-                group["class_name"]  # type: ignore
+                group["class_name"]
                 .value_counts()
                 .sort_values(ascending=False)
                 .index[0]
             ),
-            include_groups=False,  # type: ignore
+            include_groups=False,
         )
         .rename("class_name")
         .to_frame()
@@ -48,8 +48,8 @@ def split_dataset_by_recordings(
         random_state=random_state,
     )
 
-    train_ids_set = set(train.values)  # type: ignore
-    test_ids_set = set(test.values)  # type: ignore
+    train_ids_set = set(train.values)
+    test_ids_set = set(test.values)
 
     extra = set(recordings["recording_id"]) - train_ids_set - test_ids_set
 

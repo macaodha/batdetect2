@@ -46,14 +46,14 @@ class InferenceDataset(Dataset[DatasetItem]):
     def __len__(self):
         return len(self.clips)
 
-    def __getitem__(self, idx: int) -> DatasetItem:
-        clip = self.clips[idx]
+    def __getitem__(self, index: int) -> DatasetItem:
+        clip = self.clips[index]
         wav = self.audio_loader.load_clip(clip, audio_dir=self.audio_dir)
         wav_tensor = torch.tensor(wav).unsqueeze(0)
         spectrogram = self.preprocessor(wav_tensor)
         return DatasetItem(
             spec=spectrogram,
-            idx=torch.tensor(idx),
+            idx=torch.tensor(index),
             start_time=torch.tensor(clip.start_time),
             end_time=torch.tensor(clip.end_time),
         )

@@ -30,7 +30,7 @@ from batdetect2.models.blocks import (
     FreqCoordConvUpConfig,
     LayerGroupConfig,
     StandardConvUpConfig,
-    build_layer_from_config,
+    build_layer,
 )
 
 __all__ = [
@@ -259,11 +259,13 @@ def build_decoder(
     layers = []
 
     for layer_config in config.layers:
-        layer, current_channels, current_height = build_layer_from_config(
+        layer = build_layer(
             in_channels=current_channels,
             input_height=current_height,
             config=layer_config,
         )
+        current_height = layer.get_output_height(current_height)
+        current_channels = layer.get_output_channels()
         layers.append(layer)
 
     return Decoder(

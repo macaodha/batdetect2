@@ -27,6 +27,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.audio import AudioConfig, build_audio_loader
+from batdetect2.core import Registry
 from batdetect2.core.arrays import spec_to_xarray
 from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
@@ -86,6 +87,9 @@ DEFAULT_FREQUENCY_SCALE = 1 / 859.375
 
 DEFAULT_ANCHOR = "bottom-left"
 """Default reference position within the geometry ('bottom-left' corner)."""
+
+
+roi_mapper_registry: Registry[ROITargetMapper, []] = Registry("roi_mapper")
 
 
 class AnchorBBoxMapperConfig(BaseConfig):
@@ -242,6 +246,15 @@ class AnchorBBoxMapper(ROITargetMapper):
             duration=float(width) / self.time_scale,
             bandwidth=float(height) / self.frequency_scale,
             anchor=self.anchor,
+        )
+
+    @roi_mapper_registry.register(AnchorBBoxMapperConfig)
+    @staticmethod
+    def from_config(config: AnchorBBoxMapperConfig):
+        return AnchorBBoxMapper(
+            anchor=config.anchor,
+            time_scale=config.time_scale,
+            frequency_scale=config.frequency_scale,
         )
 
 
@@ -412,6 +425,22 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
             ]
         )
 
+    @roi_mapper_registry.register(PeakEnergyBBoxMapperConfig)
+    @staticmethod
+    def from_config(config: PeakEnergyBBoxMapperConfig):
+        audio_loader = build_audio_loader(config=config.audio)
+        preprocessor = build_preprocessor(
+            config.preprocessing,
+            input_samplerate=audio_loader.samplerate,
+        )
+        return PeakEnergyBBoxMapper(
+            preprocessor=preprocessor,
+            audio_loader=audio_loader,
+            time_scale=config.time_scale,
+            frequency_scale=config.frequency_scale,
+            loading_buffer=config.loading_buffer,
+        )
+
 
 ROIMapperConfig = Annotated[
     AnchorBBoxMapperConfig | PeakEnergyBBoxMapperConfig,
@@ -445,31 +474,7 @@ def build_roi_mapper(
         If the `name` in the config does not correspond to a known mapper.
     """
     config = config or AnchorBBoxMapperConfig()
-
-    if config.name == "anchor_bbox":
-        return AnchorBBoxMapper(
-            anchor=config.anchor,
-            time_scale=config.time_scale,
-            frequency_scale=config.frequency_scale,
-        )
-
-    if config.name == "peak_energy_bbox":
-        audio_loader = build_audio_loader(config=config.audio)
-        preprocessor = build_preprocessor(
-            config.preprocessing,
-            input_samplerate=audio_loader.samplerate,
-        )
-        return PeakEnergyBBoxMapper(
-            preprocessor=preprocessor,
-            audio_loader=audio_loader,
-            time_scale=config.time_scale,
-            frequency_scale=config.frequency_scale,
-            loading_buffer=config.loading_buffer,
-        )
-
-    raise NotImplementedError(
-        f"No ROI mapper of name '{config.name}' is implemented"
-    )
+    return roi_mapper_registry.build(config)
 
 
 VALID_ANCHORS = [
@@ -636,7 +641,7 @@ def get_peak_energy_coordinates(
     )
 
     index = selection.argmax(dim=["time", "frequency"])
-    point = selection.isel(index)  # type: ignore
+    point = selection.isel(index)
     peak_time: float = point.time.item()
     peak_freq: float = point.frequency.item()
     return peak_time, peak_freq

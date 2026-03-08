@@ -22,9 +22,10 @@ from torch import nn
 
 from batdetect2.core.configs import BaseConfig
 from batdetect2.models.blocks import (
+    Block,
     SelfAttentionConfig,
     VerticalConv,
-    build_layer_from_config,
+    build_layer,
 )
 
 __all__ = [
@@ -34,7 +35,7 @@ __all__ = [
 ]
 
 
-class Bottleneck(nn.Module):
+class Bottleneck(Block):
     """Base Bottleneck module for Encoder-Decoder architectures.
 
     This implementation represents the simplest bottleneck structure
@@ -86,6 +87,7 @@ class Bottleneck(nn.Module):
         self.in_channels = in_channels
         self.input_height = input_height
         self.out_channels = out_channels
+
         self.bottleneck_channels = (
             bottleneck_channels
             if bottleneck_channels is not None
@@ -172,7 +174,7 @@ def build_bottleneck(
     input_height: int,
     in_channels: int,
     config: BottleneckConfig | None = None,
-) -> nn.Module:
+) -> Block:
     """Factory function to build the Bottleneck module from configuration.
 
     Constructs either a base `Bottleneck` or a `BottleneckAttn` instance based
@@ -206,11 +208,13 @@ def build_bottleneck(
     layers = []
 
     for layer_config in config.layers:
-        layer, current_channels, current_height = build_layer_from_config(
+        layer = build_layer(
             input_height=current_height,
             in_channels=current_channels,
             config=layer_config,
         )
+        current_height = layer.get_output_height(current_height)
+        current_channels = layer.get_output_channels()
         assert current_height == input_height, (
             "Bottleneck layers should not change the spectrogram height"
         )

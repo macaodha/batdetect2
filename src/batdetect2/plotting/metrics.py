@@ -301,4 +301,4 @@ def _get_marker_positions(
     size = len(thresholds)
     cut_points = np.linspace(0, 1, n_points)
     indices = np.searchsorted(thresholds[::-1], cut_points)
-    return np.clip(size - indices, 0, size - 1)  # type: ignore
+    return np.clip(size - indices, 0, size - 1)

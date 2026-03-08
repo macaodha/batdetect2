@@ -113,7 +113,7 @@ def load_file_audio(
     samplerate: int | None = None,
     config: ResampleConfig | None = None,
     audio_dir: data.PathLike | None = None,
-    dtype: DTypeLike = np.float32,  # type: ignore
+    dtype: DTypeLike = np.float32,
 ) -> np.ndarray:
     """Load and preprocess audio from a file path using specified config."""
     try:
@@ -137,7 +137,7 @@ def load_recording_audio(
     samplerate: int | None = None,
     config: ResampleConfig | None = None,
     audio_dir: data.PathLike | None = None,
-    dtype: DTypeLike = np.float32,  # type: ignore
+    dtype: DTypeLike = np.float32,
 ) -> np.ndarray:
     """Load and preprocess the entire audio content of a recording using config."""
     clip = data.Clip(
@@ -159,7 +159,7 @@ def load_clip_audio(
     samplerate: int | None = None,
     config: ResampleConfig | None = None,
     audio_dir: data.PathLike | None = None,
-    dtype: DTypeLike = np.float32,  # type: ignore
+    dtype: DTypeLike = np.float32,
 ) -> np.ndarray:
     """Load and preprocess a specific audio clip segment based on config."""
     try:
@@ -286,7 +286,7 @@ def resample_audio_fourier(
         If `num` is negative.
     """
     ratio = sr_new / sr_orig
-    return resample(  # type: ignore
+    return resample(
         array,
         int(array.shape[axis] * ratio),
         axis=axis,

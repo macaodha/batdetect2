@@ -14,60 +14,67 @@ HTML_COVERAGE_DIR := "htmlcov"
 help:
     @just --list
 
+install:
+    uv sync
+
 # Testing & Coverage
 # Run tests using pytest.
 test:
-    pytest {{TESTS_DIR}}
+    uv run pytest {{TESTS_DIR}}
 
 # Run tests and generate coverage data.
 coverage:
-    pytest --cov=batdetect2 --cov-report=term-missing --cov-report=xml {{TESTS_DIR}}
+    uv run pytest --cov=batdetect2 --cov-report=term-missing --cov-report=xml {{TESTS_DIR}}
 
 # Generate an HTML coverage report.
 coverage-html: coverage
     @echo "Generating HTML coverage report..."
-    coverage html -d {{HTML_COVERAGE_DIR}}
+    uv run coverage html -d {{HTML_COVERAGE_DIR}}
     @echo "HTML coverage report generated in {{HTML_COVERAGE_DIR}}/"
 
 # Serve the HTML coverage report locally.
 coverage-serve: coverage-html
     @echo "Serving report at http://localhost:8000/ ..."
-    python -m http.server --directory {{HTML_COVERAGE_DIR}} 8000
+    uv run python -m http.server --directory {{HTML_COVERAGE_DIR}} 8000
 
 # Documentation
 # Build documentation using Sphinx.
 docs:
-    sphinx-build -b html {{DOCS_SOURCE}} {{DOCS_BUILD}}
+    uv run sphinx-build -b html {{DOCS_SOURCE}} {{DOCS_BUILD}}
 
 # Serve documentation with live reload.
 docs-serve:
-    sphinx-autobuild {{DOCS_SOURCE}} {{DOCS_BUILD}} --watch {{SOURCE_DIR}} --open-browser
+    uv run sphinx-autobuild {{DOCS_SOURCE}} {{DOCS_BUILD}} --watch {{SOURCE_DIR}} --open-browser
 
 # Formatting & Linting
 # Format code using ruff.
-format:
-    ruff format {{PYTHON_DIRS}}
-
-# Check code formatting using ruff.
-format-check:
-    ruff format --check {{PYTHON_DIRS}}
-
-# Lint code using ruff.
-lint:
-    ruff check {{PYTHON_DIRS}}
+fix-format:
+    uv run ruff format {{PYTHON_DIRS}}
 
 # Lint code using ruff and apply automatic fixes.
-lint-fix:
-    ruff check --fix {{PYTHON_DIRS}}
+fix-lint:
+    uv run ruff check --fix {{PYTHON_DIRS}}
+
+# Combined Formatting & Linting
+fix: fix-format fix-lint
+
+# Checking tasks
+# Check code formatting using ruff.
+check-format:
+    uv run ruff format --check {{PYTHON_DIRS}}
+
+# Lint code using ruff.
+check-lint:
+    uv run ruff check {{PYTHON_DIRS}}
 
 # Type Checking
-# Type check code using pyright.
-typecheck:
-    pyright {{PYTHON_DIRS}}
+# Type check code using ty.
+check-types:
+    uv run ty check {{PYTHON_DIRS}}
 
 # Combined Checks
 # Run all checks (format-check, lint, typecheck).
-check: format-check lint typecheck test
+check: check-format check-lint check-types
 
 # Cleaning tasks
 # Remove Python bytecode and cache.
@@ -95,7 +102,7 @@ clean: clean-build clean-pyc clean-test clean-docs
 
 # Train on example data.
 example-train OPTIONS="":
-    batdetect2 train \
+    uv run batdetect2 train \
         --val-dataset example_data/dataset.yaml \
         --config example_data/config.yaml \
         {{OPTIONS}} \

@@ -185,7 +185,7 @@ def build_backbone(config: BackboneConfig) -> BackboneModel:
     )
 
     decoder = build_decoder(
-        in_channels=bottleneck.out_channels,
+        in_channels=bottleneck.get_output_channels(),
         input_height=encoder.output_height,
         config=config.decoder,
     )

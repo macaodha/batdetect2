@@ -51,8 +51,8 @@ class TestDataset(Dataset[TestExample]):
     def __len__(self):
         return len(self.clip_annotations)
 
-    def __getitem__(self, idx: int) -> TestExample:
-        clip_annotation = self.clip_annotations[idx]
+    def __getitem__(self, index: int) -> TestExample:
+        clip_annotation = self.clip_annotations[index]
 
         if self.clipper is not None:
             clip_annotation = self.clipper(clip_annotation)
@@ -63,7 +63,7 @@ class TestDataset(Dataset[TestExample]):
         spectrogram = self.preprocessor(wav_tensor)
         return TestExample(
             spec=spectrogram,
-            idx=torch.tensor(idx),
+            idx=torch.tensor(index),
             start_time=torch.tensor(clip.start_time),
             end_time=torch.tensor(clip.end_time),
         )

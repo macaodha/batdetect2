@@ -72,7 +72,7 @@ class TargetClassConfig(BaseConfig):
 
 DEFAULT_DETECTION_CLASS = TargetClassConfig(
     name="bat",
-    match_if=AllOfConfig(
+    condition_input=AllOfConfig(
         conditions=[
             HasTagConfig(tag=data.Tag(term=call_type, value="Echolocation")),
             NotConfig(

@@ -61,8 +61,8 @@ class TrainingDataset(Dataset):
     def __len__(self):
         return len(self.clip_annotations)
 
-    def __getitem__(self, idx) -> TrainExample:
-        clip_annotation = self.clip_annotations[idx]
+    def __getitem__(self, index) -> TrainExample:
+        clip_annotation = self.clip_annotations[index]
 
         if self.clipper is not None:
             clip_annotation = self.clipper(clip_annotation)
@@ -95,7 +95,7 @@ class TrainingDataset(Dataset):
             detection_heatmap=heatmaps.detection,
             class_heatmap=heatmaps.classes,
             size_heatmap=heatmaps.size,
-            idx=torch.tensor(idx),
+            idx=torch.tensor(index),
             start_time=torch.tensor(clip.start_time),
             end_time=torch.tensor(clip.end_time),
         )
@@ -121,8 +121,8 @@ class ValidationDataset(Dataset):
     def __len__(self):
         return len(self.clip_annotations)
 
-    def __getitem__(self, idx) -> TrainExample:
-        clip_annotation = self.clip_annotations[idx]
+    def __getitem__(self, index) -> TrainExample:
+        clip_annotation = self.clip_annotations[index]
 
         if self.clipper is not None:
             clip_annotation = self.clipper(clip_annotation)
@@ -141,7 +141,7 @@ class ValidationDataset(Dataset):
             detection_heatmap=heatmaps.detection,
             class_heatmap=heatmaps.classes,
             size_heatmap=heatmaps.size,
-            idx=torch.tensor(idx),
+            idx=torch.tensor(index),
             start_time=torch.tensor(clip.start_time),
             end_time=torch.tensor(clip.end_time),
         )

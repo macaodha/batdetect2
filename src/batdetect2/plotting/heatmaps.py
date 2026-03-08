@@ -100,7 +100,7 @@ def plot_classification_heatmap(
             class_heatmap,
             vmax=1,
             vmin=0,
-            cmap=create_colormap(color),  # type: ignore
+            cmap=create_colormap(color),
             alpha=alpha,
         )
 

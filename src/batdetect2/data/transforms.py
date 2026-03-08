@@ -176,12 +176,7 @@ class MapTagValue:
             if self.target_key is None:
                 tags.append(tag.model_copy(update=dict(value=value)))
             else:
-                tags.append(
-                    data.Tag(
-                        key=self.target_key,  # type: ignore
-                        value=value,
-                    )
-                )
+                tags.append(data.Tag(key=self.target_key, value=value))
 
         return sound_event_annotation.model_copy(update=dict(tags=tags))
 

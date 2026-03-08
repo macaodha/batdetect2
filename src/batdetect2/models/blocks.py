@@ -20,20 +20,21 @@ research:
    spatial frequency information to filters, potentially enabling them to learn
    frequency-dependent patterns more effectively.
 
-These blocks can be utilized directly in custom PyTorch model definitions or
+These blocks can be used directly in custom PyTorch model definitions or
 assembled into larger architectures.
 
 A unified factory function `build_layer_from_config` allows creating instances
 of these blocks based on configuration objects.
 """
 
-from typing import Annotated, List, Literal, Tuple, Union
+from typing import Annotated, List, Literal, Protocol, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 from pydantic import Field
 from torch import nn
 
+from batdetect2.core import Registry
 from batdetect2.core.configs import BaseConfig
 
 __all__ = [
@@ -51,8 +52,21 @@ __all__ = [
     "FreqCoordConvUpConfig",
     "StandardConvUpConfig",
     "LayerConfig",
-    "build_layer_from_config",
+    "build_layer",
 ]
+
+
+class BlockProtocol(Protocol):
+    def get_output_channels(self) -> int: ...
+
+    def get_output_height(self, input_height: int) -> int:
+        return input_height
+
+
+class Block(nn.Module, BlockProtocol): ...
+
+
+block_registry: Registry[Block, [int, int]] = Registry("block")
 
 
 class SelfAttentionConfig(BaseConfig):
@@ -61,7 +75,7 @@ class SelfAttentionConfig(BaseConfig):
     temperature: float = 1
 
 
-class SelfAttention(nn.Module):
+class SelfAttention(Block):
     """Self-Attention mechanism operating along the time dimension.
 
     This module implements a scaled dot-product self-attention mechanism,
@@ -121,6 +135,7 @@ class SelfAttention(nn.Module):
         # Note, does not encode position information (absolute or relative)
         self.temperature = temperature
         self.att_dim = attention_channels
+        self.output_channels = in_channels
 
         self.key_fun = nn.Linear(in_channels, attention_channels)
         self.value_fun = nn.Linear(in_channels, attention_channels)
@@ -190,6 +205,22 @@ class SelfAttention(nn.Module):
         att_weights = F.softmax(kk_qq, 1)
         return att_weights
 
+    def get_output_channels(self) -> int:
+        return self.output_channels
+
+    @block_registry.register(SelfAttentionConfig)
+    @staticmethod
+    def from_config(
+        config: SelfAttentionConfig,
+        input_channels: int,
+        input_height: int,
+    ) -> "SelfAttention":
+        return SelfAttention(
+            in_channels=input_channels,
+            attention_channels=config.attention_channels,
+            temperature=config.temperature,
+        )
+
 
 class ConvConfig(BaseConfig):
     """Configuration for a basic ConvBlock."""
@@ -207,7 +238,7 @@ class ConvConfig(BaseConfig):
     """Padding size."""
 
 
-class ConvBlock(nn.Module):
+class ConvBlock(Block):
     """Basic Convolutional Block.
 
     A standard building block consisting of a 2D convolution, followed by
@@ -258,8 +289,30 @@ class ConvBlock(nn.Module):
         """
         return F.relu_(self.batch_norm(self.conv(x)))
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
 
-class VerticalConv(nn.Module):
+    @block_registry.register(ConvConfig)
+    @staticmethod
+    def from_config(
+        config: ConvConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return ConvBlock(
+            in_channels=input_channels,
+            out_channels=config.out_channels,
+            kernel_size=config.kernel_size,
+            pad_size=config.pad_size,
+        )
+
+
+class VerticalConvConfig(BaseConfig):
+    name: Literal["VerticalConv"] = "VerticalConv"
+    channels: int
+
+
+class VerticalConv(Block):
     """Convolutional layer that aggregates features across the entire height.
 
     Applies a 2D convolution using a kernel with shape `(input_height, 1)`.
@@ -312,6 +365,22 @@ class VerticalConv(nn.Module):
         """
         return F.relu_(self.bn(self.conv(x)))
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
+
+    @block_registry.register(VerticalConvConfig)
+    @staticmethod
+    def from_config(
+        config: VerticalConvConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return VerticalConv(
+            in_channels=input_channels,
+            out_channels=config.channels,
+            input_height=input_height,
+        )
+
 
 class FreqCoordConvDownConfig(BaseConfig):
     """Configuration for a FreqCoordConvDownBlock."""
@@ -329,7 +398,7 @@ class FreqCoordConvDownConfig(BaseConfig):
     """Padding size."""
 
 
-class FreqCoordConvDownBlock(nn.Module):
+class FreqCoordConvDownBlock(Block):
     """Downsampling Conv Block incorporating Frequency Coordinate features.
 
     This block implements a downsampling step (Conv2d + MaxPool2d) commonly
@@ -402,6 +471,27 @@ class FreqCoordConvDownBlock(nn.Module):
         x = F.relu(self.batch_norm(x), inplace=True)
         return x
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
+
+    def get_output_height(self, input_height: int) -> int:
+        return input_height // 2
+
+    @block_registry.register(FreqCoordConvDownConfig)
+    @staticmethod
+    def from_config(
+        config: FreqCoordConvDownConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return FreqCoordConvDownBlock(
+            in_channels=input_channels,
+            out_channels=config.out_channels,
+            input_height=input_height,
+            kernel_size=config.kernel_size,
+            pad_size=config.pad_size,
+        )
+
 
 class StandardConvDownConfig(BaseConfig):
     """Configuration for a StandardConvDownBlock."""
@@ -419,7 +509,7 @@ class StandardConvDownConfig(BaseConfig):
     """Padding size."""
 
 
-class StandardConvDownBlock(nn.Module):
+class StandardConvDownBlock(Block):
     """Standard Downsampling Convolutional Block.
 
     A basic downsampling block consisting of a 2D convolution, followed by
@@ -472,6 +562,26 @@ class StandardConvDownBlock(nn.Module):
         x = F.max_pool2d(self.conv(x), 2, 2)
         return F.relu(self.batch_norm(x), inplace=True)
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
+
+    def get_output_height(self, input_height: int) -> int:
+        return input_height // 2
+
+    @block_registry.register(StandardConvDownConfig)
+    @staticmethod
+    def from_config(
+        config: StandardConvDownConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return StandardConvDownBlock(
+            in_channels=input_channels,
+            out_channels=config.out_channels,
+            kernel_size=config.kernel_size,
+            pad_size=config.pad_size,
+        )
+
 
 class FreqCoordConvUpConfig(BaseConfig):
     """Configuration for a FreqCoordConvUpBlock."""
@@ -488,8 +598,14 @@ class FreqCoordConvUpConfig(BaseConfig):
     pad_size: int = 1
     """Padding size."""
 
+    up_mode: str = "bilinear"
+    """Interpolation mode for upsampling (e.g., "nearest", "bilinear")."""
 
-class FreqCoordConvUpBlock(nn.Module):
+    up_scale: Tuple[int, int] = (2, 2)
+    """Scaling factor for height and width during upsampling."""
+
+
+class FreqCoordConvUpBlock(Block):
     """Upsampling Conv Block incorporating Frequency Coordinate features.
 
     This block implements an upsampling step  followed by a convolution,
@@ -581,6 +697,29 @@ class FreqCoordConvUpBlock(nn.Module):
         op = F.relu(self.batch_norm(op), inplace=True)
         return op
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
+
+    def get_output_height(self, input_height: int) -> int:
+        return input_height * 2
+
+    @block_registry.register(FreqCoordConvUpConfig)
+    @staticmethod
+    def from_config(
+        config: FreqCoordConvUpConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return FreqCoordConvUpBlock(
+            in_channels=input_channels,
+            out_channels=config.out_channels,
+            input_height=input_height,
+            kernel_size=config.kernel_size,
+            pad_size=config.pad_size,
+            up_mode=config.up_mode,
+            up_scale=config.up_scale,
+        )
+
 
 class StandardConvUpConfig(BaseConfig):
     """Configuration for a StandardConvUpBlock."""
@@ -597,8 +736,14 @@ class StandardConvUpConfig(BaseConfig):
     pad_size: int = 1
     """Padding size."""
 
+    up_mode: str = "bilinear"
+    """Interpolation mode for upsampling (e.g., "nearest", "bilinear")."""
 
-class StandardConvUpBlock(nn.Module):
+    up_scale: Tuple[int, int] = (2, 2)
+    """Scaling factor for height and width during upsampling."""
+
+
+class StandardConvUpBlock(Block):
     """Standard Upsampling Convolutional Block.
 
     A basic upsampling block used in CNN decoders. It first upsamples the input
@@ -669,6 +814,28 @@ class StandardConvUpBlock(nn.Module):
         op = F.relu(self.batch_norm(op), inplace=True)
         return op
 
+    def get_output_channels(self) -> int:
+        return self.conv.out_channels
+
+    def get_output_height(self, input_height: int) -> int:
+        return input_height * 2
+
+    @block_registry.register(StandardConvUpConfig)
+    @staticmethod
+    def from_config(
+        config: StandardConvUpConfig,
+        input_channels: int,
+        input_height: int,
+    ):
+        return StandardConvUpBlock(
+            in_channels=input_channels,
+            out_channels=config.out_channels,
+            kernel_size=config.kernel_size,
+            pad_size=config.pad_size,
+            up_mode=config.up_mode,
+            up_scale=config.up_scale,
+        )
+
 
 LayerConfig = Annotated[
     Union[
@@ -690,11 +857,61 @@ class LayerGroupConfig(BaseConfig):
     layers: List[LayerConfig]
 
 
-def build_layer_from_config(
+class LayerGroup(nn.Module):
+    """Standard implementation of the `LayerGroup` architecture."""
+
+    def __init__(
+        self,
+        layers: list[Block],
+        input_height: int,
+        input_channels: int,
+    ):
+        super().__init__()
+        self.blocks = layers
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.layers(x)
+
+    def get_output_channels(self) -> int:
+        return self.blocks[-1].get_output_channels()
+
+    def get_output_height(self, input_height: int) -> int:
+        for block in self.blocks:
+            input_height = block.get_output_height(input_height)
+        return input_height
+
+    @block_registry.register(LayerGroupConfig)
+    @staticmethod
+    def from_config(
+        config: LayerGroupConfig,
+        input_height: int,
+        input_channels: int,
+    ):
+        layers = []
+
+        for layer_config in config.layers:
+            layer = build_layer(
+                input_height=input_height,
+                in_channels=input_channels,
+                config=layer_config,
+            )
+            layers.append(layer)
+            input_height = layer.get_output_height(input_height)
+            input_channels = layer.get_output_channels()
+
+        return LayerGroup(
+            layers=layers,
+            input_height=input_height,
+            input_channels=input_channels,
+        )
+
+
+def build_layer(
     input_height: int,
     in_channels: int,
     config: LayerConfig,
-) -> Tuple[nn.Module, int, int]:
+) -> Block:
     """Factory function to build a specific nn.Module block from its config.
 
     Takes configuration object (one of the types included in the `LayerConfig`
@@ -731,93 +948,4 @@ def build_layer_from_config(
     ValueError
         If parameters derived from the config are invalid for the block.
     """
-    if config.name == "ConvBlock":
-        return (
-            ConvBlock(
-                in_channels=in_channels,
-                out_channels=config.out_channels,
-                kernel_size=config.kernel_size,
-                pad_size=config.pad_size,
-            ),
-            config.out_channels,
-            input_height,
-        )
-
-    if config.name == "FreqCoordConvDown":
-        return (
-            FreqCoordConvDownBlock(
-                in_channels=in_channels,
-                out_channels=config.out_channels,
-                input_height=input_height,
-                kernel_size=config.kernel_size,
-                pad_size=config.pad_size,
-            ),
-            config.out_channels,
-            input_height // 2,
-        )
-
-    if config.name == "StandardConvDown":
-        return (
-            StandardConvDownBlock(
-                in_channels=in_channels,
-                out_channels=config.out_channels,
-                kernel_size=config.kernel_size,
-                pad_size=config.pad_size,
-            ),
-            config.out_channels,
-            input_height // 2,
-        )
-
-    if config.name == "FreqCoordConvUp":
-        return (
-            FreqCoordConvUpBlock(
-                in_channels=in_channels,
-                out_channels=config.out_channels,
-                input_height=input_height,
-                kernel_size=config.kernel_size,
-                pad_size=config.pad_size,
-            ),
-            config.out_channels,
-            input_height * 2,
-        )
-
-    if config.name == "StandardConvUp":
-        return (
-            StandardConvUpBlock(
-                in_channels=in_channels,
-                out_channels=config.out_channels,
-                kernel_size=config.kernel_size,
-                pad_size=config.pad_size,
-            ),
-            config.out_channels,
-            input_height * 2,
-        )
-
-    if config.name == "SelfAttention":
-        return (
-            SelfAttention(
-                in_channels=in_channels,
-                attention_channels=config.attention_channels,
-                temperature=config.temperature,
-            ),
-            config.attention_channels,
-            input_height,
-        )
-
-    if config.name == "LayerGroup":
-        current_channels = in_channels
-        current_height = input_height
-
-        blocks = []
-
-        for block_config in config.layers:
-            block, current_channels, current_height = build_layer_from_config(
-                input_height=current_height,
-                in_channels=current_channels,
-                config=block_config,
-            )
-            blocks.append(block)
-
-        return nn.Sequential(*blocks), current_channels, current_height
-
-    raise NotImplementedError(f"Unknown block type {config.name}")
+    return block_registry.build(config, in_channels, input_height)

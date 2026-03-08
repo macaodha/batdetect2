@@ -75,7 +75,6 @@ dev = [
   "ruff>=0.7.3",
   "ipykernel>=6.29.4",
   "setuptools>=69.5.1",
-  "basedpyright>=1.31.0",
   "myst-parser>=3.0.1",
   "sphinx-autobuild>=2024.10.3",
   "numpydoc>=1.8.0",
@@ -94,6 +93,12 @@ mlflow = ["mlflow>=3.1.1"]
 [tool.ruff]
 line-length = 79
 target-version = "py310"
+exclude = [
+  "src/batdetect2/train/legacy",
+  "src/batdetect2/plotting/legacy",
+  "src/batdetect2/evaluate/legacy",
+  "src/batdetect2/finetune",
+]
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -105,15 +110,11 @@ select = ["E4", "E7", "E9", "F", "B", "Q", "I", "NPY201"]
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.pyright]
+[tool.ty.src]
 include = ["src", "tests"]
-pythonVersion = "3.10"
-pythonPlatform = "All"
 exclude = [
-  "src/batdetect2/detector/",
-  "src/batdetect2/finetune",
-  "src/batdetect2/utils",
-  "src/batdetect2/plot",
-  "src/batdetect2/evaluate/legacy",
   "src/batdetect2/train/legacy",
+  "src/batdetect2/plotting/legacy",
+  "src/batdetect2/evaluate/legacy",
+  "src/batdetect2/finetune",
 ]

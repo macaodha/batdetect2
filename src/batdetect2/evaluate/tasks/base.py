@@ -109,7 +109,7 @@ class BaseTask(EvaluatorProtocol, Generic[T_Output]):
         self,
         clip_annotation: data.ClipAnnotation,
         prediction: ClipDetections,
-    ) -> T_Output: ...
+    ) -> T_Output: ...  # ty: ignore[empty-body]
 
     def include_sound_event_annotation(
         self,

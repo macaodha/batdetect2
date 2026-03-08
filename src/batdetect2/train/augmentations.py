@@ -548,63 +548,6 @@ class MaybeApply(torch.nn.Module):
         return self.augmentation(tensor, clip_annotation)
 
 
-def build_augmentation_from_config(
-    config: AugmentationConfig,
-    samplerate: int,
-    audio_source: AudioSource | None = None,
-) -> Augmentation | None:
-    """Factory function to build a single augmentation from its config."""
-    if config.name == "mix_audio":
-        if audio_source is None:
-            warnings.warn(
-                "Mix audio augmentation ('mix_audio') requires an "
-                "'example_source' callable to be provided.",
-                stacklevel=2,
-            )
-            return None
-
-        return MixAudio(
-            example_source=audio_source,
-            min_weight=config.min_weight,
-            max_weight=config.max_weight,
-        )
-
-    if config.name == "add_echo":
-        return AddEcho(
-            max_delay=int(config.max_delay * samplerate),
-            min_weight=config.min_weight,
-            max_weight=config.max_weight,
-        )
-
-    if config.name == "scale_volume":
-        return ScaleVolume(
-            max_scaling=config.max_scaling,
-            min_scaling=config.min_scaling,
-        )
-
-    if config.name == "warp":
-        return Warp(
-            delta=config.delta,
-        )
-
-    if config.name == "mask_time":
-        return MaskTime(
-            max_perc=config.max_perc,
-            max_masks=config.max_masks,
-        )
-
-    if config.name == "mask_freq":
-        return MaskFrequency(
-            max_perc=config.max_perc,
-            max_masks=config.max_masks,
-        )
-
-    raise NotImplementedError(
-        "Invalid or unimplemented augmentation type: "
-        f"{config.augmentation_type}"
-    )
-
-
 DEFAULT_AUGMENTATION_CONFIG: AugmentationsConfig = AugmentationsConfig(
     enabled=True,
     audio=[

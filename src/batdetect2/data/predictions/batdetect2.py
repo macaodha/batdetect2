@@ -89,7 +89,7 @@ class FileAnnotation(TypedDict):
     annotation: List[Annotation]
     """List of annotations."""
 
-    file_path: NotRequired[str]
+    file_path: NotRequired[str]  # ty: ignore[invalid-type-form]
     """Path to file."""
 
 
