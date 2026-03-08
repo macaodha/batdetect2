@@ -74,9 +74,9 @@ class AudioLoader(Protocol):
 
         Returns
         -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform. Typically loads only
-            the first channel.
+        np.ndarray
+            The loaded and preprocessed audio waveform as a 1-D NumPy
+            array. Typically loads only the first channel.
 
         Raises
         ------
@@ -105,9 +105,10 @@ class AudioLoader(Protocol):
 
         Returns
         -------
-        xr.DataArray
-            The loaded and preprocessed audio waveform for the specified clip
-            duration. Typically loads only the first channel.
+        np.ndarray
+            The loaded and preprocessed audio waveform for the specified
+            clip duration as a 1-D NumPy array. Typically loads only the
+            first channel.
 
         Raises
         ------
@@ -147,4 +148,21 @@ class PreprocessorProtocol(Protocol):
     def process_spectrogram(self, spec: torch.Tensor) -> torch.Tensor: ...
 
     def process_numpy(self, wav: np.ndarray) -> np.ndarray:
+        """Run the full preprocessing pipeline on a NumPy waveform.
+
+        This default implementation converts the array to a
+        ``torch.Tensor``, calls :meth:`__call__`, and converts the
+        result back to a NumPy array. Concrete implementations may
+        override this for efficiency.
+
+        Parameters
+        ----------
+        wav : np.ndarray
+            Input waveform as a 1-D NumPy array.
+
+        Returns
+        -------
+        np.ndarray
+            Preprocessed spectrogram as a NumPy array.
+        """
         return self(torch.tensor(wav)).numpy()
