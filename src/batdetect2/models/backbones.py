@@ -18,11 +18,10 @@ automatic padding to handle input sizes not perfectly divisible by the
 network's total downsampling factor.
 """
 
-from typing import Annotated, Literal, Tuple
+from typing import Annotated, Literal, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from example import Union
 from pydantic import Field
 from soundevent import data
 
