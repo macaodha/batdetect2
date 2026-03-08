@@ -124,3 +124,6 @@ example_data/preprocessed
 # Dev notebooks
 notebooks/tmp
 /tmp
+/.agents/skills
+/notebooks
+/AGENTS.md
