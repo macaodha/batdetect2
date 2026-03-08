@@ -83,17 +83,17 @@ class Preprocessor(torch.nn.Module, PreprocessorProtocol):
         super().__init__()
 
         self.audio_transforms = torch.nn.Sequential(
-            *[
+            *(
                 build_audio_transform(step, samplerate=input_samplerate)
                 for step in config.audio_transforms
-            ]
+            )
         )
 
         self.spectrogram_transforms = torch.nn.Sequential(
-            *[
+            *(
                 build_spectrogram_transform(step, samplerate=input_samplerate)
                 for step in config.spectrogram_transforms
-            ]
+            )
         )
 
         self.spectrogram_builder = build_spectrogram_builder(

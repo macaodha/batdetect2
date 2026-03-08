@@ -31,11 +31,6 @@ from batdetect2.preprocess.spectrogram import (
 SAMPLERATE = 256_000
 
 
-# ---------------------------------------------------------------------------
-# STFTConfig / _spec_params_from_config
-# ---------------------------------------------------------------------------
-
-
 def test_stft_config_defaults_give_correct_params():
     """Default STFTConfig at 256 kHz should give n_fft=512, hop_length=128."""
     config = STFTConfig()
@@ -50,11 +45,6 @@ def test_stft_config_custom_params():
     n_fft, hop_length = _spec_params_from_config(config, samplerate=SAMPLERATE)
     assert n_fft == 1024
     assert hop_length == 512
-
-
-# ---------------------------------------------------------------------------
-# build_spectrogram_builder
-# ---------------------------------------------------------------------------
 
 
 def test_spectrogram_builder_output_shape():
@@ -79,11 +69,6 @@ def test_spectrogram_builder_output_is_nonnegative():
     wav = torch.randn(SAMPLERATE)
     spec = builder(wav)
     assert (spec >= 0).all()
-
-
-# ---------------------------------------------------------------------------
-# FrequencyCrop
-# ---------------------------------------------------------------------------
 
 
 def test_frequency_crop_output_shape():
@@ -128,11 +113,6 @@ def test_frequency_crop_no_crop_when_bounds_are_none():
     assert cropped.shape == spec.shape
 
 
-# ---------------------------------------------------------------------------
-# PCEN
-# ---------------------------------------------------------------------------
-
-
 def test_pcen_output_shape_preserved():
     """PCEN should not change the shape of the spectrogram."""
     config = PcenConfig()
@@ -158,11 +138,6 @@ def test_pcen_output_dtype_matches_input():
     spec = torch.rand(64, 200, dtype=torch.float32)
     result = pcen(spec)
     assert result.dtype == spec.dtype
-
-
-# ---------------------------------------------------------------------------
-# SpectralMeanSubtraction
-# ---------------------------------------------------------------------------
 
 
 def test_spectral_mean_subtraction_output_nonnegative():
@@ -195,11 +170,6 @@ def test_spectral_mean_subtraction_from_config():
     assert isinstance(module, SpectralMeanSubtraction)
 
 
-# ---------------------------------------------------------------------------
-# PeakNormalize (spectrogram-level)
-# ---------------------------------------------------------------------------
-
-
 def test_peak_normalize_spec_max_is_one():
     """PeakNormalize should scale the spectrogram peak to 1."""
     module = PeakNormalize()
@@ -220,11 +190,6 @@ def test_peak_normalize_from_config():
     config = PeakNormalizeConfig()
     module = PeakNormalize.from_config(config, samplerate=SAMPLERATE)
     assert isinstance(module, PeakNormalize)
-
-
-# ---------------------------------------------------------------------------
-# ScaleAmplitude
-# ---------------------------------------------------------------------------
 
 
 def test_scale_amplitude_db_output_is_finite():
@@ -249,11 +214,6 @@ def test_scale_amplitude_from_config():
     module = ScaleAmplitude.from_config(config, samplerate=SAMPLERATE)
     assert isinstance(module, ScaleAmplitude)
     assert module.scale == "db"
-
-
-# ---------------------------------------------------------------------------
-# ResizeSpec
-# ---------------------------------------------------------------------------
 
 
 def test_resize_spec_output_shape():
@@ -285,11 +245,6 @@ def test_resize_spec_from_config():
     assert isinstance(module, ResizeSpec)
     assert module.height == 64
     assert module.time_factor == 0.25
-
-
-# ---------------------------------------------------------------------------
-# build_spectrogram_transform dispatch
-# ---------------------------------------------------------------------------
 
 
 def test_build_spectrogram_transform_pcen():

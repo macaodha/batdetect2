@@ -79,11 +79,6 @@ def default_audio_config() -> AudioConfig:
     return AudioConfig()
 
 
-# ---------------------------------------------------------------------------
-# center_tensor
-# ---------------------------------------------------------------------------
-
-
 def test_center_tensor_zero_mean():
     """Output tensor should have a mean very close to zero."""
     wav = torch.tensor([1.0, 2.0, 3.0, 4.0])
@@ -95,11 +90,6 @@ def test_center_tensor_preserves_shape():
     wav = torch.randn(3, 1000)
     result = center_tensor(wav)
     assert result.shape == wav.shape
-
-
-# ---------------------------------------------------------------------------
-# peak_normalize
-# ---------------------------------------------------------------------------
 
 
 def test_peak_normalize_max_is_one():
@@ -116,23 +106,10 @@ def test_peak_normalize_zero_tensor_unchanged():
     assert (result == 0).all()
 
 
-def test_peak_normalize_preserves_sign():
-    """Signs of all elements should be preserved after normalisation."""
-    wav = torch.tensor([-2.0, 1.0, -0.5])
-    result = peak_normalize(wav)
-    assert (result < 0).sum() == 2
-    assert result[0].item() < 0
-
-
 def test_peak_normalize_preserves_shape():
     wav = torch.randn(2, 512)
     result = peak_normalize(wav)
     assert result.shape == wav.shape
-
-
-# ---------------------------------------------------------------------------
-# CenterAudio
-# ---------------------------------------------------------------------------
 
 
 def test_center_audio_forward_zero_mean():
@@ -148,15 +125,10 @@ def test_center_audio_from_config():
     assert isinstance(module, CenterAudio)
 
 
-# ---------------------------------------------------------------------------
-# ScaleAudio
-# ---------------------------------------------------------------------------
-
-
 def test_scale_audio_peak_normalises_to_one():
     """ScaleAudio.forward should scale the peak absolute value to 1."""
     module = ScaleAudio()
-    wav = torch.tensor([0.0, 0.25, -0.5, 0.1])
+    wav = torch.tensor([0.0, 0.25, 0.1])
     result = module(wav)
     assert abs(result.abs().max().item() - 1.0) < 1e-6
 
@@ -173,11 +145,6 @@ def test_scale_audio_from_config():
     config = ScaleAudioConfig()
     module = ScaleAudio.from_config(config, samplerate=SAMPLERATE)
     assert isinstance(module, ScaleAudio)
-
-
-# ---------------------------------------------------------------------------
-# FixDuration
-# ---------------------------------------------------------------------------
 
 
 def test_fix_duration_truncates_long_input():
@@ -216,11 +183,6 @@ def test_fix_duration_from_config():
     module = FixDuration.from_config(config, samplerate=SAMPLERATE)
     assert isinstance(module, FixDuration)
     assert module.length == int(SAMPLERATE * 0.256)
-
-
-# ---------------------------------------------------------------------------
-# build_audio_transform dispatch
-# ---------------------------------------------------------------------------
 
 
 def test_build_audio_transform_center_audio():

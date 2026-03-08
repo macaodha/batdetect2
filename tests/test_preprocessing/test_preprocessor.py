@@ -26,7 +26,6 @@ from batdetect2.preprocess.spectrogram import (
 )
 
 SAMPLERATE = 256_000
-# 0.256 s at 256 kHz = 65536 samples — a convenient power-of-two-sized clip
 CLIP_SAMPLES = int(SAMPLERATE * 0.256)
 
 
@@ -38,11 +37,6 @@ def make_sine_wav(
     """Return a single-channel sine-wave tensor."""
     t = torch.linspace(0.0, duration, int(samplerate * duration))
     return torch.sin(2 * torch.pi * freq * t)
-
-
-# ---------------------------------------------------------------------------
-# build_preprocessor — construction
-# ---------------------------------------------------------------------------
 
 
 def test_build_preprocessor_returns_protocol():
@@ -66,11 +60,6 @@ def test_build_preprocessor_with_explicit_config():
     )
     preprocessor = build_preprocessor(config, input_samplerate=SAMPLERATE)
     assert isinstance(preprocessor, Preprocessor)
-
-
-# ---------------------------------------------------------------------------
-# Output shape and dtype
-# ---------------------------------------------------------------------------
 
 
 def test_preprocessor_output_is_2d():
@@ -108,11 +97,6 @@ def test_preprocessor_output_is_finite():
     assert torch.isfinite(result).all()
 
 
-# ---------------------------------------------------------------------------
-# process_numpy
-# ---------------------------------------------------------------------------
-
-
 def test_preprocessor_process_numpy_accepts_ndarray():
     """process_numpy should accept a NumPy array and return a NumPy array."""
     preprocessor = build_preprocessor(input_samplerate=SAMPLERATE)
@@ -130,11 +114,6 @@ def test_preprocessor_process_numpy_matches_forward():
     np.testing.assert_array_almost_equal(result_pt, result_np)
 
 
-# ---------------------------------------------------------------------------
-# Attributes
-# ---------------------------------------------------------------------------
-
-
 def test_preprocessor_min_max_freq_attributes():
     """min_freq and max_freq should match the FrequencyConfig values."""
     config = PreprocessingConfig(
@@ -150,11 +129,6 @@ def test_preprocessor_input_samplerate_attribute():
     assert preprocessor.input_samplerate == SAMPLERATE
 
 
-# ---------------------------------------------------------------------------
-# compute_output_samplerate
-# ---------------------------------------------------------------------------
-
-
 def test_compute_output_samplerate_defaults():
     """At default settings, output_samplerate should equal 1000 fps."""
     config = PreprocessingConfig()
@@ -167,11 +141,6 @@ def test_preprocessor_output_samplerate_attribute_matches_compute():
     preprocessor = build_preprocessor(config, input_samplerate=SAMPLERATE)
     expected = compute_output_samplerate(config, input_samplerate=SAMPLERATE)
     assert abs(preprocessor.output_samplerate - expected) < 1e-6
-
-
-# ---------------------------------------------------------------------------
-# generate_spectrogram (raw STFT)
-# ---------------------------------------------------------------------------
 
 
 def test_generate_spectrogram_shape():
@@ -193,27 +162,16 @@ def test_generate_spectrogram_larger_than_forward():
     assert raw.shape[0] > processed.shape[0]
 
 
-# ---------------------------------------------------------------------------
-# Audio transforms pipeline (FixDuration)
-# ---------------------------------------------------------------------------
-
-
 def test_preprocessor_with_fix_duration_audio_transform():
     """A FixDuration audio transform should produce consistent output shapes."""
     config = PreprocessingConfig(
         audio_transforms=[FixDurationConfig(duration=0.256)],
     )
     preprocessor = build_preprocessor(config, input_samplerate=SAMPLERATE)
-    # Feed different lengths; output shape should be the same after fix
     for n_samples in [CLIP_SAMPLES - 1000, CLIP_SAMPLES, CLIP_SAMPLES + 1000]:
         wav = torch.randn(n_samples)
         result = preprocessor(wav)
         assert result.ndim == 2
-
-
-# ---------------------------------------------------------------------------
-# YAML round-trip
-# ---------------------------------------------------------------------------
 
 
 def test_preprocessor_yaml_roundtrip(tmp_path: pathlib.Path):
