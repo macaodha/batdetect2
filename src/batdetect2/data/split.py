@@ -28,10 +28,12 @@ def split_dataset_by_recordings(
     majority_class = (
         sound_events.groupby("recording_id")
         .apply(
-            lambda group: group["class_name"]  # type: ignore
-            .value_counts()
-            .sort_values(ascending=False)
-            .index[0],
+            lambda group: (
+                group["class_name"]  # type: ignore
+                .value_counts()
+                .sort_values(ascending=False)
+                .index[0]
+            ),
             include_groups=False,  # type: ignore
         )
         .rename("class_name")
