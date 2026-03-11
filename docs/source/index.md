@@ -6,6 +6,7 @@ Hi!
 :maxdepth: 1
 :caption: Contents:
 
+architecture
 data/index
 preprocessing/index
 postprocessing
