@@ -767,7 +767,7 @@ def test_load_aoef_annotated_dataset_wrong_object_type(
     )
 
     wrong_type_file = tmp_path / "wrong_type.json"
-    io.save(dataset, wrong_type_file)  # type: ignore
+    io.save(dataset, wrong_type_file)
 
     config = aoef.AOEFAnnotations(
         name="test_wrong_type",
