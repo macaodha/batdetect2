@@ -18,17 +18,13 @@ from typing import Annotated
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.data.annotations.aoef import (
-    AOEFAnnotations,
-    load_aoef_annotated_dataset,
-)
+from batdetect2.data.annotations.aoef import AOEFAnnotations
 from batdetect2.data.annotations.batdetect2 import (
     AnnotationFilter,
     BatDetect2FilesAnnotations,
     BatDetect2MergedAnnotations,
-    load_batdetect2_files_annotated_dataset,
-    load_batdetect2_merged_annotated_dataset,
 )
+from batdetect2.data.annotations.registry import annotation_format_registry
 from batdetect2.data.annotations.types import AnnotatedDataset
 
 __all__ = [
@@ -63,20 +59,20 @@ def load_annotated_dataset(
 ) -> data.AnnotationSet:
     """Load annotations for a single data source based on its configuration.
 
-    This function acts as a dispatcher. It inspects the type of the input
-    `source_config` object (which corresponds to a specific annotation format)
-    and calls the appropriate loading function (e.g.,
-    `load_aoef_annotated_dataset` for `AOEFAnnotations`).
+    This function acts as a dispatcher. It inspects the format of the input
+    `dataset` object and delegates to the appropriate format-specific loader
+    registered in the `annotation_format_registry` (e.g.,
+    `AOEFLoader` for `AOEFAnnotations`).
 
     Parameters
     ----------
-    source_config : AnnotationFormats
+    dataset : AnnotatedDataset
         The configuration object for the data source, specifying its format
         and necessary details (like paths). Must be an instance of one of the
         types included in the `AnnotationFormats` union.
     base_dir : Path, optional
         An optional base directory path. If provided, relative paths within
-        the `source_config` might be resolved relative to this directory by
+        the `dataset` will be resolved relative to this directory by
         the underlying loading functions. Defaults to None.
 
     Returns
@@ -88,23 +84,8 @@ def load_annotated_dataset(
     Raises
     ------
     NotImplementedError
-        If the type of the `source_config` object does not match any of the
-        known format-specific loading functions implemented in the dispatch
-        logic.
+        If the `format` field of `dataset` does not match any registered
+        annotation format loader.
     """
-
-    if isinstance(dataset, AOEFAnnotations):
-        return load_aoef_annotated_dataset(dataset, base_dir=base_dir)
-
-    if isinstance(dataset, BatDetect2MergedAnnotations):
-        return load_batdetect2_merged_annotated_dataset(
-            dataset, base_dir=base_dir
-        )
-
-    if isinstance(dataset, BatDetect2FilesAnnotations):
-        return load_batdetect2_files_annotated_dataset(
-            dataset,
-            base_dir=base_dir,
-        )
-
-    raise NotImplementedError(f"Unknown annotation format: {dataset.name}")
+    loader = annotation_format_registry.build(dataset)
+    return loader.load(base_dir=base_dir)

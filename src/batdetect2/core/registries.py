@@ -44,11 +44,12 @@ class SimpleRegistry(Generic[T]):
 class Registry(Generic[T_Type, P_Type]):
     """A generic class to create and manage a registry of items."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, discriminator: str = "name"):
         self._name = name
         self._registry: dict[
             str, Callable[Concatenate[..., P_Type], T_Type]
         ] = {}
+        self._discriminator = discriminator
         self._config_types: dict[str, Type[BaseModel]] = {}
 
     def register(
@@ -57,15 +58,20 @@ class Registry(Generic[T_Type, P_Type]):
     ):
         fields = config_cls.model_fields
 
-        if "name" not in fields:
-            raise ValueError("Configuration object must have a 'name' field.")
+        if self._discriminator not in fields:
+            raise ValueError(
+                "Configuration object must have "
+                f"a '{self._discriminator}' field."
+            )
 
-        name = fields["name"].default
+        name = fields[self._discriminator].default
 
         self._config_types[name] = config_cls
 
         if not isinstance(name, str):
-            raise ValueError("'name' field must be a string literal.")
+            raise ValueError(
+                f"'{self._discriminator}' field must be a string literal."
+            )
 
         def decorator(
             func: Callable[Concatenate[T_Config, P_Type], T_Type],
@@ -95,10 +101,12 @@ class Registry(Generic[T_Type, P_Type]):
     ) -> T_Type:
         """Builds a logic instance from a config object."""
 
-        name = getattr(config, "name")  # noqa: B009
+        name = getattr(config, self._discriminator)  # noqa: B009
 
         if name is None:
-            raise ValueError("Config does not have a name field")
+            raise ValueError(
+                f"Config does not have a '{self._discriminator}' field"
+            )
 
         if name not in self._registry:
             raise NotImplementedError(

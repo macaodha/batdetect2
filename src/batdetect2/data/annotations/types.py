@@ -1,9 +1,13 @@
 from pathlib import Path
+from typing import Optional, Protocol
+
+from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
 
 __all__ = [
     "AnnotatedDataset",
+    "AnnotationLoader",
 ]
 
 
@@ -34,3 +38,10 @@ class AnnotatedDataset(BaseConfig):
     name: str
     audio_dir: Path
     description: str = ""
+
+
+class AnnotationLoader(Protocol):
+    def load(
+        self,
+        base_dir: Optional[data.PathLike] = None,
+    ) -> data.AnnotationSet: ...

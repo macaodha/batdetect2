@@ -19,10 +19,15 @@ from pydantic import Field
 from soundevent import data, io
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.data.annotations.types import AnnotatedDataset
+from batdetect2.data.annotations.registry import annotation_format_registry
+from batdetect2.data.annotations.types import (
+    AnnotatedDataset,
+    AnnotationLoader,
+)
 
 __all__ = [
     "AOEFAnnotations",
+    "AOEFLoader",
     "load_aoef_annotated_dataset",
     "AnnotationTaskFilter",
 ]
@@ -80,6 +85,22 @@ class AOEFAnnotations(AnnotatedDataset):
     filter: AnnotationTaskFilter | None = Field(
         default_factory=AnnotationTaskFilter
     )
+
+
+class AOEFLoader(AnnotationLoader):
+    def __init__(self, config: AOEFAnnotations):
+        self.config = config
+
+    def load(
+        self,
+        base_dir: Optional[data.PathLike] = None,
+    ) -> data.AnnotationSet:
+        return load_aoef_annotated_dataset(self.config, base_dir=base_dir)
+
+    @annotation_format_registry.register(AOEFAnnotations)
+    @staticmethod
+    def from_config(config: AOEFAnnotations):
+        return AOEFLoader(config)
 
 
 def load_aoef_annotated_dataset(

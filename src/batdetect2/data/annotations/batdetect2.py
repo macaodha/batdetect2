@@ -41,7 +41,11 @@ from batdetect2.data.annotations.legacy import (
     list_file_annotations,
     load_file_annotation,
 )
-from batdetect2.data.annotations.types import AnnotatedDataset
+from batdetect2.data.annotations.registry import annotation_format_registry
+from batdetect2.data.annotations.types import (
+    AnnotatedDataset,
+    AnnotationLoader,
+)
 
 PathLike = Path | str | os.PathLike
 
@@ -302,7 +306,7 @@ def load_batdetect2_merged_annotated_dataset(
         try:
             ann = FileAnnotation.model_validate(ann)
         except ValueError as err:
-            logger.warning(f"Invalid annotation file: {err}")
+            logger.warning("Invalid annotation file: {err}", err=err)
             continue
 
         if (
@@ -310,17 +314,23 @@ def load_batdetect2_merged_annotated_dataset(
             and dataset.filter.only_annotated
             and not ann.annotated
         ):
-            logger.debug(f"Skipping incomplete annotation {ann.id}")
+            logger.debug(
+                "Skipping incomplete annotation {ann_id}",
+                ann_id=ann.id,
+            )
             continue
 
         if dataset.filter and dataset.filter.exclude_issues and ann.issues:
-            logger.debug(f"Skipping annotation with issues {ann.id}")
+            logger.debug(
+                "Skipping annotation with issues {ann_id}",
+                ann_id=ann.id,
+            )
             continue
 
         try:
             clip = file_annotation_to_clip(ann, audio_dir=audio_dir)
         except FileNotFoundError as err:
-            logger.warning(f"Error loading annotations: {err}")
+            logger.warning("Error loading annotations: {err}", err=err)
             continue
 
         annotations.append(file_annotation_to_clip_annotation(ann, clip))
@@ -330,3 +340,41 @@ def load_batdetect2_merged_annotated_dataset(
         description=dataset.description,
         clip_annotations=annotations,
     )
+
+
+class BatDetect2MergedLoader(AnnotationLoader):
+    def __init__(self, config: BatDetect2MergedAnnotations):
+        self.config = config
+
+    def load(
+        self,
+        base_dir: Optional[PathLike] = None,
+    ) -> data.AnnotationSet:
+        return load_batdetect2_merged_annotated_dataset(
+            self.config,
+            base_dir=base_dir,
+        )
+
+    @annotation_format_registry.register(BatDetect2MergedAnnotations)
+    @staticmethod
+    def from_config(config: BatDetect2MergedAnnotations):
+        return BatDetect2MergedLoader(config)
+
+
+class BatDetect2FilesLoader(AnnotationLoader):
+    def __init__(self, config: BatDetect2FilesAnnotations):
+        self.config = config
+
+    def load(
+        self,
+        base_dir: Optional[PathLike] = None,
+    ) -> data.AnnotationSet:
+        return load_batdetect2_files_annotated_dataset(
+            self.config,
+            base_dir=base_dir,
+        )
+
+    @annotation_format_registry.register(BatDetect2FilesAnnotations)
+    @staticmethod
+    def from_config(config: BatDetect2FilesAnnotations):
+        return BatDetect2FilesLoader(config)
