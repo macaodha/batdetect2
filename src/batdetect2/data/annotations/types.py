@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Protocol
+from typing import Protocol
 
 from soundevent import data
 
@@ -43,5 +43,5 @@ class AnnotatedDataset(BaseConfig):
 class AnnotationLoader(Protocol):
     def load(
         self,
-        base_dir: Optional[data.PathLike] = None,
+        base_dir: data.PathLike | None = None,
     ) -> data.AnnotationSet: ...

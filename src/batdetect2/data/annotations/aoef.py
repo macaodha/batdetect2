@@ -93,7 +93,7 @@ class AOEFLoader(AnnotationLoader):
 
     def load(
         self,
-        base_dir: Optional[data.PathLike] = None,
+        base_dir: data.PathLike | None = None,
     ) -> data.AnnotationSet:
         return load_aoef_annotated_dataset(self.config, base_dir=base_dir)
 

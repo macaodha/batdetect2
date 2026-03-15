@@ -348,7 +348,7 @@ class BatDetect2MergedLoader(AnnotationLoader):
 
     def load(
         self,
-        base_dir: Optional[PathLike] = None,
+        base_dir: PathLike | None = None,
     ) -> data.AnnotationSet:
         return load_batdetect2_merged_annotated_dataset(
             self.config,
@@ -367,7 +367,7 @@ class BatDetect2FilesLoader(AnnotationLoader):
 
     def load(
         self,
-        base_dir: Optional[PathLike] = None,
+        base_dir: PathLike | None = None,
     ) -> data.AnnotationSet:
         return load_batdetect2_files_annotated_dataset(
             self.config,
