@@ -4,6 +4,8 @@ Covers:
 - SimpleRegistry: registration, retrieval, and membership checks.
 - Registry: decorator-based registration, config type tracking,
   discriminator-based dispatch, and error handling.
+- ImportConfig base class and add_import_config decorator utility.
+- AnnotationFormatImportConfig: concrete per-registry escape hatch.
 """
 
 from typing import Literal
@@ -11,7 +13,12 @@ from typing import Literal
 import pytest
 from pydantic import BaseModel
 
-from batdetect2.core.registries import Registry, SimpleRegistry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    SimpleRegistry,
+    add_import_config,
+)
 
 
 class TestSimpleRegistry:
@@ -292,3 +299,121 @@ class TestRegistryBuild:
 
         with pytest.raises(NotImplementedError, match="my_registry"):
             registry.build(UnknownConfig())
+
+
+class TestAddImportConfig:
+    def test_decorator_returns_config_class_unchanged(self):
+        """add_import_config returns the decorated class as-is."""
+
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        registry: Registry[object, []] = Registry("test")
+        result = add_import_config(registry)(MyImportConfig)
+        assert result is MyImportConfig
+
+    def test_registered_config_type_is_discoverable(self):
+        """After decoration, get_config_type('import') returns the class."""
+        registry: Registry[object, []] = Registry("test")
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        assert registry.get_config_type("import") is MyImportConfig
+
+    def test_build_instantiates_target(self):
+        """build() with a registered import config instantiates the target."""
+        import collections
+
+        registry: Registry[object, []] = Registry("test")
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        config = MyImportConfig(target="collections.OrderedDict")
+        result = registry.build(config)
+        assert isinstance(result, collections.OrderedDict)
+
+    def test_build_forwards_arguments_to_target(self):
+        """build() passes config.arguments as kwargs to the target."""
+        import decimal
+
+        registry: Registry[object, []] = Registry("test")
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        config = MyImportConfig(
+            target="decimal.Decimal",
+            arguments={"value": "3.14"},
+        )
+        result = registry.build(config)
+        assert isinstance(result, decimal.Decimal)
+        assert result == decimal.Decimal("3.14")
+
+    def test_build_kwargs_override_config_arguments(self):
+        """kwargs passed to build() win over same-key entries in arguments."""
+        import decimal
+
+        registry: Registry[object, []] = Registry("test")
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        config = MyImportConfig(
+            target="decimal.Decimal",
+            arguments={"value": "1.00"},
+        )
+        result = registry.build(config, value="9.99")
+        assert isinstance(result, decimal.Decimal)
+        assert result == decimal.Decimal("9.99")
+
+    def test_build_bad_target_raises(self):
+        """build() raises when the dotted target path cannot be resolved."""
+        from hydra.errors import InstantiationException
+
+        registry: Registry[object, []] = Registry("test")
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        config = MyImportConfig(target="nonexistent.module.DoesNotExist")
+        with pytest.raises(InstantiationException):
+            registry.build(config)
+
+    def test_works_with_custom_discriminator_field(self):
+        """add_import_config works for registries with a non-default discriminator."""
+        import collections
+
+        registry: Registry[object, []] = Registry(
+            "test",
+            discriminator="format",
+        )
+
+        @add_import_config(registry)
+        class FormatImportConfig(ImportConfig):
+            format: Literal["import"] = "import"
+
+        config = FormatImportConfig(target="collections.OrderedDict")
+        result = registry.build(config)
+        assert isinstance(result, collections.OrderedDict)
+
+    def test_coexists_with_other_registered_entries(self):
+        """The import config entry does not interfere with other entries."""
+        registry: Registry[object, []] = Registry("test")
+
+        class DummyConfig(BaseModel):
+            name: Literal["dummy"] = "dummy"
+
+        @add_import_config(registry)
+        class MyImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+
+        registry.register(DummyConfig)(lambda c: "dummy_result")
+
+        assert registry.build(DummyConfig()) == "dummy_result"

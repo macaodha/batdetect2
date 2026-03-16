@@ -104,7 +104,7 @@ def create_dvclive_logger(
     run_name: str | None = None,
 ) -> Logger:
     try:
-        from dvclive.lightning import DVCLiveLogger  # type: ignore
+        from dvclive.lightning import DVCLiveLogger
     except ImportError as error:
         raise ValueError(
             "DVCLive is not installed and cannot be used for logging"

@@ -1,4 +1,5 @@
 from typing import (
+    Any,
     Callable,
     Concatenate,
     Generic,
@@ -7,18 +8,20 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import BaseModel
+from hydra.utils import instantiate
+from pydantic import BaseModel, Field
 
 __all__ = [
+    "add_import_config",
+    "ImportConfig",
     "Registry",
     "SimpleRegistry",
 ]
 
+
 T_Config = TypeVar("T_Config", bound=BaseModel, contravariant=True)
 T_Type = TypeVar("T_Type", covariant=True)
 P_Type = ParamSpec("P_Type")
-
-
 T = TypeVar("T")
 
 
@@ -114,3 +117,84 @@ class Registry(Generic[T_Type, P_Type]):
             )
 
         return self._registry[name](config, *args, **kwargs)
+
+
+class ImportConfig(BaseModel):
+    """Base config for dynamic instantiation via Hydra.
+
+    Subclass this to create a registry-specific import escape hatch.
+    The subclass must add a discriminator field whose name matches the
+    registry's own discriminator key, with its value fixed to
+    ``Literal["import"]``.
+
+    Attributes
+    ----------
+    target : str
+        Fully-qualified dotted path to the callable to instantiate,
+        e.g. ``"mypackage.module.MyClass"``.
+    arguments : dict[str, Any]
+        Base keyword arguments forwarded to the callable. When the
+        same key also appears in ``kwargs`` passed to ``build()``,
+        the ``kwargs`` value takes priority.
+    """
+
+    target: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+T_Import = TypeVar("T_Import", bound=ImportConfig)
+
+
+def add_import_config(
+    registry: Registry[T_Type, P_Type],
+) -> Callable[[Type[T_Import]], Type[T_Import]]:
+    """Decorator that registers an ImportConfig subclass as an escape hatch.
+
+    Wraps the decorated class in a builder that calls
+    ``hydra.utils.instantiate`` using ``config.target`` and
+    ``config.arguments``. The builder is registered on *registry*
+    under the discriminator value ``"import"``.
+
+    Parameters
+    ----------
+    registry : Registry
+        The registry instance on which the config should be registered.
+
+    Returns
+    -------
+    Callable[[type[ImportConfig]], type[ImportConfig]]
+        A class decorator that registers the class and returns it
+        unchanged.
+
+    Examples
+    --------
+    Define a per-registry import escape hatch::
+
+        @add_import_config(my_registry)
+        class MyRegistryImportConfig(ImportConfig):
+            name: Literal["import"] = "import"
+    """
+
+    def decorator(config_cls: Type[T_Import]) -> Type[T_Import]:
+        def builder(
+            config: T_Import,
+            *args: P_Type.args,
+            **kwargs: P_Type.kwargs,
+        ) -> T_Type:
+            if len(args) > 0:
+                raise ValueError(
+                    "Positional arguments are not supported "
+                    "for import escape hatch."
+                )
+
+            hydra_cfg = {
+                "_target_": config.target,
+                **config.arguments,
+                **kwargs,
+            }
+            return instantiate(hydra_cfg)
+
+        registry.register(config_cls)(builder)
+        return config_cls
+
+    return decorator
