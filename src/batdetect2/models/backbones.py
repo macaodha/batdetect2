@@ -31,7 +31,11 @@ from pydantic import Field, TypeAdapter
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.models.bottleneck import (
     DEFAULT_BOTTLENECK_CONFIG,
     BottleneckConfig,
@@ -94,7 +98,20 @@ class UNetBackboneConfig(BaseConfig):
 
 backbone_registry: Registry[BackboneModel, []] = Registry("backbone")
 
+
+@add_import_config(backbone_registry)
+class BackboneImportConfig(ImportConfig):
+    """Use any callable as a backbone model.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
+
+
 __all__ = [
+    "BackboneImportConfig",
     "UNetBackbone",
     "BackboneConfig",
     "load_backbone_config",

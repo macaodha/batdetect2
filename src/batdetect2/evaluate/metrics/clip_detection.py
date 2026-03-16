@@ -6,7 +6,11 @@ from pydantic import Field
 from sklearn import metrics
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.evaluate.metrics.common import average_precision
 
 
@@ -21,6 +25,17 @@ ClipDetectionMetric = Callable[[Sequence[ClipEval]], Dict[str, float]]
 clip_detection_metrics: Registry[ClipDetectionMetric, []] = Registry(
     "clip_detection_metric"
 )
+
+
+@add_import_config(clip_detection_metrics)
+class ClipDetectionMetricImportConfig(ImportConfig):
+    """Use any callable as a clip detection metric.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class ClipDetectionAveragePrecisionConfig(BaseConfig):

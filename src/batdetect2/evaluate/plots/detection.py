@@ -16,7 +16,7 @@ from pydantic import Field
 from sklearn import metrics
 
 from batdetect2.audio import AudioConfig, build_audio_loader
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.metrics.detection import ClipEval
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
@@ -30,6 +30,17 @@ DetectionPlotter = Callable[[Sequence[ClipEval]], Iterable[Tuple[str, Figure]]]
 detection_plots: Registry[DetectionPlotter, [TargetProtocol]] = Registry(
     name="detection_plot"
 )
+
+
+@add_import_config(detection_plots)
+class DetectionPlotImportConfig(ImportConfig):
+    """Use any callable as a detection plot.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class PRCurveConfig(BasePlotConfig):

@@ -6,11 +6,26 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 
 SoundEventCondition = Callable[[data.SoundEventAnnotation], bool]
 
 conditions: Registry[SoundEventCondition, []] = Registry("condition")
+
+
+@add_import_config(conditions)
+class SoundEventConditionImportConfig(ImportConfig):
+    """Use any callable as a sound event condition.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class HasTagConfig(BaseConfig):

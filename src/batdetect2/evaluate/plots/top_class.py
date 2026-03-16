@@ -19,7 +19,7 @@ from pydantic import Field
 from sklearn import metrics
 
 from batdetect2.audio import AudioConfig, build_audio_loader
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.metrics.top_class import (
     ClipEval,
@@ -37,6 +37,17 @@ TopClassPlotter = Callable[[Sequence[ClipEval]], Iterable[Tuple[str, Figure]]]
 top_class_plots: Registry[TopClassPlotter, [TargetProtocol]] = Registry(
     name="top_class_plot"
 )
+
+
+@add_import_config(top_class_plots)
+class TopClassPlotImportConfig(ImportConfig):
+    """Use any callable as a top-class plot.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class PRCurveConfig(BasePlotConfig):

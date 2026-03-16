@@ -6,7 +6,12 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds, intervals_overlap
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.typing import ClipperProtocol
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.256
@@ -16,10 +21,22 @@ DEFAULT_MAX_EMPTY_CLIP = 0.1
 __all__ = [
     "build_clipper",
     "ClipConfig",
+    "ClipperImportConfig",
 ]
 
 
 clipper_registry: Registry[ClipperProtocol, []] = Registry("clipper")
+
+
+@add_import_config(clipper_registry)
+class ClipperImportConfig(ImportConfig):
+    """Use any callable as a clipper.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class RandomClipConfig(BaseConfig):

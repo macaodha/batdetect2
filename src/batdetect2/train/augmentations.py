@@ -15,12 +15,17 @@ from batdetect2.audio.clips import get_subclip_annotation
 from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
 from batdetect2.core.arrays import adjust_width
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.typing import AudioLoader, Augmentation
 
 __all__ = [
     "AugmentationConfig",
     "AugmentationsConfig",
+    "AudioAugmentationImportConfig",
     "DEFAULT_AUGMENTATION_CONFIG",
     "AddEchoConfig",
     "AudioSource",
@@ -28,6 +33,7 @@ __all__ = [
     "MixAudioConfig",
     "MaskTimeConfig",
     "ScaleVolumeConfig",
+    "SpecAugmentationImportConfig",
     "WarpConfig",
     "add_echo",
     "build_augmentations",
@@ -49,6 +55,28 @@ audio_augmentations: Registry[Augmentation, [int, AudioSource | None]] = (
 spec_augmentations: Registry[Augmentation, []] = Registry(
     name="spec_augmentation"
 )
+
+
+@add_import_config(audio_augmentations)
+class AudioAugmentationImportConfig(ImportConfig):
+    """Use any callable as an audio augmentation.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
+
+
+@add_import_config(spec_augmentations)
+class SpecAugmentationImportConfig(ImportConfig):
+    """Use any callable as a spectrogram augmentation.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class MixAudioConfig(BaseConfig):

@@ -19,11 +19,16 @@ from pydantic import Field
 
 from batdetect2.audio import TARGET_SAMPLERATE_HZ
 from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.preprocess.common import peak_normalize
 
 __all__ = [
     "STFTConfig",
+    "SpectrogramTransformImportConfig",
     "build_spectrogram_transform",
     "build_spectrogram_builder",
 ]
@@ -424,6 +429,17 @@ def build_spectrogram_resizer(config: ResizeConfig) -> torch.nn.Module:
 spectrogram_transforms: Registry[torch.nn.Module, [int]] = Registry(
     "spectrogram_transform"
 )
+
+
+@add_import_config(spectrogram_transforms)
+class SpectrogramTransformImportConfig(ImportConfig):
+    """Use any callable as a spectrogram transform.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class PcenConfig(BaseConfig):

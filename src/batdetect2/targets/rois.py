@@ -27,7 +27,7 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.audio import AudioConfig, build_audio_loader
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.core.arrays import spec_to_xarray
 from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
@@ -49,6 +49,7 @@ __all__ = [
     "PeakEnergyBBoxMapper",
     "PeakEnergyBBoxMapperConfig",
     "ROIMapperConfig",
+    "ROIMapperImportConfig",
     "ROITargetMapper",
     "SIZE_HEIGHT",
     "SIZE_ORDER",
@@ -90,6 +91,17 @@ DEFAULT_ANCHOR = "bottom-left"
 
 
 roi_mapper_registry: Registry[ROITargetMapper, []] = Registry("roi_mapper")
+
+
+@add_import_config(roi_mapper_registry)
+class ROIMapperImportConfig(ImportConfig):
+    """Use any callable as an ROI mapper.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class AnchorBBoxMapperConfig(BaseConfig):

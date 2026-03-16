@@ -4,6 +4,7 @@ from typing import (
     Generic,
     Iterable,
     List,
+    Literal,
     Sequence,
     Tuple,
     TypeVar,
@@ -14,7 +15,12 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.evaluate.affinity import (
     AffinityConfig,
     TimeAffinityConfig,
@@ -31,11 +37,23 @@ from batdetect2.typing import (
 __all__ = [
     "BaseTaskConfig",
     "BaseTask",
+    "TaskImportConfig",
 ]
 
 tasks_registry: Registry[EvaluatorProtocol, [TargetProtocol]] = Registry(
     "tasks"
 )
+
+
+@add_import_config(tasks_registry)
+class TaskImportConfig(ImportConfig):
+    """Use any callable as an evaluation task.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 T_Output = TypeVar("T_Output")

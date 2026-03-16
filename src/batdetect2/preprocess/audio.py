@@ -18,10 +18,16 @@ import torch
 from pydantic import Field
 
 from batdetect2.audio import TARGET_SAMPLERATE_HZ
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.preprocess.common import center_tensor, peak_normalize
 
 __all__ = [
+    "AudioTransformImportConfig",
     "CenterAudioConfig",
     "ScaleAudioConfig",
     "FixDurationConfig",
@@ -33,6 +39,17 @@ audio_transforms: Registry[torch.nn.Module, [int]] = Registry(
     "audio_transform"
 )
 """Registry mapping audio transform config classes to their builder methods."""
+
+
+@add_import_config(audio_transforms)
+class AudioTransformImportConfig(ImportConfig):
+    """Use any callable as an audio transform.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class CenterAudioConfig(BaseConfig):

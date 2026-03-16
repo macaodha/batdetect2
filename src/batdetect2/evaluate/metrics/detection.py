@@ -13,13 +13,19 @@ from pydantic import Field
 from sklearn import metrics
 from soundevent import data
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.evaluate.metrics.common import average_precision
 from batdetect2.typing import Detection
 
 __all__ = [
     "DetectionMetricConfig",
     "DetectionMetric",
+    "DetectionMetricImportConfig",
     "build_detection_metric",
 ]
 
@@ -44,6 +50,17 @@ DetectionMetric = Callable[[Sequence[ClipEval]], Dict[str, float]]
 
 
 detection_metrics: Registry[DetectionMetric, []] = Registry("detection_metric")
+
+
+@add_import_config(detection_metrics)
+class DetectionMetricImportConfig(ImportConfig):
+    """Use any callable as a detection metric.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class DetectionAveragePrecisionConfig(BaseConfig):

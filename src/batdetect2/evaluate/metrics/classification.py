@@ -16,7 +16,12 @@ from pydantic import Field
 from sklearn import metrics
 from soundevent import data
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.evaluate.metrics.common import (
     average_precision,
     compute_precision_recall,
@@ -26,6 +31,7 @@ from batdetect2.typing import Detection, TargetProtocol
 __all__ = [
     "ClassificationMetric",
     "ClassificationMetricConfig",
+    "ClassificationMetricImportConfig",
     "build_classification_metric",
     "compute_precision_recall_curves",
 ]
@@ -56,6 +62,17 @@ ClassificationMetric = Callable[[Sequence[ClipEval]], Dict[str, float]]
 classification_metrics: Registry[ClassificationMetric, [TargetProtocol]] = (
     Registry("classification_metric")
 )
+
+
+@add_import_config(classification_metrics)
+class ClassificationMetricImportConfig(ImportConfig):
+    """Use any callable as a classification metric.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class BaseClassificationConfig(BaseConfig):

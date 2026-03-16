@@ -5,7 +5,11 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.core.registries import Registry
+from batdetect2.core.registries import (
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.data.conditions import (
     SoundEventCondition,
     SoundEventConditionConfig,
@@ -18,6 +22,17 @@ SoundEventTransform = Callable[
 ]
 
 transforms: Registry[SoundEventTransform, []] = Registry("transform")
+
+
+@add_import_config(transforms)
+class SoundEventTransformImportConfig(ImportConfig):
+    """Use any callable as a sound event transform.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class SetFrequencyBoundConfig(BaseConfig):

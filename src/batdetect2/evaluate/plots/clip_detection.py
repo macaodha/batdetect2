@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 from pydantic import Field
 from sklearn import metrics
 
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.clip_detection import ClipEval
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
@@ -22,6 +22,7 @@ from batdetect2.typing import TargetProtocol
 
 __all__ = [
     "ClipDetectionPlotConfig",
+    "ClipDetectionPlotImportConfig",
     "ClipDetectionPlotter",
     "build_clip_detection_plotter",
 ]
@@ -34,6 +35,17 @@ ClipDetectionPlotter = Callable[
 clip_detection_plots: Registry[ClipDetectionPlotter, [TargetProtocol]] = (
     Registry("clip_detection_plot")
 )
+
+
+@add_import_config(clip_detection_plots)
+class ClipDetectionPlotImportConfig(ImportConfig):
+    """Use any callable as a clip detection plot.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class PRCurveConfig(BasePlotConfig):

@@ -12,7 +12,7 @@ from matplotlib.figure import Figure
 from pydantic import Field
 from sklearn import metrics
 
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.classification import (
     ClipEval,
     _extract_per_class_metric_data,
@@ -38,6 +38,17 @@ ClassificationPlotter = Callable[
 classification_plots: Registry[ClassificationPlotter, [TargetProtocol]] = (
     Registry("classification_plot")
 )
+
+
+@add_import_config(classification_plots)
+class ClassificationPlotImportConfig(ImportConfig):
+    """Use any callable as a classification plot.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class PRCurveConfig(BasePlotConfig):

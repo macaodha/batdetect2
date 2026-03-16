@@ -1,8 +1,10 @@
+from typing import Literal
+
 from pathlib import Path
 
 from soundevent.data import PathLike
 
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.typing import (
     OutputFormatterProtocol,
     TargetProtocol,
@@ -27,3 +29,14 @@ def make_path_relative(path: PathLike, audio_dir: PathLike) -> Path:
 prediction_formatters: Registry[OutputFormatterProtocol, [TargetProtocol]] = (
     Registry(name="output_formatter")
 )
+
+
+@add_import_config(prediction_formatters)
+class PredictionFormatterImportConfig(ImportConfig):
+    """Use any callable as a prediction formatter.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"

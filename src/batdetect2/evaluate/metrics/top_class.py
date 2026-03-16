@@ -13,7 +13,12 @@ from pydantic import Field
 from sklearn import metrics, preprocessing
 from soundevent import data
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.evaluate.metrics.common import average_precision
 from batdetect2.typing import Detection
 from batdetect2.typing.targets import TargetProtocol
@@ -21,6 +26,7 @@ from batdetect2.typing.targets import TargetProtocol
 __all__ = [
     "TopClassMetricConfig",
     "TopClassMetric",
+    "TopClassMetricImportConfig",
     "build_top_class_metric",
 ]
 
@@ -49,6 +55,17 @@ TopClassMetric = Callable[[Sequence[ClipEval]], Dict[str, float]]
 
 
 top_class_metrics: Registry[TopClassMetric, []] = Registry("top_class_metric")
+
+
+@add_import_config(top_class_metrics)
+class TopClassMetricImportConfig(ImportConfig):
+    """Use any callable as a top-class metric.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class TopClassAveragePrecisionConfig(BaseConfig):

@@ -53,10 +53,11 @@ import torch.nn.functional as F
 from pydantic import Field
 from torch import nn
 
-from batdetect2.core import Registry
+from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.core.configs import BaseConfig
 
 __all__ = [
+    "BlockImportConfig",
     "ConvBlock",
     "LayerGroupConfig",
     "VerticalConv",
@@ -117,6 +118,17 @@ class Block(nn.Module):
 
 
 block_registry: Registry[Block, [int, int]] = Registry("block")
+
+
+@add_import_config(block_registry)
+class BlockImportConfig(ImportConfig):
+    """Use any callable as a model block.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class SelfAttentionConfig(BaseConfig):

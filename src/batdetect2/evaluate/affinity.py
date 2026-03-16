@@ -10,12 +10,28 @@ from soundevent.geometry import (
     compute_temporal_iou,
 )
 
-from batdetect2.core import BaseConfig, Registry
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 from batdetect2.typing import AffinityFunction, Detection
 
 affinity_functions: Registry[AffinityFunction, []] = Registry(
     "affinity_function"
 )
+
+
+@add_import_config(affinity_functions)
+class AffinityFunctionImportConfig(ImportConfig):
+    """Use any callable as an affinity function.
+
+    Set ``name="import"`` and provide a ``target`` pointing to any
+    callable to use it instead of a built-in option.
+    """
+
+    name: Literal["import"] = "import"
 
 
 class TimeAffinityConfig(BaseConfig):
