@@ -1,4 +1,4 @@
-from typing import List, NamedTuple, Sequence
+from typing import NamedTuple, Sequence
 
 import torch
 from loguru import logger
@@ -29,7 +29,7 @@ class DatasetItem(NamedTuple):
 
 
 class InferenceDataset(Dataset[DatasetItem]):
-    clips: List[data.Clip]
+    clips: list[data.Clip]
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ def build_inference_dataset(
     )
 
 
-def _collate_fn(batch: List[DatasetItem]) -> DatasetItem:
+def _collate_fn(batch: list[DatasetItem]) -> DatasetItem:
     max_width = max(item.spec.shape[-1] for item in batch)
     return DatasetItem(
         spec=torch.stack(

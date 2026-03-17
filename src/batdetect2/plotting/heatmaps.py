@@ -1,7 +1,5 @@
 """Plot heatmaps"""
 
-from typing import List, Tuple
-
 import numpy as np
 import torch
 from matplotlib import axes, patches
@@ -14,7 +12,7 @@ from batdetect2.plotting.common import create_ax
 def plot_detection_heatmap(
     heatmap: torch.Tensor | np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] = (10, 10),
+    figsize: tuple[int, int] = (10, 10),
     threshold: float | None = None,
     alpha: float = 1,
     cmap: str | Colormap = "jet",
@@ -50,8 +48,8 @@ def plot_detection_heatmap(
 def plot_classification_heatmap(
     heatmap: torch.Tensor | np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] = (10, 10),
-    class_names: List[str] | None = None,
+    figsize: tuple[int, int] = (10, 10),
+    class_names: list[str] | None = None,
     threshold: float | None = 0.1,
     alpha: float = 1,
     cmap: str | Colormap = "tab20",

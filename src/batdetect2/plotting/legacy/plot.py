@@ -1,6 +1,6 @@
 """Plot functions to visualize detections and spectrograms."""
 
-from typing import List, Tuple, cast
+from typing import cast
 
 import matplotlib.ticker as tick
 import numpy as np
@@ -27,7 +27,7 @@ def spectrogram(
     spec: torch.Tensor | np.ndarray,
     config: ProcessingConfiguration | None = None,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     cmap: str = "plasma",
     start_time: float = 0,
 ) -> axes.Axes:
@@ -35,18 +35,18 @@ def spectrogram(
 
     Parameters
     ----------
-    spec (Union[torch.Tensor, np.ndarray]): Spectrogram to plot.
-    config (Optional[ProcessingConfiguration], optional): Configuration
+    spec: Spectrogram to plot.
+    config: Configuration
         used to compute the spectrogram. Defaults to None. If None,
         the default configuration will be used.
-    ax (Optional[axes.Axes], optional): Matplotlib axes object.
+    ax: Matplotlib axes object.
         Defaults to None. if provided, the spectrogram will be plotted
         on this axes.
-    figsize (Optional[Tuple[int, int]], optional): Figure size.
+    figsize: Figure size.
         Defaults to None. If `ax` is None, this will be used to create
         a new figure of the given size.
-    cmap (str, optional): Colormap to use. Defaults to "plasma".
-    start_time (float, optional): Start time of the spectrogram.
+    cmap: Colormap to use. Defaults to "plasma".
+    start_time: Start time of the spectrogram.
         Defaults to 0. This is useful if plotting a spectrogram
         of a segment of a longer audio file.
 
@@ -104,10 +104,10 @@ def spectrogram(
 
 def spectrogram_with_detections(
     spec: torch.Tensor | np.ndarray,
-    dets: List[Annotation],
+    dets: list[Annotation],
     config: ProcessingConfiguration | None = None,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     cmap: str = "plasma",
     with_names: bool = True,
     start_time: float = 0,
@@ -117,21 +117,21 @@ def spectrogram_with_detections(
 
     Parameters
     ----------
-    spec (Union[torch.Tensor, np.ndarray]): Spectrogram to plot.
-    detections (List[Annotation]): List of detections.
-    config (Optional[ProcessingConfiguration], optional): Configuration
+    spec: Spectrogram to plot.
+    detections: List of detections.
+    config: Configuration
         used to compute the spectrogram. Defaults to None. If None,
         the default configuration will be used.
-    ax (Optional[axes.Axes], optional): Matplotlib axes object.
+    ax: Matplotlib axes object.
         Defaults to None. if provided, the spectrogram will be plotted
         on this axes.
-    figsize (Optional[Tuple[int, int]], optional): Figure size.
+    figsize: Figure size.
         Defaults to None. If `ax` is None, this will be used to create
         a new figure of the given size.
-    cmap (str, optional): Colormap to use. Defaults to "plasma".
-    with_names (bool, optional): Whether to plot the name of the
+    cmap: Colormap to use. Defaults to "plasma".
+    with_names: Whether to plot the name of the
         predicted class next to the detection. Defaults to True.
-    start_time (float, optional): Start time of the spectrogram.
+    start_time: Start time of the spectrogram.
         Defaults to 0. This is useful if plotting a spectrogram
         of a segment of a longer audio file.
     **kwargs: Additional keyword arguments to pass to the
@@ -167,9 +167,9 @@ def spectrogram_with_detections(
 
 
 def detections(
-    dets: List[Annotation],
+    dets: list[Annotation],
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     with_names: bool = True,
     **kwargs,
 ) -> axes.Axes:
@@ -177,14 +177,14 @@ def detections(
 
     Parameters
     ----------
-    dets (List[Annotation]): List of detections.
-    ax (Optional[axes.Axes], optional): Matplotlib axes object.
+    dets: List of detections.
+    ax: Matplotlib axes object.
         Defaults to None. if provided, the spectrogram will be plotted
         on this axes.
-    figsize (Optional[Tuple[int, int]], optional): Figure size.
+    figsize: Figure size.
         Defaults to None. If `ax` is None, this will be used to create
         a new figure of the given size.
-    with_names (bool, optional): Whether to plot the name of the
+    with_names: Whether to plot the name of the
         predicted class next to the detection. Defaults to True.
     **kwargs: Additional keyword arguments to pass to the
         `plot.detection` function.
@@ -214,7 +214,7 @@ def detections(
 def detection(
     det: Annotation,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     linewidth: float = 1,
     edgecolor: str = "w",
     facecolor: str = "none",
@@ -224,19 +224,19 @@ def detection(
 
     Parameters
     ----------
-    det (Annotation): Detection to plot.
-    ax (Optional[axes.Axes], optional): Matplotlib axes object. Defaults
+    det: Detection to plot.
+    ax: Matplotlib axes object. Defaults
         to None. If provided, the spectrogram will be plotted on this axes.
-    figsize (Optional[Tuple[int, int]], optional): Figure size. Defaults
+    figsize: Figure size. Defaults
         to None. If `ax` is None, this will be used to create a new figure
         of the given size.
-    linewidth (float, optional): Line width of the detection.
+    linewidth: Line width of the detection.
         Defaults to 1.
-    edgecolor (str, optional): Edge color of the detection.
+    edgecolor: Edge color of the detection.
         Defaults to "w", i.e. white.
-    facecolor (str, optional): Face color of the detection.
+    facecolor: Face color of the detection.
         Defaults to "none", i.e. transparent.
-    with_name (bool, optional): Whether to plot the name of the
+    with_name: Whether to plot the name of the
         predicted class next to the detection. Defaults to True.
 
     Returns
@@ -277,22 +277,22 @@ def detection(
 
 
 def _compute_spec_extent(
-    shape: Tuple[int, int],
+    shape: tuple[int, int],
     params: SpectrogramParameters,
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     """Compute the extent of a spectrogram.
 
     Parameters
     ----------
-    shape (Tuple[int, int]): Shape of the spectrogram.
+    shape: Shape of the spectrogram.
         The first dimension is the frequency axis and the second
         dimension is the time axis.
-    params (SpectrogramParameters): Spectrogram parameters.
+    params: Spectrogram parameters.
         Should be the same as the ones used to compute the spectrogram.
 
     Returns
     -------
-    Tuple[float, float, float, float]: Extent of the spectrogram.
+    tuple[float, float, float, float]: Extent of the spectrogram.
         The first two values are the minimum and maximum time values,
         the last two values are the minimum and maximum frequency values.
     """

@@ -98,7 +98,6 @@ consult the API documentation in the code.
 """
 
 import warnings
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -272,7 +271,7 @@ def process_spectrogram(
     samp_rate: int = TARGET_SAMPLERATE_HZ,
     model: DetectionModel = MODEL,
     config: ProcessingConfiguration | None = None,
-) -> Tuple[List[Annotation], np.ndarray]:
+) -> tuple[list[Annotation], np.ndarray]:
     """Process spectrogram with model.
 
     Parameters
@@ -314,7 +313,7 @@ def process_audio(
     model: DetectionModel = MODEL,
     config: ProcessingConfiguration | None = None,
     device: torch.device = DEVICE,
-) -> Tuple[List[Annotation], np.ndarray, torch.Tensor]:
+) -> tuple[list[Annotation], np.ndarray, torch.Tensor]:
     """Process audio array with model.
 
     Parameters
@@ -357,7 +356,7 @@ def postprocess(
     outputs: ModelOutput,
     samp_rate: int = TARGET_SAMPLERATE_HZ,
     config: ProcessingConfiguration | None = None,
-) -> Tuple[List[Annotation], np.ndarray]:
+) -> tuple[list[Annotation], np.ndarray]:
     """Postprocess model outputs.
 
     Convert model tensor outputs to predicted bounding boxes and

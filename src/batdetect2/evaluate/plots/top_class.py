@@ -4,12 +4,9 @@ from dataclasses import dataclass, field
 from typing import (
     Annotated,
     Callable,
-    Dict,
     Iterable,
-    List,
     Literal,
     Sequence,
-    Tuple,
 )
 
 import matplotlib.pyplot as plt
@@ -32,7 +29,7 @@ from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.typing import AudioLoader, PreprocessorProtocol, TargetProtocol
 
-TopClassPlotter = Callable[[Sequence[ClipEval]], Iterable[Tuple[str, Figure]]]
+TopClassPlotter = Callable[[Sequence[ClipEval]], Iterable[tuple[str, Figure]]]
 
 top_class_plots: Registry[TopClassPlotter, [TargetProtocol]] = Registry(
     name="top_class_plot"
@@ -73,7 +70,7 @@ class PRCurve(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Iterable[Tuple[str, Figure]]:
+    ) -> Iterable[tuple[str, Figure]]:
         y_true = []
         y_score = []
         num_positives = 0
@@ -140,7 +137,7 @@ class ROCCurve(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Iterable[Tuple[str, Figure]]:
+    ) -> Iterable[tuple[str, Figure]]:
         y_true = []
         y_score = []
 
@@ -223,7 +220,7 @@ class ConfusionMatrix(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Iterable[Tuple[str, Figure]]:
+    ) -> Iterable[tuple[str, Figure]]:
         cm, labels = compute_confusion_matrix(
             clip_evaluations,
             self.targets,
@@ -295,26 +292,26 @@ class ExampleClassificationPlot(BasePlot):
     def __call__(
         self,
         clip_evaluations: Sequence[ClipEval],
-    ) -> Iterable[Tuple[str, Figure]]:
+    ) -> Iterable[tuple[str, Figure]]:
         grouped = group_matches(clip_evaluations, threshold=self.threshold)
 
         for class_name, matches in grouped.items():
-            true_positives: List[MatchEval] = get_binned_sample(
+            true_positives: list[MatchEval] = get_binned_sample(
                 matches.true_positives,
                 n_examples=self.num_examples,
             )
 
-            false_positives: List[MatchEval] = get_binned_sample(
+            false_positives: list[MatchEval] = get_binned_sample(
                 matches.false_positives,
                 n_examples=self.num_examples,
             )
 
-            false_negatives: List[MatchEval] = random.sample(
+            false_negatives: list[MatchEval] = random.sample(
                 matches.false_negatives,
                 k=min(self.num_examples, len(matches.false_negatives)),
             )
 
-            cross_triggers: List[MatchEval] = get_binned_sample(
+            cross_triggers: list[MatchEval] = get_binned_sample(
                 matches.cross_triggers, n_examples=self.num_examples
             )
 
@@ -374,16 +371,16 @@ def build_top_class_plotter(
 
 @dataclass
 class ClassMatches:
-    false_positives: List[MatchEval] = field(default_factory=list)
-    false_negatives: List[MatchEval] = field(default_factory=list)
-    true_positives: List[MatchEval] = field(default_factory=list)
-    cross_triggers: List[MatchEval] = field(default_factory=list)
+    false_positives: list[MatchEval] = field(default_factory=list)
+    false_negatives: list[MatchEval] = field(default_factory=list)
+    true_positives: list[MatchEval] = field(default_factory=list)
+    cross_triggers: list[MatchEval] = field(default_factory=list)
 
 
 def group_matches(
     clip_evals: Sequence[ClipEval],
     threshold: float = 0.2,
-) -> Dict[str, ClassMatches]:
+) -> dict[str, ClassMatches]:
     class_examples = defaultdict(ClassMatches)
 
     for clip_eval in clip_evals:
@@ -412,7 +409,7 @@ def group_matches(
     return class_examples
 
 
-def get_binned_sample(matches: List[MatchEval], n_examples: int = 5):
+def get_binned_sample(matches: list[MatchEval], n_examples: int = 5):
     if len(matches) < n_examples:
         return matches
 

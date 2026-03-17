@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple
+from typing import Iterable
 
 from matplotlib.axes import Axes
 from soundevent import data
@@ -18,7 +18,7 @@ __all__ = [
 def plot_clip_prediction(
     clip_prediction: data.ClipPrediction,
     preprocessor: PreprocessorProtocol | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     add_legend: bool = False,

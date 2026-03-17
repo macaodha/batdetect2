@@ -1,6 +1,6 @@
 """Types used in the code base."""
 
-from typing import Any, List, NamedTuple, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 import numpy as np
 import torch
@@ -86,7 +86,7 @@ class ModelParameters(TypedDict):
     resize_factor: float
     """Resize factor."""
 
-    class_names: List[str]
+    class_names: list[str]
     """Class names.
 
     The model is trained to detect these classes.
@@ -158,7 +158,7 @@ class FileAnnotation(TypedDict):
     notes: str
     """Notes of file."""
 
-    annotation: List[Annotation]
+    annotation: list[Annotation]
     """List of annotations."""
 
 
@@ -168,26 +168,26 @@ class RunResults(TypedDict):
     pred_dict: FileAnnotation
     """Predictions in the format expected by the annotation tool."""
 
-    spec_feats: NotRequired[List[np.ndarray]]
+    spec_feats: NotRequired[list[np.ndarray]]
     """Spectrogram features."""
 
-    spec_feat_names: NotRequired[List[str]]
+    spec_feat_names: NotRequired[list[str]]
     """Spectrogram feature names."""
 
-    cnn_feats: NotRequired[List[np.ndarray]]
+    cnn_feats: NotRequired[list[np.ndarray]]
     """CNN features."""
 
-    cnn_feat_names: NotRequired[List[str]]
+    cnn_feat_names: NotRequired[list[str]]
     """CNN feature names."""
 
-    spec_slices: NotRequired[List[np.ndarray]]
+    spec_slices: NotRequired[list[np.ndarray]]
     """Spectrogram slices."""
 
 
 class ResultParams(TypedDict):
     """Result parameters."""
 
-    class_names: List[str]
+    class_names: list[str]
     """Class names."""
 
     spec_features: bool
@@ -234,7 +234,7 @@ class ProcessingConfiguration(TypedDict):
     scale_raw_audio: bool
     """Whether to scale the raw audio to be between -1 and 1."""
 
-    class_names: List[str]
+    class_names: list[str]
     """Names of the classes the model can detect."""
 
     detection_threshold: float
@@ -466,7 +466,7 @@ class FeatureExtractionParameters(TypedDict):
 class HeatmapParameters(TypedDict):
     """Parameters that control the heatmap generation function."""
 
-    class_names: List[str]
+    class_names: list[str]
 
     fft_win_length: float
     """Length of the FFT window in seconds."""
@@ -553,15 +553,15 @@ class AudioLoaderAnnotationGroup(TypedDict):
     individual_ids: np.ndarray
     x_inds: np.ndarray
     y_inds: np.ndarray
-    annotation: List[Annotation]
+    annotation: list[Annotation]
     annotated: bool
     class_id_file: int
     """ID of the class of the file."""
 
 
 class AudioLoaderParameters(TypedDict):
-    class_names: List[str]
-    classes_to_ignore: List[str]
+    class_names: list[str]
+    classes_to_ignore: list[str]
     target_samp_rate: int
     scale_raw_audio: bool
     fft_win_length: float

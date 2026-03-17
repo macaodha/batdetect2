@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
@@ -19,7 +17,7 @@ def plot_clip(
     clip: data.Clip,
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     spec_cmap: str = "gray",

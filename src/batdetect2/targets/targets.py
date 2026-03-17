@@ -1,4 +1,4 @@
-from typing import Iterable, List, Tuple
+from typing import Iterable
 
 from loguru import logger
 from soundevent import data
@@ -33,20 +33,20 @@ class Targets(TargetProtocol):
 
     Attributes
     ----------
-    class_names : List[str]
+    class_names
         An ordered list of the unique names of the specific target classes
         defined in the configuration.
-    generic_class_tags : List[data.Tag]
+    generic_class_tags
         A list of `soundevent.data.Tag` objects representing the configured
         generic class category (used when no specific class matches).
-    dimension_names : List[str]
+    dimension_names
         The names of the size dimensions handled by the ROI mapper
         (e.g., ['width', 'height']).
     """
 
-    class_names: List[str]
-    detection_class_tags: List[data.Tag]
-    dimension_names: List[str]
+    class_names: list[str]
+    detection_class_tags: list[data.Tag]
+    dimension_names: list[str]
     detection_class_name: str
 
     def __init__(self, config: TargetConfig):
@@ -128,7 +128,7 @@ class Targets(TargetProtocol):
         """
         return self._encode_fn(sound_event)
 
-    def decode_class(self, class_label: str) -> List[data.Tag]:
+    def decode_class(self, class_label: str) -> list[data.Tag]:
         """Decode a predicted class name back into representative tags.
 
         Uses the configured mapping (based on `TargetClass.output_tags` or
@@ -142,7 +142,7 @@ class Targets(TargetProtocol):
 
         Returns
         -------
-        List[data.Tag]
+        list[data.Tag]
             The list of tags corresponding to the input class name.
         """
         return self._decode_fn(class_label)
@@ -161,7 +161,7 @@ class Targets(TargetProtocol):
 
         Returns
         -------
-        Tuple[float, float]
+        tuple[float, float]
             The reference position `(time, frequency)`.
 
         Raises
@@ -192,9 +192,9 @@ class Targets(TargetProtocol):
 
         Parameters
         ----------
-        pos : Tuple[float, float]
+        pos
             The reference position `(time, frequency)`.
-        dims : np.ndarray
+        dims
             NumPy array with size dimensions (e.g., from model prediction),
             matching the order in `self.dimension_names`.
 
@@ -292,7 +292,7 @@ def load_targets(
 def iterate_encoded_sound_events(
     sound_events: Iterable[data.SoundEventAnnotation],
     targets: TargetProtocol,
-) -> Iterable[Tuple[str | None, Position, Size]]:
+) -> Iterable[tuple[str | None, Position, Size]]:
     for sound_event in sound_events:
         if not targets.filter(sound_event):
             continue

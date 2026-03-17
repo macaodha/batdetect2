@@ -8,7 +8,7 @@ configuration data from files, with optional support for accessing nested
 configuration sections.
 """
 
-from typing import Any, Type, TypeVar, Union, overload
+from typing import Any, Type, TypeVar, overload
 
 import yaml
 from deepmerge.merger import Merger
@@ -69,8 +69,7 @@ class BaseConfig(BaseModel):
 
 T = TypeVar("T")
 T_Model = TypeVar("T_Model", bound=BaseModel)
-
-Schema = Union[Type[T_Model], TypeAdapter[T]]
+Schema = Type[T_Model] | TypeAdapter[T]
 
 
 def get_object_field(obj: dict, current_key: str) -> Any:

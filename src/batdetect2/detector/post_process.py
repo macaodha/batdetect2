@@ -1,7 +1,5 @@
 """Post-processing of the output of the model."""
 
-from typing import List, Tuple
-
 import numpy as np
 import torch
 from torch import nn
@@ -45,7 +43,7 @@ def run_nms(
     outputs: ModelOutput,
     params: NonMaximumSuppressionConfig,
     sampling_rate: np.ndarray,
-) -> Tuple[List[PredictionResults], List[np.ndarray]]:
+) -> tuple[list[PredictionResults], list[np.ndarray]]:
     """Run non-maximum suppression on the output of the model.
 
     Model outputs processed are expected to have a batch dimension.
@@ -73,8 +71,8 @@ def run_nms(
     scores, y_pos, x_pos = get_topk_scores(pred_det_nms, top_k)
 
     # loop over batch to save outputs
-    preds: List[PredictionResults] = []
-    feats: List[np.ndarray] = []
+    preds: list[PredictionResults] = []
+    feats: list[np.ndarray] = []
     for num_detection in range(pred_det_nms.shape[0]):
         # get valid indices
         inds_ord = torch.argsort(x_pos[num_detection, :])
@@ -151,7 +149,7 @@ def run_nms(
 
 def non_max_suppression(
     heat: torch.Tensor,
-    kernel_size: int | Tuple[int, int],
+    kernel_size: int | tuple[int, int],
 ):
     # kernel can be an int or list/tuple
     if isinstance(kernel_size, int):

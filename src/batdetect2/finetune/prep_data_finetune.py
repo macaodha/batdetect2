@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 from collections import Counter
-from typing import List, Tuple
 
 import numpy as np
 from sklearn.model_selection import StratifiedGroupKFold
@@ -12,8 +11,8 @@ from batdetect2 import types
 
 
 def print_dataset_stats(
-    data: List[types.FileAnnotation],
-    classes_to_ignore: List[str] | None = None,
+    data: list[types.FileAnnotation],
+    classes_to_ignore: list[str] | None = None,
 ) -> Counter[str]:
     print("Num files:", len(data))
     counts, _ = tu.get_class_names(data, classes_to_ignore)
@@ -22,7 +21,7 @@ def print_dataset_stats(
     return counts
 
 
-def load_file_names(file_name: str) -> List[str]:
+def load_file_names(file_name: str) -> list[str]:
     if not os.path.isfile(file_name):
         raise FileNotFoundError(f"Input file not found - {file_name}")
 
@@ -100,12 +99,12 @@ def parse_args():
 
 
 def split_data(
-    data: List[types.FileAnnotation],
+    data: list[types.FileAnnotation],
     train_file: str,
     test_file: str,
     n_splits: int = 5,
     random_state: int = 0,
-) -> Tuple[List[types.FileAnnotation], List[types.FileAnnotation]]:
+) -> tuple[list[types.FileAnnotation], list[types.FileAnnotation]]:
     if train_file != "" and test_file != "":
         # user has specifed the train / test split
         mapping = {

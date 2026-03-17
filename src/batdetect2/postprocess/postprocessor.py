@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import torch
 from loguru import logger
 
@@ -51,7 +49,7 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
         max_freq: float,
         top_k_per_sec: int = 200,
         detection_threshold: float = 0.01,
-        nms_kernel_size: int | Tuple[int, int] = NMS_KERNEL_SIZE,
+        nms_kernel_size: int | tuple[int, int] = NMS_KERNEL_SIZE,
     ):
         """Initialize the Postprocessor."""
         super().__init__()
@@ -66,8 +64,8 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
     def forward(
         self,
         output: ModelOutput,
-        start_times: List[float] | None = None,
-    ) -> List[ClipDetectionsTensor]:
+        start_times: list[float] | None = None,
+    ) -> list[ClipDetectionsTensor]:
         detection_heatmap = non_max_suppression(
             output.detection_probs.detach(),
             kernel_size=self.nms_kernel_size,

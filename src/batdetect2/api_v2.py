@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
+from typing import Sequence
 
 import numpy as np
 import torch
@@ -110,7 +110,7 @@ class BatDetect2API:
         experiment_name: str | None = None,
         run_name: str | None = None,
         save_predictions: bool = True,
-    ) -> Tuple[Dict[str, float], List[List[Detection]]]:
+    ) -> tuple[dict[str, float], list[list[Detection]]]:
         return evaluate(
             self.model,
             test_annotations,
@@ -187,7 +187,7 @@ class BatDetect2API:
     def process_audio(
         self,
         audio: np.ndarray,
-    ) -> List[Detection]:
+    ) -> list[Detection]:
         spec = self.generate_spectrogram(audio)
         return self.process_spectrogram(spec)
 
@@ -195,7 +195,7 @@ class BatDetect2API:
         self,
         spec: torch.Tensor,
         start_time: float = 0,
-    ) -> List[Detection]:
+    ) -> list[Detection]:
         if spec.ndim == 4 and spec.shape[0] > 1:
             raise ValueError("Batched spectrograms not supported.")
 
@@ -214,7 +214,7 @@ class BatDetect2API:
     def process_directory(
         self,
         audio_dir: data.PathLike,
-    ) -> List[ClipDetections]:
+    ) -> list[ClipDetections]:
         files = list(get_audio_files(audio_dir))
         return self.process_files(files)
 
@@ -222,7 +222,7 @@ class BatDetect2API:
         self,
         audio_files: Sequence[data.PathLike],
         num_workers: int | None = None,
-    ) -> List[ClipDetections]:
+    ) -> list[ClipDetections]:
         return process_file_list(
             self.model,
             audio_files,
@@ -238,7 +238,7 @@ class BatDetect2API:
         clips: Sequence[data.Clip],
         batch_size: int | None = None,
         num_workers: int | None = None,
-    ) -> List[ClipDetections]:
+    ) -> list[ClipDetections]:
         return run_batch_inference(
             self.model,
             clips,
@@ -274,7 +274,7 @@ class BatDetect2API:
     def load_predictions(
         self,
         path: data.PathLike,
-    ) -> List[ClipDetections]:
+    ) -> list[ClipDetections]:
         return self.formatter.load(path)
 
     @classmethod

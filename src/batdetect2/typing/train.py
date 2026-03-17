@@ -1,4 +1,4 @@
-from typing import Callable, NamedTuple, Protocol, Tuple
+from typing import Callable, NamedTuple, Protocol
 
 import torch
 from soundevent import data
@@ -52,7 +52,7 @@ steps, and returns the final `Heatmaps` used for model training.
 
 Augmentation = Callable[
     [torch.Tensor, data.ClipAnnotation],
-    Tuple[torch.Tensor, data.ClipAnnotation],
+    tuple[torch.Tensor, data.ClipAnnotation],
 ]
 
 

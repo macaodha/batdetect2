@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import lightning as L
 import torch
@@ -97,7 +97,7 @@ class TrainingModule(L.LightningModule):
 
 def load_model_from_checkpoint(
     path: PathLike,
-) -> Tuple[Model, "BatDetect2Config"]:
+) -> tuple[Model, "BatDetect2Config"]:
     module = TrainingModule.load_from_checkpoint(path)  # type: ignore
     return module.model, module.config
 

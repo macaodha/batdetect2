@@ -20,7 +20,7 @@ selecting and configuring the desired mapper. This module separates the
 *geometric* aspect of target definition from *semantic* classification.
 """
 
-from typing import Annotated, Literal, Tuple
+from typing import Annotated, Literal
 
 import numpy as np
 from pydantic import Field
@@ -144,7 +144,7 @@ class AnchorBBoxMapper(ROITargetMapper):
 
     Attributes
     ----------
-    dimension_names : List[str]
+    dimension_names : list[str]
         The output dimension names: `['width', 'height']`.
     anchor : Anchor
         The configured anchor point type (e.g., "center", "bottom-left").
@@ -177,7 +177,7 @@ class AnchorBBoxMapper(ROITargetMapper):
         self.time_scale = time_scale
         self.frequency_scale = frequency_scale
 
-    def encode(self, sound_event: data.SoundEvent) -> Tuple[Position, Size]:
+    def encode(self, sound_event: data.SoundEvent) -> tuple[Position, Size]:
         """Encode a SoundEvent into an anchor position and scaled box size.
 
         The position is determined by the configured anchor on the sound
@@ -190,7 +190,7 @@ class AnchorBBoxMapper(ROITargetMapper):
 
         Returns
         -------
-        Tuple[Position, Size]
+        tuple[Position, Size]
             A tuple of (anchor_position, [scaled_width, scaled_height]).
         """
         from soundevent import geometry
@@ -314,7 +314,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
     Attributes
     ----------
-    dimension_names : List[str]
+    dimension_names : list[str]
         The output dimension names: `['left', 'bottom', 'right', 'top']`.
     preprocessor : PreprocessorProtocol
         The spectrogram preprocessor instance.
@@ -371,7 +371,7 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
         Returns
         -------
-        Tuple[Position, Size]
+        tuple[Position, Size]
             A tuple of (peak_position, [l, b, r, t] distances).
         """
         from soundevent import geometry
@@ -519,14 +519,14 @@ def _build_bounding_box(
 
     Parameters
     ----------
-    pos : Tuple[float, float]
+    pos
         Reference position (time, frequency).
-    duration : float
+    duration
         The required *unscaled* duration (width) of the bounding box.
-    bandwidth : float
+    bandwidth
         The required *unscaled* frequency bandwidth (height) of the bounding
         box.
-    anchor : Anchor
+    anchor
         Specifies which part of the bounding box the input `pos` corresponds to.
 
     Returns

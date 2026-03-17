@@ -1,7 +1,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pytest
 from soundevent import data
@@ -20,11 +20,11 @@ def create_legacy_file_annotation(
     duration: float = 5.0,
     time_exp: float = 1.0,
     class_name: str = "Myotis",
-    annotations: Optional[List[Dict[str, Any]]] = None,
+    annotations: list[dict[str, Any]] | None = None,
     annotated: bool = True,
     issues: bool = False,
     notes: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     if annotations is None:
         annotations = [
             {
@@ -61,7 +61,7 @@ def create_legacy_file_annotation(
 @pytest.fixture
 def batdetect2_files_test_setup(
     tmp_path: Path, wav_factory
-) -> Tuple[Path, Path, List[Dict[str, Any]]]:
+) -> tuple[Path, Path, list[dict[str, Any]]]:
     """Sets up a directory structure for batdetect2 files format tests."""
     audio_dir = tmp_path / "audio"
     audio_dir.mkdir()
@@ -143,7 +143,7 @@ def batdetect2_files_test_setup(
 @pytest.fixture
 def batdetect2_merged_test_setup(
     tmp_path: Path, batdetect2_files_test_setup
-) -> Tuple[Path, Path, List[Dict[str, Any]]]:
+) -> tuple[Path, Path, list[dict[str, Any]]]:
     """Sets up a directory structure for batdetect2 merged file format tests."""
     audio_dir, _, files_data = batdetect2_files_test_setup
     merged_anns_path = tmp_path / "merged_anns.json"

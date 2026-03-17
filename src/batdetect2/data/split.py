@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from sklearn.model_selection import train_test_split
 
 from batdetect2.data.datasets import Dataset
@@ -15,7 +13,7 @@ def split_dataset_by_recordings(
     targets: TargetProtocol,
     train_size: float = 0.75,
     random_state: int | None = None,
-) -> Tuple[Dataset, Dataset]:
+) -> tuple[Dataset, Dataset]:
     recordings = extract_recordings_df(dataset)
 
     sound_events = extract_sound_events_df(

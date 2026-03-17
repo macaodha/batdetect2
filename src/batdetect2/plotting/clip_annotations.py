@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from matplotlib.axes import Axes
 from soundevent import data, plot
 
@@ -16,7 +14,7 @@ __all__ = [
 def plot_clip_annotation(
     clip_annotation: data.ClipAnnotation,
     preprocessor: PreprocessorProtocol | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     add_points: bool = False,
@@ -50,7 +48,7 @@ def plot_clip_annotation(
 def plot_anchor_points(
     clip_annotation: data.ClipAnnotation,
     targets: TargetProtocol,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     size: int = 1,
     color: str = "red",

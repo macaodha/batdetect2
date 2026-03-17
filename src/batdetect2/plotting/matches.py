@@ -1,4 +1,4 @@
-from typing import Protocol, Tuple
+from typing import Protocol
 
 from matplotlib.axes import Axes
 from soundevent import data, plot
@@ -40,7 +40,7 @@ def plot_false_positive_match(
     match: MatchProtocol,
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     duration: float = DEFAULT_DURATION,
@@ -111,7 +111,7 @@ def plot_false_negative_match(
     match: MatchProtocol,
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     duration: float = DEFAULT_DURATION,
@@ -171,7 +171,7 @@ def plot_true_positive_match(
     match: MatchProtocol,
     preprocessor: PreprocessorProtocol | None = None,
     audio_loader: AudioLoader | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     duration: float = DEFAULT_DURATION,
@@ -259,7 +259,7 @@ def plot_cross_trigger_match(
     match: MatchProtocol,
     preprocessor: PreprocessorProtocol | None = None,
     audio_loader: AudioLoader | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     audio_dir: data.PathLike | None = None,
     duration: float = DEFAULT_DURATION,

@@ -46,7 +46,7 @@ configuration object (one of the ``*Config`` classes exported here), using
 a discriminated-union ``name`` field to dispatch to the correct class.
 """
 
-from typing import Annotated, List, Literal, Tuple, Union
+from typing import Annotated, Literal
 
 import torch
 import torch.nn.functional as F
@@ -687,7 +687,7 @@ class FreqCoordConvUpConfig(BaseConfig):
     up_mode: str = "bilinear"
     """Interpolation mode for upsampling (e.g., "nearest", "bilinear")."""
 
-    up_scale: Tuple[int, int] = (2, 2)
+    up_scale: tuple[int, int] = (2, 2)
     """Scaling factor for height and width during upsampling."""
 
 
@@ -706,22 +706,22 @@ class FreqCoordConvUpBlock(Block):
 
     Parameters
     ----------
-    in_channels : int
+    in_channels
         Number of channels in the input tensor (before upsampling).
-    out_channels : int
+    out_channels
         Number of output channels after the convolution.
-    input_height : int
+    input_height
         Height (H dimension, frequency bins) of the tensor *before* upsampling.
         Used to calculate the height for coordinate feature generation after
         upsampling.
-    kernel_size : int, default=3
+    kernel_size
         Size of the square convolutional kernel.
-    pad_size : int, default=1
+    pad_size
         Padding added before convolution.
-    up_mode : str, default="bilinear"
+    up_mode
         Interpolation mode for upsampling (e.g., "nearest", "bilinear",
         "bicubic").
-    up_scale : Tuple[int, int], default=(2, 2)
+    up_scale
         Scaling factor for height and width during upsampling
         (typically (2, 2)).
     """
@@ -734,7 +734,7 @@ class FreqCoordConvUpBlock(Block):
         kernel_size: int = 3,
         pad_size: int = 1,
         up_mode: str = "bilinear",
-        up_scale: Tuple[int, int] = (2, 2),
+        up_scale: tuple[int, int] = (2, 2),
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -824,7 +824,7 @@ class StandardConvUpConfig(BaseConfig):
     up_mode: str = "bilinear"
     """Interpolation mode for upsampling (e.g., "nearest", "bilinear")."""
 
-    up_scale: Tuple[int, int] = (2, 2)
+    up_scale: tuple[int, int] = (2, 2)
     """Scaling factor for height and width during upsampling."""
 
 
@@ -839,17 +839,17 @@ class StandardConvUpBlock(Block):
 
     Parameters
     ----------
-    in_channels : int
+    in_channels
         Number of channels in the input tensor (before upsampling).
-    out_channels : int
+    out_channels
         Number of output channels after the convolution.
-    kernel_size : int, default=3
+    kernel_size
         Size of the square convolutional kernel.
-    pad_size : int, default=1
+    pad_size
         Padding added before convolution.
-    up_mode : str, default="bilinear"
+    up_mode
         Interpolation mode for upsampling (e.g., "nearest", "bilinear").
-    up_scale : Tuple[int, int], default=(2, 2)
+    up_scale
         Scaling factor for height and width during upsampling.
     """
 
@@ -860,7 +860,7 @@ class StandardConvUpBlock(Block):
         kernel_size: int = 3,
         pad_size: int = 1,
         up_mode: str = "bilinear",
-        up_scale: Tuple[int, int] = (2, 2),
+        up_scale: tuple[int, int] = (2, 2),
     ):
         super(StandardConvUpBlock, self).__init__()
         self.in_channels = in_channels
@@ -922,15 +922,14 @@ class StandardConvUpBlock(Block):
 
 
 LayerConfig = Annotated[
-    Union[
-        ConvConfig,
-        FreqCoordConvDownConfig,
-        StandardConvDownConfig,
-        FreqCoordConvUpConfig,
-        StandardConvUpConfig,
-        SelfAttentionConfig,
-        "LayerGroupConfig",
-    ],
+    ConvConfig
+    | BlockImportConfig
+    | FreqCoordConvDownConfig
+    | StandardConvDownConfig
+    | FreqCoordConvUpConfig
+    | StandardConvUpConfig
+    | SelfAttentionConfig
+    | "LayerGroupConfig",
     Field(discriminator="name"),
 ]
 """Type alias for the discriminated union of block configuration models."""
@@ -952,7 +951,7 @@ class LayerGroupConfig(BaseConfig):
     """
 
     name: Literal["LayerGroup"] = "LayerGroup"
-    layers: List[LayerConfig]
+    layers: list[LayerConfig]
 
 
 class LayerGroup(nn.Module):

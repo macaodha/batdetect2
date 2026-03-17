@@ -1,5 +1,4 @@
 import warnings
-from typing import Tuple
 
 import librosa
 import librosa.core.spectrum
@@ -147,7 +146,7 @@ def load_audio(
     target_samp_rate: int,
     scale: bool = False,
     max_duration: float | None = None,
-) -> Tuple[int, np.ndarray]:
+) -> tuple[int, np.ndarray]:
     """Load an audio file and resample it to the target sampling rate.
 
     The audio is also scaled to [-1, 1] and clipped to the maximum duration.

@@ -11,8 +11,6 @@ activations that have lower scores than a local maximum. This helps prevent
 multiple, overlapping detections originating from the same sound event.
 """
 
-from typing import Tuple
-
 import torch
 
 NMS_KERNEL_SIZE = 9
@@ -27,7 +25,7 @@ BatDetect2.
 
 def non_max_suppression(
     tensor: torch.Tensor,
-    kernel_size: int | Tuple[int, int] = NMS_KERNEL_SIZE,
+    kernel_size: int | tuple[int, int] = NMS_KERNEL_SIZE,
 ) -> torch.Tensor:
     """Apply Non-Maximum Suppression (NMS) to a tensor, typically a heatmap.
 
@@ -42,11 +40,11 @@ def non_max_suppression(
 
     Parameters
     ----------
-    tensor : torch.Tensor
+    tensor
         Input tensor, typically representing a detection heatmap. Must be a
         3D (C, H, W) or 4D (N, C, H, W) tensor as required by the underlying
         `torch.nn.functional.max_pool2d` operation.
-    kernel_size : Union[int, Tuple[int, int]], default=NMS_KERNEL_SIZE
+    kernel_size
         Size of the sliding window neighborhood used to find local maxima.
         If an integer `k` is provided, a square kernel of size `(k, k)` is used.
         If a tuple `(h, w)` is provided, a rectangular kernel of height `h`

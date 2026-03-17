@@ -1,7 +1,5 @@
 """General plotting utilities."""
 
-from typing import Tuple
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -14,7 +12,7 @@ __all__ = [
 
 def create_ax(
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     **kwargs,
 ) -> axes.Axes:
     """Create a new axis if none is provided"""
@@ -31,7 +29,7 @@ def plot_spectrogram(
     min_freq: float | None = None,
     max_freq: float | None = None,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_colorbar: bool = False,
     colorbar_kwargs: dict | None = None,
     vmin: float | None = None,

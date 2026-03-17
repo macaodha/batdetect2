@@ -26,8 +26,6 @@ The primary entry point for building a full, ready-to-use BatDetect2 model
 is the ``build_model`` factory function exported from this module.
 """
 
-from typing import List
-
 import torch
 
 from batdetect2.models.backbones import (
@@ -142,7 +140,7 @@ class Model(torch.nn.Module):
         self.postprocessor = postprocessor
         self.targets = targets
 
-    def forward(self, wav: torch.Tensor) -> List[ClipDetectionsTensor]:
+    def forward(self, wav: torch.Tensor) -> list[ClipDetectionsTensor]:
         """Run the full detection pipeline on a waveform tensor.
 
         Converts the waveform to a spectrogram, passes it through the
@@ -157,7 +155,7 @@ class Model(torch.nn.Module):
 
         Returns
         -------
-        List[ClipDetectionsTensor]
+        list[ClipDetectionsTensor]
             One detection tensor per clip in the batch. Each tensor encodes
             the detected events (locations, class scores, sizes) for that
             clip.

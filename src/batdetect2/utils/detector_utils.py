@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Iterator, List, Tuple
+from typing import Any, Iterator
 
 import librosa
 import numpy as np
@@ -60,7 +60,7 @@ def get_default_bd_args():
     return args
 
 
-def list_audio_files(ip_dir: str) -> List[str]:
+def list_audio_files(ip_dir: str) -> list[str]:
     """Get all audio files in directory.
 
     Args:
@@ -86,7 +86,7 @@ def load_model(
     load_weights: bool = True,
     device: torch.device | str | None = None,
     weights_only: bool = True,
-) -> Tuple[DetectionModel, ModelParameters]:
+) -> tuple[DetectionModel, ModelParameters]:
     """Load model from file.
 
     Args:
@@ -185,26 +185,28 @@ def _merge_results(predictions, spec_feats, cnn_feats, spec_slices):
 
 def get_annotations_from_preds(
     predictions: PredictionResults,
-    class_names: List[str],
-) -> List[Annotation]:
+    class_names: list[str],
+) -> list[Annotation]:
     """Get list of annotations from predictions."""
     # Get the best class prediction probability and index for each detection
     class_prob_best = predictions["class_probs"].max(0)
     class_ind_best = predictions["class_probs"].argmax(0)
 
     # Pack the results into a list of dictionaries
-    annotations: List[Annotation] = [
-        {
-            "start_time": round(float(start_time), 4),
-            "end_time": round(float(end_time), 4),
-            "low_freq": int(low_freq),
-            "high_freq": int(high_freq),
-            "class": str(class_names[class_index]),
-            "class_prob": round(float(class_prob), 3),
-            "det_prob": round(float(det_prob), 3),
-            "individual": "-1",
-            "event": "Echolocation",
-        }
+    annotations: list[Annotation] = [
+        Annotation(
+            {
+                "start_time": round(float(start_time), 4),
+                "end_time": round(float(end_time), 4),
+                "low_freq": int(low_freq),
+                "high_freq": int(high_freq),
+                "class": str(class_names[class_index]),
+                "class_prob": round(float(class_prob), 3),
+                "det_prob": round(float(det_prob), 3),
+                "individual": "-1",
+                "event": "Echolocation",
+            }
+        )
         for (
             start_time,
             end_time,
@@ -232,7 +234,7 @@ def format_single_result(
     time_exp: float,
     duration: float,
     predictions: PredictionResults,
-    class_names: List[str],
+    class_names: list[str],
 ) -> FileAnnotation:
     """Format results into the format expected by the annotation tool.
 
@@ -315,9 +317,9 @@ def convert_results(
         ]
 
     # combine into final results dictionary
-    results: RunResults = {
+    results: RunResults = RunResults({  # type: ignore
         "pred_dict": pred_dict,
-    }
+    })
 
     # add spectrogram features if they exist
     if len(spec_feats) > 0 and params["spec_features"]:
@@ -413,7 +415,7 @@ def compute_spectrogram(
     sampling_rate: int,
     params: SpectrogramParameters,
     device: torch.device,
-) -> Tuple[float, torch.Tensor]:
+) -> tuple[float, torch.Tensor]:
     """Compute a spectrogram from an audio array.
 
     Will pad the audio array so that it is evenly divisible by the
@@ -475,7 +477,7 @@ def iterate_over_chunks(
     audio: np.ndarray,
     samplerate: float,
     chunk_size: float,
-) -> Iterator[Tuple[float, np.ndarray]]:
+) -> Iterator[tuple[float, np.ndarray]]:
     """Iterate over audio in chunks of size chunk_size.
 
     Parameters
@@ -509,7 +511,7 @@ def _process_spectrogram(
     samplerate: float,
     model: DetectionModel,
     config: ProcessingConfiguration,
-) -> Tuple[PredictionResults, np.ndarray]:
+) -> tuple[PredictionResults, np.ndarray]:
     # evaluate model
     with torch.no_grad():
         outputs = model(spec)
@@ -546,7 +548,7 @@ def postprocess_model_outputs(
     outputs: ModelOutput,
     samp_rate: int,
     config: ProcessingConfiguration,
-) -> Tuple[List[Annotation], np.ndarray]:
+) -> tuple[list[Annotation], np.ndarray]:
     # run non-max suppression
     pred_nms_list, features = pp.run_nms(
         outputs,
@@ -585,7 +587,7 @@ def process_spectrogram(
     samplerate: int,
     model: DetectionModel,
     config: ProcessingConfiguration,
-) -> Tuple[List[Annotation], np.ndarray]:
+) -> tuple[list[Annotation], np.ndarray]:
     """Process a spectrogram with detection model.
 
     Will run non-maximum suppression on the output of the model.
@@ -604,9 +606,9 @@ def process_spectrogram(
 
     Returns
     -------
-    detections: List[Annotation]
+    detections
         List of detections predicted by the model.
-    features : np.ndarray
+    features
         An array of CNN features associated with each annotation.
         The array is of shape (num_detections, num_features).
         Is empty if `config["cnn_features"]` is False.
@@ -632,7 +634,7 @@ def _process_audio_array(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Tuple[PredictionResults, np.ndarray, torch.Tensor]:
+) -> tuple[PredictionResults, np.ndarray, torch.Tensor]:
     # load audio file and compute spectrogram
     _, spec = compute_spectrogram(
         audio,
@@ -669,7 +671,7 @@ def process_audio_array(
     model: DetectionModel,
     config: ProcessingConfiguration,
     device: torch.device,
-) -> Tuple[List[Annotation], np.ndarray, torch.Tensor]:
+) -> tuple[list[Annotation], np.ndarray, torch.Tensor]:
     """Process a single audio array with detection model.
 
     Parameters
@@ -689,7 +691,7 @@ def process_audio_array(
 
     Returns
     -------
-    annotations : List[Annotation]
+    annotations : list[Annotation]
         List of annotations predicted by the model.
     features : np.ndarray
         Array of CNN features associated with each annotation.

@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 from typing import (
-    Dict,
     Generic,
     Iterable,
-    List,
     Protocol,
     Sequence,
-    Tuple,
     TypeVar,
 )
 
@@ -33,7 +30,7 @@ class MatchEvaluation:
     gt_geometry: data.Geometry | None
 
     pred_score: float
-    pred_class_scores: Dict[str, float]
+    pred_class_scores: dict[str, float]
     pred_geometry: data.Geometry | None
 
     affinity: float
@@ -66,7 +63,7 @@ class MatchEvaluation:
 @dataclass
 class ClipMatches:
     clip: data.Clip
-    matches: List[MatchEvaluation]
+    matches: list[MatchEvaluation]
 
 
 class MatcherProtocol(Protocol):
@@ -75,7 +72,7 @@ class MatcherProtocol(Protocol):
         ground_truth: Sequence[data.Geometry],
         predictions: Sequence[data.Geometry],
         scores: Sequence[float],
-    ) -> Iterable[Tuple[int | None, int | None, float]]: ...
+    ) -> Iterable[tuple[int | None, int | None, float]]: ...
 
 
 Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)
@@ -94,7 +91,7 @@ class MetricsProtocol(Protocol):
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
         predictions: Sequence[Sequence[Detection]],
-    ) -> Dict[str, float]: ...
+    ) -> dict[str, float]: ...
 
 
 class PlotterProtocol(Protocol):
@@ -102,7 +99,7 @@ class PlotterProtocol(Protocol):
         self,
         clip_annotations: Sequence[data.ClipAnnotation],
         predictions: Sequence[Sequence[Detection]],
-    ) -> Iterable[Tuple[str, Figure]]: ...
+    ) -> Iterable[tuple[str, Figure]]: ...
 
 
 EvaluationOutput = TypeVar("EvaluationOutput")
@@ -119,8 +116,8 @@ class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
 
     def compute_metrics(
         self, eval_outputs: EvaluationOutput
-    ) -> Dict[str, float]: ...
+    ) -> dict[str, float]: ...
 
     def generate_plots(
         self, eval_outputs: EvaluationOutput
-    ) -> Iterable[Tuple[str, Figure]]: ...
+    ) -> Iterable[tuple[str, Figure]]: ...

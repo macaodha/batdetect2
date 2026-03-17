@@ -1,5 +1,3 @@
-from typing import Dict, Tuple
-
 import numpy as np
 import seaborn as sns
 from cycler import cycler
@@ -34,14 +32,14 @@ def plot_pr_curve(
     recall: np.ndarray,
     thresholds: np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
-    color: str | Tuple[float, float, float] | None = None,
+    figsize: tuple[int, int] | None = None,
+    color: str | tuple[float, float, float] | None = None,
     add_labels: bool = True,
     add_legend: bool = False,
-    marker: str | Tuple[int, int, float] | None = "o",
-    markeredgecolor: str | Tuple[float, float, float] | None = None,
+    marker: str | tuple[int, int, float] | None = "o",
+    markeredgecolor: str | tuple[float, float, float] | None = None,
     markersize: float | None = None,
-    linestyle: str | Tuple[int, ...] | None = None,
+    linestyle: str | tuple[int, ...] | None = None,
     linewidth: float | None = None,
     label: str = "PR Curve",
 ) -> axes.Axes:
@@ -76,9 +74,9 @@ def plot_pr_curve(
 
 
 def plot_pr_curves(
-    data: Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    data: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]],
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_legend: bool = True,
     add_labels: bool = True,
     include_ap: bool = False,
@@ -119,7 +117,7 @@ def plot_threshold_precision_curve(
     threshold: np.ndarray,
     precision: np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_labels: bool = True,
 ):
     ax = create_ax(ax=ax, figsize=figsize)
@@ -139,9 +137,9 @@ def plot_threshold_precision_curve(
 
 
 def plot_threshold_precision_curves(
-    data: Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    data: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]],
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_legend: bool = True,
     add_labels: bool = True,
 ):
@@ -177,7 +175,7 @@ def plot_threshold_recall_curve(
     threshold: np.ndarray,
     recall: np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_labels: bool = True,
 ):
     ax = create_ax(ax=ax, figsize=figsize)
@@ -197,9 +195,9 @@ def plot_threshold_recall_curve(
 
 
 def plot_threshold_recall_curves(
-    data: Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    data: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]],
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_legend: bool = True,
     add_labels: bool = True,
 ):
@@ -236,7 +234,7 @@ def plot_roc_curve(
     tpr: np.ndarray,
     thresholds: np.ndarray,
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_labels: bool = True,
 ) -> axes.Axes:
     ax = create_ax(ax=ax, figsize=figsize)
@@ -260,9 +258,9 @@ def plot_roc_curve(
 
 
 def plot_roc_curves(
-    data: Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    data: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]],
     ax: axes.Axes | None = None,
-    figsize: Tuple[int, int] | None = None,
+    figsize: tuple[int, int] | None = None,
     add_legend: bool = True,
     add_labels: bool = True,
 ) -> axes.Axes:

@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import Tuple
 
 from soundevent import data
 
@@ -10,7 +9,7 @@ from batdetect2.typing.targets import TargetProtocol
 def iterate_over_sound_events(
     dataset: Dataset,
     targets: TargetProtocol,
-) -> Generator[Tuple[str | None, data.SoundEventAnnotation], None, None]:
+) -> Generator[tuple[str | None, data.SoundEventAnnotation], None, None]:
     """Iterate over sound events in a dataset.
 
     Parameters
@@ -24,7 +23,7 @@ def iterate_over_sound_events(
 
     Yields
     ------
-    Tuple[Optional[str], data.SoundEventAnnotation]
+    tuple[Optional[str], data.SoundEventAnnotation]
         A tuple containing:
         - The encoded class name (str) for the sound event, or None if it
           cannot be encoded to a specific class.

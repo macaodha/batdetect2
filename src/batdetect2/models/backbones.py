@@ -23,7 +23,7 @@ output so that the output spatial dimensions always match the input spatial
 dimensions.
 """
 
-from typing import Annotated, Literal, Tuple, Union
+from typing import Annotated, Literal
 
 import torch
 import torch.nn.functional as F
@@ -57,6 +57,14 @@ from batdetect2.typing.models import (
     DecoderProtocol,
     EncoderProtocol,
 )
+
+__all__ = [
+    "BackboneImportConfig",
+    "UNetBackbone",
+    "BackboneConfig",
+    "load_backbone_config",
+    "build_backbone",
+]
 
 
 class UNetBackboneConfig(BaseConfig):
@@ -108,15 +116,6 @@ class BackboneImportConfig(ImportConfig):
     """
 
     name: Literal["import"] = "import"
-
-
-__all__ = [
-    "BackboneImportConfig",
-    "UNetBackbone",
-    "BackboneConfig",
-    "load_backbone_config",
-    "build_backbone",
-]
 
 
 class UNetBackbone(BackboneModel):
@@ -262,7 +261,8 @@ class UNetBackbone(BackboneModel):
 
 
 BackboneConfig = Annotated[
-    Union[UNetBackboneConfig,], Field(discriminator="name")
+    UNetBackboneConfig | BackboneImportConfig,
+    Field(discriminator="name"),
 ]
 
 
@@ -292,7 +292,7 @@ def build_backbone(config: BackboneConfig | None = None) -> BackboneModel:
 def _pad_adjust(
     spec: torch.Tensor,
     factor: int = 32,
-) -> Tuple[torch.Tensor, int, int]:
+) -> tuple[torch.Tensor, int, int]:
     """Pad a tensor's height and width to be divisible by ``factor``.
 
     Adds zero-padding to the bottom and right edges of the tensor so that
@@ -308,7 +308,7 @@ def _pad_adjust(
 
     Returns
     -------
-    Tuple[torch.Tensor, int, int]
+    tuple[torch.Tensor, int, int]
         - Padded tensor.
         - Number of rows added to the height (``h_pad``).
         - Number of columns added to the width (``w_pad``).
