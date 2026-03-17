@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from batdetect2.evaluate.dataset import TestDataset, TestExample
 from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
+from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess import to_raw_predictions
 from batdetect2.typing import EvaluatorProtocol
 from batdetect2.typing.postprocess import ClipDetections
@@ -17,11 +18,13 @@ class EvaluationModule(LightningModule):
         self,
         model: Model,
         evaluator: EvaluatorProtocol,
+        output_transform: OutputTransformProtocol | None = None,
     ):
         super().__init__()
 
         self.model = model
         self.evaluator = evaluator
+        self.output_transform = output_transform or build_output_transform()
 
         self.clip_annotations: List[data.ClipAnnotation] = []
         self.predictions: List[ClipDetections] = []
@@ -34,10 +37,7 @@ class EvaluationModule(LightningModule):
         ]
 
         outputs = self.model.detector(batch.spec)
-        clip_detections = self.model.postprocessor(
-            outputs,
-            start_times=[ca.clip.start_time for ca in clip_annotations],
-        )
+        clip_detections = self.model.postprocessor(outputs)
         predictions = [
             ClipDetections(
                 clip=clip_annotation.clip,
@@ -50,6 +50,7 @@ class EvaluationModule(LightningModule):
                 clip_annotations, clip_detections, strict=False
             )
         ]
+        predictions = self.output_transform(predictions)
 
         self.clip_annotations.extend(clip_annotations)
         self.predictions.extend(predictions)

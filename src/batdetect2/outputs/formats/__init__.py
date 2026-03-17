@@ -3,23 +3,25 @@ from typing import Annotated
 from pydantic import Field
 from soundevent.data import PathLike
 
-from batdetect2.data.predictions.base import (
+from batdetect2.outputs.formats.base import (
     OutputFormatterProtocol,
-    prediction_formatters,
+    output_formatters,
 )
-from batdetect2.data.predictions.batdetect2 import BatDetect2OutputConfig
-from batdetect2.data.predictions.parquet import ParquetOutputConfig
-from batdetect2.data.predictions.raw import RawOutputConfig
-from batdetect2.data.predictions.soundevent import SoundEventOutputConfig
+from batdetect2.outputs.formats.batdetect2 import BatDetect2OutputConfig
+from batdetect2.outputs.formats.parquet import ParquetOutputConfig
+from batdetect2.outputs.formats.raw import RawOutputConfig
+from batdetect2.outputs.formats.soundevent import SoundEventOutputConfig
 from batdetect2.typing import TargetProtocol
 
 __all__ = [
-    "build_output_formatter",
-    "get_output_formatter",
     "BatDetect2OutputConfig",
+    "OutputFormatConfig",
     "ParquetOutputConfig",
     "RawOutputConfig",
     "SoundEventOutputConfig",
+    "build_output_formatter",
+    "get_output_formatter",
+    "load_predictions",
 ]
 
 
@@ -42,7 +44,7 @@ def build_output_formatter(
     config = config or RawOutputConfig()
 
     targets = targets or build_targets()
-    return prediction_formatters.build(config, targets)
+    return output_formatters.build(config, targets)
 
 
 def get_output_formatter(
@@ -56,7 +58,7 @@ def get_output_formatter(
         if name is None:
             raise ValueError("Either config or name must be provided.")
 
-        config_class = prediction_formatters.get_config_type(name)
+        config_class = output_formatters.get_config_type(name)
         config = config_class()  # type: ignore
 
     if config.name != name:  # type: ignore

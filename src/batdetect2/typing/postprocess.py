@@ -12,7 +12,7 @@ system that deal with model predictions.
 """
 
 from dataclasses import dataclass
-from typing import List, NamedTuple, Protocol, Sequence
+from typing import List, NamedTuple, Protocol
 
 import numpy as np
 import torch
@@ -101,5 +101,4 @@ class PostprocessorProtocol(Protocol):
     def __call__(
         self,
         output: ModelOutput,
-        start_times: Sequence[float] | None = None,
     ) -> List[ClipDetectionsTensor]: ...

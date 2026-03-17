@@ -12,15 +12,6 @@ from batdetect2.data.datasets import (
     load_dataset_config,
     load_dataset_from_config,
 )
-from batdetect2.data.predictions import (
-    BatDetect2OutputConfig,
-    OutputFormatConfig,
-    RawOutputConfig,
-    SoundEventOutputConfig,
-    build_output_formatter,
-    get_output_formatter,
-    load_predictions,
-)
 from batdetect2.data.summary import (
     compute_class_summary,
     extract_recordings_df,
@@ -36,6 +27,7 @@ __all__ = [
     "BatDetect2OutputConfig",
     "DatasetConfig",
     "OutputFormatConfig",
+    "ParquetOutputConfig",
     "RawOutputConfig",
     "SoundEventOutputConfig",
     "build_output_formatter",

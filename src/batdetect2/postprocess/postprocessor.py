@@ -64,7 +64,6 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
     def forward(
         self,
         output: ModelOutput,
-        start_times: list[float] | None = None,
     ) -> list[ClipDetectionsTensor]:
         detection_heatmap = non_max_suppression(
             output.detection_probs.detach(),
@@ -82,9 +81,6 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
             max_detections=max_detections,
             threshold=self.detection_threshold,
         )
-
-        if start_times is None:
-            start_times = [0 for _ in range(len(detections))]
 
         return [
             map_detection_to_clip(

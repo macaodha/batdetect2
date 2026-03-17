@@ -9,9 +9,9 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core import BaseConfig
-from batdetect2.data.predictions.base import (
+from batdetect2.outputs.formats.base import (
     make_path_relative,
-    prediction_formatters,
+    output_formatters,
 )
 from batdetect2.typing import (
     ClipDetections,
@@ -59,10 +59,7 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
 
-        # Ensure the file has .parquet extension if it's a file path
         if path.suffix != ".parquet":
-            # If it's a directory, we might want to save as a partitioned dataset or a single file inside
-            # For now, let's assume the user provides a full file path or a directory where we save 'predictions.parquet'
             if path.is_dir() or not path.suffix:
                 path = path / "predictions.parquet"
 
@@ -90,7 +87,6 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
                 }
 
                 if self.include_geometry:
-                    # Store geometry as [start_time, low_freq, end_time, high_freq]
                     start_time, low_freq, end_time, high_freq = compute_bounds(
                         pred.geometry
                     )
@@ -98,8 +94,6 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
                     row["low_freq"] = low_freq
                     row["end_time"] = end_time
                     row["high_freq"] = high_freq
-
-                    # Store full geometry as JSON
                     row["geometry"] = pred.geometry.model_dump_json()
 
                 if self.include_class_scores:
@@ -121,11 +115,9 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
     def load(self, path: data.PathLike) -> List[ClipDetections]:
         path = Path(path)
         if path.is_dir():
-            # Try to find parquet files
             files = list(path.glob("*.parquet"))
             if not files:
                 return []
-            # Read all and concatenate
             dfs = [pd.read_parquet(f) for f in files]
             df = pd.concat(dfs, ignore_index=True)
         else:
@@ -148,7 +140,6 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
                 )
                 predictions_by_clip[clip_uuid] = {"clip": clip, "preds": []}
 
-            # Reconstruct geometry
             if "geometry" in row and row["geometry"]:
                 geometry = data.geometry_validate(row["geometry"])
             else:
@@ -182,13 +173,14 @@ class ParquetFormatter(OutputFormatterProtocol[ClipDetections]):
         for clip_data in predictions_by_clip.values():
             results.append(
                 ClipDetections(
-                    clip=clip_data["clip"], detections=clip_data["preds"]
+                    clip=clip_data["clip"],
+                    detections=clip_data["preds"],
                 )
             )
 
         return results
 
-    @prediction_formatters.register(ParquetOutputConfig)
+    @output_formatters.register(ParquetOutputConfig)
     @staticmethod
     def from_config(config: ParquetOutputConfig, targets: TargetProtocol):
         return ParquetFormatter(

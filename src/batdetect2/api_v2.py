@@ -11,17 +11,20 @@ from batdetect2.audio import build_audio_loader
 from batdetect2.config import BatDetect2Config
 from batdetect2.core import merge_configs
 from batdetect2.data import (
-    OutputFormatConfig,
-    build_output_formatter,
-    get_output_formatter,
     load_dataset_from_config,
 )
 from batdetect2.data.datasets import Dataset
-from batdetect2.data.predictions.base import OutputFormatterProtocol
 from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
 from batdetect2.models import Model, build_model
+from batdetect2.outputs import (
+    OutputFormatConfig,
+    OutputTransformProtocol,
+    build_output_formatter,
+    build_output_transform,
+    get_output_formatter,
+)
 from batdetect2.postprocess import build_postprocessor, to_raw_predictions
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
@@ -35,6 +38,7 @@ from batdetect2.typing import (
     ClipDetections,
     Detection,
     EvaluatorProtocol,
+    OutputFormatterProtocol,
     PostprocessorProtocol,
     PreprocessorProtocol,
     TargetProtocol,
@@ -51,6 +55,7 @@ class BatDetect2API:
         postprocessor: PostprocessorProtocol,
         evaluator: EvaluatorProtocol,
         formatter: OutputFormatterProtocol,
+        output_transform: OutputTransformProtocol,
         model: Model,
     ):
         self.config = config
@@ -61,6 +66,7 @@ class BatDetect2API:
         self.evaluator = evaluator
         self.model = model
         self.formatter = formatter
+        self.output_transform = output_transform
 
         self.model.eval()
 
@@ -208,10 +214,16 @@ class BatDetect2API:
 
         detections = self.model.postprocessor(
             outputs,
-            start_times=[start_time],
         )[0]
+        raw_predictions = to_raw_predictions(
+            detections.numpy(),
+            targets=self.targets,
+        )
 
-        return to_raw_predictions(detections.numpy(), targets=self.targets)
+        return self.output_transform.transform_detections(
+            raw_predictions,
+            start_time=start_time,
+        )
 
     def process_directory(
         self,
@@ -304,7 +316,13 @@ class BatDetect2API:
         # postprocessor as these may be moved to another device.
         model = build_model(config=config.model)
 
-        formatter = build_output_formatter(targets, config=config.output)
+        formatter = build_output_formatter(
+            targets,
+            config=config.outputs.format,
+        )
+        output_transform = build_output_transform(
+            config=config.outputs.transform
+        )
 
         return cls(
             config=config,
@@ -315,6 +333,7 @@ class BatDetect2API:
             evaluator=evaluator,
             model=model,
             formatter=formatter,
+            output_transform=output_transform,
         )
 
     @classmethod
@@ -351,7 +370,13 @@ class BatDetect2API:
 
         evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
-        formatter = build_output_formatter(targets, config=config.output)
+        formatter = build_output_formatter(
+            targets,
+            config=config.outputs.format,
+        )
+        output_transform = build_output_transform(
+            config=config.outputs.transform
+        )
 
         return cls(
             config=config,
@@ -362,4 +387,5 @@ class BatDetect2API:
             evaluator=evaluator,
             model=model,
             formatter=formatter,
+            output_transform=output_transform,
         )

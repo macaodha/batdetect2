@@ -102,6 +102,7 @@ exclude = [
   "src/batdetect2/plotting/legacy",
   "src/batdetect2/evaluate/legacy",
   "src/batdetect2/finetune",
+  "src/batdetect2/utils",
 ]
 
 [tool.ruff.format]
@@ -121,4 +122,5 @@ exclude = [
   "src/batdetect2/plotting/legacy",
   "src/batdetect2/evaluate/legacy",
   "src/batdetect2/finetune",
+  "src/batdetect2/utils",
 ]

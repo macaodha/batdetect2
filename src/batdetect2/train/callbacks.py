@@ -6,6 +6,7 @@ from soundevent import data
 from torch.utils.data import DataLoader
 
 from batdetect2.logging import get_image_logger
+from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess import to_raw_predictions
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
@@ -18,10 +19,15 @@ from batdetect2.typing import (
 
 
 class ValidationMetrics(Callback):
-    def __init__(self, evaluator: EvaluatorProtocol):
+    def __init__(
+        self,
+        evaluator: EvaluatorProtocol,
+        output_transform: OutputTransformProtocol | None = None,
+    ):
         super().__init__()
 
         self.evaluator = evaluator
+        self.output_transform = output_transform or build_output_transform()
 
         self._clip_annotations: List[data.ClipAnnotation] = []
         self._predictions: List[ClipDetections] = []
@@ -95,10 +101,7 @@ class ValidationMetrics(Callback):
             for example_idx in batch.idx
         ]
 
-        clip_detections = model.postprocessor(
-            outputs,
-            start_times=[ca.clip.start_time for ca in clip_annotations],
-        )
+        clip_detections = model.postprocessor(outputs)
         predictions = [
             ClipDetections(
                 clip=clip_annotation.clip,
@@ -110,6 +113,7 @@ class ValidationMetrics(Callback):
                 clip_annotations, clip_detections, strict=False
             )
         ]
+        predictions = self.output_transform(predictions)
 
         self._clip_annotations.extend(clip_annotations)
         self._predictions.extend(predictions)

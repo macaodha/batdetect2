@@ -7,9 +7,9 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core import BaseConfig
-from batdetect2.data.predictions.base import (
+from batdetect2.outputs.formats.base import (
     make_path_relative,
-    prediction_formatters,
+    output_formatters,
 )
 from batdetect2.targets import terms
 from batdetect2.typing import (
@@ -28,76 +28,32 @@ DictWithClass = TypedDict("DictWithClass", {"class": str})
 
 
 class Annotation(DictWithClass):
-    """Format of annotations.
-
-    This is the format of a single annotation as expected by the
-    annotation tool.
-    """
-
     start_time: float
-    """Start time in seconds."""
-
     end_time: float
-    """End time in seconds."""
-
     low_freq: float
-    """Low frequency in Hz."""
-
     high_freq: float
-    """High frequency in Hz."""
-
     class_prob: float
-    """Probability of class assignment."""
-
     det_prob: float
-    """Probability of detection."""
-
     individual: str
-    """Individual ID."""
-
     event: str
-    """Type of detected event."""
 
 
 class FileAnnotation(TypedDict):
-    """Format of results.
-
-    This is the format of the results expected by the annotation tool.
-    """
-
     id: str
-    """File ID."""
-
     annotated: bool
-    """Whether file has been annotated."""
-
     duration: float
-    """Duration of audio file."""
-
     issues: bool
-    """Whether file has issues."""
-
     time_exp: float
-    """Time expansion factor."""
-
     class_name: str
-    """Class predicted at file level."""
-
     notes: str
-    """Notes of file."""
-
     annotation: List[Annotation]
-    """List of annotations."""
-
     file_path: NotRequired[str]  # ty: ignore[invalid-type-form]
-    """Path to file."""
 
 
 class BatDetect2OutputConfig(BaseConfig):
     name: Literal["batdetect2"] = "batdetect2"
 
     event_name: str = "Echolocation"
-
     annotation_note: str = "Automatically generated."
 
 
@@ -156,8 +112,6 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
         ]
 
     def get_recording_class(self, annotations: List[Annotation]) -> str:
-        """Get class of recording from annotations."""
-
         if not annotations:
             return ""
 
@@ -215,7 +169,7 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
             **{"class": top_class},
         )
 
-    @prediction_formatters.register(BatDetect2OutputConfig)
+    @output_formatters.register(BatDetect2OutputConfig)
     @staticmethod
     def from_config(config: BatDetect2OutputConfig, targets: TargetProtocol):
         return BatDetect2Formatter(

@@ -5,8 +5,8 @@ import numpy as np
 from soundevent import data, io
 
 from batdetect2.core import BaseConfig
-from batdetect2.data.predictions.base import (
-    prediction_formatters,
+from batdetect2.outputs.formats.base import (
+    output_formatters,
 )
 from batdetect2.typing import (
     ClipDetections,
@@ -121,7 +121,7 @@ class SoundEventOutputFormatter(OutputFormatterProtocol[data.ClipPrediction]):
 
         return tags
 
-    @prediction_formatters.register(SoundEventOutputConfig)
+    @output_formatters.register(SoundEventOutputConfig)
     @staticmethod
     def from_config(config: SoundEventOutputConfig, targets: TargetProtocol):
         return SoundEventOutputFormatter(

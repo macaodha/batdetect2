@@ -10,6 +10,7 @@ from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
 from batdetect2.logging import build_logger
 from batdetect2.models import Model
+from batdetect2.outputs import build_output_transform
 from batdetect2.typing import Detection
 
 if TYPE_CHECKING:
@@ -61,7 +62,12 @@ def evaluate(
         experiment_name=experiment_name,
         run_name=run_name,
     )
-    module = EvaluationModule(model, evaluator)
+    output_transform = build_output_transform(config=config.outputs.transform)
+    module = EvaluationModule(
+        model,
+        evaluator,
+        output_transform=output_transform,
+    )
     trainer = Trainer(logger=logger, enable_checkpointing=False)
     metrics = trainer.test(module, loader)
 

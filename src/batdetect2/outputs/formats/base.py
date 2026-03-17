@@ -9,6 +9,13 @@ from batdetect2.typing import (
     TargetProtocol,
 )
 
+__all__ = [
+    "OutputFormatterProtocol",
+    "PredictionFormatterImportConfig",
+    "make_path_relative",
+    "output_formatters",
+]
+
 
 def make_path_relative(path: PathLike, audio_dir: PathLike) -> Path:
     path = Path(path)
@@ -25,12 +32,12 @@ def make_path_relative(path: PathLike, audio_dir: PathLike) -> Path:
     return path
 
 
-prediction_formatters: Registry[OutputFormatterProtocol, [TargetProtocol]] = (
+output_formatters: Registry[OutputFormatterProtocol, [TargetProtocol]] = (
     Registry(name="output_formatter")
 )
 
 
-@add_import_config(prediction_formatters)
+@add_import_config(output_formatters)
 class PredictionFormatterImportConfig(ImportConfig):
     """Use any callable as a prediction formatter.
 

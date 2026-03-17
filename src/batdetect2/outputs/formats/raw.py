@@ -10,9 +10,9 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.core import BaseConfig
-from batdetect2.data.predictions.base import (
+from batdetect2.outputs.formats.base import (
     make_path_relative,
-    prediction_formatters,
+    output_formatters,
 )
 from batdetect2.typing import (
     ClipDetections,
@@ -95,56 +95,56 @@ class RawFormatter(OutputFormatterProtocol[ClipDetections]):
                 update=dict(path=make_path_relative(recording.path, audio_dir))
             )
 
-        data = defaultdict(list)
+        values = defaultdict(list)
 
         for pred in prediction.detections:
             detection_id = str(uuid4())
 
-            data["detection_id"].append(detection_id)
-            data["detection_score"].append(pred.detection_score)
+            values["detection_id"].append(detection_id)
+            values["detection_score"].append(pred.detection_score)
 
             start_time, low_freq, end_time, high_freq = compute_bounds(
                 pred.geometry
             )
 
-            data["start_time"].append(start_time)
-            data["end_time"].append(end_time)
-            data["low_freq"].append(low_freq)
-            data["high_freq"].append(high_freq)
+            values["start_time"].append(start_time)
+            values["end_time"].append(end_time)
+            values["low_freq"].append(low_freq)
+            values["high_freq"].append(high_freq)
 
-            data["geometry"].append(pred.geometry.model_dump_json())
+            values["geometry"].append(pred.geometry.model_dump_json())
 
             top_class_index = int(np.argmax(pred.class_scores))
             top_class_score = float(pred.class_scores[top_class_index])
             top_class = self.targets.class_names[top_class_index]
 
-            data["top_class"].append(top_class)
-            data["top_class_score"].append(top_class_score)
+            values["top_class"].append(top_class)
+            values["top_class_score"].append(top_class_score)
 
-            data["class_scores"].append(pred.class_scores)
-            data["features"].append(pred.features)
+            values["class_scores"].append(pred.class_scores)
+            values["features"].append(pred.features)
 
             num_features = len(pred.features)
 
         data_vars = {
-            "score": (["detection"], data["detection_score"]),
-            "start_time": (["detection"], data["start_time"]),
-            "end_time": (["detection"], data["end_time"]),
-            "low_freq": (["detection"], data["low_freq"]),
-            "high_freq": (["detection"], data["high_freq"]),
-            "top_class": (["detection"], data["top_class"]),
-            "top_class_score": (["detection"], data["top_class_score"]),
+            "score": (["detection"], values["detection_score"]),
+            "start_time": (["detection"], values["start_time"]),
+            "end_time": (["detection"], values["end_time"]),
+            "low_freq": (["detection"], values["low_freq"]),
+            "high_freq": (["detection"], values["high_freq"]),
+            "top_class": (["detection"], values["top_class"]),
+            "top_class_score": (["detection"], values["top_class_score"]),
         }
 
         coords = {
-            "detection": ("detection", data["detection_id"]),
+            "detection": ("detection", values["detection_id"]),
             "clip_start": clip.start_time,
             "clip_end": clip.end_time,
             "clip_id": str(clip.uuid),
         }
 
         if self.include_class_scores:
-            class_scores = np.stack(data["class_scores"], axis=0)
+            class_scores = np.stack(values["class_scores"], axis=0)
             data_vars["class_scores"] = (
                 ["detection", "classes"],
                 class_scores,
@@ -152,12 +152,12 @@ class RawFormatter(OutputFormatterProtocol[ClipDetections]):
             coords["classes"] = ("classes", self.targets.class_names)
 
         if self.include_features:
-            features = np.stack(data["features"], axis=0)
+            features = np.stack(values["features"], axis=0)
             data_vars["features"] = (["detection", "feature"], features)
             coords["feature"] = ("feature", np.arange(num_features))
 
         if self.include_geometry:
-            data_vars["geometry"] = (["detection"], data["geometry"])
+            data_vars["geometry"] = (["detection"], values["geometry"])
 
         return xr.Dataset(
             data_vars=data_vars,
@@ -169,7 +169,6 @@ class RawFormatter(OutputFormatterProtocol[ClipDetections]):
 
     def pred_from_xr(self, dataset: xr.Dataset) -> ClipDetections:
         clip_data = dataset
-        clip_id = clip_data.clip_id.item()
 
         recording = data.Recording.model_validate_json(
             clip_data.attrs["recording"]
@@ -232,7 +231,7 @@ class RawFormatter(OutputFormatterProtocol[ClipDetections]):
             detections=sound_events,
         )
 
-    @prediction_formatters.register(RawOutputConfig)
+    @output_formatters.register(RawOutputConfig)
     @staticmethod
     def from_config(config: RawOutputConfig, targets: TargetProtocol):
         return RawFormatter(

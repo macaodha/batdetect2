@@ -5,14 +5,13 @@ from soundevent.data import PathLike
 
 from batdetect2.audio import AudioConfig
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.data.predictions import OutputFormatConfig
-from batdetect2.data.predictions.raw import RawOutputConfig
 from batdetect2.evaluate.config import (
     EvaluationConfig,
     get_default_eval_config,
 )
 from batdetect2.inference.config import InferenceConfig
 from batdetect2.models import ModelConfig
+from batdetect2.outputs import OutputsConfig
 from batdetect2.train.config import TrainingConfig
 
 __all__ = [
@@ -32,7 +31,7 @@ class BatDetect2Config(BaseConfig):
     model: ModelConfig = Field(default_factory=ModelConfig)
     audio: AudioConfig = Field(default_factory=AudioConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
-    output: OutputFormatConfig = Field(default_factory=RawOutputConfig)
+    outputs: OutputsConfig = Field(default_factory=OutputsConfig)
 
 
 def validate_config(config: dict | None) -> BatDetect2Config:

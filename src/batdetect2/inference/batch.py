@@ -8,6 +8,7 @@ from batdetect2.inference.clips import get_clips_from_files
 from batdetect2.inference.dataset import build_inference_loader
 from batdetect2.inference.lightning import InferenceModule
 from batdetect2.models import Model
+from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.preprocess.preprocessor import build_preprocessor
 from batdetect2.targets.targets import build_targets
 from batdetect2.typing.postprocess import ClipDetections
@@ -28,6 +29,7 @@ def run_batch_inference(
     audio_loader: Optional["AudioLoader"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     config: Optional["BatDetect2Config"] = None,
+    output_transform: Optional[OutputTransformProtocol] = None,
     num_workers: int | None = None,
     batch_size: int | None = None,
 ) -> List[ClipDetections]:
@@ -42,6 +44,9 @@ def run_batch_inference(
     )
 
     targets = targets or build_targets()
+    output_transform = output_transform or build_output_transform(
+        config=config.outputs.transform,
+    )
 
     loader = build_inference_loader(
         clips,
@@ -52,7 +57,10 @@ def run_batch_inference(
         batch_size=batch_size,
     )
 
-    module = InferenceModule(model)
+    module = InferenceModule(
+        model,
+        output_transform=output_transform,
+    )
     trainer = Trainer(enable_checkpointing=False, logger=False)
     outputs = trainer.predict(module, loader)
     return [

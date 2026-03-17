@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from soundevent import data
 
-from batdetect2.data.predictions import (
+from batdetect2.outputs.formats import (
     ParquetOutputConfig,
     build_output_formatter,
 )
