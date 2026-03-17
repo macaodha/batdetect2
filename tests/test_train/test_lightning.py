@@ -12,7 +12,9 @@ from batdetect2.typing.preprocess import AudioLoader
 
 def build_default_module():
     config = BatDetect2Config()
-    return build_training_module(config=config.model_dump())
+    return build_training_module(
+        model_config=config.model.model_dump(mode="json"),
+    )
 
 
 def test_can_initialize_default_module():

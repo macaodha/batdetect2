@@ -317,9 +317,11 @@ def convert_results(
         ]
 
     # combine into final results dictionary
-    results: RunResults = RunResults({  # type: ignore
-        "pred_dict": pred_dict,
-    })
+    results: RunResults = RunResults(  # type: ignore[missing-argument]
+        {
+            "pred_dict": pred_dict,
+        }
+    )
 
     # add spectrogram features if they exist
     if len(spec_feats) > 0 and params["spec_features"]:

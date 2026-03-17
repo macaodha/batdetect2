@@ -282,18 +282,18 @@ class BatDetect2API:
         cls,
         config: BatDetect2Config,
     ):
-        targets = build_targets(config=config.targets)
+        targets = build_targets(config=config.model.targets)
 
         audio_loader = build_audio_loader(config=config.audio)
 
         preprocessor = build_preprocessor(
             input_samplerate=audio_loader.samplerate,
-            config=config.preprocess,
+            config=config.model.preprocess,
         )
 
         postprocessor = build_postprocessor(
             preprocessor,
-            config=config.postprocess,
+            config=config.model.postprocess,
         )
 
         evaluator = build_evaluator(config=config.evaluation, targets=targets)
@@ -301,18 +301,7 @@ class BatDetect2API:
         # NOTE: Better to have a separate instance of
         # preprocessor and postprocessor as these may be moved
         # to another device.
-        model = build_model(
-            config=config.model,
-            targets=targets,
-            preprocessor=build_preprocessor(
-                input_samplerate=audio_loader.samplerate,
-                config=config.preprocess,
-            ),
-            postprocessor=build_postprocessor(
-                preprocessor,
-                config=config.postprocess,
-            ),
-        )
+        model = build_model(config=config.model)
 
         formatter = build_output_formatter(targets, config=config.output)
 
@@ -333,24 +322,30 @@ class BatDetect2API:
         path: data.PathLike,
         config: BatDetect2Config | None = None,
     ):
-        model, stored_config = load_model_from_checkpoint(path)
+        from batdetect2.audio import AudioConfig
 
-        config = (
-            merge_configs(stored_config, config) if config else stored_config
+        model, model_config = load_model_from_checkpoint(path)
+
+        # Reconstruct a full BatDetect2Config from the checkpoint's
+        # ModelConfig, then overlay any caller-supplied overrides.
+        base = BatDetect2Config(
+            model=model_config,
+            audio=AudioConfig(samplerate=model_config.samplerate),
         )
+        config = merge_configs(base, config) if config else base
 
-        targets = build_targets(config=config.targets)
+        targets = build_targets(config=config.model.targets)
 
         audio_loader = build_audio_loader(config=config.audio)
 
         preprocessor = build_preprocessor(
             input_samplerate=audio_loader.samplerate,
-            config=config.preprocess,
+            config=config.model.preprocess,
         )
 
         postprocessor = build_postprocessor(
             preprocessor,
-            config=config.postprocess,
+            config=config.model.postprocess,
         )
 
         evaluator = build_evaluator(config=config.evaluation, targets=targets)

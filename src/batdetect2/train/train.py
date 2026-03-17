@@ -58,13 +58,13 @@ def train(
 
     config = config or BatDetect2Config()
 
-    targets = targets or build_targets(config=config.targets)
+    targets = targets or build_targets(config=config.model.targets)
 
     audio_loader = audio_loader or build_audio_loader(config=config.audio)
 
     preprocessor = preprocessor or build_preprocessor(
         input_samplerate=audio_loader.samplerate,
-        config=config.preprocess,
+        config=config.model.preprocess,
     )
 
     labeller = labeller or build_clip_labeler(
@@ -97,8 +97,10 @@ def train(
     )
 
     module = build_training_module(
-        config.model_dump(mode="json"),
+        model_config=config.model.model_dump(mode="json"),
         t_max=config.train.optimizer.t_max * len(train_dataloader),
+        learning_rate=config.train.optimizer.learning_rate,
+        loss_config=config.train.loss.model_dump(mode="json"),
     )
 
     trainer = trainer or build_trainer(

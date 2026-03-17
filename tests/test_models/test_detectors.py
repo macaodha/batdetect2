@@ -2,8 +2,10 @@ import numpy as np
 import pytest
 import torch
 
+from batdetect2.models import UNetBackbone
 from batdetect2.models.backbones import UNetBackboneConfig
 from batdetect2.models.detectors import Detector, build_detector
+from batdetect2.models.encoder import Encoder
 from batdetect2.models.heads import BBoxHead, ClassifierHead
 from batdetect2.typing.models import ModelOutput
 
@@ -34,6 +36,8 @@ def test_build_detector_custom_config():
 
     assert isinstance(model, Detector)
     assert model.backbone.input_height == 128
+
+    assert isinstance(model.backbone.encoder, Encoder)
     assert model.backbone.encoder.in_channels == 2
 
 
@@ -80,6 +84,7 @@ def test_detector_forward_pass_shapes(dummy_spectrogram):
     )
 
     # Check features shape: (B, out_channels, H, W)
+    assert isinstance(model.backbone, UNetBackbone)
     out_channels = model.backbone.out_channels
     assert output.features.shape == (
         batch_size,

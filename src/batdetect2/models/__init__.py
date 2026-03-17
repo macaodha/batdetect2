@@ -27,7 +27,10 @@ is the ``build_model`` factory function exported from this module.
 """
 
 import torch
+from pydantic import Field
 
+from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
+from batdetect2.core.configs import BaseConfig
 from batdetect2.models.backbones import (
     BackboneConfig,
     UNetBackbone,
@@ -59,6 +62,9 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
+from batdetect2.postprocess.config import PostprocessConfig
+from batdetect2.preprocess.config import PreprocessingConfig
+from batdetect2.targets.config import TargetConfig
 from batdetect2.typing import (
     ClipDetectionsTensor,
     DetectionModel,
@@ -92,8 +98,48 @@ __all__ = [
     "build_detector",
     "load_backbone_config",
     "Model",
+    "ModelConfig",
     "build_model",
 ]
+
+
+class ModelConfig(BaseConfig):
+    """Complete configuration describing a BatDetect2 model.
+
+    Bundles every parameter that defines a model's behaviour: the input
+    sample rate, backbone architecture, preprocessing pipeline,
+    postprocessing pipeline, and detection targets.
+
+    Attributes
+    ----------
+    samplerate : int
+        Expected input audio sample rate in Hz.  Audio must be resampled
+        to this rate before being passed to the model.  Defaults to
+        ``TARGET_SAMPLERATE_HZ`` (256 000 Hz).
+    architecture : BackboneConfig
+        Configuration for the encoder-decoder backbone network.  Defaults
+        to ``UNetBackboneConfig()``.
+    preprocess : PreprocessingConfig
+        Parameters for the audio-to-spectrogram preprocessing pipeline
+        (STFT, frequency crop, transforms, resize).  Defaults to
+        ``PreprocessingConfig()``.
+    postprocess : PostprocessConfig
+        Parameters for converting raw model outputs into detections (NMS
+        kernel, thresholds, top-k limit).  Defaults to
+        ``PostprocessConfig()``.
+    targets : TargetConfig
+        Detection and classification target definitions (class list,
+        detection target, bounding-box mapper).  Defaults to
+        ``TargetConfig()``.
+    """
+
+    samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
+    architecture: BackboneConfig = Field(default_factory=UNetBackboneConfig)
+    preprocess: PreprocessingConfig = Field(
+        default_factory=PreprocessingConfig
+    )
+    postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
+    targets: TargetConfig = Field(default_factory=TargetConfig)
 
 
 class Model(torch.nn.Module):
@@ -166,55 +212,61 @@ class Model(torch.nn.Module):
 
 
 def build_model(
-    config: BackboneConfig | None = None,
+    config: ModelConfig | None = None,
     targets: TargetProtocol | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     postprocessor: PostprocessorProtocol | None = None,
-) -> "Model":
+) -> Model:
     """Build a complete, ready-to-use BatDetect2 model.
 
-    Assembles a ``Model`` instance from optional configuration and component
-    overrides. Any argument left as ``None`` will be replaced by a sensible
-    default built with the project's own builder functions.
+    Assembles a ``Model`` instance from a ``ModelConfig`` and optional
+    component overrides.  Any component argument left as ``None`` is built
+    from the configuration.  Passing a pre-built component overrides the
+    corresponding config fields for that component only.
 
     Parameters
     ----------
-    config : BackboneConfig, optional
-        Configuration describing the backbone architecture (encoder,
-        bottleneck, decoder). Defaults to ``UNetBackboneConfig()`` if not
+    config : ModelConfig, optional
+        Full model configuration (samplerate, architecture, preprocessing,
+        postprocessing, targets).  Defaults to ``ModelConfig()`` if not
         provided.
     targets : TargetProtocol, optional
-        Describes the target bat species or call types to detect. Determines
-        the number of output classes. Defaults to the standard BatDetect2
-        target set.
+        Pre-built targets object.  If given, overrides
+        ``config.targets``.
     preprocessor : PreprocessorProtocol, optional
-        Converts raw audio waveforms to spectrograms. Defaults to the
-        standard BatDetect2 preprocessor.
+        Pre-built preprocessor.  If given, overrides
+        ``config.preprocess`` and ``config.samplerate`` for the
+        preprocessing step.
     postprocessor : PostprocessorProtocol, optional
-        Converts raw model outputs to detection tensors. Defaults to the
-        standard BatDetect2 postprocessor. If a custom ``preprocessor`` is
-        given without a matching ``postprocessor``, the default postprocessor
-        will be built using the provided preprocessor so that frequency and
-        time scaling remain consistent.
+        Pre-built postprocessor.  If given, overrides
+        ``config.postprocess``.  When omitted and a custom
+        ``preprocessor`` is supplied, the default postprocessor is built
+        using that preprocessor so that frequency and time scaling remain
+        consistent.
 
     Returns
     -------
     Model
-        A fully assembled ``Model`` instance ready for inference or training.
+        A fully assembled ``Model`` instance ready for inference or
+        training.
     """
     from batdetect2.postprocess import build_postprocessor
     from batdetect2.preprocess import build_preprocessor
     from batdetect2.targets import build_targets
 
-    config = config or UNetBackboneConfig()
-    targets = targets or build_targets()
-    preprocessor = preprocessor or build_preprocessor()
+    config = config or ModelConfig()
+    targets = targets or build_targets(config=config.targets)
+    preprocessor = preprocessor or build_preprocessor(
+        config=config.preprocess,
+        input_samplerate=config.samplerate,
+    )
     postprocessor = postprocessor or build_postprocessor(
         preprocessor=preprocessor,
+        config=config.postprocess,
     )
     detector = build_detector(
         num_classes=len(targets.class_names),
-        config=config,
+        config=config.architecture,
     )
     return Model(
         detector=detector,

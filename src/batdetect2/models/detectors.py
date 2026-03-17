@@ -169,7 +169,7 @@ def build_detector(
 
     logger.opt(lazy=True).debug(
         "Building model with config: \n{}",
-        lambda: config.to_yaml_string(),
+        lambda: config.to_yaml_string(),  # type: ignore
     )
     backbone = build_backbone(config=config)
     classifier_head = ClassifierHead(

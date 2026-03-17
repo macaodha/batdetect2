@@ -45,12 +45,8 @@ def evaluate(
 
     audio_loader = audio_loader or build_audio_loader(config=config.audio)
 
-    preprocessor = preprocessor or build_preprocessor(
-        config=config.preprocess,
-        input_samplerate=audio_loader.samplerate,
-    )
-
-    targets = targets or build_targets(config=config.targets)
+    preprocessor = preprocessor or model.preprocessor
+    targets = targets or model.targets
 
     loader = build_test_loader(
         test_annotations,

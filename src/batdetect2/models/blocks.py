@@ -921,20 +921,6 @@ class StandardConvUpBlock(Block):
         )
 
 
-LayerConfig = Annotated[
-    ConvConfig
-    | BlockImportConfig
-    | FreqCoordConvDownConfig
-    | StandardConvDownConfig
-    | FreqCoordConvUpConfig
-    | StandardConvUpConfig
-    | SelfAttentionConfig
-    | "LayerGroupConfig",
-    Field(discriminator="name"),
-]
-"""Type alias for the discriminated union of block configuration models."""
-
-
 class LayerGroupConfig(BaseConfig):
     """Configuration for a ``LayerGroup`` — a sequential chain of blocks.
 
@@ -951,7 +937,20 @@ class LayerGroupConfig(BaseConfig):
     """
 
     name: Literal["LayerGroup"] = "LayerGroup"
-    layers: list[LayerConfig]
+    layers: list["LayerConfig"]
+
+
+LayerConfig = Annotated[
+    ConvConfig
+    | FreqCoordConvDownConfig
+    | StandardConvDownConfig
+    | FreqCoordConvUpConfig
+    | StandardConvUpConfig
+    | SelfAttentionConfig
+    | LayerGroupConfig,
+    Field(discriminator="name"),
+]
+"""Type alias for the discriminated union of block configuration models."""
 
 
 class LayerGroup(nn.Module):
