@@ -88,7 +88,9 @@ class BatDetect2API:
             train_annotations=train_annotations,
             val_annotations=val_annotations,
             targets=self.targets,
-            config=self.config,
+            model_config=self.config.model,
+            train_config=self.config.train,
+            audio_config=self.config.audio,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             train_workers=train_workers,
@@ -298,9 +300,8 @@ class BatDetect2API:
 
         evaluator = build_evaluator(config=config.evaluation, targets=targets)
 
-        # NOTE: Better to have a separate instance of
-        # preprocessor and postprocessor as these may be moved
-        # to another device.
+        # NOTE: Better to have a separate instance of preprocessor and
+        # postprocessor as these may be moved to another device.
         model = build_model(config=config.model)
 
         formatter = build_output_formatter(targets, config=config.output)
