@@ -14,6 +14,7 @@ def build_default_module():
     config = BatDetect2Config()
     return build_training_module(
         model_config=config.model.model_dump(mode="json"),
+        train_config=config.train.model_dump(mode="json"),
     )
 
 

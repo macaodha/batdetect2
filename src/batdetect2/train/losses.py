@@ -422,7 +422,7 @@ class LossFunction(nn.Module, LossProtocol):
 def build_loss(
     config: LossConfig | None = None,
     class_weights: np.ndarray | None = None,
-) -> nn.Module:
+) -> LossFunction:
     """Factory function to build the main LossFunction from configuration.
 
     Instantiates the necessary loss components (`BBoxLoss`, `FocalLoss`) based

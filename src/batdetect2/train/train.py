@@ -96,11 +96,13 @@ def train(
         else None
     )
 
+    train_config_dict = config.train.model_dump(mode="json")
+    if "optimizer" in train_config_dict:
+        train_config_dict["optimizer"]["t_max"] *= len(train_dataloader)
+
     module = build_training_module(
         model_config=config.model.model_dump(mode="json"),
-        t_max=config.train.optimizer.t_max * len(train_dataloader),
-        learning_rate=config.train.optimizer.learning_rate,
-        loss_config=config.train.loss.model_dump(mode="json"),
+        train_config=train_config_dict,
     )
 
     trainer = trainer or build_trainer(
