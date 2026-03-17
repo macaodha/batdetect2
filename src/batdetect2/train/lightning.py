@@ -1,11 +1,11 @@
 import lightning as L
 from soundevent.data import PathLike
-from torch.optim.adam import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.train.config import TrainingConfig
-from batdetect2.train.losses import LossFunction, build_loss
+from batdetect2.train.losses import build_loss
+from batdetect2.train.optimizers import build_optimizer
+from batdetect2.train.schedulers import build_scheduler
 from batdetect2.typing import LossProtocol, ModelOutput, TrainExample
 
 __all__ = [
@@ -21,7 +21,7 @@ class TrainingModule(L.LightningModule):
         self,
         model_config: dict | None = None,
         train_config: dict | None = None,
-        loss: LossFunction | None = None,
+        loss: LossProtocol | None = None,
         model: Model | None = None,
     ):
         super().__init__()
@@ -67,10 +67,22 @@ class TrainingModule(L.LightningModule):
         return outputs
 
     def configure_optimizers(self):
-        config = self.train_config.optimizer
-        optimizer = Adam(self.parameters(), lr=config.learning_rate)
-        scheduler = CosineAnnealingLR(optimizer, T_max=config.t_max)
-        return [optimizer], [scheduler]
+        optimizer = build_optimizer(
+            self.parameters(),
+            config=self.train_config.optimizer,
+        )
+        scheduler = build_scheduler(
+            optimizer,
+            config=self.train_config.scheduler,
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }
 
 
 def load_model_from_checkpoint(
@@ -96,7 +108,16 @@ def load_model_from_checkpoint(
 
 
 def build_training_module(
-    model_config: dict | None = None,
-    train_config: dict | None = None,
+    model_config: ModelConfig | None = None,
+    train_config: TrainingConfig | None = None,
 ) -> TrainingModule:
-    return TrainingModule(model_config=model_config, train_config=train_config)
+    if model_config is None:
+        model_config = ModelConfig()
+
+    if train_config is None:
+        train_config = TrainingConfig()
+
+    return TrainingModule(
+        model_config=model_config.model_dump(mode="json"),
+        train_config=train_config.model_dump(mode="json"),
+    )

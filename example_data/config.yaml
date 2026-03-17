@@ -64,7 +64,11 @@ model:
 
 train:
   optimizer:
+    name: adam
     learning_rate: 0.001
+
+  scheduler:
+    name: cosine_annealing
     t_max: 100
 
   labels:
@@ -76,9 +80,7 @@ train:
 
   train_loader:
     batch_size: 8
-
     num_workers: 2
-
     shuffle: True
 
     clipping_strategy:

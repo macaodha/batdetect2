@@ -86,6 +86,7 @@ dev = [
   "rust-just>=1.40.0",
   "pandas-stubs>=2.2.2.240807",
   "python-lsp-server>=1.13.0",
+  "deepdiff>=8.6.1",
 ]
 dvclive = ["dvclive>=3.48.2"]
 mlflow = ["mlflow>=3.1.1"]

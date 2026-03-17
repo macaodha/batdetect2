@@ -6,11 +6,13 @@ from lightning import Trainer, seed_everything
 from loguru import logger
 from soundevent import data
 
-from batdetect2.audio import build_audio_loader
+from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.evaluate import build_evaluator
 from batdetect2.logging import build_logger
+from batdetect2.models import ModelConfig
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.targets import build_targets
+from batdetect2.train import TrainingConfig
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.checkpoints import build_checkpoint_callback
 from batdetect2.train.dataset import build_train_loader, build_val_loader
@@ -18,7 +20,6 @@ from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
 
 if TYPE_CHECKING:
-    from batdetect2.config import BatDetect2Config
     from batdetect2.typing import (
         AudioLoader,
         ClipLabeller,
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "build_trainer",
-    "train",
+    "run_train",
 ]
 
 
@@ -40,7 +41,9 @@ def run_train(
     preprocessor: Optional["PreprocessorProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
     labeller: Optional["ClipLabeller"] = None,
-    config: Optional["BatDetect2Config"] = None,
+    audio_config: Optional[AudioConfig] = None,
+    model_config: Optional[ModelConfig] = None,
+    train_config: Optional[TrainingConfig] = None,
     trainer: Trainer | None = None,
     train_workers: int | None = None,
     val_workers: int | None = None,
@@ -51,27 +54,27 @@ def run_train(
     run_name: str | None = None,
     seed: int | None = None,
 ):
-    from batdetect2.config import BatDetect2Config
-
     if seed is not None:
         seed_everything(seed)
 
-    config = config or BatDetect2Config()
+    model_config = model_config or ModelConfig()
+    audio_config = audio_config or AudioConfig()
+    train_config = train_config or TrainingConfig()
 
-    targets = targets or build_targets(config=config.model.targets)
+    targets = targets or build_targets(config=model_config.targets)
 
-    audio_loader = audio_loader or build_audio_loader(config=config.audio)
+    audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
     preprocessor = preprocessor or build_preprocessor(
         input_samplerate=audio_loader.samplerate,
-        config=config.model.preprocess,
+        config=model_config.preprocess,
     )
 
     labeller = labeller or build_clip_labeler(
         targets,
         min_freq=preprocessor.min_freq,
         max_freq=preprocessor.max_freq,
-        config=config.train.labels,
+        config=train_config.labels,
     )
 
     train_dataloader = build_train_loader(
@@ -79,7 +82,7 @@ def run_train(
         audio_loader=audio_loader,
         labeller=labeller,
         preprocessor=preprocessor,
-        config=config.train.train_loader,
+        config=train_config.train_loader,
         num_workers=train_workers,
     )
 
@@ -89,26 +92,22 @@ def run_train(
             audio_loader=audio_loader,
             labeller=labeller,
             preprocessor=preprocessor,
-            config=config.train.val_loader,
+            config=train_config.val_loader,
             num_workers=val_workers,
         )
         if val_annotations is not None
         else None
     )
 
-    train_config_dict = config.train.model_dump(mode="json")
-    if "optimizer" in train_config_dict:
-        train_config_dict["optimizer"]["t_max"] *= len(train_dataloader)
-
     module = build_training_module(
-        model_config=config.model.model_dump(mode="json"),
-        train_config=train_config_dict,
+        model_config=model_config,
+        train_config=train_config,
     )
 
     trainer = trainer or build_trainer(
-        config,
+        train_config,
         evaluator=build_evaluator(
-            config.train.validation,
+            train_config.validation,
             targets=targets,
         ),
         checkpoint_dir=checkpoint_dir,
@@ -130,7 +129,7 @@ def run_train(
 
 
 def build_trainer(
-    config: "BatDetect2Config",
+    config: TrainingConfig,
     evaluator: "EvaluatorProtocol",
     checkpoint_dir: Path | None = None,
     log_dir: Path | None = None,
@@ -138,14 +137,14 @@ def build_trainer(
     run_name: str | None = None,
     num_epochs: int | None = None,
 ) -> Trainer:
-    trainer_conf = config.train.trainer
+    trainer_conf = config.trainer
     logger.opt(lazy=True).debug(
         "Building trainer with config: \n{config}",
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
 
     train_logger = build_logger(
-        config.train.logger,
+        config.logger,
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
@@ -168,7 +167,7 @@ def build_trainer(
         logger=train_logger,
         callbacks=[
             build_checkpoint_callback(
-                config=config.train.checkpoints,
+                config=config.checkpoints,
                 checkpoint_dir=checkpoint_dir,
                 experiment_name=experiment_name,
                 run_name=run_name,

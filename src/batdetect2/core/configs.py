@@ -8,12 +8,18 @@ configuration data from files, with optional support for accessing nested
 configuration sections.
 """
 
+import sys
 from typing import Any, Type, TypeVar, overload
 
 import yaml
 from deepmerge.merger import Merger
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 from soundevent.data import PathLike
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 __all__ = [
     "BaseConfig",
@@ -65,6 +71,10 @@ class BaseConfig(BaseModel):
     @classmethod
     def from_yaml(cls, yaml_str: str):
         return cls.model_validate(yaml.safe_load(yaml_str))
+
+    @classmethod
+    def load(cls: Self, path: PathLike, field: str | None = None) -> Self:
+        return load_config(path, schema=cls, field=field)  # type: ignore
 
 
 T = TypeVar("T")

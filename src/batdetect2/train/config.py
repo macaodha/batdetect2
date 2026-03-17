@@ -8,6 +8,11 @@ from batdetect2.train.checkpoints import CheckpointConfig
 from batdetect2.train.dataset import TrainLoaderConfig, ValLoaderConfig
 from batdetect2.train.labels import LabelConfig
 from batdetect2.train.losses import LossConfig
+from batdetect2.train.optimizers import AdamOptimizerConfig, OptimizerConfig
+from batdetect2.train.schedulers import (
+    CosineAnnealingSchedulerConfig,
+    SchedulerConfig,
+)
 
 __all__ = [
     "TrainingConfig",
@@ -36,15 +41,13 @@ class PLTrainerConfig(BaseConfig):
     val_check_interval: int | float | None = None
 
 
-class OptimizerConfig(BaseConfig):
-    learning_rate: float = 1e-3
-    t_max: int = 100
-
-
 class TrainingConfig(BaseConfig):
     train_loader: TrainLoaderConfig = Field(default_factory=TrainLoaderConfig)
     val_loader: ValLoaderConfig = Field(default_factory=ValLoaderConfig)
-    optimizer: OptimizerConfig = Field(default_factory=OptimizerConfig)
+    optimizer: OptimizerConfig = Field(default_factory=AdamOptimizerConfig)
+    scheduler: SchedulerConfig = Field(
+        default_factory=CosineAnnealingSchedulerConfig
+    )
     loss: LossConfig = Field(default_factory=LossConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
     logger: LoggerConfig = Field(default_factory=TensorBoardLoggerConfig)

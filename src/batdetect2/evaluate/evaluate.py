@@ -10,8 +10,6 @@ from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
 from batdetect2.logging import build_logger
 from batdetect2.models import Model
-from batdetect2.preprocess import build_preprocessor
-from batdetect2.targets import build_targets
 from batdetect2.typing import Detection
 
 if TYPE_CHECKING:
