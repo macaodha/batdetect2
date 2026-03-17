@@ -33,7 +33,7 @@ __all__ = [
 ]
 
 
-def train(
+def run_train(
     train_annotations: Sequence[data.ClipAnnotation],
     val_annotations: Sequence[data.ClipAnnotation] | None = None,
     targets: Optional["TargetProtocol"] = None,
@@ -125,6 +125,8 @@ def train(
         val_dataloaders=val_dataloader,
     )
     logger.info("Training complete.")
+
+    return module
 
 
 def build_trainer(

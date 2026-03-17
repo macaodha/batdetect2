@@ -7,7 +7,7 @@ from batdetect2.train.lightning import (
     TrainingModule,
     load_model_from_checkpoint,
 )
-from batdetect2.train.train import build_trainer, train
+from batdetect2.train.train import build_trainer, run_train
 
 __all__ = [
     "DEFAULT_CHECKPOINT_DIR",

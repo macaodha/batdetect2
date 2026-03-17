@@ -28,7 +28,7 @@ from batdetect2.targets import build_targets
 from batdetect2.train import (
     DEFAULT_CHECKPOINT_DIR,
     load_model_from_checkpoint,
-    train,
+    run_train,
 )
 from batdetect2.typing import (
     AudioLoader,
@@ -84,7 +84,7 @@ class BatDetect2API:
         run_name: str | None = None,
         seed: int | None = None,
     ):
-        train(
+        run_train(
             train_annotations=train_annotations,
             val_annotations=val_annotations,
             targets=self.targets,
