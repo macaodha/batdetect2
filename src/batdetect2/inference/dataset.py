@@ -61,7 +61,6 @@ class InferenceDataset(Dataset[DatasetItem]):
 
 
 class InferenceLoaderConfig(BaseConfig):
-    num_workers: int = 0
     batch_size: int = 8
 
 
@@ -70,7 +69,7 @@ def build_inference_loader(
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     config: InferenceLoaderConfig | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
     batch_size: int | None = None,
 ) -> DataLoader[DatasetItem]:
     logger.info("Building inference data loader...")
@@ -84,12 +83,11 @@ def build_inference_loader(
 
     batch_size = batch_size or config.batch_size
 
-    num_workers = num_workers or config.num_workers
     return DataLoader(
         inference_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=config.num_workers,
+        num_workers=num_workers,
         collate_fn=_collate_fn,
     )
 

@@ -12,7 +12,7 @@ import torch
 from loguru import logger
 from soundevent import data
 
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
 from batdetect2.targets import build_targets, iterate_encoded_sound_events
 from batdetect2.targets.types import TargetProtocol
@@ -22,7 +22,6 @@ __all__ = [
     "LabelConfig",
     "build_clip_labeler",
     "generate_heatmaps",
-    "load_label_config",
 ]
 
 
@@ -150,31 +149,3 @@ def generate_heatmaps(
         classes=class_heatmap,
         size=size_heatmap,
     )
-
-
-def load_label_config(
-    path: data.PathLike, field: str | None = None
-) -> LabelConfig:
-    """Load the heatmap label generation configuration from a file.
-
-    Parameters
-    ----------
-    path : data.PathLike
-        Path to the configuration file (e.g., YAML or JSON).
-    field : str, optional
-        If the label configuration is nested under a specific key in the
-        file, specify the key here. Defaults to None.
-
-    Returns
-    -------
-    LabelConfig
-        The loaded and validated label configuration object.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the config file path does not exist.
-    pydantic.ValidationError
-        If the config file structure does not match the LabelConfig schema.
-    """
-    return load_config(path, schema=LabelConfig, field=field)

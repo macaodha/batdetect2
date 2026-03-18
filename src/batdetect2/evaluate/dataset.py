@@ -67,7 +67,6 @@ class TestDataset(Dataset[TestExample]):
 
 
 class TestLoaderConfig(BaseConfig):
-    num_workers: int = 0
     clipping_strategy: ClipConfig = Field(
         default_factory=lambda: PaddedClipConfig()
     )
@@ -78,7 +77,7 @@ def build_test_loader(
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     config: TestLoaderConfig | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
 ) -> DataLoader[TestExample]:
     logger.info("Building test data loader...")
     config = config or TestLoaderConfig()
@@ -94,7 +93,6 @@ def build_test_loader(
         config=config,
     )
 
-    num_workers = num_workers or config.num_workers
     return DataLoader(
         test_dataset,
         batch_size=1,

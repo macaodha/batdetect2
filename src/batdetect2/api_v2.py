@@ -15,7 +15,7 @@ from batdetect2.data import (
     load_dataset_from_config,
 )
 from batdetect2.data.datasets import Dataset
-from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
+from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, run_evaluate
 from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
@@ -81,8 +81,8 @@ class BatDetect2API:
         self,
         train_annotations: Sequence[data.ClipAnnotation],
         val_annotations: Sequence[data.ClipAnnotation] | None = None,
-        train_workers: int | None = None,
-        val_workers: int | None = None,
+        train_workers: int = 0,
+        val_workers: int = 0,
         checkpoint_dir: Path | None = DEFAULT_CHECKPOINT_DIR,
         log_dir: Path | None = DEFAULT_LOGS_DIR,
         experiment_name: str | None = None,
@@ -113,19 +113,21 @@ class BatDetect2API:
     def evaluate(
         self,
         test_annotations: Sequence[data.ClipAnnotation],
-        num_workers: int | None = None,
+        num_workers: int = 0,
         output_dir: data.PathLike = DEFAULT_EVAL_DIR,
         experiment_name: str | None = None,
         run_name: str | None = None,
         save_predictions: bool = True,
     ) -> tuple[dict[str, float], list[list[Detection]]]:
-        return evaluate(
+        return run_evaluate(
             self.model,
             test_annotations,
             targets=self.targets,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
-            config=self.config,
+            audio_config=self.config.audio,
+            evaluation_config=self.config.evaluation,
+            output_config=self.config.outputs,
             num_workers=num_workers,
             output_dir=output_dir,
             experiment_name=experiment_name,
@@ -235,7 +237,7 @@ class BatDetect2API:
     def process_files(
         self,
         audio_files: Sequence[data.PathLike],
-        num_workers: int | None = None,
+        num_workers: int = 0,
     ) -> list[ClipDetections]:
         return process_file_list(
             self.model,
@@ -251,7 +253,7 @@ class BatDetect2API:
         self,
         clips: Sequence[data.Clip],
         batch_size: int | None = None,
-        num_workers: int | None = None,
+        num_workers: int = 0,
     ) -> list[ClipDetections]:
         return run_batch_inference(
             self.model,

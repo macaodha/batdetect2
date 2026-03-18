@@ -143,8 +143,6 @@ class ValidationDataset(Dataset):
 
 
 class TrainLoaderConfig(BaseConfig):
-    num_workers: int = 0
-
     batch_size: int = 8
 
     shuffle: bool = False
@@ -164,7 +162,7 @@ def build_train_loader(
     labeller: ClipLabeller | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     config: TrainLoaderConfig | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
 ) -> DataLoader:
     config = config or TrainLoaderConfig()
 
@@ -182,7 +180,6 @@ def build_train_loader(
         config=config,
     )
 
-    num_workers = num_workers or config.num_workers
     return DataLoader(
         train_dataset,
         batch_size=config.batch_size,
@@ -193,8 +190,6 @@ def build_train_loader(
 
 
 class ValLoaderConfig(BaseConfig):
-    num_workers: int = 0
-
     clipping_strategy: ClipConfig = Field(
         default_factory=lambda: PaddedClipConfig()
     )
@@ -206,7 +201,7 @@ def build_val_loader(
     labeller: ClipLabeller | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     config: ValLoaderConfig | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
 ):
     logger.info("Building validation data loader...")
     config = config or ValLoaderConfig()
@@ -223,7 +218,6 @@ def build_val_loader(
         config=config,
     )
 
-    num_workers = num_workers or config.num_workers
     return DataLoader(
         val_dataset,
         batch_size=1,

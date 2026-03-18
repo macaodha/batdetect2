@@ -1,46 +1,47 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from typing import Sequence
 
 from lightning import Trainer
 from soundevent import data
 
-from batdetect2.audio import build_audio_loader
+from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.audio.types import AudioLoader
+from batdetect2.evaluate import EvaluationConfig
 from batdetect2.evaluate.dataset import build_test_loader
 from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
 from batdetect2.logging import build_logger
 from batdetect2.models import Model
-from batdetect2.outputs import build_output_transform
+from batdetect2.outputs import OutputsConfig, build_output_transform
 from batdetect2.outputs.types import OutputFormatterProtocol
 from batdetect2.postprocess.types import Detection
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets.types import TargetProtocol
 
-if TYPE_CHECKING:
-    from batdetect2.config import BatDetect2Config
-
 DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 
 
-def evaluate(
+def run_evaluate(
     model: Model,
     test_annotations: Sequence[data.ClipAnnotation],
-    targets: Optional["TargetProtocol"] = None,
-    audio_loader: Optional["AudioLoader"] = None,
-    preprocessor: Optional["PreprocessorProtocol"] = None,
-    config: Optional["BatDetect2Config"] = None,
-    formatter: Optional["OutputFormatterProtocol"] = None,
-    num_workers: int | None = None,
+    targets: TargetProtocol | None = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    audio_config: AudioConfig | None = None,
+    evaluation_config: EvaluationConfig | None = None,
+    output_config: OutputsConfig | None = None,
+    formatter: OutputFormatterProtocol | None = None,
+    num_workers: int = 0,
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
     experiment_name: str | None = None,
     run_name: str | None = None,
-) -> Tuple[Dict[str, float], List[List[Detection]]]:
-    from batdetect2.config import BatDetect2Config
+) -> tuple[dict[str, float], list[list[Detection]]]:
 
-    config = config or BatDetect2Config()
+    audio_config = audio_config or AudioConfig()
+    evaluation_config = evaluation_config or EvaluationConfig()
+    output_config = output_config or OutputsConfig()
 
-    audio_loader = audio_loader or build_audio_loader(config=config.audio)
+    audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
     preprocessor = preprocessor or model.preprocessor
     targets = targets or model.targets
@@ -52,15 +53,15 @@ def evaluate(
         num_workers=num_workers,
     )
 
-    evaluator = build_evaluator(config=config.evaluation, targets=targets)
+    evaluator = build_evaluator(config=evaluation_config, targets=targets)
 
     logger = build_logger(
-        config.evaluation.logger,
+        evaluation_config.logger,
         log_dir=Path(output_dir),
         experiment_name=experiment_name,
         run_name=run_name,
     )
-    output_transform = build_output_transform(config=config.outputs.transform)
+    output_transform = build_output_transform(config=output_config.transform)
     module = EvaluationModule(
         model,
         evaluator,
