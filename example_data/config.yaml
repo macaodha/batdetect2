@@ -1,66 +1,71 @@
+config_version: v1
+
 audio:
   samplerate: 256000
   resample:
-    enabled: True
-    method: "poly"
-
-preprocess:
-  stft:
-    window_duration: 0.002
-    window_overlap: 0.75
-    window_fn: hann
-  frequencies:
-    max_freq: 120000
-    min_freq: 10000
-  size:
-    height: 128
-    resize_factor: 0.5
-  spectrogram_transforms:
-    - name: pcen
-      time_constant: 0.1
-      gain: 0.98
-      bias: 2
-      power: 0.5
-    - name: spectral_mean_subtraction
-
-postprocess:
-  nms_kernel_size: 9
-  detection_threshold: 0.01
-  top_k_per_sec: 200
+    enabled: true
+    method: poly
 
 model:
-  name: UNetBackbone
-  input_height: 128
-  in_channels: 1
-  encoder:
-    layers:
-      - name: FreqCoordConvDown
-        out_channels: 32
-      - name: FreqCoordConvDown
-        out_channels: 64
-      - name: LayerGroup
-        layers:
-          - name: FreqCoordConvDown
-            out_channels: 128
-          - name: ConvBlock
-            out_channels: 256
-  bottleneck:
-    channels: 256
-    layers:
-      - name: SelfAttention
-        attention_channels: 256
-  decoder:
-    layers:
-      - name: FreqCoordConvUp
-        out_channels: 64
-      - name: FreqCoordConvUp
-        out_channels: 32
-      - name: LayerGroup
-        layers:
-          - name: FreqCoordConvUp
-            out_channels: 32
-          - name: ConvBlock
-            out_channels: 32
+  samplerate: 256000
+
+  preprocess:
+    stft:
+      window_duration: 0.002
+      window_overlap: 0.75
+      window_fn: hann
+    frequencies:
+      max_freq: 120000
+      min_freq: 10000
+    size:
+      height: 128
+      resize_factor: 0.5
+    spectrogram_transforms:
+      - name: pcen
+        time_constant: 0.1
+        gain: 0.98
+        bias: 2
+        power: 0.5
+      - name: spectral_mean_subtraction
+
+  architecture:
+    name: UNetBackbone
+    input_height: 128
+    in_channels: 1
+    encoder:
+      layers:
+        - name: FreqCoordConvDown
+          out_channels: 32
+        - name: FreqCoordConvDown
+          out_channels: 64
+        - name: LayerGroup
+          layers:
+            - name: FreqCoordConvDown
+              out_channels: 128
+            - name: ConvBlock
+              out_channels: 256
+    bottleneck:
+      channels: 256
+      layers:
+        - name: SelfAttention
+          attention_channels: 256
+    decoder:
+      layers:
+        - name: FreqCoordConvUp
+          out_channels: 64
+        - name: FreqCoordConvUp
+          out_channels: 32
+        - name: LayerGroup
+          layers:
+            - name: FreqCoordConvUp
+              out_channels: 32
+            - name: ConvBlock
+              out_channels: 32
+
+  postprocess:
+    nms_kernel_size: 9
+    detection_threshold: 0.01
+    top_k_per_sec: 200
 
 train:
   optimizer:
@@ -80,8 +85,7 @@ train:
 
   train_loader:
     batch_size: 8
-    num_workers: 2
-    shuffle: True
+    shuffle: true
 
     clipping_strategy:
       name: random_subclip
@@ -117,7 +121,6 @@ train:
           max_masks: 3
 
   val_loader:
-    num_workers: 2
     clipping_strategy:
       name: whole_audio_padded
       chunk_size: 0.256
@@ -136,9 +139,6 @@ train:
     size:
       weight: 0.1
 
-  logger:
-    name: csv
-
   validation:
     tasks:
       - name: sound_event_detection
@@ -147,6 +147,10 @@ train:
       - name: sound_event_classification
         metrics:
           - name: average_precision
+
+logging:
+  train:
+    name: csv
 
 evaluation:
   tasks:

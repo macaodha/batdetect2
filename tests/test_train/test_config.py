@@ -6,5 +6,7 @@ def test_example_config_is_valid(example_data_dir):
     conf = load_config(
         example_data_dir / "config.yaml",
         schema=BatDetect2Config,
+        extra="forbid",
+        strict=True,
     )
     assert isinstance(conf, BatDetect2Config)

@@ -8,7 +8,7 @@ configuration data from files, with optional support for accessing nested
 configuration sections.
 """
 
-from typing import Any, Type, TypeVar, overload
+from typing import Any, Literal, Type, TypeVar, overload
 
 import yaml
 from deepmerge.merger import Merger
@@ -69,8 +69,20 @@ class BaseConfig(BaseModel):
         return cls.model_validate(yaml.safe_load(yaml_str))
 
     @classmethod
-    def load(cls: Type[C], path: PathLike, field: str | None = None) -> C:
-        return load_config(path, schema=cls, field=field)
+    def load(
+        cls: Type[C],
+        path: PathLike,
+        field: str | None = None,
+        extra: Literal["ignore", "allow", "forbid"] | None = None,
+        strict: bool | None = None,
+    ) -> C:
+        return load_config(
+            path,
+            schema=cls,
+            field=field,
+            extra=extra,
+            strict=strict,
+        )
 
 
 T = TypeVar("T")
@@ -142,6 +154,8 @@ def load_config(
     path: PathLike,
     schema: Type[T_Model],
     field: str | None = None,
+    extra: Literal["ignore", "allow", "forbid"] | None = None,
+    strict: bool | None = None,
 ) -> T_Model: ...
 
 
@@ -150,6 +164,8 @@ def load_config(
     path: PathLike,
     schema: TypeAdapter[T],
     field: str | None = None,
+    extra: Literal["ignore", "allow", "forbid"] | None = None,
+    strict: bool | None = None,
 ) -> T: ...
 
 
@@ -157,6 +173,8 @@ def load_config(
     path: PathLike,
     schema: Type[T_Model] | TypeAdapter[T],
     field: str | None = None,
+    extra: Literal["ignore", "allow", "forbid"] | None = None,
+    strict: bool | None = None,
 ) -> T_Model | T:
     """Load and validate configuration data from a file against a schema.
 
@@ -178,6 +196,17 @@ def load_config(
         file content is validated against the schema.
         Example: `"training.optimizer"` would extract the `optimizer` section
         within the `training` section.
+    extra : Literal["ignore", "allow", "forbid"], optional
+        How to handle extra keys in the configuration data. If None (default),
+        the default behaviour of the schema is used. If "ignore", extra keys
+        are ignored. If "allow", extra keys are allowed and will be accessible
+        as attributes on the resulting model instance. If "forbid", extra
+        keys are forbidden and an exception is raised. See pydantic
+        documentation for more details.
+    strict : bool, optional
+        Whether to enforce types strictly. If None (default), the default
+        behaviour of the schema is used. See pydantic documentation for more
+        details.
 
     Returns
     -------
@@ -209,9 +238,9 @@ def load_config(
         config = get_object_field(config, field)
 
     if isinstance(schema, TypeAdapter):
-        return schema.validate_python(config or {})
+        return schema.validate_python(config or {}, extra=extra, strict=strict)
 
-    return schema.model_validate(config or {})
+    return schema.model_validate(config or {}, extra=extra, strict=strict)
 
 
 default_merger = Merger(
