@@ -34,7 +34,7 @@ class CosineAnnealingSchedulerConfig(BaseConfig):
     """
 
     name: Literal["cosine_annealing"] = "cosine_annealing"
-    t_max: int = 100
+    t_max: int = 200
 
 
 scheduler_registry: Registry[LRScheduler, [Optimizer]] = Registry("scheduler")
