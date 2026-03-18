@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Sequence
+from typing import Literal, Sequence, cast
 
 import numpy as np
 import torch
@@ -19,7 +19,8 @@ from batdetect2.evaluate import (
 )
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
-from batdetect2.models import Model, build_model
+from batdetect2.models import Model, build_model, build_model_with_new_targets
+from batdetect2.models.detectors import Detector
 from batdetect2.outputs import (
     OutputFormatConfig,
     OutputFormatterProtocol,
@@ -104,6 +105,46 @@ class BatDetect2API:
             log_dir=log_dir,
             num_epochs=num_epochs,
             experiment_name=experiment_name,
+            run_name=run_name,
+            seed=seed,
+        )
+        return self
+
+    def finetune(
+        self,
+        train_annotations: Sequence[data.ClipAnnotation],
+        val_annotations: Sequence[data.ClipAnnotation] | None = None,
+        trainable: Literal[
+            "all", "heads", "classifier_head", "bbox_head"
+        ] = "heads",
+        train_workers: int = 0,
+        val_workers: int = 0,
+        checkpoint_dir: Path | None = DEFAULT_CHECKPOINT_DIR,
+        log_dir: Path | None = DEFAULT_LOGS_DIR,
+        experiment_name: str | None = None,
+        num_epochs: int | None = None,
+        run_name: str | None = None,
+        seed: int | None = None,
+    ) -> "BatDetect2API":
+        """Fine-tune the model with trainable-parameter selection."""
+
+        self._set_trainable_parameters(trainable)
+
+        run_train(
+            train_annotations=train_annotations,
+            val_annotations=val_annotations,
+            model=self.model,
+            targets=self.targets,
+            model_config=self.config.model,
+            train_config=self.config.train,
+            preprocessor=self.preprocessor,
+            audio_loader=self.audio_loader,
+            train_workers=train_workers,
+            val_workers=val_workers,
+            checkpoint_dir=checkpoint_dir,
+            log_dir=log_dir,
+            experiment_name=experiment_name,
+            num_epochs=num_epochs,
             run_name=run_name,
             seed=seed,
         )
@@ -410,6 +451,7 @@ class BatDetect2API:
         cls,
         path: data.PathLike,
         config: BatDetect2Config | None = None,
+        targets: TargetProtocol | None = None,
     ) -> "BatDetect2API":
         from batdetect2.audio import AudioConfig
 
@@ -423,7 +465,12 @@ class BatDetect2API:
         )
         config = merge_configs(base, config) if config else base
 
-        targets = build_targets(config=config.model.targets)
+        if targets is None:
+            targets = build_targets(config=config.model.targets)
+        else:
+            target_config = getattr(targets, "config", None)
+            if target_config is not None:
+                config.model.targets = target_config
 
         audio_loader = build_audio_loader(config=config.audio)
 
@@ -452,6 +499,16 @@ class BatDetect2API:
             transform=output_transform,
         )
 
+        targets_changed = targets is not None or (
+            config.model.targets.model_dump(mode="json")
+            != model_config.targets.model_dump(mode="json")
+        )
+        if targets_changed:
+            model = build_model_with_new_targets(
+                model=model,
+                targets=targets,
+            )
+
         model.preprocessor = preprocessor
         model.postprocessor = postprocessor
         model.targets = targets
@@ -467,3 +524,25 @@ class BatDetect2API:
             formatter=formatter,
             output_transform=output_transform,
         )
+
+    def _set_trainable_parameters(
+        self,
+        trainable: Literal["all", "heads", "classifier_head", "bbox_head"],
+    ) -> None:
+        detector = cast(Detector, self.model.detector)
+
+        for parameter in detector.parameters():
+            parameter.requires_grad = False
+
+        if trainable == "all":
+            for parameter in detector.parameters():
+                parameter.requires_grad = True
+            return
+
+        if trainable in {"heads", "classifier_head"}:
+            for parameter in detector.classifier_head.parameters():
+                parameter.requires_grad = True
+
+        if trainable in {"heads", "bbox_head"}:
+            for parameter in detector.bbox_head.parameters():
+                parameter.requires_grad = True

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import lightning as L
 import numpy as np
@@ -8,6 +9,9 @@ from soundevent.geometry import compute_bounds
 
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.config import BatDetect2Config
+from batdetect2.models.detectors import Detector
+from batdetect2.models.heads import ClassifierHead
+from batdetect2.train import load_model_from_checkpoint
 from batdetect2.train.lightning import build_training_module
 
 
@@ -211,6 +215,77 @@ def test_user_can_load_checkpoint_and_finetune(
 
     checkpoints = list(finetune_dir.rglob("*.ckpt"))
     assert checkpoints
+
+
+def test_user_can_load_checkpoint_with_new_targets(
+    tmp_path: Path,
+    sample_targets,
+) -> None:
+    """User story: start from checkpoint with a new target definition."""
+
+    module = build_training_module(model_config=BatDetect2Config().model)
+    trainer = L.Trainer(enable_checkpointing=False, logger=False)
+    checkpoint_path = tmp_path / "base_transfer.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(checkpoint_path)
+
+    source_model, _ = load_model_from_checkpoint(checkpoint_path)
+    api = BatDetect2API.from_checkpoint(
+        checkpoint_path,
+        targets=sample_targets,
+    )
+    source_detector = cast(Detector, source_model.detector)
+    detector = cast(Detector, api.model.detector)
+    classifier_head = cast(ClassifierHead, detector.classifier_head)
+
+    assert api.targets is sample_targets
+    assert detector.num_classes == len(sample_targets.class_names)
+    assert (
+        classifier_head.classifier.out_channels
+        == len(sample_targets.class_names) + 1
+    )
+
+    source_backbone = source_detector.backbone.state_dict()
+    target_backbone = detector.backbone.state_dict()
+    assert source_backbone
+    for key, value in source_backbone.items():
+        assert key in target_backbone
+        torch.testing.assert_close(target_backbone[key], value)
+
+
+def test_user_can_finetune_only_heads(
+    tmp_path: Path,
+    example_annotations,
+) -> None:
+    """User story: fine-tune only prediction heads."""
+
+    api = BatDetect2API.from_config(BatDetect2Config())
+    finetune_dir = tmp_path / "heads_only"
+
+    api.finetune(
+        train_annotations=example_annotations[:1],
+        val_annotations=example_annotations[:1],
+        trainable="heads",
+        train_workers=0,
+        val_workers=0,
+        checkpoint_dir=finetune_dir,
+        log_dir=tmp_path / "logs",
+        num_epochs=1,
+        seed=0,
+    )
+    detector = cast(Detector, api.model.detector)
+
+    backbone_params = list(detector.backbone.parameters())
+    classifier_params = list(detector.classifier_head.parameters())
+    bbox_params = list(detector.bbox_head.parameters())
+
+    assert backbone_params
+    assert classifier_params
+    assert bbox_params
+    assert all(not parameter.requires_grad for parameter in backbone_params)
+    assert all(parameter.requires_grad for parameter in classifier_params)
+    assert all(parameter.requires_grad for parameter in bbox_params)
+    assert list(finetune_dir.rglob("*.ckpt"))
 
 
 def test_user_can_evaluate_small_dataset_and_get_metrics(

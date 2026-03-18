@@ -68,8 +68,17 @@ class TrainingModule(L.LightningModule):
         return outputs
 
     def configure_optimizers(self):
+        trainable_parameters = [
+            parameter
+            for parameter in self.parameters()
+            if parameter.requires_grad
+        ]
+
+        if not trainable_parameters:
+            raise ValueError("No trainable parameters available.")
+
         optimizer = build_optimizer(
-            self.parameters(),
+            trainable_parameters,
             config=self.train_config.optimizer,
         )
         scheduler = build_scheduler(

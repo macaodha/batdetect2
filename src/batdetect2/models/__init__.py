@@ -100,6 +100,7 @@ __all__ = [
     "Model",
     "ModelConfig",
     "build_model",
+    "build_model_with_new_targets",
 ]
 
 
@@ -272,5 +273,23 @@ def build_model(
         detector=detector,
         postprocessor=postprocessor,
         preprocessor=preprocessor,
+        targets=targets,
+    )
+
+
+def build_model_with_new_targets(
+    model: Model,
+    targets: TargetProtocol,
+) -> Model:
+    """Build a new model with a different target set."""
+    detector = build_detector(
+        num_classes=len(targets.class_names),
+        backbone=model.detector.backbone,
+    )
+
+    return Model(
+        detector=detector,
+        postprocessor=model.postprocessor,
+        preprocessor=model.preprocessor,
         targets=targets,
     )

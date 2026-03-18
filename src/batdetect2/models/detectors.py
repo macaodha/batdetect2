@@ -135,7 +135,9 @@ class Detector(DetectionModel):
 
 
 def build_detector(
-    num_classes: int, config: BackboneConfig | None = None
+    num_classes: int,
+    config: BackboneConfig | None = None,
+    backbone: BackboneModel | None = None,
 ) -> DetectionModel:
     """Build a complete BatDetect2 detection model.
 
@@ -165,13 +167,14 @@ def build_detector(
         If ``num_classes`` is not positive, or if the backbone
         configuration is invalid.
     """
-    config = config or UNetBackboneConfig()
+    if backbone is None:
+        config = config or UNetBackboneConfig()
+        logger.opt(lazy=True).debug(
+            "Building model with config: \n{}",
+            lambda: config.to_yaml_string(),  # type: ignore
+        )
+        backbone = build_backbone(config=config)
 
-    logger.opt(lazy=True).debug(
-        "Building model with config: \n{}",
-        lambda: config.to_yaml_string(),  # type: ignore
-    )
-    backbone = build_backbone(config=config)
     classifier_head = ClassifierHead(
         num_classes=num_classes,
         in_channels=backbone.out_channels,

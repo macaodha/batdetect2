@@ -82,5 +82,9 @@ class EncoderDecoderModel(BackboneModel):
 
 
 class DetectionModel(ABC, torch.nn.Module):
+    backbone: BackboneModel
+    classifier_head: torch.nn.Module
+    bbox_head: torch.nn.Module
+
     @abstractmethod
     def forward(self, spec: torch.Tensor) -> ModelOutput: ...
