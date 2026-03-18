@@ -8,10 +8,12 @@ import torch
 from soundevent.geometry import compute_bounds
 
 from batdetect2.api_v2 import BatDetect2API
+from batdetect2.audio import AudioConfig
 from batdetect2.config import BatDetect2Config
+from batdetect2.inference import InferenceConfig
 from batdetect2.models.detectors import Detector
 from batdetect2.models.heads import ClassifierHead
-from batdetect2.train import load_model_from_checkpoint
+from batdetect2.train import TrainingConfig, load_model_from_checkpoint
 from batdetect2.train.lightning import build_training_module
 
 
@@ -328,3 +330,78 @@ def test_user_can_save_evaluation_results_to_disk(
 
     assert isinstance(metrics, dict)
     assert (tmp_path / "metrics.json").exists()
+
+
+def test_process_file_uses_resolved_batch_size_by_default(
+    api_v2: BatDetect2API,
+    example_audio_files: list[Path],
+    monkeypatch,
+) -> None:
+    """User story: process_file falls back to resolved inference config."""
+
+    captured: dict[str, object] = {}
+
+    def fake_process_files(
+        audio_files,
+        batch_size=None,
+        **kwargs,
+    ):
+        captured["audio_files"] = audio_files
+        captured["batch_size"] = batch_size
+        captured["kwargs"] = kwargs
+        return []
+
+    monkeypatch.setattr(api_v2, "process_files", fake_process_files)
+
+    api_v2.process_file(example_audio_files[0])
+
+    assert captured["audio_files"] == [example_audio_files[0]]
+    assert captured["batch_size"] == api_v2.inference_config.loader.batch_size
+
+
+def test_per_call_overrides_are_ephemeral(monkeypatch) -> None:
+    """User story: call-level overrides do not mutate resolved defaults."""
+
+    api = BatDetect2API.from_config(BatDetect2Config())
+
+    override_inference = InferenceConfig.model_validate(
+        {"loader": {"batch_size": 7}}
+    )
+    override_audio = AudioConfig.model_validate({"samplerate": 384000})
+    override_train = TrainingConfig.model_validate(
+        {"trainer": {"max_epochs": 2}}
+    )
+
+    captured_process: dict[str, object] = {}
+    captured_train: dict[str, object] = {}
+
+    def fake_process_file_list(*args, **kwargs):
+        captured_process["inference_config"] = kwargs["inference_config"]
+        captured_process["audio_config"] = kwargs["audio_config"]
+        return []
+
+    def fake_run_train(*args, **kwargs):
+        captured_train["train_config"] = kwargs["train_config"]
+        captured_train["audio_config"] = kwargs["audio_config"]
+        captured_train["model_config"] = kwargs["model_config"]
+        return None
+
+    monkeypatch.setattr(
+        "batdetect2.api_v2.process_file_list", fake_process_file_list
+    )
+    monkeypatch.setattr("batdetect2.api_v2.run_train", fake_run_train)
+
+    api.process_files(
+        [], inference_config=override_inference, audio_config=override_audio
+    )
+    api.train([], train_config=override_train, audio_config=override_audio)
+
+    assert captured_process["inference_config"] is override_inference
+    assert captured_process["audio_config"] is override_audio
+    assert captured_train["train_config"] is override_train
+    assert captured_train["audio_config"] is override_audio
+    assert captured_train["model_config"] is api.model_config
+
+    assert api.inference_config.loader.batch_size != 7
+    assert api.audio_config.samplerate != 384000
+    assert api.train_config.trainer.max_epochs != 2

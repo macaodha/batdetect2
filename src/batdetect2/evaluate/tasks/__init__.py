@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from pydantic import Field
 from soundevent import data
@@ -44,7 +44,7 @@ def build_task(
 def evaluate_task(
     clip_annotations: Sequence[data.ClipAnnotation],
     predictions: Sequence[ClipDetections],
-    task: Optional["str"] = None,
+    task: str | None = None,
     targets: TargetProtocol | None = None,
     config: TaskConfig | dict | None = None,
 ):
