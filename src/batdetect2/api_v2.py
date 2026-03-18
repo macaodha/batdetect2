@@ -304,8 +304,20 @@ class BatDetect2API:
     def load_predictions(
         self,
         path: data.PathLike,
-    ) -> list[ClipDetections]:
-        return self.formatter.load(path)
+        format: str | None = None,
+        config: OutputFormatConfig | None = None,
+    ) -> list[object]:
+        formatter = self.formatter
+
+        if format is not None or config is not None:
+            format = format or config.name  # type: ignore
+            formatter = get_output_formatter(
+                name=format,
+                targets=self.targets,
+                config=config,
+            )
+
+        return formatter.load(path)
 
     @classmethod
     def from_config(
