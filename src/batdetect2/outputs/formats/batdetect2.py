@@ -11,9 +11,9 @@ from batdetect2.outputs.formats.base import (
     make_path_relative,
     output_formatters,
 )
-from batdetect2.targets import terms
 from batdetect2.outputs.types import OutputFormatterProtocol
 from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.targets import terms
 from batdetect2.targets.types import TargetProtocol
 
 try:
