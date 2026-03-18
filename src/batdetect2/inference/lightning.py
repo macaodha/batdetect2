@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 from batdetect2.inference.dataset import DatasetItem, InferenceDataset
 from batdetect2.models import Model
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
-from batdetect2.postprocess import to_raw_predictions
 from batdetect2.postprocess.types import ClipDetections
 
 
@@ -18,7 +17,9 @@ class InferenceModule(LightningModule):
     ):
         super().__init__()
         self.model = model
-        self.output_transform = output_transform or build_output_transform()
+        self.output_transform = output_transform or build_output_transform(
+            targets=model.targets
+        )
 
     def predict_step(
         self,
@@ -34,18 +35,13 @@ class InferenceModule(LightningModule):
 
         clip_detections = self.model.postprocessor(outputs)
 
-        predictions = [
-            ClipDetections(
+        return [
+            self.output_transform.to_clip_detections(
+                detections=clip_dets,
                 clip=clip,
-                detections=to_raw_predictions(
-                    clip_dets.numpy(),
-                    targets=self.model.targets,
-                ),
             )
-            for clip, clip_dets in zip(clips, clip_detections, strict=False)
+            for clip, clip_dets in zip(clips, clip_detections, strict=True)
         ]
-
-        return self.output_transform(predictions)
 
     def get_dataset(self) -> InferenceDataset:
         dataloaders = self.trainer.predict_dataloaders

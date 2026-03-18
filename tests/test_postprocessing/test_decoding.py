@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 from soundevent import data
 
-from batdetect2.postprocess.decoding import (
+from batdetect2.outputs.transforms.decoding import (
     DEFAULT_CLASSIFICATION_THRESHOLD,
     convert_raw_prediction_to_sound_event_prediction,
     convert_raw_predictions_to_clip_prediction,

@@ -9,7 +9,6 @@ from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
 from batdetect2.models.types import ModelOutput
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
-from batdetect2.postprocess import to_raw_predictions
 from batdetect2.postprocess.types import ClipDetections
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
@@ -25,7 +24,7 @@ class ValidationMetrics(Callback):
         super().__init__()
 
         self.evaluator = evaluator
-        self.output_transform = output_transform or build_output_transform()
+        self.output_transform = output_transform
 
         self._clip_annotations: List[data.ClipAnnotation] = []
         self._predictions: List[ClipDetections] = []
@@ -92,6 +91,14 @@ class ValidationMetrics(Callback):
         dataloader_idx: int = 0,
     ) -> None:
         model = pl_module.model
+        if self.output_transform is None:
+            self.output_transform = build_output_transform(
+                targets=model.targets
+            )
+
+        output_transform = self.output_transform
+        assert output_transform is not None
+
         dataset = self.get_dataset(trainer)
 
         clip_annotations = [
@@ -101,17 +108,14 @@ class ValidationMetrics(Callback):
 
         clip_detections = model.postprocessor(outputs)
         predictions = [
-            ClipDetections(
+            output_transform.to_clip_detections(
+                detections=clip_dets,
                 clip=clip_annotation.clip,
-                detections=to_raw_predictions(
-                    clip_dets.numpy(), targets=model.targets
-                ),
             )
             for clip_annotation, clip_dets in zip(
                 clip_annotations, clip_detections, strict=False
             )
         ]
-        predictions = self.output_transform(predictions)
 
         self._clip_annotations.extend(clip_annotations)
         self._predictions.extend(predictions)

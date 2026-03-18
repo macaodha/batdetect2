@@ -26,7 +26,7 @@ from batdetect2.outputs import (
     get_output_formatter,
 )
 from batdetect2.outputs.types import OutputFormatterProtocol
-from batdetect2.postprocess import build_postprocessor, to_raw_predictions
+from batdetect2.postprocess import build_postprocessor
 from batdetect2.postprocess.types import (
     ClipDetections,
     Detection,
@@ -215,13 +215,8 @@ class BatDetect2API:
         detections = self.model.postprocessor(
             outputs,
         )[0]
-        raw_predictions = to_raw_predictions(
-            detections.numpy(),
-            targets=self.targets,
-        )
-
-        return self.output_transform.transform_detections(
-            raw_predictions,
+        return self.output_transform.to_detections(
+            detections=detections,
             start_time=start_time,
         )
 
@@ -321,7 +316,8 @@ class BatDetect2API:
             config=config.outputs.format,
         )
         output_transform = build_output_transform(
-            config=config.outputs.transform
+            config=config.outputs.transform,
+            targets=targets,
         )
 
         return cls(
@@ -375,7 +371,8 @@ class BatDetect2API:
             config=config.outputs.format,
         )
         output_transform = build_output_transform(
-            config=config.outputs.transform
+            config=config.outputs.transform,
+            targets=targets,
         )
 
         return cls(

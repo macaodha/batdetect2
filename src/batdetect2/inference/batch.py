@@ -44,6 +44,7 @@ def run_batch_inference(
     targets = targets or build_targets()
     output_transform = output_transform or build_output_transform(
         config=config.outputs.transform,
+        targets=targets,
     )
 
     loader = build_inference_loader(

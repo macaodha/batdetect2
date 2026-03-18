@@ -61,7 +61,10 @@ def run_evaluate(
         experiment_name=experiment_name,
         run_name=run_name,
     )
-    output_transform = build_output_transform(config=output_config.transform)
+    output_transform = build_output_transform(
+        config=output_config.transform,
+        targets=targets,
+    )
     module = EvaluationModule(
         model,
         evaluator,

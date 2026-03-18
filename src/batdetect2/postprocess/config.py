@@ -2,7 +2,6 @@ from pydantic import Field
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
-from batdetect2.postprocess.decoding import DEFAULT_CLASSIFICATION_THRESHOLD
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE
 
 __all__ = [
@@ -11,6 +10,7 @@ __all__ = [
 ]
 
 DEFAULT_DETECTION_THRESHOLD = 0.01
+DEFAULT_CLASSIFICATION_THRESHOLD = 0.1
 
 
 TOP_K_PER_SEC = 100

@@ -11,9 +11,9 @@ from batdetect2.outputs.formats import (
 )
 from batdetect2.outputs.transforms import (
     OutputTransformConfig,
-    OutputTransformProtocol,
     build_output_transform,
 )
+from batdetect2.outputs.types import OutputTransformProtocol
 
 __all__ = [
     "BatDetect2OutputConfig",

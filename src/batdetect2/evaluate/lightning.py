@@ -9,7 +9,6 @@ from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
-from batdetect2.postprocess import to_raw_predictions
 from batdetect2.postprocess.types import ClipDetections
 
 
@@ -24,7 +23,9 @@ class EvaluationModule(LightningModule):
 
         self.model = model
         self.evaluator = evaluator
-        self.output_transform = output_transform or build_output_transform()
+        self.output_transform = output_transform or build_output_transform(
+            targets=evaluator.targets
+        )
 
         self.clip_annotations: List[data.ClipAnnotation] = []
         self.predictions: List[ClipDetections] = []
@@ -39,18 +40,14 @@ class EvaluationModule(LightningModule):
         outputs = self.model.detector(batch.spec)
         clip_detections = self.model.postprocessor(outputs)
         predictions = [
-            ClipDetections(
+            self.output_transform.to_clip_detections(
+                detections=clip_dets,
                 clip=clip_annotation.clip,
-                detections=to_raw_predictions(
-                    clip_dets.numpy(),
-                    targets=self.evaluator.targets,
-                ),
             )
             for clip_annotation, clip_dets in zip(
                 clip_annotations, clip_detections, strict=False
             )
         ]
-        predictions = self.output_transform(predictions)
 
         self.clip_annotations.extend(clip_annotations)
         self.predictions.extend(predictions)
