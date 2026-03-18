@@ -176,10 +176,10 @@ def test_api_from_checkpoint_reconstructs_model_config(tmp_path: Path):
 
     api = BatDetect2API.from_checkpoint(path)
 
-    assert api.config.model.model_dump(
+    assert api.model_config.model_dump(
         mode="json"
     ) == module.model_config.model_dump(mode="json")
-    assert api.config.audio.samplerate == module.model_config.samplerate
+    assert api.audio_config.samplerate == module.model_config.samplerate
 
 
 def test_train_smoke_produces_loadable_checkpoint(

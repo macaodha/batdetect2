@@ -13,10 +13,14 @@ __all__ = ["train_command"]
 @click.option("--val-dataset", type=click.Path(exists=True))
 @click.option("--model", "model_path", type=click.Path(exists=True))
 @click.option("--targets", "targets_config", type=click.Path(exists=True))
+@click.option("--model-config", type=click.Path(exists=True))
+@click.option("--training-config", type=click.Path(exists=True))
+@click.option("--audio-config", type=click.Path(exists=True))
+@click.option("--evaluation-config", type=click.Path(exists=True))
+@click.option("--inference-config", type=click.Path(exists=True))
+@click.option("--outputs-config", type=click.Path(exists=True))
 @click.option("--ckpt-dir", type=click.Path(exists=True))
 @click.option("--log-dir", type=click.Path(exists=True))
-@click.option("--config", type=click.Path(exists=True))
-@click.option("--config-field", type=str)
 @click.option("--train-workers", type=int)
 @click.option("--val-workers", type=int)
 @click.option("--num-epochs", type=int)
@@ -29,9 +33,13 @@ def train_command(
     model_path: Path | None = None,
     ckpt_dir: Path | None = None,
     log_dir: Path | None = None,
-    config: Path | None = None,
     targets_config: Path | None = None,
-    config_field: str | None = None,
+    model_config: Path | None = None,
+    training_config: Path | None = None,
+    audio_config: Path | None = None,
+    evaluation_config: Path | None = None,
+    inference_config: Path | None = None,
+    outputs_config: Path | None = None,
     seed: int | None = None,
     num_epochs: int | None = None,
     train_workers: int = 0,
@@ -40,27 +48,56 @@ def train_command(
     run_name: str | None = None,
 ):
     from batdetect2.api_v2 import BatDetect2API
-    from batdetect2.config import (
-        BatDetect2Config,
-        load_full_config,
-    )
+    from batdetect2.audio import AudioConfig
+    from batdetect2.config import BatDetect2Config
     from batdetect2.data import load_dataset_from_config
+    from batdetect2.evaluate import load_evaluation_config
+    from batdetect2.inference import InferenceConfig
+    from batdetect2.models import ModelConfig
+    from batdetect2.outputs import OutputsConfig
     from batdetect2.targets import load_target_config
+    from batdetect2.train import load_train_config
 
     logger.info("Initiating training process...")
 
     logger.info("Loading configuration...")
-    conf = (
-        load_full_config(config, field=config_field)
-        if config is not None
-        else BatDetect2Config()
+    target_conf = (
+        load_target_config(targets_config)
+        if targets_config is not None
+        else None
+    )
+    model_conf = (
+        ModelConfig.load(model_config) if model_config is not None else None
+    )
+    train_conf = (
+        load_train_config(training_config)
+        if training_config is not None
+        else None
+    )
+    audio_conf = (
+        AudioConfig.load(audio_config) if audio_config is not None else None
+    )
+    eval_conf = (
+        load_evaluation_config(evaluation_config)
+        if evaluation_config is not None
+        else None
+    )
+    inference_conf = (
+        InferenceConfig.load(inference_config)
+        if inference_config is not None
+        else None
+    )
+    outputs_conf = (
+        OutputsConfig.load(outputs_config)
+        if outputs_config is not None
+        else None
     )
 
-    if targets_config is not None:
-        logger.info("Loading targets configuration...")
-        conf = conf.model_copy(
-            update=dict(targets=load_target_config(targets_config))
-        )
+    if target_conf is not None:
+        logger.info("Loaded targets configuration.")
+
+    if model_conf is not None and target_conf is not None:
+        model_conf = model_conf.model_copy(update={"targets": target_conf})
 
     logger.info("Loading training dataset...")
     train_annotations = load_dataset_from_config(train_dataset)
@@ -81,12 +118,40 @@ def train_command(
 
     logger.info("Configuration and data loaded. Starting training...")
 
+    if model_path is not None and model_conf is not None:
+        raise click.UsageError(
+            "--model-config cannot be used with --model. "
+            "Checkpoint model configuration is loaded from the checkpoint."
+        )
+
     if model_path is None:
+        conf = BatDetect2Config()
+        if model_conf is not None:
+            conf.model = model_conf
+        elif target_conf is not None:
+            conf.model = conf.model.model_copy(update={"targets": target_conf})
+
+        if train_conf is not None:
+            conf.train = train_conf
+        if audio_conf is not None:
+            conf.audio = audio_conf
+        if eval_conf is not None:
+            conf.evaluation = eval_conf
+        if inference_conf is not None:
+            conf.inference = inference_conf
+        if outputs_conf is not None:
+            conf.outputs = outputs_conf
+
         api = BatDetect2API.from_config(conf)
     else:
         api = BatDetect2API.from_checkpoint(
             model_path,
-            config=conf if config is not None else None,
+            targets_config=target_conf,
+            train_config=train_conf,
+            audio_config=audio_conf,
+            evaluation_config=eval_conf,
+            inference_config=inference_conf,
+            outputs_config=outputs_conf,
         )
 
     return api.train(

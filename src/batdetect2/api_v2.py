@@ -8,7 +8,6 @@ from soundevent.audio.files import get_audio_files
 
 from batdetect2.audio import AudioConfig, AudioLoader, build_audio_loader
 from batdetect2.config import BatDetect2Config
-from batdetect2.core import merge_configs
 from batdetect2.data import Dataset, load_dataset_from_config
 from batdetect2.evaluate import (
     DEFAULT_EVAL_DIR,
@@ -47,7 +46,7 @@ from batdetect2.postprocess import (
     build_postprocessor,
 )
 from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
-from batdetect2.targets import TargetProtocol, build_targets
+from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
 from batdetect2.train import (
     DEFAULT_CHECKPOINT_DIR,
     TrainingConfig,
@@ -110,6 +109,7 @@ class BatDetect2API:
         num_epochs: int | None = None,
         run_name: str | None = None,
         seed: int | None = None,
+        model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
     ):
@@ -118,7 +118,7 @@ class BatDetect2API:
             val_annotations=val_annotations,
             model=self.model,
             targets=self.targets,
-            model_config=self.model_config,
+            model_config=model_config or self.model_config,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             train_workers=train_workers,
@@ -149,6 +149,7 @@ class BatDetect2API:
         num_epochs: int | None = None,
         run_name: str | None = None,
         seed: int | None = None,
+        model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
     ) -> "BatDetect2API":
@@ -161,7 +162,7 @@ class BatDetect2API:
             val_annotations=val_annotations,
             model=self.model,
             targets=self.targets,
-            model_config=self.model_config,
+            model_config=model_config or self.model_config,
             preprocessor=self.preprocessor,
             audio_loader=self.audio_loader,
             train_workers=train_workers,
@@ -499,76 +500,77 @@ class BatDetect2API:
     def from_checkpoint(
         cls,
         path: data.PathLike,
-        config: BatDetect2Config | None = None,
-        targets: TargetProtocol | None = None,
+        targets_config: TargetConfig | None = None,
+        audio_config: AudioConfig | None = None,
+        train_config: TrainingConfig | None = None,
+        evaluation_config: EvaluationConfig | None = None,
+        inference_config: InferenceConfig | None = None,
+        outputs_config: OutputsConfig | None = None,
     ) -> "BatDetect2API":
-        from batdetect2.audio import AudioConfig
-
         model, model_config = load_model_from_checkpoint(path)
 
-        # Reconstruct a full BatDetect2Config from the checkpoint's
-        # ModelConfig, then overlay any caller-supplied overrides.
-        base = BatDetect2Config(
-            model=model_config,
-            audio=AudioConfig(samplerate=model_config.samplerate),
+        audio_config = audio_config or AudioConfig(
+            samplerate=model_config.samplerate,
         )
-        config = merge_configs(base, config) if config else base
+        train_config = train_config or TrainingConfig()
+        evaluation_config = evaluation_config or EvaluationConfig()
+        inference_config = inference_config or InferenceConfig()
+        outputs_config = outputs_config or OutputsConfig()
 
-        if targets is None:
-            targets = build_targets(config=config.model.targets)
-        else:
-            target_config = getattr(targets, "config", None)
-            if target_config is not None:
-                config.model.targets = target_config
-
-        audio_loader = build_audio_loader(config=config.audio)
-
-        preprocessor = build_preprocessor(
-            input_samplerate=audio_loader.samplerate,
-            config=config.model.preprocess,
-        )
-
-        postprocessor = build_postprocessor(
-            preprocessor,
-            config=config.model.postprocess,
-        )
-
-        formatter = build_output_formatter(
-            targets,
-            config=config.outputs.format,
-        )
-        output_transform = build_output_transform(
-            config=config.outputs.transform,
-            targets=targets,
-        )
-
-        evaluator = build_evaluator(
-            config=config.evaluation,
-            targets=targets,
-            transform=output_transform,
-        )
-
-        targets_changed = targets is not None or (
-            config.model.targets.model_dump(mode="json")
-            != model_config.targets.model_dump(mode="json")
-        )
-        if targets_changed:
+        if (
+            targets_config is not None
+            and targets_config != model_config.targets
+        ):
+            targets = build_targets(config=targets_config)
             model = build_model_with_new_targets(
                 model=model,
                 targets=targets,
             )
+            model_config = model_config.model_copy(
+                update={"targets": targets_config}
+            )
+
+        targets = build_targets(config=model_config.targets)
+
+        audio_loader = build_audio_loader(config=audio_config)
+
+        preprocessor = build_preprocessor(
+            input_samplerate=audio_loader.samplerate,
+            config=model_config.preprocess,
+        )
+
+        postprocessor = build_postprocessor(
+            preprocessor,
+            config=model_config.postprocess,
+        )
+
+        formatter = build_output_formatter(
+            targets,
+            config=outputs_config.format,
+        )
+
+        output_transform = build_output_transform(
+            config=outputs_config.transform,
+            targets=targets,
+        )
+
+        evaluator = build_evaluator(
+            config=evaluation_config,
+            targets=targets,
+            transform=output_transform,
+        )
 
         model.preprocessor = preprocessor
         model.postprocessor = postprocessor
         model.targets = targets
 
         return cls(
-            model_config=config.model,
-            audio_config=config.audio,
-            train_config=config.train,
-            evaluation_config=config.evaluation,
-            inference_config=config.inference,
-            outputs_config=config.outputs,
+            model_config=model_config,
+            audio_config=audio_config,
+            train_config=train_config,
+            evaluation_config=evaluation_config,
+            inference_config=inference_config,
+            outputs_config=outputs_config,
             targets=targets,
             audio_loader=audio_loader,
             preprocessor=preprocessor,

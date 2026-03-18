@@ -12,9 +12,13 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 
 
 @cli.command(name="evaluate")
-@click.argument("model-path", type=click.Path(exists=True))
+@click.argument("model_path", type=click.Path(exists=True))
 @click.argument("test_dataset", type=click.Path(exists=True))
-@click.option("--config", "config_path", type=click.Path())
+@click.option("--targets", "targets_config", type=click.Path(exists=True))
+@click.option("--audio-config", type=click.Path(exists=True))
+@click.option("--evaluation-config", type=click.Path(exists=True))
+@click.option("--inference-config", type=click.Path(exists=True))
+@click.option("--outputs-config", type=click.Path(exists=True))
 @click.option("--base-dir", type=click.Path(), default=Path.cwd())
 @click.option("--output-dir", type=click.Path(), default=DEFAULT_OUTPUT_DIR)
 @click.option("--experiment-name", type=str)
@@ -24,15 +28,23 @@ def evaluate_command(
     model_path: Path,
     test_dataset: Path,
     base_dir: Path,
-    config_path: Path | None,
+    targets_config: Path | None,
+    audio_config: Path | None,
+    evaluation_config: Path | None,
+    inference_config: Path | None,
+    outputs_config: Path | None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     num_workers: int = 0,
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
     from batdetect2.api_v2 import BatDetect2API
-    from batdetect2.config import load_full_config
+    from batdetect2.audio import AudioConfig
     from batdetect2.data import load_dataset_from_config
+    from batdetect2.evaluate import load_evaluation_config
+    from batdetect2.inference import InferenceConfig
+    from batdetect2.outputs import OutputsConfig
+    from batdetect2.targets import load_target_config
 
     logger.info("Initiating evaluation process...")
 
@@ -46,11 +58,38 @@ def evaluate_command(
         num_annotations=len(test_annotations),
     )
 
-    config = None
-    if config_path is not None:
-        config = load_full_config(config_path)
+    target_conf = (
+        load_target_config(targets_config)
+        if targets_config is not None
+        else None
+    )
+    audio_conf = (
+        AudioConfig.load(audio_config) if audio_config is not None else None
+    )
+    eval_conf = (
+        load_evaluation_config(evaluation_config)
+        if evaluation_config is not None
+        else None
+    )
+    inference_conf = (
+        InferenceConfig.load(inference_config)
+        if inference_config is not None
+        else None
+    )
+    outputs_conf = (
+        OutputsConfig.load(outputs_config)
+        if outputs_config is not None
+        else None
+    )
 
-    api = BatDetect2API.from_checkpoint(model_path, config=config)
+    api = BatDetect2API.from_checkpoint(
+        model_path,
+        targets_config=target_conf,
+        audio_config=audio_conf,
+        evaluation_config=eval_conf,
+        inference_config=inference_conf,
+        outputs_config=outputs_conf,
+    )
 
     api.evaluate(
         test_annotations,

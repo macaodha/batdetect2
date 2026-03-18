@@ -201,7 +201,10 @@ def test_user_can_load_checkpoint_and_finetune(
     config.train.train_loader.batch_size = 1
     config.train.train_loader.augmentations.enabled = False
 
-    api = BatDetect2API.from_checkpoint(checkpoint_path, config=config)
+    api = BatDetect2API.from_checkpoint(
+        checkpoint_path,
+        train_config=config.train,
+    )
     finetune_dir = tmp_path / "finetuned"
 
     api.train(
@@ -234,13 +237,13 @@ def test_user_can_load_checkpoint_with_new_targets(
     source_model, _ = load_model_from_checkpoint(checkpoint_path)
     api = BatDetect2API.from_checkpoint(
         checkpoint_path,
-        targets=sample_targets,
+        targets_config=sample_targets.config,
     )
     source_detector = cast(Detector, source_model.detector)
     detector = cast(Detector, api.model.detector)
     classifier_head = cast(ClassifierHead, detector.classifier_head)
 
-    assert api.targets is sample_targets
+    assert api.targets.config == sample_targets.config
     assert detector.num_classes == len(sample_targets.class_names)
     assert (
         classifier_head.classifier.out_channels
@@ -253,6 +256,43 @@ def test_user_can_load_checkpoint_with_new_targets(
     for key, value in source_backbone.items():
         assert key in target_backbone
         torch.testing.assert_close(target_backbone[key], value)
+
+
+def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
+    tmp_path: Path,
+) -> None:
+    """User story: same targets config does not rebuild prediction heads."""
+
+    module = build_training_module(model_config=BatDetect2Config().model)
+    trainer = L.Trainer(enable_checkpointing=False, logger=False)
+    checkpoint_path = tmp_path / "same_targets.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(checkpoint_path)
+
+    source_model, source_model_config = load_model_from_checkpoint(
+        checkpoint_path
+    )
+    source_detector = cast(Detector, source_model.detector)
+
+    api = BatDetect2API.from_checkpoint(
+        checkpoint_path,
+        targets_config=source_model_config.targets,
+    )
+    detector = cast(Detector, api.model.detector)
+
+    for key, value in source_detector.classifier_head.state_dict().items():
+        assert key in detector.classifier_head.state_dict()
+        torch.testing.assert_close(
+            detector.classifier_head.state_dict()[key],
+            value,
+        )
+
+    for key, value in source_detector.bbox_head.state_dict().items():
+        assert key in detector.bbox_head.state_dict()
+        torch.testing.assert_close(
+            detector.bbox_head.state_dict()[key],
+            value,
+        )
 
 
 def test_user_can_finetune_only_heads(
