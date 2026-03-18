@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import lightning as L
+import pytest
 import torch
 from deepdiff import DeepDiff
 from soundevent import data
@@ -10,7 +11,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.audio.types import AudioLoader
 from batdetect2.config import BatDetect2Config
-from batdetect2.models import ModelConfig
+from batdetect2.models import ModelConfig, build_model
+from batdetect2.targets.classes import TargetClassConfig
 from batdetect2.train import (
     TrainingConfig,
     TrainingModule,
@@ -223,3 +225,40 @@ def test_train_smoke_produces_loadable_checkpoint(
     ).unsqueeze(0)
     outputs = model(wav.unsqueeze(0))
     assert outputs is not None
+
+
+def test_build_training_module_uses_provided_model() -> None:
+    model = build_model(ModelConfig())
+
+    module = build_training_module(
+        model_config=ModelConfig(),
+        train_config=TrainingConfig(),
+        model=model,
+    )
+
+    assert module.model is model
+
+
+def test_run_train_rejects_incompatible_model_config(
+    example_annotations: list[data.ClipAnnotation],
+) -> None:
+    model = build_model(ModelConfig())
+    incompatible_config = ModelConfig()
+    incompatible_config.targets.classification_targets.append(
+        TargetClassConfig(
+            name="dummy_class",
+            tags=[data.Tag(key="class", value="Dummy class")],
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Provided model is incompatible with model_config",
+    ):
+        run_train(
+            train_annotations=example_annotations[:1],
+            val_annotations=None,
+            model=model,
+            model_config=incompatible_config,
+            train_config=TrainingConfig(),
+        )

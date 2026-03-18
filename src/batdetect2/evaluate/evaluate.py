@@ -14,7 +14,7 @@ from batdetect2.logging import build_logger
 from batdetect2.models import Model
 from batdetect2.outputs import OutputsConfig, build_output_transform
 from batdetect2.outputs.types import OutputFormatterProtocol
-from batdetect2.postprocess.types import Detection
+from batdetect2.postprocess.types import ClipDetections
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets.types import TargetProtocol
 
@@ -35,7 +35,7 @@ def run_evaluate(
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
     experiment_name: str | None = None,
     run_name: str | None = None,
-) -> tuple[dict[str, float], list[list[Detection]]]:
+) -> tuple[dict[str, float], list[ClipDetections]]:
 
     audio_config = audio_config or AudioConfig()
     evaluation_config = evaluation_config or EvaluationConfig()

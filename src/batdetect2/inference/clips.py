@@ -38,10 +38,10 @@ def get_recording_clips(
     discard_empty: bool = True,
 ) -> Sequence[data.Clip]:
     start_time = 0
-    duration = recording.duration
+    recording_duration = recording.duration
     hop = duration * (1 - overlap)
 
-    num_clips = int(np.ceil(duration / hop))
+    num_clips = int(np.ceil(recording_duration / hop))
 
     if num_clips == 0:
         # This should only happen if the clip's duration is zero,
@@ -53,8 +53,8 @@ def get_recording_clips(
         start = start_time + i * hop
         end = start + duration
 
-        if end > duration:
-            empty_duration = end - duration
+        if end > recording_duration:
+            empty_duration = end - recording_duration
 
             if empty_duration > max_empty and discard_empty:
                 # Discard clips that contain too much empty space

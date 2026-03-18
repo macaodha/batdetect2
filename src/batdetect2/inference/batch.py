@@ -6,8 +6,8 @@ from soundevent import data
 from batdetect2.audio import AudioConfig
 from batdetect2.audio.loader import build_audio_loader
 from batdetect2.audio.types import AudioLoader
-from batdetect2.inference import InferenceConfig
 from batdetect2.inference.clips import get_clips_from_files
+from batdetect2.inference.config import InferenceConfig
 from batdetect2.inference.dataset import build_inference_loader
 from batdetect2.inference.lightning import InferenceModule
 from batdetect2.models import Model

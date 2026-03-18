@@ -11,7 +11,7 @@ from batdetect2.audio.types import AudioLoader
 from batdetect2.evaluate import build_evaluator
 from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import build_logger
-from batdetect2.models import ModelConfig
+from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import build_targets
@@ -33,6 +33,7 @@ __all__ = [
 def run_train(
     train_annotations: Sequence[data.ClipAnnotation],
     val_annotations: Sequence[data.ClipAnnotation] | None = None,
+    model: Model | None = None,
     targets: Optional["TargetProtocol"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
@@ -57,9 +58,18 @@ def run_train(
     audio_config = audio_config or AudioConfig()
     train_config = train_config or TrainingConfig()
 
+    if model is not None:
+        _validate_model_compatibility(model=model, model_config=model_config)
+
+    if model is not None:
+        targets = targets or model.targets
+
     targets = targets or build_targets(config=model_config.targets)
 
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
+
+    if model is not None:
+        preprocessor = preprocessor or model.preprocessor
 
     preprocessor = preprocessor or build_preprocessor(
         input_samplerate=audio_loader.samplerate,
@@ -98,6 +108,7 @@ def run_train(
     module = build_training_module(
         model_config=model_config,
         train_config=train_config,
+        model=model,
     )
 
     trainer = trainer or build_trainer(
@@ -122,6 +133,49 @@ def run_train(
     logger.info("Training complete.")
 
     return module
+
+
+def _validate_model_compatibility(
+    model: Model,
+    model_config: ModelConfig,
+) -> None:
+    reference_model = build_model(config=model_config)
+
+    expected_shapes = {
+        key: tuple(value.shape)
+        for key, value in reference_model.state_dict().items()
+    }
+    actual_shapes = {
+        key: tuple(value.shape) for key, value in model.state_dict().items()
+    }
+
+    expected_keys = set(expected_shapes)
+    actual_keys = set(actual_shapes)
+
+    missing_keys = sorted(expected_keys - actual_keys)
+    if missing_keys:
+        key = missing_keys[0]
+        raise ValueError(
+            "Provided model is incompatible with model_config: "
+            f"missing state key '{key}'."
+        )
+
+    extra_keys = sorted(actual_keys - expected_keys)
+    if extra_keys:
+        key = extra_keys[0]
+        raise ValueError(
+            "Provided model is incompatible with model_config: "
+            f"unexpected state key '{key}'."
+        )
+
+    for key, expected_shape in expected_shapes.items():
+        actual_shape = actual_shapes[key]
+        if actual_shape != expected_shape:
+            raise ValueError(
+                "Provided model is incompatible with model_config: "
+                f"shape mismatch for '{key}' (expected {expected_shape}, "
+                f"got {actual_shape})."
+            )
 
 
 def build_trainer(

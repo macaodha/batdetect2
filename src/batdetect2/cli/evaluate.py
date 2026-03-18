@@ -26,7 +26,7 @@ def evaluate_command(
     base_dir: Path,
     config_path: Path | None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
-    num_workers: int | None = None,
+    num_workers: int = 0,
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):

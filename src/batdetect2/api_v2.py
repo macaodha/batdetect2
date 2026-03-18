@@ -91,6 +91,7 @@ class BatDetect2API:
         run_train(
             train_annotations=train_annotations,
             val_annotations=val_annotations,
+            model=self.model,
             targets=self.targets,
             model_config=self.config.model,
             train_config=self.config.train,
@@ -116,7 +117,7 @@ class BatDetect2API:
         experiment_name: str | None = None,
         run_name: str | None = None,
         save_predictions: bool = True,
-    ) -> tuple[dict[str, float], list[list[Detection]]]:
+    ) -> tuple[dict[str, float], list[ClipDetections]]:
         return run_evaluate(
             self.model,
             test_annotations,
@@ -183,8 +184,17 @@ class BatDetect2API:
 
     def process_file(self, audio_file: data.PathLike) -> ClipDetections:
         recording = data.Recording.from_file(audio_file, compute_hash=False)
-        wav = self.audio_loader.load_recording(recording)
-        detections = self.process_audio(wav)
+
+        predictions = self.process_files(
+            [audio_file],
+            batch_size=self.config.inference.loader.batch_size,
+        )
+        detections = [
+            detection
+            for prediction in predictions
+            for detection in prediction.detections
+        ]
+
         return ClipDetections(
             clip=data.Clip(
                 uuid=recording.uuid,
@@ -215,7 +225,7 @@ class BatDetect2API:
 
         outputs = self.model.detector(spec)
 
-        detections = self.model.postprocessor(
+        detections = self.postprocessor(
             outputs,
         )[0]
         return self.output_transform.to_detections(
@@ -239,10 +249,14 @@ class BatDetect2API:
         return process_file_list(
             self.model,
             audio_files,
-            config=self.config,
             targets=self.targets,
             audio_loader=self.audio_loader,
+            audio_config=self.config.audio,
             preprocessor=self.preprocessor,
+            inference_config=self.config.inference,
+            output_config=self.config.outputs,
+            output_transform=self.output_transform,
+            batch_size=batch_size,
             num_workers=num_workers,
         )
 
@@ -257,8 +271,11 @@ class BatDetect2API:
             clips,
             targets=self.targets,
             audio_loader=self.audio_loader,
+            audio_config=self.config.audio,
             preprocessor=self.preprocessor,
-            config=self.config,
+            inference_config=self.config.inference,
+            output_config=self.config.outputs,
+            output_transform=self.output_transform,
             batch_size=batch_size,
             num_workers=num_workers,
         )
@@ -294,7 +311,7 @@ class BatDetect2API:
     def from_config(
         cls,
         config: BatDetect2Config,
-    ):
+    ) -> "BatDetect2API":
         targets = build_targets(config=config.model.targets)
 
         audio_loader = build_audio_loader(config=config.audio)
@@ -309,12 +326,6 @@ class BatDetect2API:
             config=config.model.postprocess,
         )
 
-        evaluator = build_evaluator(config=config.evaluation, targets=targets)
-
-        # NOTE: Better to have a separate instance of preprocessor and
-        # postprocessor as these may be moved to another device.
-        model = build_model(config=config.model)
-
         formatter = build_output_formatter(
             targets,
             config=config.outputs.format,
@@ -322,6 +333,19 @@ class BatDetect2API:
         output_transform = build_output_transform(
             config=config.outputs.transform,
             targets=targets,
+        )
+
+        evaluator = build_evaluator(
+            config=config.evaluation,
+            targets=targets,
+            transform=output_transform,
+        )
+
+        model = build_model(
+            config=config.model,
+            targets=targets,
+            preprocessor=preprocessor,
+            postprocessor=postprocessor,
         )
 
         return cls(
@@ -341,7 +365,7 @@ class BatDetect2API:
         cls,
         path: data.PathLike,
         config: BatDetect2Config | None = None,
-    ):
+    ) -> "BatDetect2API":
         from batdetect2.audio import AudioConfig
 
         model, model_config = load_model_from_checkpoint(path)
@@ -368,8 +392,6 @@ class BatDetect2API:
             config=config.model.postprocess,
         )
 
-        evaluator = build_evaluator(config=config.evaluation, targets=targets)
-
         formatter = build_output_formatter(
             targets,
             config=config.outputs.format,
@@ -378,6 +400,16 @@ class BatDetect2API:
             config=config.outputs.transform,
             targets=targets,
         )
+
+        evaluator = build_evaluator(
+            config=config.evaluation,
+            targets=targets,
+            transform=output_transform,
+        )
+
+        model.preprocessor = preprocessor
+        model.postprocessor = postprocessor
+        model.targets = targets
 
         return cls(
             config=config,

@@ -111,6 +111,7 @@ def load_model_from_checkpoint(
 def build_training_module(
     model_config: ModelConfig | None = None,
     train_config: TrainingConfig | None = None,
+    model: Model | None = None,
 ) -> TrainingModule:
     if model_config is None:
         model_config = ModelConfig()
@@ -121,4 +122,5 @@ def build_training_module(
     return TrainingModule(
         model_config=model_config.model_dump(mode="json"),
         train_config=train_config.model_dump(mode="json"),
+        model=model,
     )
