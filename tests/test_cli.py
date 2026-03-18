@@ -1,11 +1,15 @@
 """Test the command line interface."""
 
+import shutil
 from pathlib import Path
 
+import lightning as L
 import pandas as pd
 from click.testing import CliRunner
 
 from batdetect2.cli import cli
+from batdetect2.config import BatDetect2Config
+from batdetect2.train.lightning import build_training_module
 
 runner = CliRunner()
 
@@ -24,6 +28,55 @@ def test_cli_detect_command_help():
     result = runner.invoke(cli, ["detect", "--help"])
     assert result.exit_code == 0
     assert "Detect bat calls in files in AUDIO_DIR" in result.output
+
+
+def test_cli_predict_command_help():
+    """Test the predict command help."""
+    result = runner.invoke(cli, ["predict", "--help"])
+    assert result.exit_code == 0
+    assert "directory" in result.output
+    assert "file_list" in result.output
+    assert "dataset" in result.output
+
+
+def test_cli_predict_directory_runs_on_real_audio(tmp_path: Path):
+    """User story: run prediction from CLI on a small directory."""
+
+    source_audio = Path("example_data/audio")
+    source_file = next(source_audio.glob("*.wav"))
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    target_file = audio_dir / source_file.name
+    shutil.copy(source_file, target_file)
+
+    module = build_training_module(model_config=BatDetect2Config().model)
+    trainer = L.Trainer(enable_checkpointing=False, logger=False)
+    model_path = tmp_path / "model.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(model_path)
+    output_path = tmp_path / "predictions"
+
+    result = runner.invoke(
+        cli,
+        [
+            "predict",
+            "directory",
+            str(model_path),
+            str(audio_dir),
+            str(output_path),
+            "--batch-size",
+            "1",
+            "--workers",
+            "0",
+            "--format",
+            "batdetect2",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_path.exists()
+    output_files = list(output_path.glob("*.json"))
+    assert len(output_files) == 1
 
 
 def test_cli_detect_command_on_test_audio(tmp_path):
