@@ -53,7 +53,15 @@ def run_evaluate(
         num_workers=num_workers,
     )
 
-    evaluator = build_evaluator(config=evaluation_config, targets=targets)
+    output_transform = build_output_transform(
+        config=output_config.transform,
+        targets=targets,
+    )
+    evaluator = build_evaluator(
+        config=evaluation_config,
+        targets=targets,
+        transform=output_transform,
+    )
 
     logger = build_logger(
         evaluation_config.logger,
@@ -61,14 +69,9 @@ def run_evaluate(
         experiment_name=experiment_name,
         run_name=run_name,
     )
-    output_transform = build_output_transform(
-        config=output_config.transform,
-        targets=targets,
-    )
     module = EvaluationModule(
         model,
         evaluator,
-        output_transform=output_transform,
     )
     trainer = Trainer(logger=logger, enable_checkpointing=False)
     metrics = trainer.test(module, loader)

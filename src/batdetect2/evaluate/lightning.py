@@ -8,7 +8,6 @@ from batdetect2.evaluate.dataset import TestDataset, TestExample
 from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
-from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess.types import ClipDetections
 
 
@@ -17,15 +16,11 @@ class EvaluationModule(LightningModule):
         self,
         model: Model,
         evaluator: EvaluatorProtocol,
-        output_transform: OutputTransformProtocol | None = None,
     ):
         super().__init__()
 
         self.model = model
         self.evaluator = evaluator
-        self.output_transform = output_transform or build_output_transform(
-            targets=evaluator.targets
-        )
 
         self.clip_annotations: List[data.ClipAnnotation] = []
         self.predictions: List[ClipDetections] = []
@@ -39,15 +34,10 @@ class EvaluationModule(LightningModule):
 
         outputs = self.model.detector(batch.spec)
         clip_detections = self.model.postprocessor(outputs)
-        predictions = [
-            self.output_transform.to_clip_detections(
-                detections=clip_dets,
-                clip=clip_annotation.clip,
-            )
-            for clip_annotation, clip_dets in zip(
-                clip_annotations, clip_detections, strict=False
-            )
-        ]
+        predictions = self.evaluator.to_clip_detections_batch(
+            clip_detections,
+            [clip_annotation.clip for clip_annotation in clip_annotations],
+        )
 
         self.clip_annotations.extend(clip_annotations)
         self.predictions.extend(predictions)

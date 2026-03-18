@@ -5,8 +5,9 @@ from soundevent import data
 
 from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.tasks import build_task
-from batdetect2.evaluate.types import EvaluatorProtocol
-from batdetect2.postprocess.types import ClipDetections
+from batdetect2.evaluate.types import EvaluationTaskProtocol, EvaluatorProtocol
+from batdetect2.outputs import OutputTransformProtocol, build_output_transform
+from batdetect2.postprocess.types import ClipDetections, ClipDetectionsTensor
 from batdetect2.targets import build_targets
 from batdetect2.targets.types import TargetProtocol
 
@@ -20,10 +21,22 @@ class Evaluator:
     def __init__(
         self,
         targets: TargetProtocol,
-        tasks: Sequence[EvaluatorProtocol],
+        transform: OutputTransformProtocol,
+        tasks: Sequence[EvaluationTaskProtocol],
     ):
         self.targets = targets
+        self.transform = transform
         self.tasks = tasks
+
+    def to_clip_detections_batch(
+        self,
+        clip_detections: Sequence[ClipDetectionsTensor],
+        clips: Sequence[data.Clip],
+    ) -> list[ClipDetections]:
+        return [
+            self.transform.to_clip_detections(detections=dets, clip=clip)
+            for dets, clip in zip(clip_detections, clips, strict=False)
+        ]
 
     def evaluate(
         self,
@@ -54,6 +67,7 @@ class Evaluator:
 def build_evaluator(
     config: EvaluationConfig | dict | None = None,
     targets: TargetProtocol | None = None,
+    transform: OutputTransformProtocol | None = None,
 ) -> EvaluatorProtocol:
     targets = targets or build_targets()
 
@@ -63,7 +77,10 @@ def build_evaluator(
     if not isinstance(config, EvaluationConfig):
         config = EvaluationConfig.model_validate(config)
 
+    transform = transform or build_output_transform(targets=targets)
+
     return Evaluator(
         targets=targets,
+        transform=transform,
         tasks=[build_task(task, targets=targets) for task in config.tasks],
     )

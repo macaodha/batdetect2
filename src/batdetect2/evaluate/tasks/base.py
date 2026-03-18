@@ -28,7 +28,7 @@ from batdetect2.evaluate.affinity import (
 )
 from batdetect2.evaluate.types import (
     AffinityFunction,
-    EvaluatorProtocol,
+    EvaluationTaskProtocol,
 )
 from batdetect2.postprocess.types import ClipDetections, Detection
 from batdetect2.targets.types import TargetProtocol
@@ -39,7 +39,7 @@ __all__ = [
     "TaskImportConfig",
 ]
 
-tasks_registry: Registry[EvaluatorProtocol, [TargetProtocol]] = Registry(
+tasks_registry: Registry[EvaluationTaskProtocol, [TargetProtocol]] = Registry(
     "tasks"
 )
 
@@ -64,7 +64,7 @@ class BaseTaskConfig(BaseConfig):
     ignore_start_end: float = 0.01
 
 
-class BaseTask(EvaluatorProtocol, Generic[T_Output]):
+class BaseTask(EvaluationTaskProtocol, Generic[T_Output]):
     targets: TargetProtocol
 
     metrics: List[Callable[[Sequence[T_Output]], Dict[str, float]]]

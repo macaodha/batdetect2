@@ -123,17 +123,19 @@ class OutputTransform(OutputTransformProtocol):
 
             out.append(transformed)
 
-        return []
+        return out
 
     def transform_detection(
         self,
         detection: Detection,
     ) -> Detection | None:
         for transform in self.detection_transform_steps:
-            detection = transform(detection)  # type: ignore
+            transformed = transform(detection)
 
-            if detection is None:
+            if transformed is None:
                 return None
+
+            detection = transformed
 
         return detection
 

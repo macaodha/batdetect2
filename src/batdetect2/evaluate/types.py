@@ -4,12 +4,18 @@ from typing import Generic, Iterable, Protocol, Sequence, TypeVar
 from matplotlib.figure import Figure
 from soundevent import data
 
-from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.outputs.types import OutputTransformProtocol
+from batdetect2.postprocess.types import (
+    ClipDetections,
+    ClipDetectionsTensor,
+    Detection,
+)
 from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "AffinityFunction",
     "ClipMatches",
+    "EvaluationTaskProtocol",
     "EvaluatorProtocol",
     "MatchEvaluation",
     "MatcherProtocol",
@@ -94,8 +100,35 @@ class PlotterProtocol(Protocol):
 EvaluationOutput = TypeVar("EvaluationOutput")
 
 
+class EvaluationTaskProtocol(Protocol, Generic[EvaluationOutput]):
+    targets: TargetProtocol
+
+    def evaluate(
+        self,
+        clip_annotations: Sequence[data.ClipAnnotation],
+        predictions: Sequence[ClipDetections],
+    ) -> EvaluationOutput: ...
+
+    def compute_metrics(
+        self,
+        eval_outputs: EvaluationOutput,
+    ) -> dict[str, float]: ...
+
+    def generate_plots(
+        self,
+        eval_outputs: EvaluationOutput,
+    ) -> Iterable[tuple[str, Figure]]: ...
+
+
 class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
     targets: TargetProtocol
+    transform: OutputTransformProtocol
+
+    def to_clip_detections_batch(
+        self,
+        clip_detections: Sequence[ClipDetectionsTensor],
+        clips: Sequence[data.Clip],
+    ) -> list[ClipDetections]: ...
 
     def evaluate(
         self,

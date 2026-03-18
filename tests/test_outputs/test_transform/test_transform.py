@@ -18,7 +18,8 @@ from batdetect2.targets.types import TargetProtocol
 def _mock_clip_detections_tensor() -> ClipDetectionsTensor:
     return ClipDetectionsTensor(
         scores=torch.tensor([0.9], dtype=torch.float32),
-        sizes=torch.tensor([[0.1, 1_000.0]], dtype=torch.float32),
+        # NOTE: Time is scaled by 1000
+        sizes=torch.tensor([[100, 1_000.0]], dtype=torch.float32),
         class_scores=torch.tensor([[0.8, 0.2]], dtype=torch.float32),
         times=torch.tensor([0.2], dtype=torch.float32),
         frequencies=torch.tensor([60_000.0], dtype=torch.float32),
@@ -26,29 +27,15 @@ def _mock_clip_detections_tensor() -> ClipDetectionsTensor:
     )
 
 
-def test_shift_time_to_clip_start(
-    clip: data.Clip,
-    sample_targets: TargetProtocol,
-):
-    clip = clip.model_copy(update={"start_time": 2.5, "end_time": 3.0})
+def test_shift_time_to_clip_start(sample_targets: TargetProtocol):
+    raw = _mock_clip_detections_tensor()
+    transform = build_output_transform(targets=sample_targets)
 
-    detection = Detection(
-        geometry=data.BoundingBox(coordinates=[0.1, 10_000, 0.2, 12_000]),
-        detection_score=0.9,
-        class_scores=np.array([0.9]),
-        features=np.array([1.0, 2.0]),
-    )
+    transformed = transform.to_detections(raw, start_time=2.5)
+    start_time, _, end_time, _ = compute_bounds(transformed[0].geometry)
 
-    transformed = OutputTransform(targets=sample_targets)(
-        [ClipDetections(clip=clip, detections=[detection])]
-    )[0]
-
-    start_time, _, end_time, _ = compute_bounds(
-        transformed.detections[0].geometry
-    )
-
-    assert np.isclose(start_time, 2.6)
-    assert np.isclose(end_time, 2.7)
+    assert np.isclose(start_time, 2.7)
+    assert np.isclose(end_time, 2.8)
 
 
 def test_to_clip_detections_shifts_by_clip_start(
@@ -58,14 +45,10 @@ def test_to_clip_detections_shifts_by_clip_start(
     clip = clip.model_copy(update={"start_time": 2.5, "end_time": 3.0})
     transform = build_output_transform(targets=sample_targets)
     raw = _mock_clip_detections_tensor()
-
     shifted = transform.to_clip_detections(detections=raw, clip=clip)
-    unshifted = transform.to_detections(detections=raw, start_time=0)
-
-    shifted_start, _, _, _ = compute_bounds(shifted.detections[0].geometry)
-    unshifted_start, _, _, _ = compute_bounds(unshifted[0].geometry)
-
-    assert np.isclose(shifted_start - unshifted_start, clip.start_time)
+    start_time, _, end_time, _ = compute_bounds(shifted.detections[0].geometry)
+    assert np.isclose(start_time, 2.7)
+    assert np.isclose(end_time, 2.8)
 
 
 def test_detection_and_clip_transforms_applied_in_order(

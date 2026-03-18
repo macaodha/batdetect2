@@ -11,7 +11,7 @@ from batdetect2.evaluate.tasks.clip_classification import (
 from batdetect2.evaluate.tasks.clip_detection import ClipDetectionTaskConfig
 from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
 from batdetect2.evaluate.tasks.top_class import TopClassDetectionTaskConfig
-from batdetect2.evaluate.types import EvaluatorProtocol
+from batdetect2.evaluate.types import EvaluationTaskProtocol
 from batdetect2.postprocess.types import ClipDetections
 from batdetect2.targets import build_targets
 from batdetect2.targets.types import TargetProtocol
@@ -36,7 +36,7 @@ TaskConfig = Annotated[
 def build_task(
     config: TaskConfig,
     targets: TargetProtocol | None = None,
-) -> EvaluatorProtocol:
+) -> EvaluationTaskProtocol:
     targets = targets or build_targets()
     return tasks_registry.build(config, targets)
 
