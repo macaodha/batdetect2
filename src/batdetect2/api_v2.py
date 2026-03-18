@@ -11,9 +11,7 @@ from batdetect2.audio import build_audio_loader
 from batdetect2.audio.types import AudioLoader
 from batdetect2.config import BatDetect2Config
 from batdetect2.core import merge_configs
-from batdetect2.data import (
-    load_dataset_from_config,
-)
+from batdetect2.data import load_dataset_from_config
 from batdetect2.data.datasets import Dataset
 from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, run_evaluate
 from batdetect2.evaluate.types import EvaluatorProtocol
