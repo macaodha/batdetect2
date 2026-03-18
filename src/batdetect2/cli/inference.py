@@ -164,6 +164,7 @@ def inference_file_list_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
+    file_list = Path(file_list)
     audio_files = [
         Path(line.strip())
         for line in file_list.read_text().splitlines()
@@ -207,6 +208,7 @@ def inference_dataset_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
+    dataset_path = Path(dataset_path)
     dataset = io.load(dataset_path, type="annotation_set")
     audio_files = sorted(
         {

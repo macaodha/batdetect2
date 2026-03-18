@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 from uuid import uuid4
 
+import lightning as L
 import numpy as np
 import pytest
 import soundfile as sf
@@ -12,6 +13,7 @@ from soundevent import data, terms
 from batdetect2.audio import build_audio_loader
 from batdetect2.audio.clips import build_clipper
 from batdetect2.audio.types import AudioLoader, ClipperProtocol
+from batdetect2.config import BatDetect2Config
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
@@ -24,6 +26,7 @@ from batdetect2.targets import (
 from batdetect2.targets.classes import TargetClassConfig
 from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.labels import build_clip_labeler
+from batdetect2.train.lightning import build_training_module
 from batdetect2.train.types import ClipLabeller
 
 
@@ -452,3 +455,23 @@ def create_temp_yaml(tmp_path: Path) -> Callable[[str], Path]:
         return temp_file
 
     return factory
+
+
+@pytest.fixture
+def tiny_checkpoint_path(tmp_path: Path) -> Path:
+    module = build_training_module(model_config=BatDetect2Config().model)
+    trainer = L.Trainer(enable_checkpointing=False, logger=False)
+    checkpoint_path = tmp_path / "model.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(checkpoint_path)
+    return checkpoint_path
+
+
+@pytest.fixture
+def single_audio_dir(tmp_path: Path, example_audio_files: List[Path]) -> Path:
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    source = example_audio_files[0]
+    target = audio_dir / source.name
+    target.write_bytes(source.read_bytes())
+    return audio_dir
