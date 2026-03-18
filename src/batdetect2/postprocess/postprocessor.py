@@ -7,7 +7,6 @@ from batdetect2.postprocess.config import (
 )
 from batdetect2.postprocess.extraction import extract_detection_peaks
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
-from batdetect2.postprocess.remapping import map_detection_to_clip
 from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
     PostprocessorProtocol,
@@ -92,3 +91,22 @@ class Postprocessor(torch.nn.Module, PostprocessorProtocol):
             )
             for detection in detections
         ]
+
+
+def map_detection_to_clip(
+    detections: ClipDetectionsTensor,
+    start_time: float,
+    end_time: float,
+    min_freq: float,
+    max_freq: float,
+) -> ClipDetectionsTensor:
+    duration = end_time - start_time
+    bandwidth = max_freq - min_freq
+    return ClipDetectionsTensor(
+        scores=detections.scores,
+        sizes=detections.sizes,
+        features=detections.features,
+        class_scores=detections.class_scores,
+        times=(detections.times * duration + start_time),
+        frequencies=(detections.frequencies * bandwidth + min_freq),
+    )
