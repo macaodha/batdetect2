@@ -15,7 +15,7 @@ from batdetect2.audio.clips import get_subclip_annotation
 from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
 from batdetect2.audio.types import AudioLoader
 from batdetect2.core.arrays import adjust_width
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.core.registries import (
     ImportConfig,
     Registry,
@@ -38,7 +38,6 @@ __all__ = [
     "WarpConfig",
     "add_echo",
     "build_augmentations",
-    "load_augmentation_config",
     "mask_frequency",
     "mask_time",
     "mix_audio",
@@ -684,13 +683,6 @@ def build_augmentations(
     )
 
     return audio_augmentation, spectrogram_augmentation
-
-
-def load_augmentation_config(
-    path: data.PathLike, field: str | None = None
-) -> AugmentationsConfig:
-    """Load the augmentations configuration from a file."""
-    return load_config(path, schema=AugmentationsConfig, field=field)
 
 
 class RandomAudioSource:

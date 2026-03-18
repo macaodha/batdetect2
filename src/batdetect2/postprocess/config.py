@@ -1,12 +1,10 @@
 from pydantic import Field
-from soundevent import data
 
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE
 
 __all__ = [
     "PostprocessConfig",
-    "load_postprocess_config",
 ]
 
 DEFAULT_DETECTION_THRESHOLD = 0.01
@@ -51,42 +49,3 @@ class PostprocessConfig(BaseConfig):
         ge=0,
     )
     top_k_per_sec: int = Field(default=TOP_K_PER_SEC, gt=0)
-
-
-def load_postprocess_config(
-    path: data.PathLike,
-    field: str | None = None,
-) -> PostprocessConfig:
-    """Load the postprocessing configuration from a file.
-
-    Reads a configuration file (YAML) and validates it against the
-    `PostprocessConfig` schema, potentially extracting data from a nested
-    field.
-
-    Parameters
-    ----------
-    path : PathLike
-        Path to the configuration file.
-    field : str, optional
-        Dot-separated path to a nested section within the file containing the
-        postprocessing configuration (e.g., "inference.postprocessing").
-        If None, the entire file content is used.
-
-    Returns
-    -------
-    PostprocessConfig
-        The loaded and validated postprocessing configuration object.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the config file path does not exist.
-    yaml.YAMLError
-        If the file content is not valid YAML.
-    pydantic.ValidationError
-        If the loaded configuration data does not conform to the
-        `PostprocessConfig` schema.
-    KeyError, TypeError
-        If `field` specifies an invalid path within the loaded data.
-    """
-    return load_config(path, schema=PostprocessConfig, field=field)

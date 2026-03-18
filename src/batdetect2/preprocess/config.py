@@ -8,9 +8,8 @@ spectrogram ready for the detection model.
 from typing import List
 
 from pydantic import Field
-from soundevent.data import PathLike
 
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess.audio import AudioTransform
 from batdetect2.preprocess.spectrogram import (
     FrequencyConfig,
@@ -22,7 +21,6 @@ from batdetect2.preprocess.spectrogram import (
 )
 
 __all__ = [
-    "load_preprocessing_config",
     "AudioTransform",
     "PreprocessingConfig",
 ]
@@ -71,26 +69,3 @@ class PreprocessingConfig(BaseConfig):
     frequencies: FrequencyConfig = Field(default_factory=FrequencyConfig)
 
     size: ResizeConfig = Field(default_factory=ResizeConfig)
-
-
-def load_preprocessing_config(
-    path: PathLike,
-    field: str | None = None,
-) -> PreprocessingConfig:
-    """Load a ``PreprocessingConfig`` from a YAML file.
-
-    Parameters
-    ----------
-    path : PathLike
-        Path to the YAML configuration file.
-    field : str, optional
-        If provided, read the config from a nested field within the
-        YAML document (e.g. ``"preprocessing"`` to read from a top-level
-        ``preprocessing:`` key).
-
-    Returns
-    -------
-    PreprocessingConfig
-        The deserialised preprocessing configuration.
-    """
-    return load_config(path, schema=PreprocessingConfig, field=field)

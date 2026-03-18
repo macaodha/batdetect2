@@ -6,7 +6,7 @@ from batdetect2.targets.classes import (
     build_sound_event_encoder,
     get_class_names_from_config,
 )
-from batdetect2.targets.config import TargetConfig, load_target_config
+from batdetect2.targets.config import TargetConfig
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     ROIMapperConfig,
@@ -56,6 +56,5 @@ __all__ = [
     "get_class_names_from_config",
     "individual",
     "iterate_encoded_sound_events",
-    "load_target_config",
     "load_targets",
 ]

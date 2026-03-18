@@ -43,11 +43,11 @@ def evaluate_command(
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.data import load_dataset_from_config
-    from batdetect2.evaluate import load_evaluation_config
+    from batdetect2.evaluate import EvaluationConfig
     from batdetect2.inference import InferenceConfig
-    from batdetect2.logging import load_logging_config
+    from batdetect2.logging import AppLoggingConfig
     from batdetect2.outputs import OutputsConfig
-    from batdetect2.targets import load_target_config
+    from batdetect2.targets import TargetConfig
 
     logger.info("Initiating evaluation process...")
 
@@ -62,7 +62,7 @@ def evaluate_command(
     )
 
     target_conf = (
-        load_target_config(targets_config)
+        TargetConfig.load(targets_config)
         if targets_config is not None
         else None
     )
@@ -70,7 +70,7 @@ def evaluate_command(
         AudioConfig.load(audio_config) if audio_config is not None else None
     )
     eval_conf = (
-        load_evaluation_config(evaluation_config)
+        EvaluationConfig.load(evaluation_config)
         if evaluation_config is not None
         else None
     )
@@ -85,7 +85,7 @@ def evaluate_command(
         else None
     )
     logging_conf = (
-        load_logging_config(logging_config)
+        AppLoggingConfig.load(logging_config)
         if logging_config is not None
         else None
     )

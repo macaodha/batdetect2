@@ -1,16 +1,14 @@
 from typing import List
 
 from pydantic import Field
-from soundevent import data
 
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.evaluate.tasks import TaskConfig
 from batdetect2.evaluate.tasks.classification import ClassificationTaskConfig
 from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
 
 __all__ = [
     "EvaluationConfig",
-    "load_evaluation_config",
 ]
 
 
@@ -43,10 +41,3 @@ def get_default_eval_config() -> EvaluationConfig:
             ]
         }
     )
-
-
-def load_evaluation_config(
-    path: data.PathLike,
-    field: str | None = None,
-) -> EvaluationConfig:
-    return load_config(path, schema=EvaluationConfig, field=field)

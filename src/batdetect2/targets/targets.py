@@ -11,7 +11,7 @@ from batdetect2.targets.classes import (
     build_sound_event_encoder,
     get_class_names_from_config,
 )
-from batdetect2.targets.config import TargetConfig, load_target_config
+from batdetect2.targets.config import TargetConfig
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     build_roi_mapper,
@@ -276,13 +276,13 @@ def load_targets(
     ------
     FileNotFoundError, yaml.YAMLError, pydantic.ValidationError, KeyError,
     TypeError
-        Errors raised during file loading, validation, or extraction via
-        `load_target_config`.
+        Errors raised during file loading or validation via
+        ``TargetConfig.load``.
     KeyError, ImportError, AttributeError, TypeError
         Errors raised during the build process by `Targets.from_config`
         (e.g., missing keys in registries, failed imports).
     """
-    config = load_target_config(
+    config = TargetConfig.load(
         config_path,
         field=field,
     )

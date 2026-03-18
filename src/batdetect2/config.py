@@ -1,10 +1,9 @@
 from typing import Literal
 
 from pydantic import Field
-from soundevent.data import PathLike
 
 from batdetect2.audio import AudioConfig
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.evaluate.config import (
     EvaluationConfig,
     get_default_eval_config,
@@ -17,7 +16,6 @@ from batdetect2.train.config import TrainingConfig
 
 __all__ = [
     "BatDetect2Config",
-    "load_full_config",
     "validate_config",
 ]
 
@@ -41,10 +39,3 @@ def validate_config(config: dict | None) -> BatDetect2Config:
         return BatDetect2Config()
 
     return BatDetect2Config.model_validate(config)
-
-
-def load_full_config(
-    path: PathLike,
-    field: str | None = None,
-) -> BatDetect2Config:
-    return load_config(path, schema=BatDetect2Config, field=field)

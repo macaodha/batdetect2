@@ -1,7 +1,6 @@
 from pydantic import Field
-from soundevent import data
 
-from batdetect2.core.configs import BaseConfig, load_config
+from batdetect2.core.configs import BaseConfig
 from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.train.checkpoints import CheckpointConfig
 from batdetect2.train.dataset import TrainLoaderConfig, ValLoaderConfig
@@ -15,7 +14,6 @@ from batdetect2.train.schedulers import (
 
 __all__ = [
     "TrainingConfig",
-    "load_train_config",
 ]
 
 
@@ -52,10 +50,3 @@ class TrainingConfig(BaseConfig):
     labels: LabelConfig = Field(default_factory=LabelConfig)
     validation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     checkpoints: CheckpointConfig = Field(default_factory=CheckpointConfig)
-
-
-def load_train_config(
-    path: data.PathLike,
-    field: str | None = None,
-) -> TrainingConfig:
-    return load_config(path, schema=TrainingConfig, field=field)

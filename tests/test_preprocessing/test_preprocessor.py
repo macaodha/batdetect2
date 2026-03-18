@@ -177,8 +177,6 @@ def test_preprocessor_with_fix_duration_audio_transform():
 def test_preprocessor_yaml_roundtrip(tmp_path: pathlib.Path):
     """PreprocessingConfig serialised to YAML and reloaded should produce
     a functionally identical preprocessor."""
-    from batdetect2.preprocess.config import load_preprocessing_config
-
     config = PreprocessingConfig(
         stft=STFTConfig(window_duration=0.002, window_overlap=0.75),
         frequencies=FrequencyConfig(min_freq=10_000, max_freq=120_000),
@@ -188,7 +186,7 @@ def test_preprocessor_yaml_roundtrip(tmp_path: pathlib.Path):
     yaml_path = tmp_path / "preprocess_config.yaml"
     yaml_path.write_text(config.to_yaml_string())
 
-    loaded_config = load_preprocessing_config(yaml_path)
+    loaded_config = PreprocessingConfig.load(yaml_path)
 
     preprocessor = build_preprocessor(
         loaded_config, input_samplerate=SAMPLERATE

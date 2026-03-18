@@ -3,7 +3,7 @@ from pathlib import Path
 
 from soundevent import data, terms
 
-from batdetect2.targets import build_targets, load_target_config
+from batdetect2.targets import TargetConfig, build_targets
 
 
 def test_can_override_default_roi_mapper_per_class(
@@ -42,7 +42,7 @@ def test_can_override_default_roi_mapper_per_class(
     """
     config_path = create_temp_yaml(yaml_content)
 
-    config = load_target_config(config_path)
+    config = TargetConfig.load(config_path)
     targets = build_targets(config)
 
     geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
@@ -105,7 +105,7 @@ def test_roi_is_recovered_roundtrip_even_with_overriders(
     """
     config_path = create_temp_yaml(yaml_content)
 
-    config = load_target_config(config_path)
+    config = TargetConfig.load(config_path)
     targets = build_targets(config)
 
     geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])

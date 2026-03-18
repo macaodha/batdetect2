@@ -1,5 +1,5 @@
 from batdetect2.train.checkpoints import DEFAULT_CHECKPOINT_DIR
-from batdetect2.train.config import TrainingConfig, load_train_config
+from batdetect2.train.config import TrainingConfig
 from batdetect2.train.lightning import (
     TrainingModule,
     load_model_from_checkpoint,
@@ -12,6 +12,5 @@ __all__ = [
     "TrainingModule",
     "build_trainer",
     "load_model_from_checkpoint",
-    "load_train_config",
     "run_train",
 ]

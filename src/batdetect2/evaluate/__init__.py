@@ -1,4 +1,4 @@
-from batdetect2.evaluate.config import EvaluationConfig, load_evaluation_config
+from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.evaluate import DEFAULT_EVAL_DIR, run_evaluate
 from batdetect2.evaluate.evaluator import Evaluator, build_evaluator
 from batdetect2.evaluate.results import save_evaluation_results
@@ -27,7 +27,6 @@ __all__ = [
     "TaskConfig",
     "build_evaluator",
     "build_task",
-    "load_evaluation_config",
     "run_evaluate",
     "save_evaluation_results",
 ]
