@@ -57,7 +57,7 @@ def _build_api(
     return api, audio_conf, inference_conf, outputs_conf
 
 
-def _run_inference(
+def _run_prediction(
     model_path: Path,
     audio_files: list[Path],
     output_path: Path,
@@ -99,7 +99,7 @@ def _run_inference(
     )
 
     logger.info(
-        "Inference complete. Results saved to {path}", path=output_path
+        "Prediction complete. Results saved to {path}", path=output_path
     )
 
 
@@ -114,7 +114,7 @@ def _run_inference(
 @click.option("--batch-size", type=int)
 @click.option("--workers", "num_workers", type=int, default=0)
 @click.option("--format", "format_name", type=str)
-def inference_directory_command(
+def predict_directory_command(
     model_path: Path,
     audio_dir: Path,
     output_path: Path,
@@ -127,7 +127,7 @@ def inference_directory_command(
     format_name: str | None,
 ) -> None:
     audio_files = list(get_audio_files(audio_dir))
-    _run_inference(
+    _run_prediction(
         model_path=model_path,
         audio_files=audio_files,
         output_path=output_path,
@@ -152,7 +152,7 @@ def inference_directory_command(
 @click.option("--batch-size", type=int)
 @click.option("--workers", "num_workers", type=int, default=0)
 @click.option("--format", "format_name", type=str)
-def inference_file_list_command(
+def predict_file_list_command(
     model_path: Path,
     file_list: Path,
     output_path: Path,
@@ -171,7 +171,7 @@ def inference_file_list_command(
         if line.strip()
     ]
 
-    _run_inference(
+    _run_prediction(
         model_path=model_path,
         audio_files=audio_files,
         output_path=output_path,
@@ -196,7 +196,7 @@ def inference_file_list_command(
 @click.option("--batch-size", type=int)
 @click.option("--workers", "num_workers", type=int, default=0)
 @click.option("--format", "format_name", type=str)
-def inference_dataset_command(
+def predict_dataset_command(
     model_path: Path,
     dataset_path: Path,
     output_path: Path,
@@ -217,7 +217,7 @@ def inference_dataset_command(
         }
     )
 
-    _run_inference(
+    _run_prediction(
         model_path=model_path,
         audio_files=audio_files,
         output_path=output_path,
