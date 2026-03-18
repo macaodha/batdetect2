@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from batdetect2.core import BaseConfig
-from batdetect2.typing import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 
 class BasePlotConfig(BaseConfig):

@@ -8,7 +8,7 @@ from soundevent.plot.geometries import plot_geometry
 from soundevent.plot.tags import TagColorMapper, add_tags_legend, plot_tag
 
 from batdetect2.plotting.clips import plot_clip
-from batdetect2.typing.preprocess import PreprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "plot_clip_prediction",

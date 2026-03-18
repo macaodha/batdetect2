@@ -26,7 +26,8 @@ from pydantic import Field
 from torch import nn
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.typing import Losses, LossProtocol, ModelOutput, TrainExample
+from batdetect2.models.types import ModelOutput
+from batdetect2.train.types import Losses, LossProtocol, TrainExample
 
 __all__ = [
     "BBoxLoss",

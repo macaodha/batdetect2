@@ -13,6 +13,7 @@ from soundevent.geometry import scale_geometry, shift_geometry
 
 from batdetect2.audio.clips import get_subclip_annotation
 from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
+from batdetect2.audio.types import AudioLoader
 from batdetect2.core.arrays import adjust_width
 from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.core.registries import (
@@ -20,7 +21,7 @@ from batdetect2.core.registries import (
     Registry,
     add_import_config,
 )
-from batdetect2.typing import AudioLoader, Augmentation
+from batdetect2.train.types import Augmentation
 
 __all__ = [
     "AugmentationConfig",

@@ -26,7 +26,8 @@ from batdetect2.evaluate.metrics.common import (
     average_precision,
     compute_precision_recall,
 )
-from batdetect2.typing import Detection, TargetProtocol
+from batdetect2.postprocess.types import Detection
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "ClassificationMetric",

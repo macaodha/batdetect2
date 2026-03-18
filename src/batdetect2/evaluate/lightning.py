@@ -5,12 +5,12 @@ from soundevent import data
 from torch.utils.data import DataLoader
 
 from batdetect2.evaluate.dataset import TestDataset, TestExample
+from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
 from batdetect2.models import Model
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess import to_raw_predictions
-from batdetect2.typing import EvaluatorProtocol
-from batdetect2.typing.postprocess import ClipDetections
+from batdetect2.postprocess.types import ClipDetections
 
 
 class EvaluationModule(LightningModule):

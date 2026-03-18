@@ -89,5 +89,5 @@ Crucial for training, this module translates physical annotations (Regions of In
 ## Summary
 To navigate this codebase effectively:
 1. Follow **`api_v2.py`** to see how high-level operations invoke individual components.
-2. Rely heavily on the typed **Protocols** located in `src/batdetect2/typing/` to understand the inputs and outputs of each subsystem without needing to read the specific implementations.
+2. Rely heavily on the typed **Protocols** located in each subsystem's `types.py` module (for example `src/batdetect2/preprocess/types.py` and `src/batdetect2/postprocess/types.py`) to understand inputs and outputs without needing to read each implementation.
 3. Understand that data flows structurally as `soundevent` primitives externally, and as pure `torch.Tensor` internally through the network.

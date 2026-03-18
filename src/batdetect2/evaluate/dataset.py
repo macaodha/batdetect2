@@ -8,14 +8,11 @@ from torch.utils.data import DataLoader, Dataset
 
 from batdetect2.audio import ClipConfig, build_audio_loader, build_clipper
 from batdetect2.audio.clips import PaddedClipConfig
+from batdetect2.audio.types import AudioLoader, ClipperProtocol
 from batdetect2.core import BaseConfig
 from batdetect2.core.arrays import adjust_width
 from batdetect2.preprocess import build_preprocessor
-from batdetect2.typing import (
-    AudioLoader,
-    ClipperProtocol,
-    PreprocessorProtocol,
-)
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "TestDataset",

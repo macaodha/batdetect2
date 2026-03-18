@@ -1,7 +1,7 @@
 """Assembles the full batdetect2 preprocessing pipeline.
 
 This module defines :class:`Preprocessor`, the concrete implementation of
-:class:`~batdetect2.typing.PreprocessorProtocol`, and the
+:class:`~batdetect2.preprocess.types.PreprocessorProtocol`, and the
 :func:`build_preprocessor` factory function that constructs it from a
 :class:`~batdetect2.preprocess.config.PreprocessingConfig`.
 
@@ -33,7 +33,7 @@ from batdetect2.preprocess.spectrogram import (
     build_spectrogram_resizer,
     build_spectrogram_transform,
 )
-from batdetect2.typing import PreprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "Preprocessor",
@@ -42,7 +42,7 @@ __all__ = [
 
 
 class Preprocessor(torch.nn.Module, PreprocessorProtocol):
-    """Standard implementation of the :class:`~batdetect2.typing.PreprocessorProtocol`.
+    """Standard implementation of the :class:`~batdetect2.preprocess.types.PreprocessorProtocol`.
 
     Wraps all preprocessing stages as ``torch.nn.Module`` submodules so
     that parameters (e.g. PCEN filter coefficients) can be tracked and

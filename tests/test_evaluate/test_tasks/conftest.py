@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from soundevent import data
 
-from batdetect2.typing import Detection
+from batdetect2.postprocess.types import Detection
 
 
 @pytest.fixture

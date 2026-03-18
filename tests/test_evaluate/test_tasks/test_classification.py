@@ -4,8 +4,8 @@ from soundevent import data
 
 from batdetect2.evaluate.tasks import build_task
 from batdetect2.evaluate.tasks.classification import ClassificationTaskConfig
-from batdetect2.typing import ClipDetections
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.postprocess.types import ClipDetections
+from batdetect2.targets.types import TargetProtocol
 
 
 def test_classification(

@@ -62,16 +62,16 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
+from batdetect2.models.types import DetectionModel
 from batdetect2.postprocess.config import PostprocessConfig
-from batdetect2.preprocess.config import PreprocessingConfig
-from batdetect2.targets.config import TargetConfig
-from batdetect2.typing import (
+from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
-    DetectionModel,
     PostprocessorProtocol,
-    PreprocessorProtocol,
-    TargetProtocol,
 )
+from batdetect2.preprocess.config import PreprocessingConfig
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets.config import TargetConfig
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "BBoxHead",

@@ -8,6 +8,7 @@ from soundevent import data
 from soundevent.audio.files import get_audio_files
 
 from batdetect2.audio import build_audio_loader
+from batdetect2.audio.types import AudioLoader
 from batdetect2.config import BatDetect2Config
 from batdetect2.core import merge_configs
 from batdetect2.data import (
@@ -15,6 +16,7 @@ from batdetect2.data import (
 )
 from batdetect2.data.datasets import Dataset
 from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, evaluate
+from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
 from batdetect2.models import Model, build_model
@@ -25,23 +27,21 @@ from batdetect2.outputs import (
     build_output_transform,
     get_output_formatter,
 )
+from batdetect2.outputs.types import OutputFormatterProtocol
 from batdetect2.postprocess import build_postprocessor, to_raw_predictions
+from batdetect2.postprocess.types import (
+    ClipDetections,
+    Detection,
+    PostprocessorProtocol,
+)
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import build_targets
+from batdetect2.targets.types import TargetProtocol
 from batdetect2.train import (
     DEFAULT_CHECKPOINT_DIR,
     load_model_from_checkpoint,
     run_train,
-)
-from batdetect2.typing import (
-    AudioLoader,
-    ClipDetections,
-    Detection,
-    EvaluatorProtocol,
-    OutputFormatterProtocol,
-    PostprocessorProtocol,
-    PreprocessorProtocol,
-    TargetProtocol,
 )
 
 

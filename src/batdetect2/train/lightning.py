@@ -2,11 +2,12 @@ import lightning as L
 from soundevent.data import PathLike
 
 from batdetect2.models import Model, ModelConfig, build_model
+from batdetect2.models.types import ModelOutput
 from batdetect2.train.config import TrainingConfig
 from batdetect2.train.losses import build_loss
 from batdetect2.train.optimizers import build_optimizer
 from batdetect2.train.schedulers import build_scheduler
-from batdetect2.typing import LossProtocol, ModelOutput, TrainExample
+from batdetect2.train.types import LossProtocol, TrainExample
 
 __all__ = [
     "TrainingModule",

@@ -4,6 +4,7 @@ from typing import (
     Concatenate,
     Generic,
     ParamSpec,
+    Sequence,
     Type,
     TypeVar,
 )
@@ -147,6 +148,7 @@ T_Import = TypeVar("T_Import", bound=ImportConfig)
 
 def add_import_config(
     registry: Registry[T_Type, P_Type],
+    arg_names: Sequence[str] | None = None,
 ) -> Callable[[Type[T_Import]], Type[T_Import]]:
     """Decorator that registers an ImportConfig subclass as an escape hatch.
 
@@ -181,15 +183,22 @@ def add_import_config(
             *args: P_Type.args,
             **kwargs: P_Type.kwargs,
         ) -> T_Type:
-            if len(args) > 0:
+            _arg_names = arg_names or []
+
+            if len(args) != len(_arg_names):
                 raise ValueError(
                     "Positional arguments are not supported "
-                    "for import escape hatch."
+                    "for import escape hatch unless you specify "
+                    "the argument names. Use `arg_names` to specify "
+                    "the names of the positional arguments."
                 )
+
+            args_dict = {_arg_names[i]: args[i] for i in range(len(args))}
 
             hydra_cfg = {
                 "_target_": config.target,
                 **config.arguments,
+                **args_dict,
                 **kwargs,
             }
             return instantiate(hydra_cfg)

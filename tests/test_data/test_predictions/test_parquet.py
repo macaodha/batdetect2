@@ -9,11 +9,8 @@ from batdetect2.outputs.formats import (
     ParquetOutputConfig,
     build_output_formatter,
 )
-from batdetect2.typing import (
-    ClipDetections,
-    Detection,
-    TargetProtocol,
-)
+from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.targets.types import TargetProtocol
 
 
 @pytest.fixture

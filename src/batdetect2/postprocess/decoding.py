@@ -5,11 +5,11 @@ from typing import List
 import numpy as np
 from soundevent import data
 
-from batdetect2.typing.postprocess import (
+from batdetect2.postprocess.types import (
     ClipDetectionsArray,
     Detection,
 )
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "to_raw_predictions",

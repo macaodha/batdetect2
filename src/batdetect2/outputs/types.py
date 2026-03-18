@@ -1,8 +1,9 @@
-from typing import Generic, List, Protocol, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import Generic, Protocol, TypeVar
 
 from soundevent.data import PathLike
 
-from batdetect2.typing.postprocess import ClipDetections
+from batdetect2.postprocess.types import ClipDetections
 
 __all__ = [
     "OutputFormatterProtocol",
@@ -12,7 +13,7 @@ T = TypeVar("T")
 
 
 class OutputFormatterProtocol(Protocol, Generic[T]):
-    def format(self, predictions: Sequence[ClipDetections]) -> List[T]: ...
+    def format(self, predictions: Sequence[ClipDetections]) -> list[T]: ...
 
     def save(
         self,
@@ -21,4 +22,4 @@ class OutputFormatterProtocol(Protocol, Generic[T]):
         audio_dir: PathLike | None = None,
     ) -> None: ...
 
-    def load(self, path: PathLike) -> List[T]: ...
+    def load(self, path: PathLike) -> list[T]: ...

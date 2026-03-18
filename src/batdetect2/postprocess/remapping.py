@@ -19,8 +19,8 @@ import torch
 import xarray as xr
 from soundevent.arrays import Dimensions
 
+from batdetect2.postprocess.types import ClipDetectionsTensor
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
-from batdetect2.typing.postprocess import ClipDetectionsTensor
 
 __all__ = [
     "features_to_xarray",

@@ -11,23 +11,20 @@ from soundevent import data, terms
 
 from batdetect2.audio import build_audio_loader
 from batdetect2.audio.clips import build_clipper
+from batdetect2.audio.types import AudioLoader, ClipperProtocol
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import (
     TargetConfig,
     build_targets,
     call_type,
 )
 from batdetect2.targets.classes import TargetClassConfig
+from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.labels import build_clip_labeler
-from batdetect2.typing import (
-    ClipLabeller,
-    PreprocessorProtocol,
-    TargetProtocol,
-)
-from batdetect2.typing.preprocess import AudioLoader
-from batdetect2.typing.train import ClipperProtocol
+from batdetect2.train.types import ClipLabeller
 
 
 @pytest.fixture

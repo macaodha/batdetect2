@@ -5,22 +5,20 @@ from lightning import Trainer
 from soundevent import data
 
 from batdetect2.audio import build_audio_loader
+from batdetect2.audio.types import AudioLoader
 from batdetect2.evaluate.dataset import build_test_loader
 from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
 from batdetect2.logging import build_logger
 from batdetect2.models import Model
 from batdetect2.outputs import build_output_transform
-from batdetect2.typing import Detection
+from batdetect2.outputs.types import OutputFormatterProtocol
+from batdetect2.postprocess.types import Detection
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets.types import TargetProtocol
 
 if TYPE_CHECKING:
     from batdetect2.config import BatDetect2Config
-    from batdetect2.typing import (
-        AudioLoader,
-        OutputFormatterProtocol,
-        PreprocessorProtocol,
-        TargetProtocol,
-    )
 
 DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 

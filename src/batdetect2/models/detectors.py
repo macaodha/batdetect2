@@ -26,7 +26,7 @@ from batdetect2.models.backbones import (
     build_backbone,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead
-from batdetect2.typing.models import BackboneModel, DetectionModel, ModelOutput
+from batdetect2.models.types import BackboneModel, DetectionModel, ModelOutput
 
 __all__ = [
     "Detector",

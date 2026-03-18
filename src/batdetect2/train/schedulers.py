@@ -40,7 +40,7 @@ class CosineAnnealingSchedulerConfig(BaseConfig):
 scheduler_registry: Registry[LRScheduler, [Optimizer]] = Registry("scheduler")
 
 
-@add_import_config(scheduler_registry)
+@add_import_config(scheduler_registry, arg_names=["optimizer"])
 class SchedulerImportConfig(ImportConfig):
     """Use any callable as a scheduler.
 
@@ -78,4 +78,4 @@ def build_scheduler(
     """Build a scheduler from configuration."""
     config = config or CosineAnnealingSchedulerConfig()
 
-    return scheduler_registry.build(config, optimizer=optimizer)
+    return scheduler_registry.build(config, optimizer)

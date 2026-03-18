@@ -5,7 +5,7 @@ from typing import Protocol
 from soundevent.geometry import shift_geometry
 
 from batdetect2.core.configs import BaseConfig
-from batdetect2.typing import ClipDetections, Detection
+from batdetect2.postprocess.types import ClipDetections, Detection
 
 __all__ = [
     "OutputTransform",

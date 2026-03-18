@@ -3,7 +3,7 @@ from collections.abc import Generator
 from soundevent import data
 
 from batdetect2.data.datasets import Dataset
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 
 def iterate_over_sound_events(

@@ -4,10 +4,8 @@ from typing import Literal
 from soundevent.data import PathLike
 
 from batdetect2.core import ImportConfig, Registry, add_import_config
-from batdetect2.typing import (
-    OutputFormatterProtocol,
-    TargetProtocol,
-)
+from batdetect2.outputs.types import OutputFormatterProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "OutputFormatterProtocol",

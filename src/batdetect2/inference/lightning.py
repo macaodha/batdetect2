@@ -7,7 +7,7 @@ from batdetect2.inference.dataset import DatasetItem, InferenceDataset
 from batdetect2.models import Model
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess import to_raw_predictions
-from batdetect2.typing.postprocess import ClipDetections
+from batdetect2.postprocess.types import ClipDetections
 
 
 class InferenceModule(LightningModule):

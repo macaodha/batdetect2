@@ -22,7 +22,7 @@ from batdetect2.plotting.metrics import (
     plot_roc_curve,
     plot_roc_curves,
 )
-from batdetect2.typing import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "ClipClassificationPlotConfig",

@@ -14,7 +14,8 @@ from batdetect2.postprocess.decoding import (
     get_generic_tags,
     get_prediction_features,
 )
-from batdetect2.typing import Detection, TargetProtocol
+from batdetect2.postprocess.types import Detection
+from batdetect2.targets.types import TargetProtocol
 
 
 @pytest.fixture

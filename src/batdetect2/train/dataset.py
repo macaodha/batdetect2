@@ -8,9 +8,11 @@ from torch.utils.data import DataLoader, Dataset
 
 from batdetect2.audio import ClipConfig, build_audio_loader, build_clipper
 from batdetect2.audio.clips import PaddedClipConfig
+from batdetect2.audio.types import AudioLoader, ClipperProtocol
 from batdetect2.core import BaseConfig
 from batdetect2.core.arrays import adjust_width
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.train.augmentations import (
     DEFAULT_AUGMENTATION_CONFIG,
     AugmentationsConfig,
@@ -18,14 +20,7 @@ from batdetect2.train.augmentations import (
     build_augmentations,
 )
 from batdetect2.train.labels import build_clip_labeler
-from batdetect2.typing import (
-    AudioLoader,
-    Augmentation,
-    ClipLabeller,
-    ClipperProtocol,
-    PreprocessorProtocol,
-    TrainExample,
-)
+from batdetect2.train.types import Augmentation, ClipLabeller, TrainExample
 
 __all__ = [
     "TrainingDataset",

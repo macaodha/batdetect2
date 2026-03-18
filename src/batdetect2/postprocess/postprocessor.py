@@ -1,18 +1,18 @@
 import torch
 from loguru import logger
 
+from batdetect2.models.types import ModelOutput
 from batdetect2.postprocess.config import (
     PostprocessConfig,
 )
 from batdetect2.postprocess.extraction import extract_detection_peaks
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
 from batdetect2.postprocess.remapping import map_detection_to_clip
-from batdetect2.typing import ModelOutput
-from batdetect2.typing.postprocess import (
+from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
     PostprocessorProtocol,
 )
-from batdetect2.typing.preprocess import PreprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "build_postprocessor",

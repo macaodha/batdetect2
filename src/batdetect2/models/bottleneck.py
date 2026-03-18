@@ -31,7 +31,7 @@ from batdetect2.models.blocks import (
     VerticalConv,
     build_layer,
 )
-from batdetect2.typing.models import BottleneckProtocol
+from batdetect2.models.types import BottleneckProtocol
 
 __all__ = [
     "BottleneckConfig",

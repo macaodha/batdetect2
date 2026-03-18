@@ -6,10 +6,11 @@ from soundevent import data
 from torch.utils.data import DataLoader, Dataset
 
 from batdetect2.audio import build_audio_loader
+from batdetect2.audio.types import AudioLoader
 from batdetect2.core import BaseConfig
 from batdetect2.core.arrays import adjust_width
 from batdetect2.preprocess import build_preprocessor
-from batdetect2.typing import AudioLoader, PreprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "InferenceDataset",

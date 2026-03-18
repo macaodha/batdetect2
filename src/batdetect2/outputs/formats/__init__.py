@@ -11,7 +11,7 @@ from batdetect2.outputs.formats.batdetect2 import BatDetect2OutputConfig
 from batdetect2.outputs.formats.parquet import ParquetOutputConfig
 from batdetect2.outputs.formats.raw import RawOutputConfig
 from batdetect2.outputs.formats.soundevent import SoundEventOutputConfig
-from batdetect2.typing import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "BatDetect2OutputConfig",

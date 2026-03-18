@@ -3,7 +3,7 @@ from soundevent import data
 from soundevent.geometry import compute_bounds
 
 from batdetect2.outputs import build_output_transform
-from batdetect2.typing import ClipDetections, Detection
+from batdetect2.postprocess.types import ClipDetections, Detection
 
 
 def test_shift_time_to_clip_start(clip: data.Clip):

@@ -43,7 +43,7 @@ optimizer_registry: Registry[Optimizer, [Iterable[nn.Parameter]]] = Registry(
 )
 
 
-@add_import_config(optimizer_registry)
+@add_import_config(optimizer_registry, arg_names=["params"])
 class OptimizerImportConfig(ImportConfig):
     """Use any callable as an optimizer.
 
@@ -84,4 +84,4 @@ def build_optimizer(
         Optimizer configuration. Defaults to ``AdamOptimizerConfig``.
     """
     config = config or AdamOptimizerConfig()
-    return optimizer_registry.build(config, params=parameters)
+    return optimizer_registry.build(config, parameters)

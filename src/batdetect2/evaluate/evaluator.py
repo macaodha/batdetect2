@@ -5,9 +5,10 @@ from soundevent import data
 
 from batdetect2.evaluate.config import EvaluationConfig
 from batdetect2.evaluate.tasks import build_task
+from batdetect2.evaluate.types import EvaluatorProtocol
+from batdetect2.postprocess.types import ClipDetections
 from batdetect2.targets import build_targets
-from batdetect2.typing import EvaluatorProtocol, TargetProtocol
-from batdetect2.typing.postprocess import ClipDetections
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "Evaluator",

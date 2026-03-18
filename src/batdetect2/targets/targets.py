@@ -16,7 +16,7 @@ from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     build_roi_mapper,
 )
-from batdetect2.typing.targets import Position, Size, TargetProtocol
+from batdetect2.targets.types import Position, Size, TargetProtocol
 
 
 class Targets(TargetProtocol):

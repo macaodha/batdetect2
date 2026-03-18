@@ -12,12 +12,9 @@ from batdetect2.outputs.formats.base import (
     output_formatters,
 )
 from batdetect2.targets import terms
-from batdetect2.typing import (
-    ClipDetections,
-    Detection,
-    OutputFormatterProtocol,
-    TargetProtocol,
-)
+from batdetect2.outputs.types import OutputFormatterProtocol
+from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.targets.types import TargetProtocol
 
 try:
     from typing import NotRequired  # type: ignore

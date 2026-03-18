@@ -16,7 +16,7 @@ from batdetect2.data.conditions import (
 )
 from batdetect2.targets.rois import ROIMapperConfig
 from batdetect2.targets.terms import call_type, generic_class
-from batdetect2.typing.targets import SoundEventDecoder, SoundEventEncoder
+from batdetect2.targets.types import SoundEventDecoder, SoundEventEncoder
 
 __all__ = [
     "build_sound_event_decoder",

@@ -5,17 +5,15 @@ from lightning.pytorch.callbacks import Callback
 from soundevent import data
 from torch.utils.data import DataLoader
 
+from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
+from batdetect2.models.types import ModelOutput
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess import to_raw_predictions
+from batdetect2.postprocess.types import ClipDetections
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
-from batdetect2.typing import (
-    ClipDetections,
-    EvaluatorProtocol,
-    ModelOutput,
-    TrainExample,
-)
+from batdetect2.train.types import TrainExample
 
 
 class ValidationMetrics(Callback):

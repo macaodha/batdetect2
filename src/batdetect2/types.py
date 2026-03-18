@@ -1,18 +1,14 @@
 """Types used in the code base."""
 
-from typing import Any, NamedTuple, TypedDict
+import sys
+from typing import Any, NamedTuple, Protocol, TypedDict
 
 import numpy as np
 import torch
 
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol
-
-try:
-    from typing import NotRequired  # type: ignore
-except ImportError:
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
     from typing_extensions import NotRequired
 
 

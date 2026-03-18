@@ -20,7 +20,7 @@ from batdetect2.core import (
     add_import_config,
 )
 from batdetect2.evaluate.metrics.common import average_precision
-from batdetect2.typing import Detection
+from batdetect2.postprocess.types import Detection
 
 __all__ = [
     "DetectionMetricConfig",

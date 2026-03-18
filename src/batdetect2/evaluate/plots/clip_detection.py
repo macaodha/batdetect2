@@ -18,7 +18,7 @@ from batdetect2.evaluate.metrics.clip_detection import ClipEval
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
 from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
-from batdetect2.typing import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "ClipDetectionPlotConfig",

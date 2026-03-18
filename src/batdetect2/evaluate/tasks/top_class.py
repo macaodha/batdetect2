@@ -20,7 +20,8 @@ from batdetect2.evaluate.tasks.base import (
     BaseSEDTaskConfig,
     tasks_registry,
 )
-from batdetect2.typing import ClipDetections, TargetProtocol
+from batdetect2.postprocess.types import ClipDetections
+from batdetect2.targets.types import TargetProtocol
 
 
 class TopClassDetectionTaskConfig(BaseSEDTaskConfig):

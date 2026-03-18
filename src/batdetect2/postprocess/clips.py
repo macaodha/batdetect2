@@ -1,4 +1,4 @@
-from batdetect2.typing import ClipDetections
+from batdetect2.postprocess.types import ClipDetections
 
 
 class ClipTransform:

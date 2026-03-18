@@ -13,7 +13,7 @@ from batdetect2.models.backbones import (
     build_backbone,
     load_backbone_config,
 )
-from batdetect2.typing.models import BackboneModel
+from batdetect2.models.types import BackboneModel
 
 
 def test_unet_backbone_config_defaults():

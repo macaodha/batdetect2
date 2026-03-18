@@ -16,6 +16,7 @@ from pydantic import Field
 from sklearn import metrics
 
 from batdetect2.audio import AudioConfig, build_audio_loader
+from batdetect2.audio.types import AudioLoader
 from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.metrics.top_class import (
@@ -27,7 +28,8 @@ from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
 from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
-from batdetect2.typing import AudioLoader, PreprocessorProtocol, TargetProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets.types import TargetProtocol
 
 TopClassPlotter = Callable[[Sequence[ClipEval]], Iterable[tuple[str, Figure]]]
 

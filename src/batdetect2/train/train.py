@@ -1,32 +1,28 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from lightning import Trainer, seed_everything
 from loguru import logger
 from soundevent import data
 
 from batdetect2.audio import AudioConfig, build_audio_loader
+from batdetect2.audio.types import AudioLoader
 from batdetect2.evaluate import build_evaluator
+from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import build_logger
 from batdetect2.models import ModelConfig
 from batdetect2.preprocess import build_preprocessor
+from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import build_targets
+from batdetect2.targets.types import TargetProtocol
 from batdetect2.train import TrainingConfig
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.checkpoints import build_checkpoint_callback
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
-
-if TYPE_CHECKING:
-    from batdetect2.typing import (
-        AudioLoader,
-        ClipLabeller,
-        EvaluatorProtocol,
-        PreprocessorProtocol,
-        TargetProtocol,
-    )
+from batdetect2.train.types import ClipLabeller
 
 __all__ = [
     "build_trainer",

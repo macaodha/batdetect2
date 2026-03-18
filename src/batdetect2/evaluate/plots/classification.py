@@ -29,7 +29,7 @@ from batdetect2.plotting.metrics import (
     plot_threshold_recall_curve,
     plot_threshold_recall_curves,
 )
-from batdetect2.typing import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 ClassificationPlotter = Callable[
     [Sequence[ClipEval]], Iterable[Tuple[str, Figure]]

@@ -4,12 +4,10 @@ from matplotlib.axes import Axes
 from soundevent import data, plot
 from soundevent.geometry import compute_bounds
 
+from batdetect2.audio.types import AudioLoader
 from batdetect2.plotting.clips import plot_clip
-from batdetect2.typing import (
-    AudioLoader,
-    Detection,
-    PreprocessorProtocol,
-)
+from batdetect2.postprocess.types import Detection
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "plot_false_positive_match",

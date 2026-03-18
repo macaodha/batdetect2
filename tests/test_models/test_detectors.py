@@ -7,7 +7,7 @@ from batdetect2.models.backbones import UNetBackboneConfig
 from batdetect2.models.detectors import Detector, build_detector
 from batdetect2.models.encoder import Encoder
 from batdetect2.models.heads import BBoxHead, ClassifierHead
-from batdetect2.typing.models import ModelOutput
+from batdetect2.models.types import ModelOutput
 
 
 @pytest.fixture

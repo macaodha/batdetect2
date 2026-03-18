@@ -8,6 +8,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from batdetect2.api_v2 import BatDetect2API
+from batdetect2.audio.types import AudioLoader
 from batdetect2.config import BatDetect2Config
 from batdetect2.models import ModelConfig
 from batdetect2.train import (
@@ -19,7 +20,6 @@ from batdetect2.train import (
 from batdetect2.train.optimizers import AdamOptimizerConfig
 from batdetect2.train.schedulers import CosineAnnealingSchedulerConfig
 from batdetect2.train.train import build_training_module
-from batdetect2.typing.preprocess import AudioLoader
 
 
 def build_default_module(config: BatDetect2Config | None = None):

@@ -3,6 +3,7 @@ from typing import Sequence
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
+from batdetect2.audio.types import AudioLoader
 from batdetect2.plotting.matches import (
     MatchProtocol,
     plot_cross_trigger_match,
@@ -10,7 +11,7 @@ from batdetect2.plotting.matches import (
     plot_false_positive_match,
     plot_true_positive_match,
 )
-from batdetect2.typing.preprocess import AudioLoader, PreprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = ["plot_match_gallery"]
 

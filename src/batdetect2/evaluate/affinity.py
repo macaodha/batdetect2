@@ -16,7 +16,8 @@ from batdetect2.core import (
     Registry,
     add_import_config,
 )
-from batdetect2.typing import AffinityFunction, Detection
+from batdetect2.evaluate.types import AffinityFunction
+from batdetect2.postprocess.types import Detection
 
 affinity_functions: Registry[AffinityFunction, []] = Registry(
     "affinity_function"

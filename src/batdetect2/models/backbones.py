@@ -51,7 +51,7 @@ from batdetect2.models.encoder import (
     EncoderConfig,
     build_encoder,
 )
-from batdetect2.typing.models import (
+from batdetect2.models.types import (
     BackboneModel,
     BottleneckProtocol,
     DecoderProtocol,

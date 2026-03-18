@@ -1,45 +1,39 @@
 from dataclasses import dataclass
-from typing import (
-    Generic,
-    Iterable,
-    Protocol,
-    Sequence,
-    TypeVar,
-)
+from typing import Generic, Iterable, Protocol, Sequence, TypeVar
 
 from matplotlib.figure import Figure
 from soundevent import data
 
-from batdetect2.typing.postprocess import ClipDetections, Detection
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
+    "AffinityFunction",
+    "ClipMatches",
     "EvaluatorProtocol",
-    "MetricsProtocol",
     "MatchEvaluation",
+    "MatcherProtocol",
+    "MetricsProtocol",
+    "PlotterProtocol",
 ]
 
 
 @dataclass
 class MatchEvaluation:
     clip: data.Clip
-
     sound_event_annotation: data.SoundEventAnnotation | None
     gt_det: bool
     gt_class: str | None
     gt_geometry: data.Geometry | None
-
     pred_score: float
     pred_class_scores: dict[str, float]
     pred_geometry: data.Geometry | None
-
     affinity: float
 
     @property
     def top_class(self) -> str | None:
         if not self.pred_class_scores:
             return None
-
         return max(self.pred_class_scores, key=self.pred_class_scores.get)  # type: ignore
 
     @property
@@ -53,10 +47,8 @@ class MatchEvaluation:
     @property
     def top_class_score(self) -> float:
         pred_class = self.top_class
-
         if pred_class is None:
             return 0
-
         return self.pred_class_scores[pred_class]
 
 
@@ -73,9 +65,6 @@ class MatcherProtocol(Protocol):
         predictions: Sequence[data.Geometry],
         scores: Sequence[float],
     ) -> Iterable[tuple[int | None, int | None, float]]: ...
-
-
-Geom = TypeVar("Geom", bound=data.Geometry, contravariant=True)
 
 
 class AffinityFunction(Protocol):
@@ -115,9 +104,11 @@ class EvaluatorProtocol(Protocol, Generic[EvaluationOutput]):
     ) -> EvaluationOutput: ...
 
     def compute_metrics(
-        self, eval_outputs: EvaluationOutput
+        self,
+        eval_outputs: EvaluationOutput,
     ) -> dict[str, float]: ...
 
     def generate_plots(
-        self, eval_outputs: EvaluationOutput
+        self,
+        eval_outputs: EvaluationOutput,
     ) -> Iterable[tuple[str, Figure]]: ...

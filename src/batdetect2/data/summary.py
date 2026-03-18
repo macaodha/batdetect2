@@ -2,7 +2,7 @@ import pandas as pd
 from soundevent.geometry import compute_bounds
 
 from batdetect2.data.datasets import Dataset
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "extract_recordings_df",

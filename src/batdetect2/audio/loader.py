@@ -5,8 +5,8 @@ from scipy.signal import resample, resample_poly
 from soundevent import audio, data
 from soundfile import LibsndfileError
 
+from batdetect2.audio.types import AudioLoader
 from batdetect2.core import BaseConfig
-from batdetect2.typing import AudioLoader
 
 __all__ = [
     "SoundEventAudioLoader",

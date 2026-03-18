@@ -19,7 +19,7 @@ from typing import List
 
 import torch
 
-from batdetect2.typing.postprocess import ClipDetectionsTensor
+from batdetect2.postprocess.types import ClipDetectionsTensor
 
 __all__ = [
     "extract_detection_peaks",

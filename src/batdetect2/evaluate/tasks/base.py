@@ -26,13 +26,12 @@ from batdetect2.evaluate.affinity import (
     TimeAffinityConfig,
     build_affinity_function,
 )
-from batdetect2.typing import (
+from batdetect2.evaluate.types import (
     AffinityFunction,
-    ClipDetections,
-    Detection,
     EvaluatorProtocol,
-    TargetProtocol,
 )
+from batdetect2.postprocess.types import ClipDetections, Detection
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "BaseTaskConfig",

@@ -3,8 +3,8 @@ from soundevent import data, plot
 
 from batdetect2.plotting.clips import plot_clip
 from batdetect2.plotting.common import create_ax
-from batdetect2.typing.preprocess import PreprocessorProtocol
-from batdetect2.typing.targets import TargetProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
+from batdetect2.targets.types import TargetProtocol
 
 __all__ = [
     "plot_clip_annotation",

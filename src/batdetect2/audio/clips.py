@@ -6,13 +6,13 @@ from pydantic import Field
 from soundevent import data
 from soundevent.geometry import compute_bounds, intervals_overlap
 
+from batdetect2.audio.types import ClipperProtocol
 from batdetect2.core import (
     BaseConfig,
     ImportConfig,
     Registry,
     add_import_config,
 )
-from batdetect2.typing import ClipperProtocol
 
 DEFAULT_TRAIN_CLIP_DURATION = 0.256
 DEFAULT_MAX_EMPTY_CLIP = 0.1
