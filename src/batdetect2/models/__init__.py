@@ -26,8 +26,11 @@ The primary entry point for building a full, ready-to-use BatDetect2 model
 is the ``build_model`` factory function exported from this module.
 """
 
+from typing import Literal
+
 import torch
 from pydantic import Field
+from soundevent.data import PathLike
 
 from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
 from batdetect2.core.configs import BaseConfig
@@ -141,6 +144,22 @@ class ModelConfig(BaseConfig):
     )
     postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
     targets: TargetConfig = Field(default_factory=TargetConfig)
+
+    @classmethod
+    def load(
+        cls,
+        path: PathLike,
+        field: str | None = None,
+        extra: Literal["ignore", "allow", "forbid"] | None = None,
+        strict: bool | None = None,
+        targets: TargetConfig | None = None,
+    ) -> "ModelConfig":
+        config = super().load(path, field, extra, strict)
+
+        if targets is None:
+            return config
+
+        return config.model_copy(update={"targets": targets})
 
 
 class Model(torch.nn.Module):

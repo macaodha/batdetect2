@@ -14,10 +14,7 @@ from batdetect2.models import ModelConfig
 from batdetect2.outputs import OutputsConfig
 from batdetect2.train.config import TrainingConfig
 
-__all__ = [
-    "BatDetect2Config",
-    "validate_config",
-]
+__all__ = ["BatDetect2Config"]
 
 
 class BatDetect2Config(BaseConfig):
@@ -32,10 +29,3 @@ class BatDetect2Config(BaseConfig):
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     outputs: OutputsConfig = Field(default_factory=OutputsConfig)
     logging: AppLoggingConfig = Field(default_factory=AppLoggingConfig)
-
-
-def validate_config(config: dict | None) -> BatDetect2Config:
-    if config is None:
-        return BatDetect2Config()
-
-    return BatDetect2Config.model_validate(config)
