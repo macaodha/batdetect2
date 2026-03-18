@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import lightning as L
 import numpy as np
 import pytest
 import torch
@@ -7,6 +8,7 @@ from soundevent.geometry import compute_bounds
 
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.config import BatDetect2Config
+from batdetect2.train.lightning import build_training_module
 
 
 @pytest.fixture
@@ -113,3 +115,141 @@ def test_process_spectrogram_rejects_batched_input(
 
     with pytest.raises(ValueError, match="Batched spectrograms not supported"):
         api_v2.process_spectrogram(spec)
+
+
+def test_user_can_read_top_class_and_other_class_scores(
+    api_v2: BatDetect2API,
+    example_audio_files: list[Path],
+) -> None:
+    """User story: inspect top class and all class scores per detection."""
+
+    prediction = api_v2.process_file(example_audio_files[0])
+
+    assert len(prediction.detections) > 0
+
+    top_classes = [
+        api_v2.get_top_class_name(det) for det in prediction.detections
+    ]
+    other_class_scores = [
+        api_v2.get_class_scores(det, include_top_class=False)
+        for det in prediction.detections
+    ]
+
+    assert len(top_classes) == len(prediction.detections)
+    assert all(isinstance(class_name, str) for class_name in top_classes)
+    assert len(other_class_scores) == len(prediction.detections)
+    assert all(len(scores) >= 1 for scores in other_class_scores)
+    assert all(
+        all(class_name != top_class for class_name, _ in scores)
+        for top_class, scores in zip(
+            top_classes,
+            other_class_scores,
+            strict=True,
+        )
+    )
+    assert all(
+        all(
+            score_a >= score_b
+            for (_, score_a), (_, score_b) in zip(
+                scores, scores[1:], strict=False
+            )
+        )
+        for scores in other_class_scores
+    )
+
+
+def test_user_can_read_extracted_features_per_detection(
+    api_v2: BatDetect2API,
+    example_audio_files: list[Path],
+) -> None:
+    """User story: inspect extracted feature vectors per detection."""
+
+    prediction = api_v2.process_file(example_audio_files[0])
+
+    assert len(prediction.detections) > 0
+
+    feature_vectors = [
+        api_v2.get_detection_features(det) for det in prediction.detections
+    ]
+    assert len(feature_vectors) == len(prediction.detections)
+    assert all(vec.ndim == 1 for vec in feature_vectors)
+    assert all(vec.size > 0 for vec in feature_vectors)
+
+
+def test_user_can_load_checkpoint_and_finetune(
+    tmp_path: Path,
+    example_annotations,
+) -> None:
+    """User story: load a checkpoint and continue training from it."""
+
+    module = build_training_module(model_config=BatDetect2Config().model)
+    trainer = L.Trainer(enable_checkpointing=False, logger=False)
+    checkpoint_path = tmp_path / "base.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(checkpoint_path)
+
+    config = BatDetect2Config()
+    config.train.trainer.limit_train_batches = 1
+    config.train.trainer.limit_val_batches = 1
+    config.train.trainer.log_every_n_steps = 1
+    config.train.train_loader.batch_size = 1
+    config.train.train_loader.augmentations.enabled = False
+
+    api = BatDetect2API.from_checkpoint(checkpoint_path, config=config)
+    finetune_dir = tmp_path / "finetuned"
+
+    api.train(
+        train_annotations=example_annotations[:1],
+        val_annotations=example_annotations[:1],
+        train_workers=0,
+        val_workers=0,
+        checkpoint_dir=finetune_dir,
+        log_dir=tmp_path / "logs",
+        num_epochs=1,
+        seed=0,
+    )
+
+    checkpoints = list(finetune_dir.rglob("*.ckpt"))
+    assert checkpoints
+
+
+def test_user_can_evaluate_small_dataset_and_get_metrics(
+    api_v2: BatDetect2API,
+    example_annotations,
+    tmp_path: Path,
+) -> None:
+    """User story: run evaluation and receive metrics."""
+
+    metrics, predictions = api_v2.evaluate(
+        test_annotations=example_annotations[:1],
+        num_workers=0,
+        output_dir=tmp_path / "eval",
+        save_predictions=False,
+    )
+
+    assert isinstance(metrics, list)
+    assert len(metrics) == 1
+    assert isinstance(metrics[0], dict)
+    assert len(metrics[0]) > 0
+    assert isinstance(predictions, list)
+    assert len(predictions) == 1
+
+
+def test_user_can_save_evaluation_results_to_disk(
+    api_v2: BatDetect2API,
+    example_annotations,
+    tmp_path: Path,
+) -> None:
+    """User story: evaluate saved predictions and persist results."""
+
+    prediction = api_v2.process_file(
+        example_annotations[0].clip.recording.path
+    )
+    metrics = api_v2.evaluate_predictions(
+        annotations=[example_annotations[0]],
+        predictions=[prediction],
+        output_dir=tmp_path,
+    )
+
+    assert isinstance(metrics, dict)
+    assert (tmp_path / "metrics.json").exists()

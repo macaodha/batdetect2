@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Sequence
 
@@ -16,6 +15,7 @@ from batdetect2.evaluate import (
     EvaluatorProtocol,
     build_evaluator,
     run_evaluate,
+    save_evaluation_results,
 )
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
@@ -148,21 +148,11 @@ class BatDetect2API:
         metrics = self.evaluator.compute_metrics(clip_evals)
 
         if output_dir is not None:
-            output_dir = Path(output_dir)
-
-            if not output_dir.is_dir():
-                output_dir.mkdir(parents=True)
-
-            metrics_path = output_dir / "metrics.json"
-            metrics_path.write_text(json.dumps(metrics))
-
-            for figure_name, fig in self.evaluator.generate_plots(clip_evals):
-                fig_path = output_dir / figure_name
-
-                if not fig_path.parent.is_dir():
-                    fig_path.parent.mkdir(parents=True)
-
-                fig.savefig(fig_path)
+            save_evaluation_results(
+                metrics=metrics,
+                plots=self.evaluator.generate_plots(clip_evals),
+                output_dir=output_dir,
+            )
 
         return metrics
 
@@ -174,6 +164,49 @@ class BatDetect2API:
 
     def load_clip(self, clip: data.Clip) -> np.ndarray:
         return self.audio_loader.load_clip(clip)
+
+    def get_top_class_name(self, detection: Detection) -> str:
+        """Get highest-confidence class name for one detection."""
+
+        top_index = int(np.argmax(detection.class_scores))
+        return self.targets.class_names[top_index]
+
+    def get_class_scores(
+        self,
+        detection: Detection,
+        *,
+        include_top_class: bool = True,
+        sort_descending: bool = True,
+    ) -> list[tuple[str, float]]:
+        """Get class score list as ``(class_name, score)`` pairs."""
+
+        scores = [
+            (class_name, float(score))
+            for class_name, score in zip(
+                self.targets.class_names,
+                detection.class_scores,
+                strict=True,
+            )
+        ]
+
+        if sort_descending:
+            scores.sort(key=lambda item: item[1], reverse=True)
+
+        if include_top_class:
+            return scores
+
+        top_class_name = self.get_top_class_name(detection)
+        return [
+            (class_name, score)
+            for class_name, score in scores
+            if class_name != top_class_name
+        ]
+
+    @staticmethod
+    def get_detection_features(detection: Detection) -> np.ndarray:
+        """Get extracted feature vector for one detection."""
+
+        return detection.features
 
     def generate_spectrogram(
         self,
