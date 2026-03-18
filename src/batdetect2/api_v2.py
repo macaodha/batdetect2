@@ -22,7 +22,11 @@ from batdetect2.inference import (
     process_file_list,
     run_batch_inference,
 )
-from batdetect2.logging import DEFAULT_LOGS_DIR
+from batdetect2.logging import (
+    DEFAULT_LOGS_DIR,
+    AppLoggingConfig,
+    LoggerConfig,
+)
 from batdetect2.models import (
     Model,
     ModelConfig,
@@ -64,6 +68,7 @@ class BatDetect2API:
         evaluation_config: EvaluationConfig,
         inference_config: InferenceConfig,
         outputs_config: OutputsConfig,
+        logging_config: AppLoggingConfig,
         targets: TargetProtocol,
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
@@ -79,6 +84,7 @@ class BatDetect2API:
         self.evaluation_config = evaluation_config
         self.inference_config = inference_config
         self.outputs_config = outputs_config
+        self.logging_config = logging_config
         self.targets = targets
         self.audio_loader = audio_loader
         self.preprocessor = preprocessor
@@ -112,6 +118,7 @@ class BatDetect2API:
         model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
+        logger_config: LoggerConfig | None = None,
     ):
         run_train(
             train_annotations=train_annotations,
@@ -131,6 +138,7 @@ class BatDetect2API:
             seed=seed,
             train_config=train_config or self.train_config,
             audio_config=audio_config or self.audio_config,
+            logger_config=logger_config or self.logging_config.train,
         )
         return self
 
@@ -152,6 +160,7 @@ class BatDetect2API:
         model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
+        logger_config: LoggerConfig | None = None,
     ) -> "BatDetect2API":
         """Fine-tune the model with trainable-parameter selection."""
 
@@ -175,6 +184,7 @@ class BatDetect2API:
             seed=seed,
             audio_config=audio_config or self.audio_config,
             train_config=train_config or self.train_config,
+            logger_config=logger_config or self.logging_config.train,
         )
         return self
 
@@ -189,6 +199,7 @@ class BatDetect2API:
         audio_config: AudioConfig | None = None,
         evaluation_config: EvaluationConfig | None = None,
         outputs_config: OutputsConfig | None = None,
+        logger_config: LoggerConfig | None = None,
     ) -> tuple[dict[str, float], list[ClipDetections]]:
         return run_evaluate(
             self.model,
@@ -199,6 +210,7 @@ class BatDetect2API:
             audio_config=audio_config or self.audio_config,
             evaluation_config=evaluation_config or self.evaluation_config,
             output_config=outputs_config or self.outputs_config,
+            logger_config=logger_config or self.logging_config.evaluation,
             num_workers=num_workers,
             output_dir=output_dir,
             experiment_name=experiment_name,
@@ -486,6 +498,7 @@ class BatDetect2API:
             evaluation_config=config.evaluation,
             inference_config=config.inference,
             outputs_config=config.outputs,
+            logging_config=config.logging,
             targets=targets,
             audio_loader=audio_loader,
             preprocessor=preprocessor,
@@ -506,6 +519,7 @@ class BatDetect2API:
         evaluation_config: EvaluationConfig | None = None,
         inference_config: InferenceConfig | None = None,
         outputs_config: OutputsConfig | None = None,
+        logging_config: AppLoggingConfig | None = None,
     ) -> "BatDetect2API":
         model, model_config = load_model_from_checkpoint(path)
 
@@ -516,6 +530,7 @@ class BatDetect2API:
         evaluation_config = evaluation_config or EvaluationConfig()
         inference_config = inference_config or InferenceConfig()
         outputs_config = outputs_config or OutputsConfig()
+        logging_config = logging_config or AppLoggingConfig()
 
         if (
             targets_config is not None
@@ -571,6 +586,7 @@ class BatDetect2API:
             evaluation_config=evaluation_config,
             inference_config=inference_config,
             outputs_config=outputs_config,
+            logging_config=logging_config,
             targets=targets,
             audio_loader=audio_loader,
             preprocessor=preprocessor,

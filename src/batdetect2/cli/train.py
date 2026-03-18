@@ -19,6 +19,7 @@ __all__ = ["train_command"]
 @click.option("--evaluation-config", type=click.Path(exists=True))
 @click.option("--inference-config", type=click.Path(exists=True))
 @click.option("--outputs-config", type=click.Path(exists=True))
+@click.option("--logging-config", type=click.Path(exists=True))
 @click.option("--ckpt-dir", type=click.Path(exists=True))
 @click.option("--log-dir", type=click.Path(exists=True))
 @click.option("--train-workers", type=int)
@@ -40,6 +41,7 @@ def train_command(
     evaluation_config: Path | None = None,
     inference_config: Path | None = None,
     outputs_config: Path | None = None,
+    logging_config: Path | None = None,
     seed: int | None = None,
     num_epochs: int | None = None,
     train_workers: int = 0,
@@ -53,6 +55,7 @@ def train_command(
     from batdetect2.data import load_dataset_from_config
     from batdetect2.evaluate import load_evaluation_config
     from batdetect2.inference import InferenceConfig
+    from batdetect2.logging import load_logging_config
     from batdetect2.models import ModelConfig
     from batdetect2.outputs import OutputsConfig
     from batdetect2.targets import load_target_config
@@ -90,6 +93,11 @@ def train_command(
     outputs_conf = (
         OutputsConfig.load(outputs_config)
         if outputs_config is not None
+        else None
+    )
+    logging_conf = (
+        load_logging_config(logging_config)
+        if logging_config is not None
         else None
     )
 
@@ -141,6 +149,8 @@ def train_command(
             conf.inference = inference_conf
         if outputs_conf is not None:
             conf.outputs = outputs_conf
+        if logging_conf is not None:
+            conf.logging = logging_conf
 
         api = BatDetect2API.from_config(conf)
     else:
@@ -152,6 +162,7 @@ def train_command(
             evaluation_config=eval_conf,
             inference_config=inference_conf,
             outputs_config=outputs_conf,
+            logging_config=logging_conf,
         )
 
     return api.train(

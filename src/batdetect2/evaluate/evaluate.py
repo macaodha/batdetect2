@@ -10,7 +10,7 @@ from batdetect2.evaluate import EvaluationConfig
 from batdetect2.evaluate.dataset import build_test_loader
 from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
-from batdetect2.logging import build_logger
+from batdetect2.logging import CSVLoggerConfig, LoggerConfig, build_logger
 from batdetect2.models import Model
 from batdetect2.outputs import OutputsConfig, build_output_transform
 from batdetect2.outputs.types import OutputFormatterProtocol
@@ -30,6 +30,7 @@ def run_evaluate(
     audio_config: AudioConfig | None = None,
     evaluation_config: EvaluationConfig | None = None,
     output_config: OutputsConfig | None = None,
+    logger_config: LoggerConfig | None = None,
     formatter: OutputFormatterProtocol | None = None,
     num_workers: int = 0,
     output_dir: data.PathLike = DEFAULT_EVAL_DIR,
@@ -64,7 +65,7 @@ def run_evaluate(
     )
 
     logger = build_logger(
-        evaluation_config.logger,
+        logger_config or CSVLoggerConfig(),
         log_dir=Path(output_dir),
         experiment_name=experiment_name,
         run_name=run_name,

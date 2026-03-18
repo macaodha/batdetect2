@@ -10,6 +10,7 @@ from batdetect2.evaluate.config import (
     get_default_eval_config,
 )
 from batdetect2.inference.config import InferenceConfig
+from batdetect2.logging import AppLoggingConfig
 from batdetect2.models import ModelConfig
 from batdetect2.outputs import OutputsConfig
 from batdetect2.train.config import TrainingConfig
@@ -32,6 +33,7 @@ class BatDetect2Config(BaseConfig):
     audio: AudioConfig = Field(default_factory=AudioConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     outputs: OutputsConfig = Field(default_factory=OutputsConfig)
+    logging: AppLoggingConfig = Field(default_factory=AppLoggingConfig)
 
 
 def validate_config(config: dict | None) -> BatDetect2Config:

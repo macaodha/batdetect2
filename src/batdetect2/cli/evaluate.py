@@ -19,6 +19,7 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 @click.option("--evaluation-config", type=click.Path(exists=True))
 @click.option("--inference-config", type=click.Path(exists=True))
 @click.option("--outputs-config", type=click.Path(exists=True))
+@click.option("--logging-config", type=click.Path(exists=True))
 @click.option("--base-dir", type=click.Path(), default=Path.cwd())
 @click.option("--output-dir", type=click.Path(), default=DEFAULT_OUTPUT_DIR)
 @click.option("--experiment-name", type=str)
@@ -33,6 +34,7 @@ def evaluate_command(
     evaluation_config: Path | None,
     inference_config: Path | None,
     outputs_config: Path | None,
+    logging_config: Path | None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     num_workers: int = 0,
     experiment_name: str | None = None,
@@ -43,6 +45,7 @@ def evaluate_command(
     from batdetect2.data import load_dataset_from_config
     from batdetect2.evaluate import load_evaluation_config
     from batdetect2.inference import InferenceConfig
+    from batdetect2.logging import load_logging_config
     from batdetect2.outputs import OutputsConfig
     from batdetect2.targets import load_target_config
 
@@ -81,6 +84,11 @@ def evaluate_command(
         if outputs_config is not None
         else None
     )
+    logging_conf = (
+        load_logging_config(logging_config)
+        if logging_config is not None
+        else None
+    )
 
     api = BatDetect2API.from_checkpoint(
         model_path,
@@ -89,6 +97,7 @@ def evaluate_command(
         evaluation_config=eval_conf,
         inference_config=inference_conf,
         outputs_config=outputs_conf,
+        logging_config=logging_conf,
     )
 
     api.evaluate(

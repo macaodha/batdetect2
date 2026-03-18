@@ -3,7 +3,6 @@ from soundevent import data
 
 from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.evaluate.config import EvaluationConfig
-from batdetect2.logging import LoggerConfig, TensorBoardLoggerConfig
 from batdetect2.train.checkpoints import CheckpointConfig
 from batdetect2.train.dataset import TrainLoaderConfig, ValLoaderConfig
 from batdetect2.train.labels import LabelConfig
@@ -50,7 +49,6 @@ class TrainingConfig(BaseConfig):
     )
     loss: LossConfig = Field(default_factory=LossConfig)
     trainer: PLTrainerConfig = Field(default_factory=PLTrainerConfig)
-    logger: LoggerConfig = Field(default_factory=TensorBoardLoggerConfig)
     labels: LabelConfig = Field(default_factory=LabelConfig)
     validation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     checkpoints: CheckpointConfig = Field(default_factory=CheckpointConfig)

@@ -26,9 +26,25 @@ from matplotlib.figure import Figure
 from pydantic import Field
 from soundevent import data
 
-from batdetect2.core.configs import BaseConfig
+from batdetect2.core.configs import BaseConfig, load_config
 
 DEFAULT_LOGS_DIR: Path = Path("outputs") / "logs"
+
+__all__ = [
+    "AppLoggingConfig",
+    "BaseLoggerConfig",
+    "CSVLoggerConfig",
+    "DEFAULT_LOGS_DIR",
+    "DVCLiveConfig",
+    "LoggerConfig",
+    "MLFlowLoggerConfig",
+    "TensorBoardLoggerConfig",
+    "build_logger",
+    "enable_logging",
+    "get_image_logger",
+    "get_table_logger",
+    "load_logging_config",
+]
 
 
 def enable_logging(level: int):
@@ -82,6 +98,19 @@ LoggerConfig = Annotated[
     | MLFlowLoggerConfig,
     Field(discriminator="name"),
 ]
+
+
+class AppLoggingConfig(BaseConfig):
+    train: LoggerConfig = Field(default_factory=TensorBoardLoggerConfig)
+    evaluation: LoggerConfig = Field(default_factory=CSVLoggerConfig)
+    inference: LoggerConfig = Field(default_factory=CSVLoggerConfig)
+
+
+def load_logging_config(
+    path: data.PathLike,
+    field: str | None = None,
+) -> AppLoggingConfig:
+    return load_config(path, schema=AppLoggingConfig, field=field)
 
 
 T = TypeVar("T", bound=LoggerConfig, contravariant=True)

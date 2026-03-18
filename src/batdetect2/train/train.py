@@ -10,7 +10,11 @@ from batdetect2.audio import AudioConfig, build_audio_loader
 from batdetect2.audio.types import AudioLoader
 from batdetect2.evaluate import build_evaluator
 from batdetect2.evaluate.types import EvaluatorProtocol
-from batdetect2.logging import build_logger
+from batdetect2.logging import (
+    LoggerConfig,
+    TensorBoardLoggerConfig,
+    build_logger,
+)
 from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
@@ -41,6 +45,7 @@ def run_train(
     audio_config: Optional[AudioConfig] = None,
     model_config: Optional[ModelConfig] = None,
     train_config: Optional[TrainingConfig] = None,
+    logger_config: LoggerConfig | None = None,
     trainer: Trainer | None = None,
     train_workers: int = 0,
     val_workers: int = 0,
@@ -113,6 +118,7 @@ def run_train(
 
     trainer = trainer or build_trainer(
         train_config,
+        logger_config=logger_config,
         evaluator=build_evaluator(
             train_config.validation,
             targets=targets,
@@ -180,6 +186,7 @@ def _validate_model_compatibility(
 
 def build_trainer(
     config: TrainingConfig,
+    logger_config: LoggerConfig | None,
     evaluator: "EvaluatorProtocol",
     checkpoint_dir: Path | None = None,
     log_dir: Path | None = None,
@@ -194,7 +201,7 @@ def build_trainer(
     )
 
     train_logger = build_logger(
-        config.logger,
+        logger_config or TensorBoardLoggerConfig(),
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,

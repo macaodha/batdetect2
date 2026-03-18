@@ -7,7 +7,6 @@ from batdetect2.core.configs import BaseConfig, load_config
 from batdetect2.evaluate.tasks import TaskConfig
 from batdetect2.evaluate.tasks.classification import ClassificationTaskConfig
 from batdetect2.evaluate.tasks.detection import DetectionTaskConfig
-from batdetect2.logging import CSVLoggerConfig, LoggerConfig
 
 __all__ = [
     "EvaluationConfig",
@@ -22,7 +21,6 @@ class EvaluationConfig(BaseConfig):
             ClassificationTaskConfig(),
         ]
     )
-    logger: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 
 
 def get_default_eval_config() -> EvaluationConfig:
