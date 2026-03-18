@@ -7,35 +7,35 @@ import torch
 from soundevent import data
 from soundevent.audio.files import get_audio_files
 
-from batdetect2.audio import build_audio_loader
-from batdetect2.audio.types import AudioLoader
+from batdetect2.audio import AudioLoader, build_audio_loader
 from batdetect2.config import BatDetect2Config
 from batdetect2.core import merge_configs
-from batdetect2.data import load_dataset_from_config
-from batdetect2.data.datasets import Dataset
-from batdetect2.evaluate import DEFAULT_EVAL_DIR, build_evaluator, run_evaluate
-from batdetect2.evaluate.types import EvaluatorProtocol
+from batdetect2.data import Dataset, load_dataset_from_config
+from batdetect2.evaluate import (
+    DEFAULT_EVAL_DIR,
+    EvaluatorProtocol,
+    build_evaluator,
+    run_evaluate,
+)
 from batdetect2.inference import process_file_list, run_batch_inference
 from batdetect2.logging import DEFAULT_LOGS_DIR
 from batdetect2.models import Model, build_model
 from batdetect2.outputs import (
     OutputFormatConfig,
+    OutputFormatterProtocol,
     OutputTransformProtocol,
     build_output_formatter,
     build_output_transform,
     get_output_formatter,
 )
-from batdetect2.outputs.types import OutputFormatterProtocol
-from batdetect2.postprocess import build_postprocessor
-from batdetect2.postprocess.types import (
+from batdetect2.postprocess import (
     ClipDetections,
     Detection,
     PostprocessorProtocol,
+    build_postprocessor,
 )
-from batdetect2.preprocess import build_preprocessor
-from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets import build_targets
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
+from batdetect2.targets import TargetProtocol, build_targets
 from batdetect2.train import (
     DEFAULT_CHECKPOINT_DIR,
     load_model_from_checkpoint,
@@ -168,6 +168,9 @@ class BatDetect2API:
     def load_audio(self, path: data.PathLike) -> np.ndarray:
         return self.audio_loader.load_file(path)
 
+    def load_recording(self, recording: data.Recording) -> np.ndarray:
+        return self.audio_loader.load_recording(recording)
+
     def load_clip(self, clip: data.Clip) -> np.ndarray:
         return self.audio_loader.load_clip(clip)
 
@@ -178,7 +181,7 @@ class BatDetect2API:
         tensor = torch.tensor(audio).unsqueeze(0)
         return self.preprocessor(tensor)
 
-    def process_file(self, audio_file: str) -> ClipDetections:
+    def process_file(self, audio_file: data.PathLike) -> ClipDetections:
         recording = data.Recording.from_file(audio_file, compute_hash=False)
         wav = self.audio_loader.load_recording(recording)
         detections = self.process_audio(wav)
@@ -230,6 +233,7 @@ class BatDetect2API:
     def process_files(
         self,
         audio_files: Sequence[data.PathLike],
+        batch_size: int | None = None,
         num_workers: int = 0,
     ) -> list[ClipDetections]:
         return process_file_list(

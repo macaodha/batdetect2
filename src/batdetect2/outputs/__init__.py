@@ -13,11 +13,15 @@ from batdetect2.outputs.transforms import (
     OutputTransformConfig,
     build_output_transform,
 )
-from batdetect2.outputs.types import OutputTransformProtocol
+from batdetect2.outputs.types import (
+    OutputFormatterProtocol,
+    OutputTransformProtocol,
+)
 
 __all__ = [
     "BatDetect2OutputConfig",
     "OutputFormatConfig",
+    "OutputFormatterProtocol",
     "OutputTransformConfig",
     "OutputTransformProtocol",
     "OutputsConfig",

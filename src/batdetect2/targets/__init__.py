@@ -1,8 +1,6 @@
 """BatDetect2 Target Definition system."""
 
 from batdetect2.targets.classes import (
-    SoundEventDecoder,
-    SoundEventEncoder,
     TargetClassConfig,
     build_sound_event_decoder,
     build_sound_event_encoder,
@@ -12,7 +10,6 @@ from batdetect2.targets.config import TargetConfig, load_target_config
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     ROIMapperConfig,
-    ROITargetMapper,
     build_roi_mapper,
 )
 from batdetect2.targets.targets import (
@@ -27,15 +24,27 @@ from batdetect2.targets.terms import (
     generic_class,
     individual,
 )
+from batdetect2.targets.types import (
+    Position,
+    ROITargetMapper,
+    Size,
+    SoundEventDecoder,
+    SoundEventEncoder,
+    TargetProtocol,
+)
 
 __all__ = [
     "AnchorBBoxMapperConfig",
+    "Position",
     "ROIMapperConfig",
     "ROITargetMapper",
+    "Size",
     "SoundEventDecoder",
     "SoundEventEncoder",
+    "SoundEventFilter",
     "TargetClassConfig",
     "TargetConfig",
+    "TargetProtocol",
     "Targets",
     "build_roi_mapper",
     "build_sound_event_decoder",

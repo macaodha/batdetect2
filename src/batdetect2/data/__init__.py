@@ -7,6 +7,7 @@ from batdetect2.data.annotations import (
     load_annotated_dataset,
 )
 from batdetect2.data.datasets import (
+    Dataset,
     DatasetConfig,
     load_dataset,
     load_dataset_config,
@@ -19,6 +20,7 @@ from batdetect2.data.summary import (
 )
 
 __all__ = [
+    "Dataset",
     "AOEFAnnotations",
     "AnnotatedDataset",
     "AnnotationFormats",

@@ -9,10 +9,26 @@ from batdetect2.postprocess.postprocessor import (
     Postprocessor,
     build_postprocessor,
 )
+from batdetect2.postprocess.types import (
+    ClipDetections,
+    ClipDetectionsArray,
+    ClipDetectionsTensor,
+    ClipPrediction,
+    Detection,
+    GeometryDecoder,
+    PostprocessorProtocol,
+)
 
 __all__ = [
+    "ClipDetections",
+    "ClipDetectionsArray",
+    "ClipDetectionsTensor",
+    "ClipPrediction",
+    "Detection",
+    "GeometryDecoder",
     "PostprocessConfig",
     "Postprocessor",
+    "PostprocessorProtocol",
     "build_postprocessor",
     "load_postprocess_config",
     "non_max_suppression",

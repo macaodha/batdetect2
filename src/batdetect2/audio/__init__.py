@@ -5,8 +5,11 @@ from batdetect2.audio.loader import (
     SoundEventAudioLoader,
     build_audio_loader,
 )
+from batdetect2.audio.types import AudioLoader, ClipperProtocol
 
 __all__ = [
+    "AudioLoader",
+    "ClipperProtocol",
     "TARGET_SAMPLERATE_HZ",
     "AudioConfig",
     "SoundEventAudioLoader",
