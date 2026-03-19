@@ -583,10 +583,6 @@ class BatDetect2API:
             transform=output_transform,
         )
 
-        model.preprocessor = preprocessor
-        model.postprocessor = postprocessor
-        model.targets = targets
-
         return cls(
             model_config=model_config,
             audio_config=audio_config,
