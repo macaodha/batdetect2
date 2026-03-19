@@ -18,6 +18,7 @@ class CheckpointConfig(BaseConfig):
     mode: str = "max"
     save_top_k: int = 1
     filename: str | None = None
+    save_last: bool = False
 
 
 def build_checkpoint_callback(
@@ -43,4 +44,5 @@ def build_checkpoint_callback(
         monitor=config.monitor,
         mode=config.mode,
         filename=config.filename,
+        save_last=config.save_last,
     )
