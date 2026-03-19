@@ -10,6 +10,7 @@ from typing import (
     TypeVar,
 )
 
+from loguru import logger
 from matplotlib.figure import Figure
 from pydantic import Field
 from soundevent import data
@@ -107,8 +108,12 @@ class BaseTask(EvaluationTaskProtocol, Generic[T_Output]):
         self, eval_outputs: List[T_Output]
     ) -> Iterable[Tuple[str, Figure]]:
         for plot in self.plots:
-            for name, fig in plot(eval_outputs):
-                yield f"{self.prefix}/{name}", fig
+            try:
+                for name, fig in plot(eval_outputs):
+                    yield f"{self.prefix}/{name}", fig
+            except Exception as e:
+                logger.error(f"Error plotting {self.prefix}: {e}")
+                continue
 
     def evaluate(
         self,
