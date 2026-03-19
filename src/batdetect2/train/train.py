@@ -73,9 +73,6 @@ def run_train(
 
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
-    if model is not None:
-        preprocessor = preprocessor or model.preprocessor
-
     preprocessor = preprocessor or build_preprocessor(
         input_samplerate=audio_loader.samplerate,
         config=model_config.preprocess,

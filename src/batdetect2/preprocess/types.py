@@ -29,6 +29,3 @@ class PreprocessorProtocol(Protocol):
 
     def process_numpy(self, wav: np.ndarray) -> np.ndarray:
         return self(torch.tensor(wav)).numpy()
-
-    def cpu(self) -> "PreprocessorProtocol":
-        return self

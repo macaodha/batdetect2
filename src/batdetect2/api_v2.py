@@ -484,11 +484,19 @@ class BatDetect2API:
             transform=output_transform,
         )
 
+        # NOTE: Build separate instances of preprocessor and postprocessor
+        # to avoid device mismatch errors
         model = build_model(
             config=config.model,
-            targets=targets,
-            preprocessor=preprocessor,
-            postprocessor=postprocessor,
+            targets=build_targets(config=config.model.targets),
+            preprocessor=build_preprocessor(
+                input_samplerate=audio_loader.samplerate,
+                config=config.model.preprocess,
+            ),
+            postprocessor=build_postprocessor(
+                preprocessor,
+                config=config.model.postprocess,
+            ),
         )
 
         return cls(
