@@ -272,7 +272,7 @@ def build_train_dataset(
         audio_loader=audio_loader,
         labeller=labeller,
         clipper=clipper,
-        preprocessor=preprocessor,
+        preprocessor=preprocessor.cpu(),
         audio_augmentation=audio_augmentation,
         spectrogram_augmentation=spectrogram_augmentation,
     )
@@ -305,7 +305,7 @@ def build_val_dataset(
         clip_annotations,
         audio_loader=audio_loader,
         labeller=labeller,
-        preprocessor=preprocessor,
+        preprocessor=preprocessor.cpu(),
         clipper=clipper,
     )
 

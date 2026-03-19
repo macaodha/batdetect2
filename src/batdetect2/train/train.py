@@ -73,8 +73,9 @@ def run_train(
 
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
-    # NOTE: Create a new preprocessor instead of using the one from the model
-    #       to avoid issues with device placement.
+    if model is not None:
+        preprocessor = preprocessor or model.preprocessor
+
     preprocessor = preprocessor or build_preprocessor(
         input_samplerate=audio_loader.samplerate,
         config=model_config.preprocess,
