@@ -7,18 +7,19 @@ authors = [
   { "name" = "Santiago Martinez Balvanera", "email" = "santiago.balvanera.20@ucl.ac.uk" },
 ]
 dependencies = [
-    "click>=8.1.7",
-    "librosa>=0.10.1",
-    "matplotlib>=3.7.1",
-    "numpy>=1.23.5",
-    "pandas>=1.5.3",
-    "scikit-learn>=1.2.2",
-    "scipy>=1.10.1",
-    "torch>=1.13.1,<2.5.0",
-    "torchaudio>=1.13.1,<2.5.0",
-    "torchvision>=0.14.0",
+  "click>=8.1.7",
+  "librosa>=0.10.1",
+  "matplotlib>=3.7.1",
+  "numpy>=1.23.5",
+  "pandas>=1.5.3",
+  "scikit-learn>=1.2.2",
+  "scipy>=1.10.1",
+  "torch>=1.13.1",
+  "torchaudio>=1.13.1",
+  "torchvision>=0.14.0",
+  "setuptools>=70.1.0; python_version == '3.14'",
 ]
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.9,<3.15"
 readme = "README.md"
 license = { text = "CC-by-nc-4" }
 classifiers = [
@@ -30,6 +31,8 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Multimedia :: Sound/Audio :: Analysis",
@@ -51,13 +54,37 @@ build-backend = "hatchling.build"
 [project.scripts]
 batdetect2 = "batdetect2.cli:cli"
 
-[tool.uv]
-dev-dependencies = [
-    "debugpy>=1.8.8",
-    "hypothesis>=6.118.7",
-    "pyright>=1.1.388",
-    "pytest>=7.2.2",
-    "ruff>=0.7.3",
+[dependency-groups]
+dev = [
+  "debugpy>=1.8.8",
+  "hypothesis>=6.118.7",
+  "pyright>=1.1.388",
+  "pytest>=7.2.2",
+  "ruff>=0.7.3",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
+]
+torchvision = [
+  { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
+]
+torchaudio = [
+  { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
 ]
 
 [tool.ruff]
