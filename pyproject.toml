@@ -17,6 +17,7 @@ dependencies = [
   "torch>=1.13.1",
   "torchaudio>=1.13.1",
   "torchvision>=0.14.0",
+  "setuptools>=70.1.0; python_version == '3.14'",
 ]
 requires-python = ">=3.9,<3.15"
 readme = "README.md"
@@ -75,15 +76,15 @@ explicit = true
 [tool.uv.sources]
 torch = [
   { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
 ]
 torchvision = [
   { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
 ]
 torchaudio = [
   { index = "pytorch-cu118", marker = "python_version == '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu126", marker = "python_version != '3.9' and (sys_platform == 'linux' or sys_platform == 'win32')" },
 ]
 
 [tool.ruff]
