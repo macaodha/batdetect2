@@ -87,6 +87,15 @@ def common_predict_options(func):
             "the default output format is used."
         ),
     )
+    @click.option(
+        "--detection-threshold",
+        type=click.FloatRange(min=0.0, max=1.0),
+        default=None,
+        help=(
+            "Optional detection score threshold override. If omitted, "
+            "the model default threshold is used."
+        ),
+    )
     @wraps(func)
     def wrapped(*args, **kwargs):
         return func(*args, **kwargs)
@@ -147,6 +156,7 @@ def _run_prediction(
     batch_size: int | None,
     num_workers: int,
     format_name: str | None,
+    detection_threshold: float | None,
 ) -> None:
     logger.info("Initiating prediction process...")
 
@@ -167,6 +177,7 @@ def _run_prediction(
         audio_config=audio_conf,
         inference_config=inference_conf,
         output_config=outputs_conf,
+        detection_threshold=detection_threshold,
     )
 
     common_path = audio_files[0].parent if audio_files else None
@@ -201,6 +212,7 @@ def predict_directory_command(
     batch_size: int | None,
     num_workers: int,
     format_name: str | None,
+    detection_threshold: float | None,
 ) -> None:
     """Predict on all audio files in a directory.
 
@@ -219,6 +231,7 @@ def predict_directory_command(
         batch_size=batch_size,
         num_workers=num_workers,
         format_name=format_name,
+        detection_threshold=detection_threshold,
     )
 
 
@@ -241,6 +254,7 @@ def predict_file_list_command(
     batch_size: int | None,
     num_workers: int,
     format_name: str | None,
+    detection_threshold: float | None,
 ) -> None:
     """Predict on audio files listed in a text file.
 
@@ -265,6 +279,7 @@ def predict_file_list_command(
         batch_size=batch_size,
         num_workers=num_workers,
         format_name=format_name,
+        detection_threshold=detection_threshold,
     )
 
 
@@ -287,6 +302,7 @@ def predict_dataset_command(
     batch_size: int | None,
     num_workers: int,
     format_name: str | None,
+    detection_threshold: float | None,
 ) -> None:
     """Predict on recordings referenced in an annotation dataset.
 
@@ -313,4 +329,5 @@ def predict_dataset_command(
         batch_size=batch_size,
         num_workers=num_workers,
         format_name=format_name,
+        detection_threshold=detection_threshold,
     )

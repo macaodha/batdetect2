@@ -31,6 +31,7 @@ def run_batch_inference(
     output_transform: OutputTransformProtocol | None = None,
     output_config: OutputsConfig | None = None,
     inference_config: InferenceConfig | None = None,
+    detection_threshold: float | None = None,
     num_workers: int = 1,
     batch_size: int | None = None,
 ) -> list[ClipDetections]:
@@ -62,6 +63,7 @@ def run_batch_inference(
     module = InferenceModule(
         model,
         output_transform=output_transform,
+        detection_threshold=detection_threshold,
     )
     trainer = Trainer(enable_checkpointing=False, logger=False)
     outputs = trainer.predict(module, loader)
@@ -82,6 +84,7 @@ def process_file_list(
     inference_config: InferenceConfig | None = None,
     output_config: OutputsConfig | None = None,
     output_transform: OutputTransformProtocol | None = None,
+    detection_threshold: float | None = None,
     batch_size: int | None = None,
     num_workers: int = 0,
 ) -> list[ClipDetections]:
@@ -106,4 +109,5 @@ def process_file_list(
         audio_config=audio_config,
         output_transform=output_transform,
         inference_config=inference_config,
+        detection_threshold=detection_threshold,
     )

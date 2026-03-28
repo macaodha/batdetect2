@@ -303,6 +303,7 @@ class BatDetect2API:
         self,
         audio_file: data.PathLike,
         batch_size: int | None = None,
+        detection_threshold: float | None = None,
     ) -> ClipDetections:
         recording = data.Recording.from_file(audio_file, compute_hash=False)
 
@@ -313,6 +314,7 @@ class BatDetect2API:
                 if batch_size is not None
                 else self.inference_config.loader.batch_size
             ),
+            detection_threshold=detection_threshold,
         )
         detections = [
             detection
@@ -333,14 +335,19 @@ class BatDetect2API:
     def process_audio(
         self,
         audio: np.ndarray,
+        detection_threshold: float | None = None,
     ) -> list[Detection]:
         spec = self.generate_spectrogram(audio)
-        return self.process_spectrogram(spec)
+        return self.process_spectrogram(
+            spec,
+            detection_threshold=detection_threshold,
+        )
 
     def process_spectrogram(
         self,
         spec: torch.Tensor,
         start_time: float = 0,
+        detection_threshold: float | None = None,
     ) -> list[Detection]:
         if spec.ndim == 4 and spec.shape[0] > 1:
             raise ValueError("Batched spectrograms not supported.")
@@ -352,6 +359,7 @@ class BatDetect2API:
 
         detections = self.postprocessor(
             outputs,
+            detection_threshold=detection_threshold,
         )[0]
         return self.output_transform.to_detections(
             detections=detections,
@@ -361,9 +369,13 @@ class BatDetect2API:
     def process_directory(
         self,
         audio_dir: data.PathLike,
+        detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
         files = list(get_audio_files(audio_dir))
-        return self.process_files(files)
+        return self.process_files(
+            files,
+            detection_threshold=detection_threshold,
+        )
 
     def process_files(
         self,
@@ -373,6 +385,7 @@ class BatDetect2API:
         audio_config: AudioConfig | None = None,
         inference_config: InferenceConfig | None = None,
         output_config: OutputsConfig | None = None,
+        detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
         return process_file_list(
             self.model,
@@ -386,6 +399,7 @@ class BatDetect2API:
             audio_config=audio_config or self.audio_config,
             inference_config=inference_config or self.inference_config,
             output_config=output_config or self.outputs_config,
+            detection_threshold=detection_threshold,
         )
 
     def process_clips(
@@ -396,6 +410,7 @@ class BatDetect2API:
         audio_config: AudioConfig | None = None,
         inference_config: InferenceConfig | None = None,
         output_config: OutputsConfig | None = None,
+        detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
         return run_batch_inference(
             self.model,
@@ -409,6 +424,7 @@ class BatDetect2API:
             audio_config=audio_config or self.audio_config,
             inference_config=inference_config or self.inference_config,
             output_config=output_config or self.outputs_config,
+            detection_threshold=detection_threshold,
         )
 
     def save_predictions(

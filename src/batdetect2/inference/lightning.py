@@ -14,9 +14,11 @@ class InferenceModule(LightningModule):
         self,
         model: Model,
         output_transform: OutputTransformProtocol | None = None,
+        detection_threshold: float | None = None,
     ):
         super().__init__()
         self.model = model
+        self.detection_threshold = detection_threshold
         self.output_transform = output_transform or build_output_transform(
             targets=model.targets
         )
@@ -33,7 +35,10 @@ class InferenceModule(LightningModule):
 
         outputs = self.model.detector(batch.spec)
 
-        clip_detections = self.model.postprocessor(outputs)
+        clip_detections = self.model.postprocessor(
+            outputs,
+            detection_threshold=self.detection_threshold,
+        )
 
         return [
             self.output_transform.to_clip_detections(
