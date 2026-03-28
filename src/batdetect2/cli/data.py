@@ -80,11 +80,17 @@ def summary(
     type=click.Path(exists=True),
     help="The base directory to which all recording and annotations paths are relative to.",
 )
+@click.option(
+    "--audio-dir",
+    type=click.Path(exists=True),
+    help="The directory containing the audio files. All paths will be relative to this directory.",
+)
 def convert(
     dataset_config: Path,
     field: str | None = None,
     output: Path = Path("annotations.json"),
     base_dir: Path | None = None,
+    audio_dir: Path | None = None,
 ):
     """Convert a dataset config file to soundevent format."""
     from soundevent import data, io
@@ -103,4 +109,12 @@ def convert(
         description=config.description,
     )
 
-    io.save(annotation_set, output)
+    if audio_dir:
+        audio_dir = Path(audio_dir)
+
+        if not audio_dir.is_absolute():
+            audio_dir = audio_dir.resolve()
+
+        print(f"Using audio directory: {audio_dir}")
+
+    io.save(annotation_set, output, audio_dir=audio_dir)
