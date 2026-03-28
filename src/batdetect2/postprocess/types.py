@@ -81,5 +81,8 @@ class ClipPrediction:
 
 class PostprocessorProtocol(Protocol):
     def __call__(
-        self, output: "ModelOutput"
+        self,
+        output: "ModelOutput",
+        *,
+        detection_threshold: float | None = None,
     ) -> list[ClipDetectionsTensor]: ...
