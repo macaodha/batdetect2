@@ -81,6 +81,8 @@ def load_dataset(
     add_source_tag: bool = True,
     include_sources: list[str] | None = None,
     exclude_sources: list[str] | None = None,
+    apply_transforms: bool = True,
+    apply_filters: bool = True,
 ) -> Dataset:
     """Load all clip annotations from the sources defined in a DatasetConfig."""
     clip_annotations = []
@@ -121,13 +123,13 @@ def load_dataset(
             if add_source_tag:
                 clip_annotation = insert_source_tag(clip_annotation, source)
 
-            if condition is not None:
+            if condition is not None and apply_filters:
                 clip_annotation = filter_clip_annotation(
                     clip_annotation,
                     condition,
                 )
 
-            if transform is not None:
+            if transform is not None and apply_transforms:
                 clip_annotation = transform_clip_annotation(
                     clip_annotation,
                     transform,

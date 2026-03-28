@@ -137,6 +137,22 @@ def summary(
         "matching names will be excluded from the output."
     ),
 )
+@click.option(
+    "--apply-transforms/--no-apply-transforms",
+    default=True,
+    help=(
+        "Apply any configured sound event transforms to the annotations. "
+        "Defaults to True."
+    ),
+)
+@click.option(
+    "--apply-filters/--no-apply-filters",
+    default=True,
+    help=(
+        "Apply any configured sound event filters to the annotations. "
+        "Defaults to True."
+    ),
+)
 def convert(
     dataset_config: Path,
     field: str | None = None,
@@ -146,6 +162,8 @@ def convert(
     add_source_tag: bool = True,
     include_sources: list[str] | None = None,
     exclude_sources: list[str] | None = None,
+    apply_transforms: bool = True,
+    apply_filters: bool = True,
 ):
     """Convert a dataset config into soundevent annotation-set format.
 
@@ -166,6 +184,8 @@ def convert(
         add_source_tag=add_source_tag,
         include_sources=include_sources,
         exclude_sources=exclude_sources,
+        apply_transforms=apply_transforms,
+        apply_filters=apply_filters,
     )
 
     annotation_set = data.AnnotationSet(
