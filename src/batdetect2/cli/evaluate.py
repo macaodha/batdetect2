@@ -40,6 +40,7 @@ def evaluate_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
+    """Evaluate a checkpoint against a configured test dataset."""
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.data import load_dataset_from_config

@@ -1,10 +1,12 @@
 # Reference documentation
 
-```{eval-rst}
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+Reference pages provide factual, complete descriptions of commands,
+configuration, and data structures.
 
-   configs
-   targets
+```{toctree}
+:maxdepth: 1
+
+cli
+configs
+targets
 ```

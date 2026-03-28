@@ -49,6 +49,7 @@ def train_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
+    """Train a model from dataset configs or a checkpoint."""
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.config import BatDetect2Config

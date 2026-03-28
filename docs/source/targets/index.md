@@ -74,5 +74,6 @@ filtering
 transform
 classes
 rois
+labels
 use
 ```

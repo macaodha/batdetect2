@@ -12,7 +12,7 @@ __all__ = ["predict"]
 
 @cli.group(name="predict")
 def predict() -> None:
-    """Run prediction with BatDetect2 API v2."""
+    """Run model inference on audio using API v2."""
 
 
 def _build_api(
@@ -126,6 +126,7 @@ def predict_directory_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
+    """Predict on all audio files in a directory."""
     audio_files = list(get_audio_files(audio_dir))
     _run_prediction(
         model_path=model_path,
@@ -164,6 +165,7 @@ def predict_file_list_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
+    """Predict on audio files listed in a text file."""
     file_list = Path(file_list)
     audio_files = [
         Path(line.strip())
@@ -208,6 +210,7 @@ def predict_dataset_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
+    """Predict on recordings referenced in an annotation dataset."""
     dataset_path = Path(dataset_path)
     dataset = io.load(dataset_path, type="annotation_set")
     audio_files = sorted(

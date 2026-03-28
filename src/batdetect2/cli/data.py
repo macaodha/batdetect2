@@ -8,7 +8,8 @@ __all__ = ["data"]
 
 
 @cli.group()
-def data(): ...
+def data():
+    """Inspect and convert dataset configuration files."""
 
 
 @data.command()
@@ -37,6 +38,7 @@ def summary(
     targets_path: Path | None = None,
     base_dir: Path | None = None,
 ):
+    """Show annotation counts and optional class summary."""
     from batdetect2.data import compute_class_summary, load_dataset_from_config
     from batdetect2.targets import load_targets
 

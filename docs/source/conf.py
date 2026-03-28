@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinxcontrib.autodoc_pydantic",
+    "sphinx_click",
     "numpydoc",
     "myst_parser",
     "sphinx_autodoc_typehints",
@@ -38,9 +39,19 @@ source_suffix = {
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
+html_theme_options = {
+    "home_page_in_toc": True,
+}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "click": ("https://click.palletsprojects.com/en/stable/", None),
+    "librosa": ("https://librosa.org/doc/latest/", None),
+    "lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
+    "loguru": ("https://loguru.readthedocs.io/en/stable/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "omegaconf": ("https://omegaconf.readthedocs.io/en/latest/", None),
+    "pytorch": ("https://pytorch.org/docs/stable/", None),
     "soundevent": ("https://mbsantiago.github.io/soundevent/", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),

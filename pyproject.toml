@@ -80,6 +80,7 @@ dev = [
   "numpydoc>=1.8.0",
   "sphinx-autodoc-typehints>=2.3.0",
   "sphinx-book-theme>=1.1.4",
+  "sphinx-click>=6.1.0",
   "autodoc-pydantic>=2.2.0",
   "pytest-cov>=6.1.1",
   "ty>=0.0.1a12",
