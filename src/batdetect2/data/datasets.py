@@ -19,7 +19,7 @@ The core components are:
 """
 
 from pathlib import Path
-from typing import List, Sequence
+from typing import Sequence
 
 from loguru import logger
 from pydantic import Field
@@ -67,10 +67,10 @@ class DatasetConfig(BaseConfig):
 
     name: str
     description: str
-    sources: List[AnnotationFormats]
+    sources: list[AnnotationFormats]
 
     sound_event_filter: SoundEventConditionConfig | None = None
-    sound_event_transforms: List[SoundEventTransformConfig] = Field(
+    sound_event_transforms: list[SoundEventTransformConfig] = Field(
         default_factory=list
     )
 
@@ -78,6 +78,9 @@ class DatasetConfig(BaseConfig):
 def load_dataset(
     config: DatasetConfig,
     base_dir: data.PathLike | None = None,
+    add_source_tag: bool = True,
+    include_sources: list[str] | None = None,
+    exclude_sources: list[str] | None = None,
 ) -> Dataset:
     """Load all clip annotations from the sources defined in a DatasetConfig."""
     clip_annotations = []
@@ -102,6 +105,12 @@ def load_dataset(
     for source in config.sources:
         annotated_source = load_annotated_dataset(source, base_dir=base_dir)
 
+        if include_sources and source.name not in include_sources:
+            continue
+
+        if exclude_sources and source.name in exclude_sources:
+            continue
+
         logger.debug(
             "Loaded {num_examples} from dataset source '{source_name}'",
             num_examples=len(annotated_source.clip_annotations),
@@ -109,7 +118,8 @@ def load_dataset(
         )
 
         for clip_annotation in annotated_source.clip_annotations:
-            clip_annotation = insert_source_tag(clip_annotation, source)
+            if add_source_tag:
+                clip_annotation = insert_source_tag(clip_annotation, source)
 
             if condition is not None:
                 clip_annotation = filter_clip_annotation(

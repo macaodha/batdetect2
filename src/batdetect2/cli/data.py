@@ -110,12 +110,42 @@ def summary(
         "made relative to this directory."
     ),
 )
+@click.option(
+    "--add-source-tag",
+    is_flag=True,
+    help=(
+        "Add a source tag to each clip annotation. This is useful for "
+        "downstream tools that need to know which source the annotations "
+        "came from."
+    ),
+)
+@click.option(
+    "--include-sources",
+    type=str,
+    multiple=True,
+    help=(
+        "Only include sources with the specified names. If provided, only "
+        "sources with matching names will be included in the output."
+    ),
+)
+@click.option(
+    "--exclude-sources",
+    type=str,
+    multiple=True,
+    help=(
+        "Exclude sources with the specified names. If provided, sources with "
+        "matching names will be excluded from the output."
+    ),
+)
 def convert(
     dataset_config: Path,
     field: str | None = None,
     output: Path = Path("annotations.json"),
     base_dir: Path | None = None,
     audio_dir: Path | None = None,
+    add_source_tag: bool = True,
+    include_sources: list[str] | None = None,
+    exclude_sources: list[str] | None = None,
 ):
     """Convert a dataset config into soundevent annotation-set format.
 
@@ -130,7 +160,13 @@ def convert(
 
     config = load_dataset_config(dataset_config, field=field)
 
-    dataset = load_dataset(config, base_dir=base_dir)
+    dataset = load_dataset(
+        config,
+        base_dir=base_dir,
+        add_source_tag=add_source_tag,
+        include_sources=include_sources,
+        exclude_sources=exclude_sources,
+    )
 
     annotation_set = data.AnnotationSet(
         clip_annotations=list(dataset),
