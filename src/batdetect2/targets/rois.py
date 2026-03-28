@@ -1,23 +1,19 @@
-"""Handles mapping between geometric ROIs and target representations.
+"""Map geometric ROIs to target representations and back.
 
 This module defines a standardized interface (`ROITargetMapper`) for converting
-a sound event's Region of Interest (ROI) into a target representation suitable
-for machine learning models, and for decoding model outputs back into geometric
-ROIs.
+a sound event ROI into a target representation for model training and decoding
+model outputs back into approximate geometries.
 
-The core operations are:
-1.  **Encoding**: A `soundevent.data.SoundEvent` is mapped to a reference
-    `Position` (time, frequency) and a `Size` array. The method for
-    determining the position and size varies by the mapper implementation
-    (e.g., using a bounding box anchor or the point of peak energy).
-2.  **Decoding**: A `Position` and `Size` array are mapped back to an
-    approximate `soundevent.data.Geometry` (typically a `BoundingBox`).
+Core operations:
 
-This logic is encapsulated within specific mapper classes. Configuration for
-each mapper (e.g., anchor point, scaling factors) is managed by a corresponding
-Pydantic config object. The `ROIMapperConfig` type allows for flexibly
-selecting and configuring the desired mapper. This module separates the
-*geometric* aspect of target definition from *semantic* classification.
+- Encode a `soundevent.data.SoundEvent` into a reference `Position`
+  `(time, frequency)` and a `Size` array.
+- Decode a `Position` and `Size` array into an approximate
+  `soundevent.data.Geometry` (usually a `BoundingBox`).
+
+The specific mapping depends on the selected mapper implementation. Config
+objects provide mapper-specific parameters such as anchor choice and scaling.
+This module focuses on the geometric part of target definition.
 """
 
 from typing import Annotated, Literal
@@ -131,12 +127,12 @@ class AnchorBBoxMapper(ROITargetMapper):
     This class implements the `ROITargetMapper` protocol for `BoundingBox`
     geometries.
 
-    **Encoding**: The `position` is a fixed anchor point on the bounding box
-    (e.g., "bottom-left"). The `size` is a 2-element array containing the
-    scaled width and height of the box.
+    Encoding uses a fixed anchor point on the bounding box for `position`
+    (for example, ``bottom-left``). The `size` is a 2-element array with
+    scaled width and height.
 
-    **Decoding**: Reconstructs a `BoundingBox` from an anchor point and
-    scaled width/height.
+    Decoding reconstructs a `BoundingBox` from anchor position and scaled
+    width/height.
 
     Attributes
     ----------
@@ -300,13 +296,12 @@ class PeakEnergyBBoxMapper(ROITargetMapper):
 
     This class implements the `ROITargetMapper` protocol.
 
-    **Encoding**: The `position` is the (time, frequency) coordinate of the
-    point with the highest energy within the sound event's bounding box. The
-    `size` is a 4-element array representing the scaled distances from this
-    peak energy point to the left, bottom, right, and top edges of the box.
+    Encoding sets `position` to the (time, frequency) coordinate of peak energy
+    inside the sound event bounding box. The `size` is a 4-element array with
+    scaled distances from the peak point to left, bottom, right, and top edges.
 
-    **Decoding**: Reconstructs a `BoundingBox` by adding/subtracting the
-    un-scaled distances from the peak energy point.
+    Decoding reconstructs a `BoundingBox` by applying the unscaled distances to
+    the peak-energy position.
 
     Attributes
     ----------

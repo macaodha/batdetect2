@@ -12,7 +12,13 @@ DEFAULT_MODEL_PATH = os.path.join(
 )
 
 
-@cli.command()
+@cli.command(
+    short_help="Legacy detection command.",
+    epilog=(
+        "Deprecated workflow. Prefer `batdetect2 predict directory` for "
+        "new analyses."
+    ),
+)
 @click.argument(
     "audio_dir",
     type=click.Path(exists=True),
@@ -68,7 +74,10 @@ def detect(
     time_expansion_factor: int,
     **args,
 ):
-    """Detect bat calls in files in AUDIO_DIR and save predictions to ANN_DIR.
+    """Legacy detection command for directory-based inference.
+
+    Detect bat calls in files in `AUDIO_DIR` and save predictions to
+    `ANN_DIR`.
 
     DETECTION_THRESHOLD is the detection threshold. All predictions with a
     score below this threshold will be discarded. Values between 0 and 1.
@@ -78,6 +87,11 @@ def detect(
     Spaces in the input paths will throw an error. Wrap in quotes.
 
     Input files should be short in duration e.g. < 30 seconds.
+
+    Note
+    ----
+    This command is kept for backwards compatibility. Prefer
+    `batdetect2 predict directory` for new workflows.
     """
     from batdetect2 import api
     from batdetect2.utils.detector_utils import save_results_to_file
@@ -132,7 +146,7 @@ def detect(
 
 
 def print_config(config):
-    """Print the processing configuration."""
+    """Print the processing configuration values."""
     click.echo("\nProcessing Configuration:")
     click.echo(f"Time Expansion Factor: {config.get('time_expansion')}")
     click.echo(f"Detection Threshold: {config.get('detection_threshold')}")

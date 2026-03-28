@@ -1,4 +1,6 @@
+from functools import wraps
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 from loguru import logger
@@ -7,12 +9,89 @@ from soundevent.audio.files import get_audio_files
 
 from batdetect2.cli.base import cli
 
+if TYPE_CHECKING:
+    from batdetect2.api_v2 import BatDetect2API
+    from batdetect2.audio import AudioConfig
+    from batdetect2.inference import InferenceConfig
+    from batdetect2.outputs import OutputsConfig
+
 __all__ = ["predict"]
 
 
-@cli.group(name="predict")
+@cli.group(name="predict", short_help="Run prediction workflows.")
 def predict() -> None:
-    """Run model inference on audio using API v2."""
+    """Run model inference on audio files.
+
+    Use one of the subcommands to select inputs from a directory, a text file
+    list, or an annotation dataset.
+    """
+
+
+def common_predict_options(func):
+    """Attach options shared by all `predict` subcommands."""
+
+    @click.option(
+        "--audio-config",
+        type=click.Path(exists=True),
+        help=(
+            "Path to an audio config file. Use this to override audio "
+            "loading and preprocessing-related settings."
+        ),
+    )
+    @click.option(
+        "--inference-config",
+        type=click.Path(exists=True),
+        help=(
+            "Path to an inference config file. Use this to override "
+            "prediction-time thresholds and behavior."
+        ),
+    )
+    @click.option(
+        "--outputs-config",
+        type=click.Path(exists=True),
+        help=(
+            "Path to an outputs config file. Use this to control the "
+            "prediction fields written to disk."
+        ),
+    )
+    @click.option(
+        "--logging-config",
+        type=click.Path(exists=True),
+        help=(
+            "Path to a logging config file. Use this to customize logging "
+            "format and levels."
+        ),
+    )
+    @click.option(
+        "--batch-size",
+        type=int,
+        help=(
+            "Batch size for inference. If omitted, the value from the "
+            "loaded config is used."
+        ),
+    )
+    @click.option(
+        "--workers",
+        "num_workers",
+        type=int,
+        default=0,
+        show_default=True,
+        help="Number of worker processes for audio loading.",
+    )
+    @click.option(
+        "--format",
+        "format_name",
+        type=str,
+        help=(
+            "Output format name used by the prediction writer. If omitted, "
+            "the default output format is used."
+        ),
+    )
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped
 
 
 def _build_api(
@@ -21,7 +100,7 @@ def _build_api(
     inference_config: Path | None,
     outputs_config: Path | None,
     logging_config: Path | None,
-):
+) -> "tuple[BatDetect2API, AudioConfig | None, InferenceConfig | None, OutputsConfig | None]":
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.inference import InferenceConfig
@@ -103,17 +182,14 @@ def _run_prediction(
     )
 
 
-@predict.command(name="directory")
+@predict.command(
+    name="directory",
+    short_help="Predict on audio files in a directory.",
+)
 @click.argument("model_path", type=click.Path(exists=True))
 @click.argument("audio_dir", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
-@click.option("--audio-config", type=click.Path(exists=True))
-@click.option("--inference-config", type=click.Path(exists=True))
-@click.option("--outputs-config", type=click.Path(exists=True))
-@click.option("--logging-config", type=click.Path(exists=True))
-@click.option("--batch-size", type=int)
-@click.option("--workers", "num_workers", type=int, default=0)
-@click.option("--format", "format_name", type=str)
+@common_predict_options
 def predict_directory_command(
     model_path: Path,
     audio_dir: Path,
@@ -126,7 +202,11 @@ def predict_directory_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
-    """Predict on all audio files in a directory."""
+    """Predict on all audio files in a directory.
+
+    Loads a checkpoint, scans `audio_dir` for supported audio files, runs
+    inference, and saves predictions to `output_path`.
+    """
     audio_files = list(get_audio_files(audio_dir))
     _run_prediction(
         model_path=model_path,
@@ -142,17 +222,14 @@ def predict_directory_command(
     )
 
 
-@predict.command(name="file_list")
+@predict.command(
+    name="file_list",
+    short_help="Predict on paths listed in a text file.",
+)
 @click.argument("model_path", type=click.Path(exists=True))
 @click.argument("file_list", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
-@click.option("--audio-config", type=click.Path(exists=True))
-@click.option("--inference-config", type=click.Path(exists=True))
-@click.option("--outputs-config", type=click.Path(exists=True))
-@click.option("--logging-config", type=click.Path(exists=True))
-@click.option("--batch-size", type=int)
-@click.option("--workers", "num_workers", type=int, default=0)
-@click.option("--format", "format_name", type=str)
+@common_predict_options
 def predict_file_list_command(
     model_path: Path,
     file_list: Path,
@@ -165,7 +242,11 @@ def predict_file_list_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
-    """Predict on audio files listed in a text file."""
+    """Predict on audio files listed in a text file.
+
+    The list file should contain one audio path per line. Empty lines are
+    ignored.
+    """
     file_list = Path(file_list)
     audio_files = [
         Path(line.strip())
@@ -187,17 +268,14 @@ def predict_file_list_command(
     )
 
 
-@predict.command(name="dataset")
+@predict.command(
+    name="dataset",
+    short_help="Predict on recordings from a dataset config.",
+)
 @click.argument("model_path", type=click.Path(exists=True))
 @click.argument("dataset_path", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
-@click.option("--audio-config", type=click.Path(exists=True))
-@click.option("--inference-config", type=click.Path(exists=True))
-@click.option("--outputs-config", type=click.Path(exists=True))
-@click.option("--logging-config", type=click.Path(exists=True))
-@click.option("--batch-size", type=int)
-@click.option("--workers", "num_workers", type=int, default=0)
-@click.option("--format", "format_name", type=str)
+@common_predict_options
 def predict_dataset_command(
     model_path: Path,
     dataset_path: Path,
@@ -210,7 +288,11 @@ def predict_dataset_command(
     num_workers: int,
     format_name: str | None,
 ) -> None:
-    """Predict on recordings referenced in an annotation dataset."""
+    """Predict on recordings referenced in an annotation dataset.
+
+    The dataset is read as a soundevent annotation set and unique recording
+    paths are extracted before inference.
+    """
     dataset_path = Path(dataset_path)
     dataset = io.load(dataset_path, type="annotation_set")
     audio_files = sorted(

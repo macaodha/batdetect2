@@ -1,6 +1,6 @@
-## Defining Target Geometry: Mapping Sound Event Regions
+# Defining Target Geometry: Mapping Sound Event Regions
 
-### Introduction
+## Introduction
 
 In the previous steps of defining targets, we focused on determining _which_ sound events are relevant (`filtering`), _what_ descriptive tags they should have (`transform`), and _which category_ they belong to (`classes`).
 However, for the model to learn effectively, it also needs to know **where** in the spectrogram each sound event is located and approximately **how large** it is.
@@ -10,7 +10,7 @@ This ROI contains detailed spatial information (start/end time, low/high frequen
 
 This section explains how BatDetect2 converts the geometric ROI from your annotations into the specific positional and size information used as targets during model training.
 
-### From ROI to Model Targets: Position & Size
+## From ROI to Model Targets: Position & Size
 
 BatDetect2 does not directly predict a full bounding box.
 Instead, it is trained to predict:
@@ -21,7 +21,7 @@ Instead, it is trained to predict:
 This step defines _how_ BatDetect2 calculates this specific reference point and these numerical size values from the original annotation's bounding box.
 It also handles the reverse process – converting predicted positions and sizes back into bounding boxes for visualization or analysis.
 
-### Configuring the ROI Mapping
+## Configuring the ROI Mapping
 
 You can control how this conversion happens through settings in your configuration file (e.g., your main `.yaml` file).
 These settings are usually placed within the main `targets:` configuration block, under a specific `roi:` key.
@@ -74,12 +74,12 @@ targets: # Top-level key for target definition
     frequency_scale: 0.00116 # e.g., Model predicts height relative to ~860Hz (or other model-specific scaling)
 ```
 
-### Decoding Size Predictions
+## Decoding Size Predictions
 
 These scaling factors (`time_scale`, `frequency_scale`) are also essential for interpreting the model's output correctly.
 When the model predicts numerical values for width and height, BatDetect2 uses these same scales (in reverse) to convert those numbers back into physically meaningful durations (seconds) and bandwidths (Hz/kHz) when reconstructing bounding boxes from predictions.
 
-### Outcome
+## Outcome
 
 By configuring the `roi` settings, you ensure that BatDetect2 consistently translates the geometric information from your annotations into the specific reference points and scaled size values required for training the model.
 Using consistent scales that are appropriate for your data and potentially beneficial for training stability allows the model to effectively learn not just _what_ sound is present, but also _where_ it is located and _how large_ it is, and enables meaningful interpretation of the model's spatial and size predictions.

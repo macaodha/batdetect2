@@ -25,7 +25,7 @@ batdetect2 predict directory \
 ## What to do next
 
 - Use {doc}`../how_to/tune-detection-threshold` to tune sensitivity.
-- Use {doc}`../reference/cli` for full command options.
+- Use {doc}`../reference/cli/index` for full command options.
 
 Note: this is the initial Phase 1 scaffold and will be expanded with a full,
 validated end-to-end walkthrough.

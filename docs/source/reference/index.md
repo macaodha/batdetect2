@@ -6,7 +6,7 @@ configuration, and data structures.
 ```{toctree}
 :maxdepth: 1
 
-cli
+cli/index
 configs
 targets
 ```

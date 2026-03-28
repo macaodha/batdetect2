@@ -80,4 +80,4 @@ pip install batdetect2
 - Run your first detection workflow:
   {doc}`tutorials/run-inference-on-folder`
 - For practical task recipes, go to {doc}`how_to/index`
-- For command and option details, go to {doc}`reference/cli`
+- For command and option details, go to {doc}`reference/cli/index`

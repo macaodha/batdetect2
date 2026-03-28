@@ -1,6 +1,6 @@
-## Bringing It All Together: The `Targets` Object
+# Bringing It All Together: The `Targets` Object
 
-### Recap: Defining Your Target Strategy
+## Recap: Defining Your Target Strategy
 
 In the previous sections, we covered the sequential steps to precisely define what your BatDetect2 model should learn, specified within your configuration file:
 
@@ -12,7 +12,7 @@ In the previous sections, we covered the sequential steps to precisely define wh
 
 You define all these aspects within your configuration file (e.g., YAML), which holds the complete specification for your target definition strategy, typically under a main `targets:` key.
 
-### What is the `Targets` Object?
+## What is the `Targets` Object?
 
 While the configuration file specifies _what_ you want to happen, BatDetect2 needs an active component to actually _perform_ these steps.
 This is the role of the `Targets` object.
@@ -21,7 +21,7 @@ The `Targets` is an organized container that holds all the specific functions an
 It's created directly from your configuration and provides methods to apply the **filtering**, **transformation**, **ROI mapping** (geometry to position/size and back), **class encoding**, and **class decoding** steps you defined.
 It effectively bundles together all the target definition logic determined by your settings into a single, usable object.
 
-### How is it Created and Used?
+## How is it Created and Used?
 
 For most standard training workflows, you typically won't need to create or interact with the `Targets` object directly in Python code.
 BatDetect2 usually handles its creation automatically when you provide your main configuration file during training setup.
@@ -50,7 +50,7 @@ targets_processor: TargetProtocol = load_targets(target_config_file)
 # to be used internally by the training pipeline or for prediction processing.
 ```
 
-### What Does the `Targets` Object Do? (Its Role)
+## What Does the `Targets` Object Do? (Its Role)
 
 Once created, the `targets_processor` object plays several vital roles within the BatDetect2 system:
 
@@ -71,7 +71,7 @@ Once created, the `targets_processor` object plays several vital roles within th
     - `targets_processor.generic_class_tags`: The tags representing the generic class.
     - `targets_processor.dimension_names`: The names used for the size dimensions (e.g., `['width', 'height']`).
 
-### Why is Understanding This Important?
+## Why is Understanding This Important?
 
 As a researcher using BatDetect2, your primary interaction is typically through the **configuration file**.
 The `Targets` object is the component that materializes your configurations.
@@ -84,7 +84,7 @@ Understanding its role can be important:
   While standard training runs handle this object internally, the underlying functions for filtering, transforming, encoding, decoding, and ROI mapping are accessible or can be built individually.
   This modular design provides the **flexibility to use or customize specific parts of the target definition workflow programmatically** for advanced analyses, integration tasks, or specialized data processing pipelines, should you need to go beyond the standard configuration-driven approach.
 
-### Summary
+## Summary
 
 The `Targets` object encapsulates the entire configured target definition logic specified in your `TargetConfig` file.
 It acts as the central component within BatDetect2 for applying filtering, tag transformation, ROI mapping (geometry to/from position/size), class encoding (for training preparation), and class/ROI decoding (for interpreting predictions).

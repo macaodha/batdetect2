@@ -41,6 +41,8 @@ html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 html_theme_options = {
     "home_page_in_toc": True,
+    "show_navbar_depth": 2,
+    "show_toc_level": 2,
 }
 
 intersphinx_mapping = {
@@ -58,7 +60,7 @@ intersphinx_mapping = {
 }
 
 # -- Options for autodoc ------------------------------------------------------
-autosummary_generate = True
+autosummary_generate = False
 autosummary_imported_members = True
 
 autodoc_default_options = {
@@ -70,3 +72,7 @@ autodoc_default_options = {
     "show-inheritance": True,
     "module-first": True,
 }
+
+numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
+numpydoc_class_members_toctree = False

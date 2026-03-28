@@ -27,7 +27,11 @@ BatDetect2 - Detection and Classification
     help="Increase verbosity. -v for INFO, -vv for DEBUG.",
 )
 def cli(verbose: int = 0):
-    """BatDetect2 - Bat Call Detection and Classification."""
+    """Run the BatDetect2 CLI.
+
+    This command initializes logging and exposes subcommands for prediction,
+    training, evaluation, and dataset utilities.
+    """
     click.echo(INFO_STR)
 
     enable_logging(verbose)

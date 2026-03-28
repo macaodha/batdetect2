@@ -27,4 +27,4 @@ batdetect2 predict file_list \
 - `--workers` to set data-loading parallelism.
 - `--format` to select output format.
 
-For complete option details, see {doc}`../reference/cli`.
+For complete option details, see {doc}`../reference/cli/index`.

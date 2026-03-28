@@ -7,12 +7,12 @@ from batdetect2.cli.base import cli
 __all__ = ["data"]
 
 
-@cli.group()
+@cli.group(short_help="Inspect and convert datasets.")
 def data():
     """Inspect and convert dataset configuration files."""
 
 
-@data.command()
+@data.command(short_help="Print dataset summary information.")
 @click.argument(
     "dataset_config",
     type=click.Path(exists=True),
@@ -20,17 +20,27 @@ def data():
 @click.option(
     "--field",
     type=str,
-    help="If the dataset info is in a nested field please specify here.",
+    help=(
+        "Nested field name that contains dataset configuration. "
+        "Use this when the config is wrapped in a larger file."
+    ),
 )
 @click.option(
     "--targets",
     "targets_path",
     type=click.Path(exists=True),
+    help=(
+        "Path to targets config file. If provided, a per-class summary "
+        "table is printed."
+    ),
 )
 @click.option(
     "--base-dir",
     type=click.Path(exists=True),
-    help="The base directory to which all recording and annotations paths are relative to.",
+    help=(
+        "Base directory used to resolve relative recording and annotation "
+        "paths in the dataset config."
+    ),
 )
 def summary(
     dataset_config: Path,
@@ -38,7 +48,11 @@ def summary(
     targets_path: Path | None = None,
     base_dir: Path | None = None,
 ):
-    """Show annotation counts and optional class summary."""
+    """Show dataset size and optional class summary.
+
+    Prints the number of annotated clips. If `--targets` is provided, it also
+    prints a per-class summary table based on the configured targets.
+    """
     from batdetect2.data import compute_class_summary, load_dataset_from_config
     from batdetect2.targets import load_targets
 
@@ -62,7 +76,7 @@ def summary(
     print(summary.to_markdown())
 
 
-@data.command()
+@data.command(short_help="Convert dataset config to annotation set.")
 @click.argument(
     "dataset_config",
     type=click.Path(exists=True),
@@ -70,7 +84,10 @@ def summary(
 @click.option(
     "--field",
     type=str,
-    help="If the dataset info is in a nested field please specify here.",
+    help=(
+        "Nested field name that contains dataset configuration. "
+        "Use this when the config is wrapped in a larger file."
+    ),
 )
 @click.option(
     "--output",
@@ -80,12 +97,18 @@ def summary(
 @click.option(
     "--base-dir",
     type=click.Path(exists=True),
-    help="The base directory to which all recording and annotations paths are relative to.",
+    help=(
+        "Base directory used to resolve relative recording and annotation "
+        "paths in the dataset config."
+    ),
 )
 @click.option(
     "--audio-dir",
     type=click.Path(exists=True),
-    help="The directory containing the audio files. All paths will be relative to this directory.",
+    help=(
+        "Directory containing audio files. Output annotation paths are "
+        "made relative to this directory."
+    ),
 )
 def convert(
     dataset_config: Path,
@@ -94,7 +117,11 @@ def convert(
     base_dir: Path | None = None,
     audio_dir: Path | None = None,
 ):
-    """Convert a dataset config file to soundevent format."""
+    """Convert a dataset config into soundevent annotation-set format.
+
+    Writes a single annotation-set file that can be used by downstream tools.
+    Use `--audio-dir` to control relative audio path handling in the output.
+    """
     from soundevent import data, io
 
     from batdetect2.data import load_dataset, load_dataset_config

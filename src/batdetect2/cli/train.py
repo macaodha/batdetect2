@@ -8,26 +8,103 @@ from batdetect2.cli.base import cli
 __all__ = ["train_command"]
 
 
-@cli.command(name="train")
+@cli.command(name="train", short_help="Train or fine-tune a model.")
 @click.argument("train_dataset", type=click.Path(exists=True))
-@click.option("--val-dataset", type=click.Path(exists=True))
-@click.option("--model", "model_path", type=click.Path(exists=True))
-@click.option("--targets", "targets_config", type=click.Path(exists=True))
-@click.option("--model-config", type=click.Path(exists=True))
-@click.option("--training-config", type=click.Path(exists=True))
-@click.option("--audio-config", type=click.Path(exists=True))
-@click.option("--evaluation-config", type=click.Path(exists=True))
-@click.option("--inference-config", type=click.Path(exists=True))
-@click.option("--outputs-config", type=click.Path(exists=True))
-@click.option("--logging-config", type=click.Path(exists=True))
-@click.option("--ckpt-dir", type=click.Path(exists=True))
-@click.option("--log-dir", type=click.Path(exists=True))
-@click.option("--train-workers", type=int)
-@click.option("--val-workers", type=int)
-@click.option("--num-epochs", type=int)
-@click.option("--experiment-name", type=str)
-@click.option("--run-name", type=str)
-@click.option("--seed", type=int)
+@click.option(
+    "--val-dataset",
+    type=click.Path(exists=True),
+    help="Path to validation dataset config file.",
+)
+@click.option(
+    "--model",
+    "model_path",
+    type=click.Path(exists=True),
+    help=(
+        "Path to a checkpoint to continue training from. If omitted, "
+        "training starts from a fresh model config."
+    ),
+)
+@click.option(
+    "--targets",
+    "targets_config",
+    type=click.Path(exists=True),
+    help="Path to targets config file.",
+)
+@click.option(
+    "--model-config",
+    type=click.Path(exists=True),
+    help=("Path to model config file. Cannot be used together with --model."),
+)
+@click.option(
+    "--training-config",
+    type=click.Path(exists=True),
+    help="Path to training config file.",
+)
+@click.option(
+    "--audio-config",
+    type=click.Path(exists=True),
+    help="Path to audio config file.",
+)
+@click.option(
+    "--evaluation-config",
+    type=click.Path(exists=True),
+    help="Path to evaluation config file.",
+)
+@click.option(
+    "--inference-config",
+    type=click.Path(exists=True),
+    help="Path to inference config file.",
+)
+@click.option(
+    "--outputs-config",
+    type=click.Path(exists=True),
+    help="Path to outputs config file.",
+)
+@click.option(
+    "--logging-config",
+    type=click.Path(exists=True),
+    help="Path to logging config file.",
+)
+@click.option(
+    "--ckpt-dir",
+    type=click.Path(exists=True),
+    help="Directory where checkpoints are saved.",
+)
+@click.option(
+    "--log-dir",
+    type=click.Path(exists=True),
+    help="Directory where logs are written.",
+)
+@click.option(
+    "--train-workers",
+    type=int,
+    help="Number of worker processes for training data loading.",
+)
+@click.option(
+    "--val-workers",
+    type=int,
+    help="Number of worker processes for validation data loading.",
+)
+@click.option(
+    "--num-epochs",
+    type=int,
+    help="Maximum number of training epochs.",
+)
+@click.option(
+    "--experiment-name",
+    type=str,
+    help="Experiment name used for logging backends.",
+)
+@click.option(
+    "--run-name",
+    type=str,
+    help="Run name used for logging backends.",
+)
+@click.option(
+    "--seed",
+    type=int,
+    help="Random seed used for reproducibility.",
+)
 def train_command(
     train_dataset: Path,
     val_dataset: Path | None = None,
@@ -49,7 +126,12 @@ def train_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
-    """Train a model from dataset configs or a checkpoint."""
+    """Train a BatDetect2 model.
+
+    Train either from a fresh config (`--model-config`) or by fine-tuning an
+    existing checkpoint (`--model`). Training data are loaded from
+    `train_dataset`, with optional validation data from `--val-dataset`.
+    """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.config import BatDetect2Config

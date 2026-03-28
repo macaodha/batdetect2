@@ -11,20 +11,73 @@ __all__ = ["evaluate_command"]
 DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 
 
-@cli.command(name="evaluate")
+@cli.command(name="evaluate", short_help="Evaluate a model checkpoint.")
 @click.argument("model_path", type=click.Path(exists=True))
 @click.argument("test_dataset", type=click.Path(exists=True))
-@click.option("--targets", "targets_config", type=click.Path(exists=True))
-@click.option("--audio-config", type=click.Path(exists=True))
-@click.option("--evaluation-config", type=click.Path(exists=True))
-@click.option("--inference-config", type=click.Path(exists=True))
-@click.option("--outputs-config", type=click.Path(exists=True))
-@click.option("--logging-config", type=click.Path(exists=True))
-@click.option("--base-dir", type=click.Path(), default=Path.cwd())
-@click.option("--output-dir", type=click.Path(), default=DEFAULT_OUTPUT_DIR)
-@click.option("--experiment-name", type=str)
-@click.option("--run-name", type=str)
-@click.option("--workers", "num_workers", type=int)
+@click.option(
+    "--targets",
+    "targets_config",
+    type=click.Path(exists=True),
+    help="Path to targets config file.",
+)
+@click.option(
+    "--audio-config",
+    type=click.Path(exists=True),
+    help="Path to audio config file.",
+)
+@click.option(
+    "--evaluation-config",
+    type=click.Path(exists=True),
+    help="Path to evaluation config file.",
+)
+@click.option(
+    "--inference-config",
+    type=click.Path(exists=True),
+    help="Path to inference config file.",
+)
+@click.option(
+    "--outputs-config",
+    type=click.Path(exists=True),
+    help="Path to outputs config file.",
+)
+@click.option(
+    "--logging-config",
+    type=click.Path(exists=True),
+    help="Path to logging config file.",
+)
+@click.option(
+    "--base-dir",
+    type=click.Path(),
+    default=Path.cwd(),
+    show_default=True,
+    help=(
+        "Base directory used to resolve relative paths in the dataset "
+        "configuration."
+    ),
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(),
+    default=DEFAULT_OUTPUT_DIR,
+    show_default=True,
+    help="Directory where evaluation outputs are written.",
+)
+@click.option(
+    "--experiment-name",
+    type=str,
+    help="Experiment name used for logging backends.",
+)
+@click.option(
+    "--run-name",
+    type=str,
+    help="Run name used for logging backends.",
+)
+@click.option(
+    "--workers",
+    "num_workers",
+    type=int,
+    help="Number of worker processes for dataset loading.",
+)
 def evaluate_command(
     model_path: Path,
     test_dataset: Path,
@@ -40,7 +93,11 @@ def evaluate_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
-    """Evaluate a checkpoint against a configured test dataset."""
+    """Evaluate a checkpoint against a test dataset.
+
+    Loads model and optional override configs, runs evaluation on
+    `test_dataset`, and writes metrics/artifacts to `output_dir`.
+    """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.data import load_dataset_from_config

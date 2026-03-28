@@ -1,6 +1,10 @@
 """Main entry point for the BatDetect2 Postprocessing pipeline."""
 
-from batdetect2.postprocess.config import PostprocessConfig
+from batdetect2.postprocess.config import (
+    DEFAULT_CLASSIFICATION_THRESHOLD,
+    DEFAULT_DETECTION_THRESHOLD,
+    PostprocessConfig,
+)
 from batdetect2.postprocess.nms import non_max_suppression
 from batdetect2.postprocess.postprocessor import (
     Postprocessor,
@@ -28,4 +32,6 @@ __all__ = [
     "PostprocessorProtocol",
     "build_postprocessor",
     "non_max_suppression",
+    "DEFAULT_CLASSIFICATION_THRESHOLD",
+    "DEFAULT_DETECTION_THRESHOLD",
 ]
