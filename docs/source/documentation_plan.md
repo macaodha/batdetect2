@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Documentation Architecture and Migration Plan (Phase 0)
 
 This page defines the Phase 0 documentation architecture and inventory for

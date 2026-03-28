@@ -113,7 +113,7 @@ Your data may differ, and as a result it is very strongly recommended that you v
 
 
 ## FAQ
-For more information please consult our [FAQ](faq.md).
+For more information please consult our [FAQ](docs/source/faq.md).
 
 
 ## Reference
