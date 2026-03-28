@@ -21,11 +21,11 @@ For details on the approach please read our pre-print:
   analysis:
   {doc}`tutorials/run-inference-on-folder`
 - Train a custom model on your own annotated data:
-  {doc}`reference/cli/train`
+  {doc}`tutorials/train-a-custom-model`
 - Evaluate model performance on a held-out test set:
-  {doc}`reference/cli/evaluate`
+  {doc}`tutorials/evaluate-on-a-test-set`
 - Integrate batdetect2 into Python scripts and notebooks:
-  {doc}`reference/index`
+  {doc}`tutorials/integrate-with-a-python-pipeline`
 
 ```{warning}
 Treat outputs as model predictions, not ground truth.
