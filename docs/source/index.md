@@ -82,7 +82,6 @@ tutorials/index
 how_to/index
 reference/index
 explanation/index
-legacy/index
 ```
 
 ```{toctree}
