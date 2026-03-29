@@ -11,7 +11,8 @@ Fields:
 - `detection_target`: one `TargetClassConfig` defining detection eligibility.
 - `classification_targets`: list of `TargetClassConfig` entries for class
   encoding/decoding.
-- `roi`: default ROI mapper config.
+- `roi`: ROI mapping config with `default` mapper and optional per-class
+  `overrides`.
 
 ## `TargetClassConfig`
 
@@ -23,7 +24,6 @@ Fields:
 - `tags`: tag list used for matching (shortcut for `match_if`).
 - `match_if`: explicit condition config (`match_if` is accepted as alias).
 - `assign_tags`: tags used when decoding this class.
-- `roi`: optional class-specific ROI mapper override.
 
 `tags` and `match_if` are mutually exclusive.
 
@@ -42,7 +42,8 @@ Built from `batdetect2.data.conditions`.
 
 ## ROI mapper config
 
-`roi` supports built-in mappers including:
+`roi.default` and each `roi.overrides.<class_name>` entry support built-in
+mappers including:
 
 - `anchor_bbox`
 - `peak_energy_bbox`
@@ -52,6 +53,11 @@ Key `anchor_bbox` fields:
 - `anchor`
 - `time_scale`
 - `frequency_scale`
+
+Top-level ROI mapping shape:
+
+- `default`: fallback mapper used for all classes.
+- `overrides`: optional mapping from class name to mapper config.
 
 ## Related pages
 

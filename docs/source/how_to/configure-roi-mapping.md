@@ -9,10 +9,11 @@ The default mapper is `anchor_bbox`.
 
 ```yaml
 roi:
-  name: anchor_bbox
-  anchor: bottom-left
-  time_scale: 1000.0
-  frequency_scale: 0.001163
+  default:
+    name: anchor_bbox
+    anchor: bottom-left
+    time_scale: 1000.0
+    frequency_scale: 0.001163
 ```
 
 ## 2) Choose an anchor strategy
@@ -32,15 +33,17 @@ comparing experiments.
 
 ## 4) (Optional) override ROI mapping for specific classes
 
-You can set class-level `roi` in `classification_targets` when needed.
+Add class-specific mappers under `roi.overrides`.
 
 ```yaml
-classification_targets:
-  - name: species_x
-    tags:
-      - key: class
-        value: Species X
-    roi:
+roi:
+  default:
+    name: anchor_bbox
+    anchor: bottom-left
+    time_scale: 1000.0
+    frequency_scale: 0.001163
+  overrides:
+    species_x:
       name: anchor_bbox
       anchor: center
       time_scale: 1000.0
