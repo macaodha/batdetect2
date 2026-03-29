@@ -46,6 +46,7 @@ def test_process_file_returns_recording_level_predictions(
         )
 
 
+@pytest.mark.slow
 def test_process_files_is_batch_size_invariant(
     api_v2: BatDetect2API,
     example_audio_files: list[Path],
@@ -180,6 +181,7 @@ def test_user_can_read_extracted_features_per_detection(
     assert all(vec.size > 0 for vec in feature_vectors)
 
 
+@pytest.mark.slow
 def test_user_can_load_checkpoint_and_finetune(
     tmp_path: Path,
     example_annotations,
@@ -293,6 +295,7 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
         )
 
 
+@pytest.mark.slow
 def test_user_can_finetune_only_heads(
     tmp_path: Path,
     example_annotations,
@@ -328,6 +331,7 @@ def test_user_can_finetune_only_heads(
     assert list(finetune_dir.rglob("*.ckpt"))
 
 
+@pytest.mark.slow
 def test_user_can_evaluate_small_dataset_and_get_metrics(
     api_v2: BatDetect2API,
     example_annotations,
@@ -414,6 +418,7 @@ def test_detection_threshold_override_changes_process_file_results(
     )
 
 
+@pytest.mark.slow
 def test_detection_threshold_override_is_ephemeral_in_process_file(
     api_v2: BatDetect2API,
     example_audio_files: list[Path],

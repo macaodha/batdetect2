@@ -3,11 +3,13 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from click.testing import CliRunner
 
 from batdetect2.cli import cli
 
 
+@pytest.mark.slow
 def test_cli_detect_command_on_test_audio(tmp_path: Path) -> None:
     """User story: run legacy detect on example audio directory."""
 
@@ -29,6 +31,7 @@ def test_cli_detect_command_on_test_audio(tmp_path: Path) -> None:
     assert len(list(results_dir.glob("*.json"))) == 3
 
 
+@pytest.mark.slow
 def test_cli_detect_command_with_non_trivial_time_expansion(
     tmp_path: Path,
 ) -> None:
@@ -52,6 +55,7 @@ def test_cli_detect_command_with_non_trivial_time_expansion(
     assert "Time Expansion Factor: 10" in result.stdout
 
 
+@pytest.mark.slow
 def test_cli_detect_command_with_spec_feature_flag(tmp_path: Path) -> None:
     """User story: request extra spectral features in output CSV."""
 

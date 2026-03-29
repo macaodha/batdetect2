@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from batdetect2.cli import cli
@@ -19,6 +20,7 @@ def test_cli_train_help() -> None:
     assert "--model" in result.output
 
 
+@pytest.mark.slow
 def test_cli_train_from_checkpoint_runs_on_small_dataset(
     tmp_path: Path,
     tiny_checkpoint_path: Path,

@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from batdetect2.cli import cli
 
 runner = CliRunner()
+pytestmark = pytest.mark.slow
 
 
 def test_can_process_jeff37_files(

@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
 from soundevent import data
 
 from batdetect2.config import BatDetect2Config
 from batdetect2.train import run_train
+
+pytestmark = pytest.mark.slow
 
 
 def _build_fast_train_config() -> BatDetect2Config:

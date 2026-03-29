@@ -2,11 +2,14 @@
 
 import os
 
+import pytest
+
 from batdetect2 import api
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 
+@pytest.mark.slow
 def test_no_detections_above_nyquist():
     """Test that no detections are made above the nyquist frequency."""
     # Recording donated by @@kdarras

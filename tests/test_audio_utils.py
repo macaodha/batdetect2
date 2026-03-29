@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 import torch.nn.functional as F
 from hypothesis import given, settings
@@ -10,6 +11,7 @@ from batdetect2.utils import audio_utils, detector_utils
 
 @given(duration=st.floats(min_value=0.1, max_value=1))
 @settings(deadline=None)
+@pytest.mark.slow
 def test_can_compute_correct_spectrogram_width(duration: float):
     samplerate = parameters.TARGET_SAMPLERATE_HZ
     params = parameters.DEFAULT_SPECTROGRAM_PARAMETERS
@@ -89,6 +91,7 @@ def test_pad_audio_without_fixed_size(duration: float):
 
 @given(duration=st.floats(min_value=0.1, max_value=2))
 @settings(deadline=None)
+@pytest.mark.slow
 def test_computed_spectrograms_are_actually_divisible_by_the_spec_divide_factor(
     duration: float,
 ):

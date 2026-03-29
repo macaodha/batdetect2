@@ -129,3 +129,8 @@ exclude = [
   "src/batdetect2/finetune",
   "src/batdetect2/utils",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks long-running tests that are skipped in quick runs",
+]

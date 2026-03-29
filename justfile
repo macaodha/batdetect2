@@ -20,7 +20,15 @@ install:
 # Testing & Coverage
 # Run tests using pytest.
 test:
-    uv run pytest -n auto {{TESTS_DIR}}
+    uv run pytest {{TESTS_DIR}}
+
+# Run the fast subset of tests (excludes @pytest.mark.slow).
+test-quick:
+    uv run pytest --durations=10 -m "not slow" {{TESTS_DIR}}
+
+# Run only long-running tests marked with @pytest.mark.slow.
+test-slow:
+    uv run pytest -m "slow" {{TESTS_DIR}}
 
 # Run tests and generate coverage data.
 coverage:

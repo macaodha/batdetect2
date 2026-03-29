@@ -20,6 +20,7 @@ def test_cli_predict_help() -> None:
     assert "dataset" in result.output
 
 
+@pytest.mark.slow
 def test_cli_predict_directory_runs_on_real_audio(
     tmp_path: Path,
     tiny_checkpoint_path: Path,

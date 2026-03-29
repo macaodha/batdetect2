@@ -37,6 +37,7 @@ def test_can_initialize_default_module():
     assert isinstance(module, L.LightningModule)
 
 
+@pytest.mark.slow
 def test_can_save_checkpoint(
     tmp_path: Path,
     clip: data.Clip,
@@ -182,6 +183,7 @@ def test_api_from_checkpoint_reconstructs_model_config(tmp_path: Path):
     assert api.audio_config.samplerate == module.model_config.samplerate
 
 
+@pytest.mark.slow
 def test_train_smoke_produces_loadable_checkpoint(
     tmp_path: Path,
     example_annotations: list[data.ClipAnnotation],
