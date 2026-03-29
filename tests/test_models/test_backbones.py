@@ -96,7 +96,7 @@ def test_registry_build_unknown_name_raises():
         name = "NonExistentBackbone"
 
     with pytest.raises(NotImplementedError):
-        backbone_registry.build(FakeConfig())  # type: ignore[arg-type]
+        backbone_registry.build(FakeConfig())  # ty: ignore[invalid-argument-type]
 
 
 def test_backbone_config_validates_unet_from_dict():

@@ -95,6 +95,9 @@ mlflow = ["mlflow>=3.1.1"]
 gradio = [
     "gradio>=6.9.0",
 ]
+dvc = [
+    "dvclive>=3.49.0",
+]
 
 [tool.ruff]
 line-length = 79

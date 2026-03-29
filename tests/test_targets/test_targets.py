@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
 
-import pytest
 from soundevent import data, terms
 
 from batdetect2.targets import TargetConfig, build_roi_mapping, build_targets
