@@ -20,7 +20,8 @@ class InferenceModule(LightningModule):
         self.model = model
         self.detection_threshold = detection_threshold
         self.output_transform = output_transform or build_output_transform(
-            targets=model.targets
+            targets=model.targets,
+            roi_mapper=model.roi_mapper,
         )
 
     def predict_step(

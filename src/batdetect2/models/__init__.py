@@ -74,7 +74,7 @@ from batdetect2.postprocess.types import (
 from batdetect2.preprocess.config import PreprocessingConfig
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets.config import TargetConfig
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
     "BBoxHead",
@@ -186,12 +186,15 @@ class Model(torch.nn.Module):
     targets : TargetProtocol
         Describes the set of target classes; used when building heads and
         during training target construction.
+    roi_mapper : ROIMapperProtocol
+        Maps geometries to target-size channels and back.
     """
 
     detector: DetectionModel
     preprocessor: PreprocessorProtocol
     postprocessor: PostprocessorProtocol
     targets: TargetProtocol
+    roi_mapper: ROIMapperProtocol
 
     def __init__(
         self,
@@ -199,12 +202,14 @@ class Model(torch.nn.Module):
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
         targets: TargetProtocol,
+        roi_mapper: ROIMapperProtocol,
     ):
         super().__init__()
         self.detector = detector
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
         self.targets = targets
+        self.roi_mapper = roi_mapper
 
     def forward(self, wav: torch.Tensor) -> list[ClipDetectionsTensor]:
         """Run the full detection pipeline on a waveform tensor.
@@ -234,6 +239,7 @@ class Model(torch.nn.Module):
 def build_model(
     config: ModelConfig | None = None,
     targets: TargetProtocol | None = None,
+    roi_mapper: ROIMapperProtocol | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     postprocessor: PostprocessorProtocol | None = None,
 ) -> Model:
@@ -272,10 +278,19 @@ def build_model(
     """
     from batdetect2.postprocess import build_postprocessor
     from batdetect2.preprocess import build_preprocessor
-    from batdetect2.targets import build_targets
+    from batdetect2.targets import build_roi_mapping, build_targets
 
     config = config or ModelConfig()
     targets = targets or build_targets(config=config.targets)
+
+    targets_config = getattr(targets, "config", None)
+    roi_config = (
+        targets_config.roi
+        if isinstance(targets_config, TargetConfig)
+        else config.targets.roi
+    )
+
+    roi_mapper = roi_mapper or build_roi_mapping(config=roi_config)
     preprocessor = preprocessor or build_preprocessor(
         config=config.preprocess,
         input_samplerate=config.samplerate,
@@ -286,6 +301,7 @@ def build_model(
     )
     detector = build_detector(
         num_classes=len(targets.class_names),
+        num_sizes=len(roi_mapper.dimension_names),
         config=config.architecture,
     )
     return Model(
@@ -293,16 +309,19 @@ def build_model(
         postprocessor=postprocessor,
         preprocessor=preprocessor,
         targets=targets,
+        roi_mapper=roi_mapper,
     )
 
 
 def build_model_with_new_targets(
     model: Model,
     targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
 ) -> Model:
     """Build a new model with a different target set."""
     detector = build_detector(
         num_classes=len(targets.class_names),
+        num_sizes=len(roi_mapper.dimension_names),
         backbone=model.detector.backbone,
     )
 
@@ -311,4 +330,5 @@ def build_model_with_new_targets(
         postprocessor=model.postprocessor,
         preprocessor=model.preprocessor,
         targets=targets,
+        roi_mapper=roi_mapper,
     )

@@ -16,7 +16,7 @@ from batdetect2.outputs import OutputsConfig, build_output_transform
 from batdetect2.outputs.types import OutputFormatterProtocol
 from batdetect2.postprocess.types import ClipDetections
 from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 
@@ -25,6 +25,7 @@ def run_evaluate(
     model: Model,
     test_annotations: Sequence[data.ClipAnnotation],
     targets: TargetProtocol | None = None,
+    roi_mapper: ROIMapperProtocol | None = None,
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     audio_config: AudioConfig | None = None,
@@ -46,6 +47,7 @@ def run_evaluate(
 
     preprocessor = preprocessor or model.preprocessor
     targets = targets or model.targets
+    roi_mapper = roi_mapper or model.roi_mapper
 
     loader = build_test_loader(
         test_annotations,
@@ -57,6 +59,7 @@ def run_evaluate(
     output_transform = build_output_transform(
         config=output_config.transform,
         targets=targets,
+        roi_mapper=roi_mapper,
     )
     evaluator = build_evaluator(
         config=evaluation_config,

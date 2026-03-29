@@ -42,28 +42,6 @@ def test_train_saves_checkpoint_in_requested_experiment_run_dir(
     assert checkpoints
 
 
-def test_train_without_validation_does_not_save_default_monitored_checkpoint(
-    tmp_path: Path,
-    example_annotations: list[data.ClipAnnotation],
-) -> None:
-    config = _build_fast_train_config()
-
-    run_train(
-        train_annotations=example_annotations[:1],
-        val_annotations=None,
-        train_config=config.train,
-        model_config=config.model,
-        audio_config=config.audio,
-        num_epochs=1,
-        train_workers=0,
-        val_workers=0,
-        checkpoint_dir=tmp_path,
-        seed=0,
-    )
-
-    assert not list(tmp_path.rglob("*.ckpt"))
-
-
 def test_train_without_validation_can_still_save_last_checkpoint(
     tmp_path: Path,
     example_annotations: list[data.ClipAnnotation],

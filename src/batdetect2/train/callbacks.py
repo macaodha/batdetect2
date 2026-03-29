@@ -93,7 +93,8 @@ class ValidationMetrics(Callback):
         model = pl_module.model
         if self.output_transform is None:
             self.output_transform = build_output_transform(
-                targets=model.targets
+                targets=model.targets,
+                roi_mapper=model.roi_mapper,
             )
 
         output_transform = self.output_transform

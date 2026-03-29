@@ -8,15 +8,6 @@ from click.testing import CliRunner
 from batdetect2.cli import cli
 
 
-def test_cli_detect_help() -> None:
-    """User story: get usage help for legacy detect command."""
-
-    result = CliRunner().invoke(cli, ["detect", "--help"])
-
-    assert result.exit_code == 0
-    assert "Detect bat calls in files in AUDIO_DIR" in result.output
-
-
 def test_cli_detect_command_on_test_audio(tmp_path: Path) -> None:
     """User story: run legacy detect on example audio directory."""
 

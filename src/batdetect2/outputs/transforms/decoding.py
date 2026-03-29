@@ -6,7 +6,7 @@ import numpy as np
 from soundevent import data
 
 from batdetect2.postprocess.types import ClipDetectionsArray, Detection
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
     "DEFAULT_CLASSIFICATION_THRESHOLD",
@@ -25,6 +25,7 @@ DEFAULT_CLASSIFICATION_THRESHOLD = 0.1
 def to_detections(
     detections: ClipDetectionsArray,
     targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
 ) -> List[Detection]:
     predictions = []
 
@@ -39,7 +40,7 @@ def to_detections(
     ):
         highest_scoring_class = targets.class_names[class_scores.argmax()]
 
-        geom = targets.decode_roi(
+        geom = roi_mapper.decode(
             (time, freq),
             dims,
             class_name=highest_scoring_class,

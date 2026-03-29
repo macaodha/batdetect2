@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 import soundfile as sf
@@ -22,8 +24,10 @@ from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     PeakEnergyBBoxMapper,
     PeakEnergyBBoxMapperConfig,
+    ROIMappingConfig,
     _build_bounding_box,
     build_roi_mapper,
+    build_roi_mapping,
     get_peak_energy_coordinates,
 )
 
@@ -630,3 +634,43 @@ def test_build_roi_mapper_raises_error_for_unknown_name():
     # Then
     with pytest.raises(NotImplementedError):
         build_roi_mapper(DummyConfig())  # type: ignore
+
+
+def test_build_roi_mapping_applies_class_override():
+    config = ROIMappingConfig(
+        default=AnchorBBoxMapperConfig(anchor="bottom-left"),
+        overrides={
+            "myomyo": AnchorBBoxMapperConfig(anchor="top-left"),
+        },
+    )
+
+    mapper = build_roi_mapping(config=config)
+
+    geometry = data.BoundingBox(coordinates=[0.1, 12_000, 0.2, 18_000])
+    sound_event = data.SoundEvent(
+        recording=data.Recording(
+            path=Path("x.wav"),
+            samplerate=256_000,
+            channels=1,
+            duration=1.0,
+        ),
+        geometry=geometry,
+    )
+
+    default_position, _ = mapper.encode(sound_event, class_name="pippip")
+    override_position, _ = mapper.encode(sound_event, class_name="myomyo")
+
+    assert default_position == pytest.approx((0.1, 12_000))
+    assert override_position == pytest.approx((0.1, 18_000))
+
+
+def test_build_roi_mapping_rejects_dimension_mismatch():
+    config = ROIMappingConfig(
+        default=AnchorBBoxMapperConfig(),
+        overrides={
+            "myomyo": PeakEnergyBBoxMapperConfig(),
+        },
+    )
+
+    with pytest.raises(ValueError, match="same dimension order"):
+        build_roi_mapping(config=config)

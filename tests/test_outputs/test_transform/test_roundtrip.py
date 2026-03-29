@@ -6,6 +6,7 @@ from soundevent.geometry import compute_bounds
 from batdetect2.models.types import ModelOutput
 from batdetect2.outputs import build_output_transform
 from batdetect2.postprocess import build_postprocessor
+from batdetect2.targets import build_roi_mapping
 from batdetect2.targets.types import TargetProtocol
 from batdetect2.train.labels import build_clip_labeler
 
@@ -37,7 +38,9 @@ def test_annotation_roundtrip_through_postprocess_and_output_transform(
     width = int(duration * sample_preprocessor.output_samplerate)
     spec = torch.zeros((1, height, width), dtype=torch.float32)
 
-    labeler = build_clip_labeler(targets=sample_targets)
+    roi_mapper = build_roi_mapping()
+
+    labeler = build_clip_labeler(targets=sample_targets, roi_mapper=roi_mapper)
     heatmaps = labeler(clip_annotation, spec)
 
     output = ModelOutput(
@@ -51,7 +54,10 @@ def test_annotation_roundtrip_through_postprocess_and_output_transform(
     clip_detection_tensors = postprocessor(output)
     assert len(clip_detection_tensors) == 1
 
-    transform = build_output_transform(targets=sample_targets)
+    transform = build_output_transform(
+        targets=sample_targets,
+        roi_mapper=roi_mapper,
+    )
     clip_detections = transform.to_clip_detections(
         detections=clip_detection_tensors[0],
         clip=clip,

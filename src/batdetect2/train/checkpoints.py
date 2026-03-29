@@ -40,7 +40,7 @@ def build_checkpoint_callback(
     if run_name is not None:
         checkpoint_dir = checkpoint_dir / run_name
 
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
     return ModelCheckpoint(
         dirpath=str(checkpoint_dir),

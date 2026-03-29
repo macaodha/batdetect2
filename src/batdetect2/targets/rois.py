@@ -29,7 +29,12 @@ from batdetect2.core.arrays import spec_to_xarray
 from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.types import Position, ROITargetMapper, Size
+from batdetect2.targets.types import (
+    Position,
+    ROIMapperProtocol,
+    ROITargetMapper,
+    Size,
+)
 
 __all__ = [
     "Anchor",
@@ -40,12 +45,15 @@ __all__ = [
     "DEFAULT_TIME_SCALE",
     "PeakEnergyBBoxMapper",
     "PeakEnergyBBoxMapperConfig",
+    "ROIMappingConfig",
+    "ROIMapperProtocol",
     "ROIMapperConfig",
     "ROIMapperImportConfig",
     "ROITargetMapper",
     "SIZE_HEIGHT",
     "SIZE_ORDER",
     "SIZE_WIDTH",
+    "build_roi_mapping",
     "build_roi_mapper",
 ]
 
@@ -456,6 +464,59 @@ implementations by using the `name` field as a discriminator.
 """
 
 
+class ROIMappingConfig(BaseConfig):
+    """Configuration for class-aware ROI mapping.
+
+    Attributes
+    ----------
+    default : ROIMapperConfig
+        Default mapper used when no class-specific override exists.
+    overrides : dict[str, ROIMapperConfig]
+        Optional class-specific mapper overrides by class name.
+    """
+
+    default: ROIMapperConfig = Field(default_factory=AnchorBBoxMapperConfig)
+    overrides: dict[str, ROIMapperConfig] = Field(default_factory=dict)
+
+
+class ClassAwareROIMapper(ROIMapperProtocol):
+    """Apply a default ROI mapper with optional per-class overrides."""
+
+    dimension_names: list[str]
+
+    def __init__(
+        self,
+        default_mapper: ROITargetMapper,
+        overrides: dict[str, ROITargetMapper] | None = None,
+    ):
+        self.default_mapper = default_mapper
+        self.overrides = overrides or {}
+        self.dimension_names = list(default_mapper.dimension_names)
+
+    def encode(
+        self,
+        sound_event: data.SoundEvent,
+        class_name: str | None = None,
+    ) -> tuple[Position, Size]:
+        mapper = self._select_mapper(class_name)
+        return mapper.encode(sound_event)
+
+    def decode(
+        self,
+        position: Position,
+        size: Size,
+        class_name: str | None = None,
+    ) -> data.Geometry:
+        mapper = self._select_mapper(class_name)
+        return mapper.decode(position, size)
+
+    def _select_mapper(self, class_name: str | None = None) -> ROITargetMapper:
+        if class_name is not None and class_name in self.overrides:
+            return self.overrides[class_name]
+
+        return self.default_mapper
+
+
 def build_roi_mapper(
     config: ROIMapperConfig | None = None,
 ) -> ROITargetMapper:
@@ -478,6 +539,36 @@ def build_roi_mapper(
     """
     config = config or AnchorBBoxMapperConfig()
     return roi_mapper_registry.build(config)
+
+
+def build_roi_mapping(
+    config: ROIMappingConfig | None = None,
+) -> ROIMapperProtocol:
+    """Build a class-aware ROI mapper and validate consistency."""
+    config = config or ROIMappingConfig()
+
+    default_mapper = build_roi_mapper(config.default)
+    overrides = {
+        class_name: build_roi_mapper(mapper_config)
+        for class_name, mapper_config in config.overrides.items()
+    }
+
+    expected = list(default_mapper.dimension_names)
+
+    for class_name, mapper in overrides.items():
+        actual = list(mapper.dimension_names)
+
+        if actual != expected:
+            raise ValueError(
+                "All ROI mappers must share the same dimension order. "
+                f"Default dimensions: {expected}, "
+                f"class '{class_name}' dimensions: {actual}."
+            )
+
+    return ClassAwareROIMapper(
+        default_mapper=default_mapper,
+        overrides=overrides,
+    )
 
 
 VALID_ANCHORS = [

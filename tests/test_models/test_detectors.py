@@ -41,6 +41,22 @@ def test_build_detector_custom_config():
     assert model.backbone.encoder.in_channels == 2
 
 
+def test_build_detector_custom_size_channels():
+    num_classes = 3
+    num_sizes = 4
+    config = UNetBackboneConfig(in_channels=1, input_height=128)
+
+    model = build_detector(
+        num_classes=num_classes,
+        num_sizes=num_sizes,
+        config=config,
+    )
+
+    dummy = torch.randn(1, 1, 128, 64)
+    output = model(dummy)
+    assert output.size_preds.shape[1] == num_sizes
+
+
 def test_detector_forward_pass_shapes(dummy_spectrogram):
     """Test that the forward pass produces correctly shaped outputs."""
     num_classes = 4

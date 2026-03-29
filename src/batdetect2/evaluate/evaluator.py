@@ -8,8 +8,8 @@ from batdetect2.evaluate.tasks import build_task
 from batdetect2.evaluate.types import EvaluationTaskProtocol, EvaluatorProtocol
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess.types import ClipDetections, ClipDetectionsTensor
-from batdetect2.targets import build_targets
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets import build_roi_mapping, build_targets
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
     "Evaluator",
@@ -67,9 +67,12 @@ class Evaluator:
 def build_evaluator(
     config: EvaluationConfig | dict | None = None,
     targets: TargetProtocol | None = None,
+    roi_mapper: ROIMapperProtocol | None = None,
     transform: OutputTransformProtocol | None = None,
 ) -> EvaluatorProtocol:
     targets = targets or build_targets()
+
+    roi_mapper = roi_mapper or build_roi_mapping()
 
     if config is None:
         config = EvaluationConfig()
@@ -77,7 +80,10 @@ def build_evaluator(
     if not isinstance(config, EvaluationConfig):
         config = EvaluationConfig.model_validate(config)
 
-    transform = transform or build_output_transform(targets=targets)
+    transform = transform or build_output_transform(
+        targets=targets,
+        roi_mapper=roi_mapper,
+    )
 
     return Evaluator(
         targets=targets,

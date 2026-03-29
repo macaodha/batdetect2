@@ -14,8 +14,12 @@ from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
 from batdetect2.preprocess import MAX_FREQ, MIN_FREQ
-from batdetect2.targets import build_targets, iterate_encoded_sound_events
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets import (
+    build_roi_mapping,
+    build_targets,
+    iterate_encoded_sound_events,
+)
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 from batdetect2.train.types import ClipLabeller, Heatmaps
 
 __all__ = [
@@ -42,6 +46,7 @@ class LabelConfig(BaseConfig):
 
 def build_clip_labeler(
     targets: TargetProtocol | None = None,
+    roi_mapper: ROIMapperProtocol | None = None,
     min_freq: float = MIN_FREQ,
     max_freq: float = MAX_FREQ,
     config: LabelConfig | None = None,
@@ -53,12 +58,13 @@ def build_clip_labeler(
         lambda: config.to_yaml_string(),
     )
 
-    if targets is None:
-        targets = build_targets()
+    targets = targets or build_targets()
+    roi_mapper = roi_mapper or build_roi_mapping()
 
     return partial(
         generate_heatmaps,
         targets=targets,
+        roi_mapper=roi_mapper,
         min_freq=min_freq,
         max_freq=max_freq,
         target_sigma=config.sigma,
@@ -73,6 +79,7 @@ def generate_heatmaps(
     clip_annotation: data.ClipAnnotation,
     spec: torch.Tensor,
     targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
     min_freq: float,
     max_freq: float,
     target_sigma: float = 3.0,
@@ -89,7 +96,7 @@ def generate_heatmaps(
     height = spec.shape[-2]
     width = spec.shape[-1]
     num_classes = len(targets.class_names)
-    num_dims = len(targets.dimension_names)
+    num_dims = len(roi_mapper.dimension_names)
     clip = clip_annotation.clip
 
     # Initialize heatmaps
@@ -109,6 +116,7 @@ def generate_heatmaps(
     for class_name, (time, frequency), size in iterate_encoded_sound_events(
         clip_annotation.sound_events,
         targets,
+        roi_mapper,
     ):
         time_index = map_to_pixels(time, width, clip.start_time, clip.end_time)
         freq_index = map_to_pixels(frequency, height, min_freq, max_freq)

@@ -10,7 +10,10 @@ from batdetect2.targets.config import TargetConfig
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     ROIMapperConfig,
+    ROIMapperProtocol,
+    ROIMappingConfig,
     build_roi_mapper,
+    build_roi_mapping,
 )
 from batdetect2.targets.targets import (
     Targets,
@@ -30,12 +33,15 @@ from batdetect2.targets.types import (
     Size,
     SoundEventDecoder,
     SoundEventEncoder,
+    SoundEventFilter,
     TargetProtocol,
 )
 
 __all__ = [
     "AnchorBBoxMapperConfig",
     "Position",
+    "ROIMappingConfig",
+    "ROIMapperProtocol",
     "ROIMapperConfig",
     "ROITargetMapper",
     "Size",
@@ -46,6 +52,7 @@ __all__ = [
     "TargetConfig",
     "TargetProtocol",
     "Targets",
+    "build_roi_mapping",
     "build_roi_mapper",
     "build_sound_event_decoder",
     "build_sound_event_encoder",

@@ -3,8 +3,8 @@ from pathlib import Path
 import torch
 from soundevent import data
 
-from batdetect2.targets import TargetConfig, build_targets
-from batdetect2.targets.rois import AnchorBBoxMapperConfig
+from batdetect2.targets import TargetConfig, build_roi_mapping, build_targets
+from batdetect2.targets.rois import AnchorBBoxMapperConfig, ROIMappingConfig
 from batdetect2.train.labels import generate_heatmaps
 
 recording = data.Recording(
@@ -30,14 +30,17 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
 ):
     config = sample_target_config.model_copy(
         update=dict(
-            roi=AnchorBBoxMapperConfig(
-                time_scale=1,
-                frequency_scale=1,
+            roi=ROIMappingConfig(
+                default=AnchorBBoxMapperConfig(
+                    time_scale=1,
+                    frequency_scale=1,
+                )
             )
         )
     )
 
     targets = build_targets(config)
+    roi_mapper = build_roi_mapping(config=config.roi)
 
     clip_annotation = data.ClipAnnotation(
         clip=clip,
@@ -60,6 +63,7 @@ def test_generated_heatmap_are_non_zero_at_correct_positions(
         min_freq=0,
         max_freq=100,
         targets=targets,
+        roi_mapper=roi_mapper,
     )
     pippip_index = targets.class_names.index("pippip")
     myomyo_index = targets.class_names.index("myomyo")

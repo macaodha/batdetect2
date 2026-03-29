@@ -14,7 +14,6 @@ from batdetect2.data.conditions import (
     SoundEventConditionConfig,
     build_sound_event_condition,
 )
-from batdetect2.targets.rois import ROIMapperConfig
 from batdetect2.targets.terms import call_type, generic_class
 from batdetect2.targets.types import SoundEventDecoder, SoundEventEncoder
 
@@ -38,8 +37,6 @@ class TargetClassConfig(BaseConfig):
     tags: List[data.Tag] | None = Field(default=None, exclude=True)
 
     assign_tags: List[data.Tag] = Field(default_factory=list)
-
-    roi: ROIMapperConfig | None = None
 
     _match_if: SoundEventConditionConfig = PrivateAttr()
 

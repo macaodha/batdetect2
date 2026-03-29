@@ -28,7 +28,7 @@ from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
     Detection,
 )
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
     "ClipDetectionsTransformConfig",
@@ -55,10 +55,12 @@ class OutputTransform(OutputTransformProtocol):
     def __init__(
         self,
         targets: TargetProtocol,
+        roi_mapper: ROIMapperProtocol,
         detection_transform_steps: Sequence[DetectionTransform] = (),
         clip_transform_steps: Sequence[ClipDetectionsTransform] = (),
     ):
         self.targets = targets
+        self.roi_mapper = roi_mapper
         self.detection_transform_steps = list(detection_transform_steps)
         self.clip_transform_steps = list(clip_transform_steps)
 
@@ -89,7 +91,11 @@ class OutputTransform(OutputTransformProtocol):
         detections: ClipDetectionsTensor,
         start_time: float = 0,
     ) -> list[Detection]:
-        decoded = to_detections(detections.numpy(), targets=self.targets)
+        decoded = to_detections(
+            detections.numpy(),
+            targets=self.targets,
+            roi_mapper=self.roi_mapper,
+        )
         shifted = shift_detections_to_start_time(
             decoded,
             start_time=start_time,
@@ -151,8 +157,9 @@ class OutputTransform(OutputTransformProtocol):
 def build_output_transform(
     config: OutputTransformConfig | dict | None = None,
     targets: TargetProtocol | None = None,
+    roi_mapper: ROIMapperProtocol | None = None,
 ) -> OutputTransformProtocol:
-    from batdetect2.targets import build_targets
+    from batdetect2.targets import build_roi_mapping, build_targets
 
     if config is None:
         config = OutputTransformConfig()
@@ -161,9 +168,11 @@ def build_output_transform(
         config = OutputTransformConfig.model_validate(config)
 
     targets = targets or build_targets()
+    roi_mapper = roi_mapper or build_roi_mapping()
 
     return OutputTransform(
         targets=targets,
+        roi_mapper=roi_mapper,
         detection_transform_steps=[
             detection_transform_registry.build(transform_config)
             for transform_config in config.detection_transforms

@@ -136,6 +136,7 @@ class Detector(DetectionModel):
 
 def build_detector(
     num_classes: int,
+    num_sizes: int = 2,
     config: BackboneConfig | None = None,
     backbone: BackboneModel | None = None,
 ) -> DetectionModel:
@@ -181,6 +182,7 @@ def build_detector(
     )
     bbox_head = BBoxHead(
         in_channels=backbone.out_channels,
+        num_sizes=num_sizes,
     )
     return Detector(
         backbone=backbone,

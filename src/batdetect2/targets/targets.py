@@ -12,21 +12,21 @@ from batdetect2.targets.classes import (
     get_class_names_from_config,
 )
 from batdetect2.targets.config import TargetConfig
-from batdetect2.targets.rois import (
-    AnchorBBoxMapperConfig,
-    build_roi_mapper,
+from batdetect2.targets.types import (
+    Position,
+    ROIMapperProtocol,
+    Size,
+    TargetProtocol,
 )
-from batdetect2.targets.types import Position, Size, TargetProtocol
 
 
 class Targets(TargetProtocol):
-    """Encapsulates the complete configured target definition pipeline.
+    """Encapsulates the configured target class definition pipeline.
 
     This class implements the `TargetProtocol`, holding the configured
-    functions for filtering, transforming, encoding (tags to class name),
-    decoding (class name to tags), and mapping ROIs (geometry to position/size
-    and back). It provides a high-level interface to apply these steps and
-    access relevant metadata like class names and dimension names.
+    functions for filtering, encoding (tags to class name), and decoding
+    (class name to tags). Geometry ROI mapping is handled separately by
+    ``ROIMapperProtocol``.
 
     Instances are typically created using the `build_targets` factory function
     or the `load_targets` convenience loader.
@@ -39,14 +39,10 @@ class Targets(TargetProtocol):
     generic_class_tags
         A list of `soundevent.data.Tag` objects representing the configured
         generic class category (used when no specific class matches).
-    dimension_names
-        The names of the size dimensions handled by the ROI mapper
-        (e.g., ['width', 'height']).
     """
 
     class_names: list[str]
     detection_class_tags: list[data.Tag]
-    dimension_names: list[str]
     detection_class_name: str
 
     def __init__(self, config: TargetConfig):
@@ -63,31 +59,12 @@ class Targets(TargetProtocol):
             config.classification_targets
         )
 
-        self._roi_mapper = build_roi_mapper(config.roi)
-
-        self.dimension_names = self._roi_mapper.dimension_names
-
         self.class_names = get_class_names_from_config(
             config.classification_targets
         )
 
         self.detection_class_name = config.detection_target.name
         self.detection_class_tags = config.detection_target.assign_tags
-
-        self._roi_mapper_overrides = {
-            class_config.name: build_roi_mapper(class_config.roi)
-            for class_config in config.classification_targets
-            if class_config.roi is not None
-        }
-
-        for class_name in self._roi_mapper_overrides:
-            if class_name not in self.class_names:
-                # TODO: improve this warning
-                logger.warning(
-                    "The ROI mapper overrides contains a class ({class_name}) "
-                    "not present in the class names.",
-                    class_name=class_name,
-                )
 
     def filter(self, sound_event: data.SoundEventAnnotation) -> bool:
         """Apply the configured filter to a sound event annotation.
@@ -147,75 +124,10 @@ class Targets(TargetProtocol):
         """
         return self._decode_fn(class_label)
 
-    def encode_roi(
-        self, sound_event: data.SoundEventAnnotation
-    ) -> tuple[Position, Size]:
-        """Extract the target reference position from the annotation's roi.
-
-        Delegates to the internal ROI mapper's `get_roi_position` method.
-
-        Parameters
-        ----------
-        sound_event : data.SoundEventAnnotation
-            The annotation containing the geometry (ROI).
-
-        Returns
-        -------
-        tuple[float, float]
-            The reference position `(time, frequency)`.
-
-        Raises
-        ------
-        ValueError
-            If the annotation lacks geometry.
-        """
-        class_name = self.encode_class(sound_event)
-
-        if class_name in self._roi_mapper_overrides:
-            return self._roi_mapper_overrides[class_name].encode(
-                sound_event.sound_event
-            )
-
-        return self._roi_mapper.encode(sound_event.sound_event)
-
-    def decode_roi(
-        self,
-        position: Position,
-        size: Size,
-        class_name: str | None = None,
-    ) -> data.Geometry:
-        """Recover an approximate geometric ROI from a position and dimensions.
-
-        Delegates to the internal ROI mapper's `recover_roi` method, which
-        un-scales the dimensions and reconstructs the geometry (typically a
-        `BoundingBox`).
-
-        Parameters
-        ----------
-        pos
-            The reference position `(time, frequency)`.
-        dims
-            NumPy array with size dimensions (e.g., from model prediction),
-            matching the order in `self.dimension_names`.
-
-        Returns
-        -------
-        data.Geometry
-            The reconstructed geometry (typically `BoundingBox`).
-        """
-        if class_name in self._roi_mapper_overrides:
-            return self._roi_mapper_overrides[class_name].decode(
-                position,
-                size,
-            )
-
-        return self._roi_mapper.decode(position, size)
-
 
 DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
     classification_targets=DEFAULT_CLASSES,
     detection_target=DEFAULT_DETECTION_CLASS,
-    roi=AnchorBBoxMapperConfig(),
 )
 
 
@@ -292,6 +204,7 @@ def load_targets(
 def iterate_encoded_sound_events(
     sound_events: Iterable[data.SoundEventAnnotation],
     targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
 ) -> Iterable[tuple[str | None, Position, Size]]:
     for sound_event in sound_events:
         if not targets.filter(sound_event):
@@ -303,6 +216,9 @@ def iterate_encoded_sound_events(
             continue
 
         class_name = targets.encode_class(sound_event)
-        position, size = targets.encode_roi(sound_event)
+        position, size = roi_mapper.encode(
+            sound_event.sound_event,
+            class_name=class_name,
+        )
 
         yield class_name, position, size

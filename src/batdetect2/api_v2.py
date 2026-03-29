@@ -50,7 +50,13 @@ from batdetect2.postprocess import (
     build_postprocessor,
 )
 from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
-from batdetect2.targets import TargetConfig, TargetProtocol, build_targets
+from batdetect2.targets import (
+    ROIMapperProtocol,
+    TargetConfig,
+    TargetProtocol,
+    build_roi_mapping,
+    build_targets,
+)
 from batdetect2.train import (
     DEFAULT_CHECKPOINT_DIR,
     TrainingConfig,
@@ -70,6 +76,7 @@ class BatDetect2API:
         outputs_config: OutputsConfig,
         logging_config: AppLoggingConfig,
         targets: TargetProtocol,
+        roi_mapper: ROIMapperProtocol,
         audio_loader: AudioLoader,
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
@@ -86,6 +93,7 @@ class BatDetect2API:
         self.outputs_config = outputs_config
         self.logging_config = logging_config
         self.targets = targets
+        self.roi_mapper = roi_mapper
         self.audio_loader = audio_loader
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
@@ -125,6 +133,7 @@ class BatDetect2API:
             val_annotations=val_annotations,
             model=self.model,
             targets=self.targets,
+            roi_mapper=self.roi_mapper,
             model_config=model_config or self.model_config,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
@@ -171,6 +180,7 @@ class BatDetect2API:
             val_annotations=val_annotations,
             model=self.model,
             targets=self.targets,
+            roi_mapper=self.roi_mapper,
             model_config=model_config or self.model_config,
             preprocessor=self.preprocessor,
             audio_loader=self.audio_loader,
@@ -205,6 +215,7 @@ class BatDetect2API:
             self.model,
             test_annotations,
             targets=self.targets,
+            roi_mapper=self.roi_mapper,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             audio_config=audio_config or self.audio_config,
@@ -391,6 +402,7 @@ class BatDetect2API:
             self.model,
             audio_files,
             targets=self.targets,
+            roi_mapper=self.roi_mapper,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             output_transform=self.output_transform,
@@ -416,6 +428,7 @@ class BatDetect2API:
             self.model,
             clips,
             targets=self.targets,
+            roi_mapper=self.roi_mapper,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             output_transform=self.output_transform,
@@ -472,6 +485,7 @@ class BatDetect2API:
         config: BatDetect2Config,
     ) -> "BatDetect2API":
         targets = build_targets(config=config.model.targets)
+        roi_mapper = build_roi_mapping(config=config.model.targets.roi)
 
         audio_loader = build_audio_loader(config=config.audio)
 
@@ -492,11 +506,13 @@ class BatDetect2API:
         output_transform = build_output_transform(
             config=config.outputs.transform,
             targets=targets,
+            roi_mapper=roi_mapper,
         )
 
         evaluator = build_evaluator(
             config=config.evaluation,
             targets=targets,
+            roi_mapper=roi_mapper,
             transform=output_transform,
         )
 
@@ -504,7 +520,8 @@ class BatDetect2API:
         # to avoid device mismatch errors
         model = build_model(
             config=config.model,
-            targets=build_targets(config=config.model.targets),
+            targets=targets,
+            roi_mapper=roi_mapper,
             preprocessor=build_preprocessor(
                 input_samplerate=audio_loader.samplerate,
                 config=config.model.preprocess,
@@ -524,6 +541,7 @@ class BatDetect2API:
             outputs_config=config.outputs,
             logging_config=config.logging,
             targets=targets,
+            roi_mapper=roi_mapper,
             audio_loader=audio_loader,
             preprocessor=preprocessor,
             postprocessor=postprocessor,
@@ -561,15 +579,18 @@ class BatDetect2API:
             and targets_config != model_config.targets
         ):
             targets = build_targets(config=targets_config)
+            roi_mapper = build_roi_mapping(config=targets_config.roi)
             model = build_model_with_new_targets(
                 model=model,
                 targets=targets,
+                roi_mapper=roi_mapper,
             )
             model_config = model_config.model_copy(
                 update={"targets": targets_config}
             )
 
         targets = build_targets(config=model_config.targets)
+        roi_mapper = build_roi_mapping(config=model_config.targets.roi)
 
         audio_loader = build_audio_loader(config=audio_config)
 
@@ -591,11 +612,13 @@ class BatDetect2API:
         output_transform = build_output_transform(
             config=outputs_config.transform,
             targets=targets,
+            roi_mapper=roi_mapper,
         )
 
         evaluator = build_evaluator(
             config=evaluation_config,
             targets=targets,
+            roi_mapper=roi_mapper,
             transform=output_transform,
         )
 
@@ -608,6 +631,7 @@ class BatDetect2API:
             outputs_config=outputs_config,
             logging_config=logging_config,
             targets=targets,
+            roi_mapper=roi_mapper,
             audio_loader=audio_loader,
             preprocessor=preprocessor,
             postprocessor=postprocessor,

@@ -32,5 +32,6 @@ classification_targets:
         value: Rhinolophus ferrumequinum
 
 roi:
-  name: anchor_bbox
-  anchor: top-left
+  default:
+    name: anchor_bbox
+    anchor: top-left

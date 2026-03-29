@@ -12,6 +12,7 @@ from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
     Detection,
 )
+from batdetect2.targets import TargetConfig, build_roi_mapping
 from batdetect2.targets.types import TargetProtocol
 
 
@@ -27,9 +28,22 @@ def _mock_clip_detections_tensor() -> ClipDetectionsTensor:
     )
 
 
+def _build_roi_mapper(targets: TargetProtocol):
+    config_obj = getattr(targets, "config", None)
+    target_config = (
+        config_obj if isinstance(config_obj, TargetConfig) else None
+    )
+    return build_roi_mapping(
+        config=(target_config.roi if target_config is not None else None),
+    )
+
+
 def test_shift_time_to_clip_start(sample_targets: TargetProtocol):
     raw = _mock_clip_detections_tensor()
-    transform = build_output_transform(targets=sample_targets)
+    transform = build_output_transform(
+        targets=sample_targets,
+        roi_mapper=_build_roi_mapper(sample_targets),
+    )
 
     transformed = transform.to_detections(raw, start_time=2.5)
     start_time, _, end_time, _ = compute_bounds(transformed[0].geometry)
@@ -43,7 +57,10 @@ def test_to_clip_detections_shifts_by_clip_start(
     sample_targets: TargetProtocol,
 ):
     clip = clip.model_copy(update={"start_time": 2.5, "end_time": 3.0})
-    transform = build_output_transform(targets=sample_targets)
+    transform = build_output_transform(
+        targets=sample_targets,
+        roi_mapper=_build_roi_mapper(sample_targets),
+    )
     raw = _mock_clip_detections_tensor()
     shifted = transform.to_clip_detections(detections=raw, clip=clip)
     start_time, _, end_time, _ = compute_bounds(shifted.detections[0].geometry)
@@ -90,6 +107,7 @@ def test_detection_and_clip_transforms_applied_in_order(
 
     transform = OutputTransform(
         targets=sample_targets,
+        roi_mapper=_build_roi_mapper(sample_targets),
         detection_transform_steps=[boost_score, keep_high_score],
         clip_transform_steps=[tag_clip_transform],
     )

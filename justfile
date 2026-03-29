@@ -20,7 +20,7 @@ install:
 # Testing & Coverage
 # Run tests using pytest.
 test:
-    uv run pytest {{TESTS_DIR}}
+    uv run pytest -n auto {{TESTS_DIR}}
 
 # Run tests and generate coverage data.
 coverage:

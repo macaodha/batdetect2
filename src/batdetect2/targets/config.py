@@ -9,7 +9,7 @@ from batdetect2.targets.classes import (
     DEFAULT_DETECTION_CLASS,
     TargetClassConfig,
 )
-from batdetect2.targets.rois import AnchorBBoxMapperConfig, ROIMapperConfig
+from batdetect2.targets.rois import ROIMappingConfig
 
 __all__ = [
     "TargetConfig",
@@ -25,7 +25,7 @@ class TargetConfig(BaseConfig):
         default_factory=lambda: DEFAULT_CLASSES
     )
 
-    roi: ROIMapperConfig = Field(default_factory=AnchorBBoxMapperConfig)
+    roi: ROIMappingConfig = Field(default_factory=ROIMappingConfig)
 
     @field_validator("classification_targets")
     def check_unique_class_names(cls, v: List[TargetClassConfig]):

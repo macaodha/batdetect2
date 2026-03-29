@@ -6,23 +6,24 @@ from lightning import Trainer, seed_everything
 from loguru import logger
 from soundevent import data
 
-from batdetect2.audio import AudioConfig, build_audio_loader
-from batdetect2.audio.types import AudioLoader
-from batdetect2.evaluate import build_evaluator
-from batdetect2.evaluate.types import EvaluatorProtocol
+from batdetect2.audio import AudioConfig, AudioLoader, build_audio_loader
+from batdetect2.evaluate import EvaluatorProtocol, build_evaluator
 from batdetect2.logging import (
     LoggerConfig,
     TensorBoardLoggerConfig,
     build_logger,
 )
 from batdetect2.models import Model, ModelConfig, build_model
-from batdetect2.preprocess import build_preprocessor
-from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets import build_targets
-from batdetect2.targets.types import TargetProtocol
-from batdetect2.train import TrainingConfig
+from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
+from batdetect2.targets import (
+    ROIMapperProtocol,
+    TargetProtocol,
+    build_roi_mapping,
+    build_targets,
+)
 from batdetect2.train.callbacks import ValidationMetrics
 from batdetect2.train.checkpoints import build_checkpoint_callback
+from batdetect2.train.config import TrainingConfig
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
@@ -39,6 +40,7 @@ def run_train(
     val_annotations: Sequence[data.ClipAnnotation] | None = None,
     model: Model | None = None,
     targets: Optional["TargetProtocol"] = None,
+    roi_mapper: Optional["ROIMapperProtocol"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
     audio_loader: Optional["AudioLoader"] = None,
     labeller: Optional["ClipLabeller"] = None,
@@ -69,7 +71,14 @@ def run_train(
     if model is not None:
         targets = targets or model.targets
 
+        if roi_mapper is None and targets is model.targets:
+            roi_mapper = model.roi_mapper
+
     targets = targets or build_targets(config=model_config.targets)
+
+    roi_mapper = roi_mapper or build_roi_mapping(
+        config=model_config.targets.roi
+    )
 
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
@@ -80,6 +89,7 @@ def run_train(
 
     labeller = labeller or build_clip_labeler(
         targets,
+        roi_mapper,
         min_freq=preprocessor.min_freq,
         max_freq=preprocessor.max_freq,
         config=train_config.labels,
@@ -119,6 +129,7 @@ def run_train(
         evaluator=build_evaluator(
             train_config.validation,
             targets=targets,
+            roi_mapper=roi_mapper,
         ),
         checkpoint_dir=checkpoint_dir,
         num_epochs=num_epochs,

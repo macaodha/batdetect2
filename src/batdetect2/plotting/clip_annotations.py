@@ -4,7 +4,7 @@ from soundevent import data, plot
 from batdetect2.plotting.clips import plot_clip
 from batdetect2.plotting.common import create_ax
 from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.types import TargetProtocol
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
     "plot_clip_annotation",
@@ -48,6 +48,7 @@ def plot_clip_annotation(
 def plot_anchor_points(
     clip_annotation: data.ClipAnnotation,
     targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
     figsize: tuple[int, int] | None = None,
     ax: Axes | None = None,
     size: int = 1,
@@ -63,7 +64,11 @@ def plot_anchor_points(
         if not targets.filter(sound_event):
             continue
 
-        position, _ = targets.encode_roi(sound_event)
+        class_name = targets.encode_class(sound_event)
+        position, _ = roi_mapper.encode(
+            sound_event.sound_event,
+            class_name=class_name,
+        )
         positions.append(position)
 
     X, Y = zip(*positions, strict=False)

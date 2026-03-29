@@ -165,14 +165,15 @@ class BBoxHead(nn.Module):
         1×1 convolution with 2 output channels (duration, bandwidth).
     """
 
-    def __init__(self, in_channels: int):
+    def __init__(self, in_channels: int, num_sizes: int = 2):
         """Initialise the BBoxHead."""
         super().__init__()
         self.in_channels = in_channels
+        self.num_sizes = num_sizes
 
         self.bbox = nn.Conv2d(
             in_channels=self.in_channels,
-            out_channels=2,
+            out_channels=self.num_sizes,
             kernel_size=1,
             padding=0,
         )
