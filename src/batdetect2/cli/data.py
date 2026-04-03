@@ -73,7 +73,7 @@ def summary(
 
     summary = compute_class_summary(dataset, targets)
 
-    print(summary.to_markdown())
+    print(summary.sort_values("class_name").to_markdown())
 
 
 @data.command(short_help="Convert dataset config to annotation set.")
