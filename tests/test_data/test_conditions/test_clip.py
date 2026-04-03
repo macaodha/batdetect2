@@ -1,19 +1,36 @@
 import json
+import textwrap
+import uuid
 from pathlib import Path
 
+from pydantic import TypeAdapter
 from soundevent import data
 
+from batdetect2.core import load_config
 from batdetect2.data.conditions import (
-    ClipAllOfConfig,
-    ClipAnyOfConfig,
-    ClipNotConfig,
-    HasAllTagsConfig,
-    HasAnyTagConfig,
-    HasTagConfig,
-    IdInListConfig,
-    RecordingSatisfiesConfig,
+    ClipAnnotationConditionConfig,
     build_clip_annotation_condition,
 )
+
+
+def load_clip_condition_config(
+    tmp_path: Path,
+    yaml_string: str,
+) -> ClipAnnotationConditionConfig:
+    config_path = tmp_path / f"{uuid.uuid4().hex}.yaml"
+    config_path.write_text(textwrap.dedent(yaml_string).strip())
+    return load_config(
+        config_path, schema=TypeAdapter(ClipAnnotationConditionConfig)
+    )
+
+
+def build_clip_condition_from_yaml(
+    tmp_path: Path,
+    yaml_string: str,
+    base_dir: Path | None = None,
+):
+    config = load_clip_condition_config(tmp_path, yaml_string)
+    return build_clip_annotation_condition(config, base_dir=base_dir)
 
 
 def test_recording_satisfies_condition(
@@ -31,10 +48,14 @@ def test_recording_satisfies_condition(
     ids_path = tmp_path / "recording_ids.json"
     ids_path.write_text(json.dumps([str(recording_a.uuid)]))
 
-    condition = build_clip_annotation_condition(
-        RecordingSatisfiesConfig(
-            condition=IdInListConfig(path=ids_path),
-        )
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: recording_satisfies
+        condition:
+            name: id_in_list
+            path: {ids_path}
+        """,
     )
 
     assert condition(clip_annotation_a)
@@ -54,7 +75,13 @@ def test_clip_id_in_list_condition(
     ids_path = tmp_path / "clip_annotation_ids.json"
     ids_path.write_text(json.dumps([str(clip_annotation_a.uuid)]))
 
-    condition = build_clip_annotation_condition(IdInListConfig(path=ids_path))
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: id_in_list
+        path: {ids_path}
+        """,
+    )
 
     assert condition(clip_annotation_a)
     assert not condition(clip_annotation_b)
@@ -68,7 +95,6 @@ def test_clip_has_tag_conditions(
 ) -> None:
     reviewed = data.Tag(key="status", value="reviewed")
     train = data.Tag(key="split", value="train")
-    val = data.Tag(key="split", value="val")
 
     recording = create_recording(path=tmp_path / "rec.wav")
     clip = create_clip(recording)
@@ -76,21 +102,26 @@ def test_clip_has_tag_conditions(
         clip,
         clip_tags=[reviewed, train],
     )
-
-    has_tag = build_clip_annotation_condition(HasTagConfig(tag=reviewed))
-    has_all = build_clip_annotation_condition(
-        HasAllTagsConfig(tags=[reviewed, train])
-    )
-    has_any = build_clip_annotation_condition(
-        HasAnyTagConfig(tags=[val, train])
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[train],
     )
 
-    assert has_tag(clip_annotation)
-    assert has_all(clip_annotation)
-    assert has_any(clip_annotation)
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: has_tag
+        tag:
+            key: status
+            value: reviewed
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
 
 
-def test_clip_logical_conditions(
+def test_clip_has_all_tags_condition(
     tmp_path: Path,
     create_recording,
     create_clip,
@@ -98,7 +129,76 @@ def test_clip_logical_conditions(
 ) -> None:
     reviewed = data.Tag(key="status", value="reviewed")
     train = data.Tag(key="split", value="train")
-    val = data.Tag(key="split", value="val")
+
+    recording = create_recording(path=tmp_path / "rec.wav")
+    clip_annotation = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[reviewed, train],
+    )
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[reviewed],
+    )
+
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: has_all_tags
+        tags:
+            - key: status
+              value: reviewed
+            - key: split
+              value: train
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
+
+
+def test_clip_has_any_tag_condition(
+    tmp_path: Path,
+    create_recording,
+    create_clip,
+    create_clip_annotation,
+) -> None:
+    reviewed = data.Tag(key="status", value="reviewed")
+    train = data.Tag(key="split", value="train")
+
+    recording = create_recording(path=tmp_path / "rec.wav")
+    clip_annotation = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[reviewed, train],
+    )
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[data.Tag(key="split", value="test")],
+    )
+
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: has_any_tag
+        tags:
+            - key: split
+              value: val
+            - key: split
+              value: train
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
+
+
+def test_clip_all_of_condition(
+    tmp_path: Path,
+    create_recording,
+    create_clip,
+    create_clip_annotation,
+) -> None:
+    reviewed = data.Tag(key="status", value="reviewed")
+    train = data.Tag(key="split", value="train")
 
     recording = create_recording(path=tmp_path / "rec.wav")
     clip = create_clip(recording)
@@ -106,27 +206,98 @@ def test_clip_logical_conditions(
         clip,
         clip_tags=[reviewed, train],
     )
-
-    all_condition = build_clip_annotation_condition(
-        ClipAllOfConfig(
-            conditions=[
-                HasTagConfig(tag=reviewed),
-                HasAnyTagConfig(tags=[train, val]),
-            ]
-        )
-    )
-    any_condition = build_clip_annotation_condition(
-        ClipAnyOfConfig(
-            conditions=[
-                HasTagConfig(tag=val),
-                HasTagConfig(tag=reviewed),
-            ]
-        )
-    )
-    not_condition = build_clip_annotation_condition(
-        ClipNotConfig(condition=HasTagConfig(tag=val))
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[reviewed],
     )
 
-    assert all_condition(clip_annotation)
-    assert any_condition(clip_annotation)
-    assert not_condition(clip_annotation)
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: all_of
+        conditions:
+            - name: has_tag
+              tag:
+                key: status
+                value: reviewed
+            - name: has_any_tag
+              tags:
+                - key: split
+                  value: train
+                - key: split
+                  value: val
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
+
+
+def test_clip_any_of_condition(
+    tmp_path: Path,
+    create_recording,
+    create_clip,
+    create_clip_annotation,
+) -> None:
+    reviewed = data.Tag(key="status", value="reviewed")
+
+    recording = create_recording(path=tmp_path / "rec.wav")
+    clip_annotation = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[reviewed],
+    )
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[data.Tag(key="status", value="unchecked")],
+    )
+
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: any_of
+        conditions:
+            - name: has_tag
+              tag:
+                key: split
+                value: val
+            - name: has_tag
+              tag:
+                key: status
+                value: reviewed
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
+
+
+def test_clip_not_condition(
+    tmp_path: Path,
+    create_recording,
+    create_clip,
+    create_clip_annotation,
+) -> None:
+    recording = create_recording(path=tmp_path / "rec.wav")
+    clip_annotation = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[data.Tag(key="split", value="train")],
+    )
+    clip_annotation_missing = create_clip_annotation(
+        create_clip(recording),
+        clip_tags=[data.Tag(key="split", value="val")],
+    )
+
+    condition = build_clip_condition_from_yaml(
+        tmp_path,
+        """
+        name: not
+        condition:
+            name: has_tag
+            tag:
+                key: split
+                value: val
+        """,
+    )
+
+    assert condition(clip_annotation)
+    assert not condition(clip_annotation_missing)
