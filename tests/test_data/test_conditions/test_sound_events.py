@@ -1,4 +1,6 @@
+import json
 import textwrap
+from pathlib import Path
 
 import pytest
 import yaml
@@ -6,16 +8,17 @@ from pydantic import TypeAdapter
 from soundevent import data
 
 from batdetect2.data.conditions import (
+    IdInListConfig,
     SoundEventConditionConfig,
     build_sound_event_condition,
 )
 
 
-def build_condition_from_str(content):
+def build_condition_from_str(content, base_dir: Path | None = None):
     content = textwrap.dedent(content)
     content = yaml.safe_load(content)
     config = TypeAdapter(SoundEventConditionConfig).validate_python(content)
-    return build_sound_event_condition(config)
+    return build_sound_event_condition(config, base_dir=base_dir)
 
 
 def test_has_tag(sound_event: data.SoundEvent):
@@ -158,6 +161,36 @@ def test_not(sound_event: data.SoundEvent):
         ],
     )
     assert not condition(sound_event_annotation)
+
+
+def test_id_in_list(sound_event: data.SoundEvent, tmp_path: Path):
+    se1 = data.SoundEventAnnotation(sound_event=sound_event)
+    se2 = data.SoundEventAnnotation(sound_event=sound_event)
+    ids_path = tmp_path / "sound_event_ids.json"
+    ids_path.write_text(json.dumps([str(se1.uuid)]))
+
+    condition = build_sound_event_condition(IdInListConfig(path=ids_path))
+
+    assert condition(se1)
+    assert not condition(se2)
+
+
+def test_id_in_list_uses_base_dir(
+    sound_event: data.SoundEvent,
+    tmp_path: Path,
+) -> None:
+    se = data.SoundEventAnnotation(sound_event=sound_event)
+    split_dir = tmp_path / "splits"
+    split_dir.mkdir()
+    ids_path = split_dir / "sound_event_ids.json"
+    ids_path.write_text(json.dumps([str(se.uuid)]))
+
+    condition = build_sound_event_condition(
+        IdInListConfig(path=Path("splits/sound_event_ids.json")),
+        base_dir=tmp_path,
+    )
+
+    assert condition(se)
 
 
 def test_duration(recording: data.Recording):
