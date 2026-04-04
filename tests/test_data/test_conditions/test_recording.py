@@ -121,7 +121,62 @@ def test_id_in_list_condition_supports_txt_format(
         f"""
         name: id_in_list
         path: {ids_path}
-        list_format: txt
+        format: txt
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_id_in_list_condition_supports_json_field(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    recording_a = create_recording(path=tmp_path / "a.wav")
+    recording_b = create_recording(path=tmp_path / "b.wav")
+    ids_path = tmp_path / "recording_ids.json"
+    ids_path.write_text(
+        json.dumps(
+            {
+                "train": [str(recording_a.uuid)],
+                "val": [str(recording_b.uuid)],
+            }
+        )
+    )
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: id_in_list
+        path: {ids_path}
+        format:
+          name: json
+          field: train
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_id_in_list_condition_supports_csv_column(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    recording_a = create_recording(path=tmp_path / "a.wav")
+    recording_b = create_recording(path=tmp_path / "b.wav")
+    ids_path = tmp_path / "recording_ids.csv"
+    ids_path.write_text(f"recording_uuid\n{recording_a.uuid}\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: id_in_list
+        path: {ids_path}
+        format:
+          name: csv
+          column: recording_uuid
         """,
     )
 

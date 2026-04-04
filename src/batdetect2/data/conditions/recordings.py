@@ -54,10 +54,10 @@ class RecordingConditionImportConfig(ImportConfig):
     name: Literal["import"] = "import"
 
 
-register_id_in_list_condition(recording_conditions)(IdInListConfig)
-register_has_tag_condition(recording_conditions)(HasTagConfig)
-register_has_all_tags_condition(recording_conditions)(HasAllTagsConfig)
-register_has_any_tag_condition(recording_conditions)(HasAnyTagConfig)
+register_id_in_list_condition(recording_conditions, IdInListConfig)
+register_has_tag_condition(recording_conditions, HasTagConfig)
+register_has_all_tags_condition(recording_conditions, HasAllTagsConfig)
+register_has_any_tag_condition(recording_conditions, HasAnyTagConfig)
 
 
 @register_all_of_condition(recording_conditions)

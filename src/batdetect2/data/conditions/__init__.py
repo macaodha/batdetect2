@@ -9,10 +9,14 @@ from batdetect2.data.conditions.clips import (
     build_clip_annotation_condition,
 )
 from batdetect2.data.conditions.common import (
+    CsvList,
     HasAllTagsConfig,
     HasAnyTagConfig,
     HasTagConfig,
     IdInListConfig,
+    JsonList,
+    ListFormatConfig,
+    TxtList,
 )
 from batdetect2.data.conditions.recordings import (
     RecordingAllOfConfig,
@@ -46,12 +50,15 @@ __all__ = [
     "ClipAnnotationConditionImportConfig",
     "ClipAnyOfConfig",
     "ClipNotConfig",
+    "CsvList",
     "DurationConfig",
     "FrequencyConfig",
     "HasAllTagsConfig",
     "HasAnyTagConfig",
     "HasTagConfig",
     "IdInListConfig",
+    "JsonList",
+    "ListFormatConfig",
     "NotConfig",
     "Operator",
     "RecordingCondition",
@@ -64,6 +71,7 @@ __all__ = [
     "SoundEventCondition",
     "SoundEventConditionConfig",
     "SoundEventConditionImportConfig",
+    "TxtList",
     "build_clip_annotation_condition",
     "build_recording_condition",
     "build_sound_event_condition",

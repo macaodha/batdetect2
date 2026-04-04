@@ -87,10 +87,16 @@ class RecordingSatisfies:
         return RecordingSatisfies(condition)
 
 
-register_has_tag_condition(clip_annotation_conditions)(HasTagConfig)
-register_has_all_tags_condition(clip_annotation_conditions)(HasAllTagsConfig)
-register_has_any_tag_condition(clip_annotation_conditions)(HasAnyTagConfig)
-register_id_in_list_condition(clip_annotation_conditions)(IdInListConfig)
+register_has_tag_condition(clip_annotation_conditions, HasTagConfig)
+register_has_all_tags_condition(
+    clip_annotation_conditions,
+    HasAllTagsConfig,
+)
+register_has_any_tag_condition(
+    clip_annotation_conditions,
+    HasAnyTagConfig,
+)
+register_id_in_list_condition(clip_annotation_conditions, IdInListConfig)
 
 
 @register_all_of_condition(clip_annotation_conditions)
