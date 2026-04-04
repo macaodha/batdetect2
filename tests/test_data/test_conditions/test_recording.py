@@ -184,6 +184,203 @@ def test_id_in_list_condition_supports_csv_column(
     assert not condition(recording_b)
 
 
+def test_path_in_list_condition_supports_txt_format(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    recording_a = create_recording(path=audio_dir / "a.wav")
+    recording_b = create_recording(path=audio_dir / "b.wav")
+    paths_file = tmp_path / "recording_paths.txt"
+    paths_file.write_text(f"{recording_a.path}\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format: txt
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_path_in_list_condition_supports_json_field(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    recording_a = create_recording(path=audio_dir / "a.wav")
+    recording_b = create_recording(path=audio_dir / "b.wav")
+    paths_file = tmp_path / "recording_paths.json"
+    paths_file.write_text(
+        json.dumps(
+            {
+                "train": [str(recording_a.path)],
+                "val": [str(recording_b.path)],
+            }
+        )
+    )
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format:
+          name: json
+          field: train
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_path_in_list_condition_supports_csv_column(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    recording_a = create_recording(path=audio_dir / "a.wav")
+    recording_b = create_recording(path=audio_dir / "b.wav")
+    paths_file = tmp_path / "recording_paths.csv"
+    paths_file.write_text(f"recording_path\n{recording_a.path}\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format:
+          name: csv
+          column: recording_path
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_path_in_list_condition_uses_base_dir(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    data_dir = tmp_path / "dataset"
+    audio_dir = data_dir / "audio"
+    audio_dir.mkdir(parents=True)
+    recording_a = create_recording(path=audio_dir / "a.wav")
+    recording_b = create_recording(path=audio_dir / "b.wav")
+    paths_file = tmp_path / "recording_paths.txt"
+    paths_file.write_text(f"{recording_a.path}\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format: txt
+        base_dir: {data_dir}
+        """,
+    )
+
+    assert condition(recording_a)
+    assert not condition(recording_b)
+
+
+def test_path_in_list_condition_outside_allow(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    data_dir = tmp_path / "dataset"
+    inside_dir = data_dir / "audio"
+    inside_dir.mkdir(parents=True)
+    outside_dir = tmp_path / "other"
+    outside_dir.mkdir()
+    recording_inside = create_recording(path=inside_dir / "a.wav")
+    recording_outside = create_recording(path=outside_dir / "x.wav")
+    paths_file = tmp_path / "recording_paths.txt"
+    paths_file.write_text("dataset/audio/unknown.wav\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format: txt
+        base_dir: {data_dir}
+        on_outside: allow
+        """,
+    )
+
+    assert condition(recording_outside)
+    assert not condition(recording_inside)
+
+
+def test_path_in_list_condition_outside_warn(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    data_dir = tmp_path / "dataset"
+    inside_dir = data_dir / "audio"
+    inside_dir.mkdir(parents=True)
+    outside_dir = tmp_path / "other"
+    outside_dir.mkdir()
+    recording_inside = create_recording(path=inside_dir / "a.wav")
+    recording_outside = create_recording(path=outside_dir / "x.wav")
+    paths_file = tmp_path / "recording_paths.txt"
+    paths_file.write_text("dataset/audio/unknown.wav\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format: txt
+        base_dir: {data_dir}
+        on_outside: warn
+        """,
+    )
+
+    assert condition(recording_outside)
+    assert not condition(recording_inside)
+
+
+def test_path_in_list_condition_outside_error(
+    tmp_path: Path,
+    create_recording,
+) -> None:
+    data_dir = tmp_path / "dataset"
+    inside_dir = data_dir / "audio"
+    inside_dir.mkdir(parents=True)
+    outside_dir = tmp_path / "other"
+    outside_dir.mkdir()
+    recording_inside = create_recording(path=inside_dir / "a.wav")
+    recording_outside = create_recording(path=outside_dir / "x.wav")
+    paths_file = tmp_path / "recording_paths.txt"
+    paths_file.write_text(f"{recording_inside.path}\n")
+
+    condition = build_recording_condition_from_yaml(
+        tmp_path,
+        f"""
+        name: path_in_list
+        path: {paths_file}
+        format: txt
+        base_dir: {data_dir}
+        on_outside: error
+        """,
+    )
+
+    assert condition(recording_inside)
+    with pytest.raises(ValueError, match="outside"):
+        condition(recording_outside)
+
+
 def test_has_tag_condition(tmp_path: Path, create_recording) -> None:
     train = data.Tag(key="split", value="train")
     val = data.Tag(key="split", value="val")

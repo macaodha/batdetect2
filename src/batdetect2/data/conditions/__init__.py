@@ -19,6 +19,7 @@ from batdetect2.data.conditions.common import (
     TxtList,
 )
 from batdetect2.data.conditions.recordings import (
+    PathInListConfig,
     RecordingAllOfConfig,
     RecordingAnyOfConfig,
     RecordingCondition,
@@ -61,6 +62,7 @@ __all__ = [
     "ListFormatConfig",
     "NotConfig",
     "Operator",
+    "PathInListConfig",
     "RecordingCondition",
     "RecordingConditionConfig",
     "RecordingConditionImportConfig",
