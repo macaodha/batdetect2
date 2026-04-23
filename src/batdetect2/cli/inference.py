@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING
 
 import click
 from loguru import logger
-from soundevent import io
-from soundevent.audio.files import get_audio_files
 
 from batdetect2.cli.base import cli
 
@@ -219,6 +217,8 @@ def predict_directory_command(
     Loads a checkpoint, scans `audio_dir` for supported audio files, runs
     inference, and saves predictions to `output_path`.
     """
+    from soundevent.audio.files import get_audio_files
+
     audio_files = list(get_audio_files(audio_dir))
     _run_prediction(
         model_path=model_path,
@@ -309,6 +309,8 @@ def predict_dataset_command(
     The dataset is read as a soundevent annotation set and unique recording
     paths are extracted before inference.
     """
+    from soundevent import io
+
     dataset_path = Path(dataset_path)
     dataset = io.load(dataset_path, type="annotation_set")
     audio_files = sorted(

@@ -15,11 +15,11 @@ GENERIC_CLASS_KEY = "class"
 
 
 data_source = data.Term(
-    name="soundevent:data_source",
-    label="Data Source",
+    name="dcterms:source",
+    label="Source",
+    uri="http://purl.org/dc/terms/source",
     definition=(
-        "A unique identifier for the source of the data, typically "
-        "representing the project, site, or deployment context."
+        "A related resource from which the described resource is derived."
     ),
 )
 
@@ -44,6 +44,17 @@ individual = data.Term(
     ),
 )
 """Term used for tags identifying a specific individual animal."""
+
+dataset_split = data.Term(
+    name="batdetect2:split",
+    label="Dataset Split",
+    definition=(
+        "Identifies the specific data partition (e.g., 'train', 'test') "
+        "that the item belongs to within an experimental setup. "
+        "The expected value is a literal text string."
+    ),
+)
+"""Custom metadata term defining the machine learning partition of an item."""
 
 generic_class = data.Term(
     name="soundevent:class",

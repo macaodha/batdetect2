@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import io
 import sys
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     Dict,
@@ -13,20 +16,22 @@ from typing import (
     TypeVar,
 )
 
-import numpy as np
-import pandas as pd
-from lightning.pytorch.loggers import (
-    CSVLogger,
-    Logger,
-    MLFlowLogger,
-    TensorBoardLogger,
-)
 from loguru import logger
-from matplotlib.figure import Figure
 from pydantic import Field
-from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+    from lightning.pytorch.loggers import (
+        CSVLogger,
+        Logger,
+        MLFlowLogger,
+        TensorBoardLogger,
+    )
+    from matplotlib.figure import Figure
+    from soundevent import data
 
 DEFAULT_LOGS_DIR: Path = Path("outputs") / "logs"
 
@@ -271,10 +276,16 @@ def build_logger(
     )
 
 
-PlotLogger = Callable[[str, Figure, int], None]
+PlotLogger = Callable[[str, "Figure", int], None]
 
 
 def get_image_logger(logger: Logger) -> PlotLogger | None:
+    from lightning.pytorch.loggers import (
+        CSVLogger,
+        MLFlowLogger,
+        TensorBoardLogger,
+    )
+
     if isinstance(logger, TensorBoardLogger):
         return logger.experiment.add_figure
 
@@ -296,10 +307,16 @@ def get_image_logger(logger: Logger) -> PlotLogger | None:
         return partial(save_figure, dir=Path(logger.log_dir))
 
 
-TableLogger = Callable[[str, pd.DataFrame, int], None]
+TableLogger = Callable[[str, "pd.DataFrame", int], None]
 
 
 def get_table_logger(logger: Logger) -> TableLogger | None:
+    from lightning.pytorch.loggers import (
+        CSVLogger,
+        MLFlowLogger,
+        TensorBoardLogger,
+    )
+
     if isinstance(logger, TensorBoardLogger):
         return partial(save_table, dir=Path(logger.log_dir))
 
@@ -337,6 +354,8 @@ def save_figure(name: str, fig: Figure, step: int, dir: Path) -> None:
 
 
 def _convert_figure_to_array(figure: Figure) -> np.ndarray:
+    import numpy as np
+
     with io.BytesIO() as buff:
         figure.savefig(buff, format="raw")
         buff.seek(0)
