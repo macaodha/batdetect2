@@ -133,6 +133,9 @@ class DetectionROCAUC:
                 y_true.append(m.is_ground_truth)
                 y_score.append(m.score)
 
+        if len(y_true) == 0:
+            return {self.label: np.nan}
+
         score = float(metrics.roc_auc_score(y_true, y_score))
         return {self.label: score}
 

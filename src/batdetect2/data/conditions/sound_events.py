@@ -1,4 +1,6 @@
+import operator
 from collections.abc import Callable, Sequence
+from functools import partial
 from typing import Annotated, Literal
 
 from pydantic import Field
@@ -78,25 +80,23 @@ class DurationConfig(BaseConfig):
     seconds: float
 
 
-def _build_comparator(
-    operator: Operator, value: float
-) -> Callable[[float], bool]:
-    if operator == "gt":
-        return lambda x: x > value
+def _build_comparator(op: Operator, value: float) -> Callable[[float], bool]:
+    if op == "gt":
+        return partial(operator.gt, value)
 
-    if operator == "gte":
-        return lambda x: x >= value
+    if op == "gte":
+        return partial(operator.ge, value)
 
-    if operator == "lt":
-        return lambda x: x < value
+    if op == "lt":
+        return partial(operator.lt, value)
 
-    if operator == "lte":
-        return lambda x: x <= value
+    if op == "lte":
+        return partial(operator.le, value)
 
-    if operator == "eq":
-        return lambda x: x == value
+    if op == "eq":
+        return partial(operator.eq, value)
 
-    raise ValueError(f"Invalid operator {operator}")
+    raise ValueError(f"Invalid operator {op}")
 
 
 class Duration:
