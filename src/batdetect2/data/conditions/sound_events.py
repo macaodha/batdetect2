@@ -82,19 +82,19 @@ class DurationConfig(BaseConfig):
 
 def _build_comparator(op: Operator, value: float) -> Callable[[float], bool]:
     if op == "gt":
-        return partial(operator.gt, value)
-
-    if op == "gte":
-        return partial(operator.ge, value)
-
-    if op == "lt":
         return partial(operator.lt, value)
 
-    if op == "lte":
+    if op == "gte":
         return partial(operator.le, value)
 
+    if op == "lt":
+        return partial(operator.gt, value)
+
+    if op == "lte":
+        return partial(operator.ge, value)
+
     if op == "eq":
-        return partial(operator.eq, value)
+        return partial(operator.eq, b=value)
 
     raise ValueError(f"Invalid operator {op}")
 
