@@ -1,7 +1,12 @@
 # Tutorials
 
-Tutorials are for learning by doing. They provide a single, reproducible path
-to a concrete outcome.
+Tutorials are the default learning path.
+
+Each tutorial follows one recommended route from start to finish.
+
+Use tutorials when you want the simplest route to a concrete outcome.
+
+Use {doc}`../how_to/index` when you need to customize a workflow.
 
 ```{toctree}
 :maxdepth: 1

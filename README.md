@@ -1,11 +1,40 @@
 # BatDetect2
 <img style="display: block-inline;" width="64" height="64" src="assets/bat_icon.png"> Code for detecting and classifying bat echolocation calls in high frequency audio recordings.
 
-## Getting started
-### Python Environment
+## What BatDetect2 is useful for
 
-We recommend using an isolated Python environment to avoid dependency issues. Choose one
-of the following options:
+BatDetect2 can help you screen recordings for bat calls,
+find recordings that need expert review,
+and compare model outputs across sites or projects with appropriate caution.
+
+It is best used as a tool to support ecological work,
+not as a replacement for validation or expert interpretation.
+
+## Start here
+
+If you want the simplest current workflow,
+use the documentation site and start with:
+
+- getting started: `docs/source/getting_started.md`
+- first tutorial: `docs/source/tutorials/run-inference-on-folder.md`
+
+The current docs default to:
+
+- the current command-line workflow: `batdetect2 predict`
+- the current Python workflow: `batdetect2.api_v2.BatDetect2API`
+
+If you need the previous workflow based on `batdetect2 detect` or `batdetect2.api`,
+use the legacy docs section and migration guide in the docs site.
+
+## Install BatDetect2
+
+If you already use Python,
+activate the environment where you want BatDetect2 to live.
+
+If not,
+create a fresh one first so BatDetect2 stays separate from other software on your machine.
+
+Two common options are:
 
 * Install the Anaconda Python 3.10 distribution for your operating system from [here](https://www.continuum.io/downloads). Create a new environment and activate it:
 
@@ -14,7 +43,7 @@ conda create -y --name batdetect2 python==3.10
 conda activate batdetect2
 ```
 
-* If you already have Python installed (version >= 3.8,< 3.11) and prefer using virtual environments then:
+* If you already have Python installed (version >= 3.10,< 3.14), you can create a fresh environment with:
 
 ```bash
 python -m venv .venv
@@ -37,6 +66,43 @@ pip install .
 
 Make sure you have the environment activated before installing `batdetect2`.
 
+## Run BatDetect2 on a folder of recordings
+
+Once installed,
+the simplest current workflow is to run BatDetect2 on a folder of `.wav` files.
+
+If you are working from this repository checkout,
+you can use this example checkpoint path:
+
+```text
+src/batdetect2/models/checkpoints/Net2DFast_UK_same.pth.tar
+```
+
+Example command:
+
+```bash
+batdetect2 predict directory \
+  src/batdetect2/models/checkpoints/Net2DFast_UK_same.pth.tar \
+  example_data/audio \
+  outputs
+```
+
+This will scan the audio files in `example_data/audio`
+and save model outputs to `outputs`.
+
+For the full beginner walkthrough,
+use `docs/source/tutorials/run-inference-on-folder.md`.
+
+## Legacy workflow
+
+The sections below are kept only for people maintaining older BatDetect2 scripts and analysis pipelines.
+
+If you are new to BatDetect2,
+stop here and use the current docs and command above.
+
+If you really do need the older workflow,
+the reference material is below.
+
 
 ## Try the model
 1) You can try a demo of the model (for UK species) on [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
@@ -48,8 +114,14 @@ Make sure you have the environment activated before installing `batdetect2`.
 
 After following the above steps to install the code you can run the model on your own data.
 
+The remainder of this section is legacy reference material.
+
 
 ### Using the command line
+
+The commands below describe the legacy CLI workflow.
+
+For new work, prefer the current docs and `batdetect2 predict`.
 
 You can run the model by opening the command line and typing:
 ```bash
@@ -72,6 +144,10 @@ You can also specify which model to use by setting the `--model_path` argument. 
 
 
 ### Using the Python API
+
+The examples below describe the legacy Python API.
+
+For new work, prefer `batdetect2.api_v2.BatDetect2API` and the current docs site.
 
 If you prefer to process your data within a Python script then you can use the `batdetect2` Python API.
 
@@ -98,7 +174,10 @@ You can integrate the detections or the extracted features to your custom analys
 
 
 ## Training the model on your own data
-Take a look at the steps outlined in finetuning readme [here](batdetect2/finetune/readme.md) for a description of how to train your own model.
+Take a look at the training tutorial in the docs site first.
+
+If you are working from this repository checkout,
+start with `docs/source/tutorials/train-a-custom-model.md`.
 
 
 ## Data and annotations

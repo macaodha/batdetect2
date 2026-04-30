@@ -1,12 +1,20 @@
 # Reference documentation
 
-Reference pages provide factual, complete descriptions of commands,
-configuration, and data structures.
+Reference pages are the detailed lookup pages.
+
+Use this section when you need exact command options, setting names, output details, or Python API entries.
 
 ```{toctree}
 :maxdepth: 1
 
 cli/index
+api
+app-config
+inference-config
+evaluation-config
+outputs-config
+output-formats
+output-transforms
 data-sources
 preprocessing-config
 postprocess-config
