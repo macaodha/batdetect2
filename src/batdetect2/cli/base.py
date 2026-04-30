@@ -2,10 +2,6 @@
 
 import click
 
-from batdetect2.logging import enable_logging
-
-# from batdetect2.cli.ascii import BATDETECT_ASCII_ART
-
 __all__ = [
     "cli",
 ]
@@ -33,6 +29,8 @@ def cli(verbose: int = 0):
     training, evaluation, and dataset utilities.
     """
     click.echo(INFO_STR)
+
+    from batdetect2.logging import enable_logging
 
     enable_logging(verbose)
     # click.echo(BATDETECT_ASCII_ART)

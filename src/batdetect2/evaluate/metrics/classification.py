@@ -204,15 +204,19 @@ class ClassificationROCAUC(BaseClassificationMetric):
             ignore_generic=self.ignore_generic,
         )
 
-        class_scores = {
-            class_name: float(
+        class_scores = {}
+
+        for class_name in self.targets.class_names:
+            if len(y_true[class_name]) == 0:
+                class_scores[class_name] = np.nan
+                continue
+
+            class_scores[class_name] = float(
                 metrics.roc_auc_score(
                     y_true[class_name],
                     y_score[class_name],
                 )
             )
-            for class_name in self.targets.class_names
-        }
 
         mean_score = float(
             np.mean([v for v in class_scores.values() if v != np.nan])
