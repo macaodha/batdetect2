@@ -12,6 +12,8 @@ from typing import (
 from hydra.utils import instantiate
 from pydantic import BaseModel, Field
 
+from batdetect2.core.configs import BaseConfig
+
 __all__ = [
     "add_import_config",
     "ImportConfig",
@@ -120,7 +122,7 @@ class Registry(Generic[T_Type, P_Type]):
         return self._registry[name](config, *args, **kwargs)
 
 
-class ImportConfig(BaseModel):
+class ImportConfig(BaseConfig):
     """Base config for dynamic instantiation via Hydra.
 
     Subclass this to create a registry-specific import escape hatch.
