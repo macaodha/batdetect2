@@ -6,6 +6,7 @@ from batdetect2.plotting.gallery import plot_match_gallery
 from batdetect2.plotting.heatmaps import (
     plot_classification_heatmap,
     plot_detection_heatmap,
+    plot_size_heatmap,
 )
 from batdetect2.plotting.matches import (
     plot_cross_trigger_match,
@@ -25,5 +26,6 @@ __all__ = [
     "plot_true_positive_match",
     "plot_detection_heatmap",
     "plot_classification_heatmap",
+    "plot_size_heatmap",
     "plot_match_gallery",
 ]
