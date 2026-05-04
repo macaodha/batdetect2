@@ -77,6 +77,7 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
     "num_workers",
     type=int,
     help="Number of worker processes for dataset loading.",
+    default=0,
 )
 def evaluate_command(
     model_path: Path,
