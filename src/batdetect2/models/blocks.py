@@ -53,8 +53,12 @@ import torch.nn.functional as F
 from pydantic import Field
 from torch import nn
 
-from batdetect2.core import ImportConfig, Registry, add_import_config
-from batdetect2.core.configs import BaseConfig
+from batdetect2.core import (
+    BaseConfig,
+    ImportConfig,
+    Registry,
+    add_import_config,
+)
 
 __all__ = [
     "BlockImportConfig",

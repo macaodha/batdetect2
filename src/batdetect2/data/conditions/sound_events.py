@@ -94,7 +94,7 @@ def _build_comparator(op: Operator, value: float) -> Callable[[float], bool]:
         return partial(operator.ge, value)
 
     if op == "eq":
-        return partial(operator.eq, b=value)
+        return partial(operator.eq, value)
 
     raise ValueError(f"Invalid operator {op}")
 

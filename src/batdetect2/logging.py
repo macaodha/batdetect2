@@ -25,10 +25,7 @@ if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     from lightning.pytorch.loggers import (
-        CSVLogger,
         Logger,
-        MLFlowLogger,
-        TensorBoardLogger,
     )
     from matplotlib.figure import Figure
     from soundevent import data
