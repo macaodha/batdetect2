@@ -28,6 +28,11 @@ class TargetProtocol(Protocol):
     detection_class_tags: list[data.Tag]
     detection_class_name: str
 
+    @classmethod
+    def from_config(cls, config: dict) -> "TargetProtocol": ...
+
+    def get_config(self) -> dict: ...
+
     def filter(self, sound_event: data.SoundEventAnnotation) -> bool: ...
 
     def encode_class(

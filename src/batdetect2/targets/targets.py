@@ -50,21 +50,31 @@ class Targets(TargetProtocol):
         self.config = config
 
         self._filter_fn = build_sound_event_condition(
-            config.detection_target.match_if
+            self.config.detection_target.match_if
         )
         self._encode_fn = build_sound_event_encoder(
-            config.classification_targets
+            self.config.classification_targets
         )
         self._decode_fn = build_sound_event_decoder(
-            config.classification_targets
+            self.config.classification_targets
         )
 
         self.class_names = get_class_names_from_config(
-            config.classification_targets
+            self.config.classification_targets
         )
 
-        self.detection_class_name = config.detection_target.name
-        self.detection_class_tags = config.detection_target.assign_tags
+        self.detection_class_name = self.config.detection_target.name
+        self.detection_class_tags = self.config.detection_target.assign_tags
+
+    @classmethod
+    def from_config(cls, config: dict) -> "Targets":
+        """Build a Targets object from a serialized config dictionary."""
+        validated_config = TargetConfig.model_validate(config)
+        return cls(config=validated_config)
+
+    def get_config(self) -> dict:
+        """Return the serialized target config used to build this object."""
+        return self.config.model_dump(mode="json")
 
     def filter(self, sound_event: data.SoundEventAnnotation) -> bool:
         """Apply the configured filter to a sound event annotation.
@@ -131,7 +141,7 @@ DEFAULT_TARGET_CONFIG: TargetConfig = TargetConfig(
 )
 
 
-def build_targets(config: TargetConfig | None = None) -> Targets:
+def build_targets(config: TargetConfig | dict | None = None) -> Targets:
     """Build a Targets object from a loaded TargetConfig.
 
     Parameters
@@ -153,6 +163,10 @@ def build_targets(config: TargetConfig | None = None) -> Targets:
         If dynamic import of a derivation function fails (when configured).
     """
     config = config or DEFAULT_TARGET_CONFIG
+
+    if not isinstance(config, TargetConfig):
+        config = TargetConfig.model_validate(config)
+
     logger.opt(lazy=True).debug(
         "Building targets with config: \n{}",
         lambda: config.to_yaml_string(),

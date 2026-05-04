@@ -1,9 +1,34 @@
+import json
 from collections.abc import Callable
 from pathlib import Path
 
 from soundevent import data, terms
 
-from batdetect2.targets import TargetConfig, build_roi_mapping, build_targets
+from batdetect2.targets import (
+    TargetConfig,
+    Targets,
+    build_roi_mapping,
+    build_targets,
+)
+
+
+def test_targets_get_config_returns_a_json_serializable_dict() -> None:
+    targets = build_targets(TargetConfig())
+
+    config_dict = targets.get_config()
+    assert isinstance(config_dict, dict)
+    assert json.dumps(config_dict)
+
+
+def test_targets_from_config_rebuilds_equivalent_targets() -> None:
+    original = build_targets(TargetConfig())
+
+    rebuilt = Targets.from_config(original.get_config())
+
+    assert rebuilt.class_names == original.class_names
+    assert rebuilt.detection_class_name == original.detection_class_name
+    assert rebuilt.detection_class_tags == original.detection_class_tags
+    assert rebuilt.get_config() == original.get_config()
 
 
 def test_can_override_default_roi_mapper_per_class(

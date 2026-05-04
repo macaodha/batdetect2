@@ -12,6 +12,7 @@ from batdetect2.data.conditions import (
     NotConfig,
     SoundEventCondition,
     SoundEventConditionConfig,
+    TagInfo,
     build_sound_event_condition,
 )
 from batdetect2.targets.terms import call_type, generic_class
@@ -32,11 +33,12 @@ class TargetClassConfig(BaseConfig):
     condition_input: SoundEventConditionConfig | None = Field(
         alias="match_if",
         default=None,
+        exclude=True,
     )
 
     tags: List[data.Tag] | None = Field(default=None, exclude=True)
 
-    assign_tags: List[data.Tag] = Field(default_factory=list)
+    assign_tags: List[TagInfo] = Field(default_factory=list)
 
     _match_if: SoundEventConditionConfig = PrivateAttr()
 

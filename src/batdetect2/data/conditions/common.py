@@ -2,10 +2,23 @@ import csv
 import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Annotated, Generic, Literal, ParamSpec, Protocol, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    Generic,
+    Literal,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+)
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    PlainSerializer,
+    model_validator,
+)
 from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
@@ -138,19 +151,26 @@ class IdInList(Generic[UUIDObject]):
         return obj.uuid in self.ids
 
 
+def dump_tag(tag: data.Tag) -> dict[str, Any]:
+    return {"key": tag.term.name, "value": tag.value}
+
+
+TagInfo = Annotated[data.Tag, PlainSerializer(dump_tag)]
+
+
 class HasTagConfig(BaseConfig):
     name: Literal["has_tag"] = "has_tag"
-    tag: data.Tag
+    tag: TagInfo
 
 
 class HasAllTagsConfig(BaseConfig):
     name: Literal["has_all_tags"] = "has_all_tags"
-    tags: list[data.Tag]
+    tags: list[TagInfo]
 
 
 class HasAnyTagConfig(BaseConfig):
     name: Literal["has_any_tag"] = "has_any_tag"
-    tags: list[data.Tag]
+    tags: list[TagInfo]
 
 
 class JsonList(BaseConfig):
