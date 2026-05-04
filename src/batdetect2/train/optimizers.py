@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 from typing import Annotated, Literal
 
+from loguru import logger
 from pydantic import Field
 from torch import nn
 from torch.optim import Adam, Optimizer
@@ -84,4 +85,10 @@ def build_optimizer(
         Optimizer configuration. Defaults to ``AdamOptimizerConfig``.
     """
     config = config or AdamOptimizerConfig()
+
+    logger.opt(lazy=True).debug(
+        "Building optimizer with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
+
     return optimizer_registry.build(config, parameters)

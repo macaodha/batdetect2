@@ -2,6 +2,7 @@
 
 from typing import Annotated, Literal
 
+from loguru import logger
 from pydantic import Field
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import CosineAnnealingLR, LRScheduler
@@ -77,5 +78,10 @@ def build_scheduler(
 ) -> LRScheduler:
     """Build a scheduler from configuration."""
     config = config or CosineAnnealingSchedulerConfig()
+
+    logger.opt(lazy=True).debug(
+        "Building scheduler with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
 
     return scheduler_registry.build(config, optimizer)
