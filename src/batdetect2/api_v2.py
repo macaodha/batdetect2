@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     import torch
 
     from batdetect2.audio import AudioConfig, AudioLoader
-    from batdetect2.config import BatDetect2Config
     from batdetect2.data import Dataset
     from batdetect2.evaluate import EvaluationConfig, EvaluatorProtocol
     from batdetect2.inference import InferenceConfig
@@ -483,46 +482,70 @@ class BatDetect2API:
     @classmethod
     def from_config(
         cls,
-        config: BatDetect2Config,
+        model_config: ModelConfig | None = None,
+        targets_config: TargetConfig | None = None,
+        audio_config: AudioConfig | None = None,
+        train_config: TrainingConfig | None = None,
+        evaluation_config: EvaluationConfig | None = None,
+        inference_config: InferenceConfig | None = None,
+        outputs_config: OutputsConfig | None = None,
+        logging_config: AppLoggingConfig | None = None,
     ) -> "BatDetect2API":
-        from batdetect2.audio import build_audio_loader
-        from batdetect2.evaluate import build_evaluator
-        from batdetect2.models import build_model
+        from batdetect2.audio import AudioConfig, build_audio_loader
+        from batdetect2.evaluate import EvaluationConfig, build_evaluator
+        from batdetect2.inference import InferenceConfig
+        from batdetect2.logging import AppLoggingConfig
+        from batdetect2.models import ModelConfig, build_model
         from batdetect2.outputs import (
+            OutputsConfig,
             build_output_formatter,
             build_output_transform,
         )
         from batdetect2.postprocess import build_postprocessor
         from batdetect2.preprocess import build_preprocessor
-        from batdetect2.targets import build_roi_mapping, build_targets
+        from batdetect2.targets import (
+            TargetConfig,
+            build_roi_mapping,
+            build_targets,
+        )
+        from batdetect2.train import TrainingConfig
 
-        targets = build_targets(config=config.model.targets)
-        roi_mapper = build_roi_mapping(config=config.model.targets.roi)
+        model_config = model_config or ModelConfig()
+        targets_config = targets_config or TargetConfig()
+        audio_config = audio_config or AudioConfig()
+        train_config = train_config or TrainingConfig()
+        evaluation_config = evaluation_config or EvaluationConfig()
+        inference_config = inference_config or InferenceConfig()
+        outputs_config = outputs_config or OutputsConfig()
+        logging_config = logging_config or AppLoggingConfig()
 
-        audio_loader = build_audio_loader(config=config.audio)
+        targets = build_targets(config=targets_config)
+        roi_mapper = build_roi_mapping(config=targets_config.roi)
+
+        audio_loader = build_audio_loader(config=audio_config)
 
         preprocessor = build_preprocessor(
             input_samplerate=audio_loader.samplerate,
-            config=config.model.preprocess,
+            config=model_config.preprocess,
         )
 
         postprocessor = build_postprocessor(
             preprocessor,
-            config=config.model.postprocess,
+            config=model_config.postprocess,
         )
 
         formatter = build_output_formatter(
             targets,
-            config=config.outputs.format,
+            config=outputs_config.format,
         )
         output_transform = build_output_transform(
-            config=config.outputs.transform,
+            config=outputs_config.transform,
             targets=targets,
             roi_mapper=roi_mapper,
         )
 
         evaluator = build_evaluator(
-            config=config.evaluation,
+            config=evaluation_config,
             targets=targets,
             roi_mapper=roi_mapper,
             transform=output_transform,
@@ -531,27 +554,27 @@ class BatDetect2API:
         # NOTE: Build separate instances of preprocessor and postprocessor
         # to avoid device mismatch errors
         model = build_model(
-            config=config.model,
-            targets=targets,
-            roi_mapper=roi_mapper,
+            config=model_config,
+            class_names=targets.class_names,
+            dimension_names=roi_mapper.dimension_names,
             preprocessor=build_preprocessor(
                 input_samplerate=audio_loader.samplerate,
-                config=config.model.preprocess,
+                config=model_config.preprocess,
             ),
             postprocessor=build_postprocessor(
                 preprocessor,
-                config=config.model.postprocess,
+                config=model_config.postprocess,
             ),
         )
 
         return cls(
-            model_config=config.model,
-            audio_config=config.audio,
-            train_config=config.train,
-            evaluation_config=config.evaluation,
-            inference_config=config.inference,
-            outputs_config=config.outputs,
-            logging_config=config.logging,
+            model_config=model_config,
+            audio_config=audio_config,
+            train_config=train_config,
+            evaluation_config=evaluation_config,
+            inference_config=inference_config,
+            outputs_config=outputs_config,
+            logging_config=logging_config,
             targets=targets,
             roi_mapper=roi_mapper,
             audio_loader=audio_loader,
@@ -579,7 +602,6 @@ class BatDetect2API:
         from batdetect2.evaluate import EvaluationConfig, build_evaluator
         from batdetect2.inference import InferenceConfig
         from batdetect2.logging import AppLoggingConfig
-        from batdetect2.models import build_model_with_new_targets
         from batdetect2.outputs import (
             OutputsConfig,
             build_output_formatter,
@@ -587,8 +609,16 @@ class BatDetect2API:
         )
         from batdetect2.postprocess import build_postprocessor
         from batdetect2.preprocess import build_preprocessor
-        from batdetect2.targets import build_roi_mapping, build_targets
-        from batdetect2.train import TrainingConfig, load_model_from_checkpoint
+        from batdetect2.targets import (
+            build_default_target_config,
+            build_roi_mapping,
+            build_targets,
+            check_target_compatibility,
+        )
+        from batdetect2.train import (
+            TrainingConfig,
+            load_model_from_checkpoint,
+        )
 
         model, model_config = load_model_from_checkpoint(path)
 
@@ -600,24 +630,24 @@ class BatDetect2API:
         inference_config = inference_config or InferenceConfig()
         outputs_config = outputs_config or OutputsConfig()
         logging_config = logging_config or AppLoggingConfig()
+        targets_config = targets_config or build_default_target_config(
+            class_names=model.class_names
+        )
 
-        if (
-            targets_config is not None
-            and targets_config != model_config.targets
-        ):
-            targets = build_targets(config=targets_config)
-            roi_mapper = build_roi_mapping(config=targets_config.roi)
-            model = build_model_with_new_targets(
-                model=model,
-                targets=targets,
-                roi_mapper=roi_mapper,
-            )
-            model_config = model_config.model_copy(
-                update={"targets": targets_config}
+        targets = build_targets(config=targets_config)
+        roi_mapper = build_roi_mapping(config=targets_config.roi)
+
+        if not check_target_compatibility(targets, model.class_names):
+            raise ValueError(
+                "Provided targets_config is incompatible with the "
+                "checkpoint model: missing one or more model classes."
             )
 
-        targets = build_targets(config=model_config.targets)
-        roi_mapper = build_roi_mapping(config=model_config.targets.roi)
+        if model.dimension_names != roi_mapper.dimension_names:
+            raise ValueError(
+                "Provided targets_config is incompatible with the "
+                "checkpoint model: mismatched dimension names."
+            )
 
         audio_loader = build_audio_loader(config=audio_config)
 

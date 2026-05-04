@@ -24,8 +24,8 @@ DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 def run_evaluate(
     model: Model,
     test_annotations: Sequence[data.ClipAnnotation],
-    targets: TargetProtocol | None = None,
-    roi_mapper: ROIMapperProtocol | None = None,
+    targets: TargetProtocol,
+    roi_mapper: ROIMapperProtocol,
     audio_loader: AudioLoader | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     audio_config: AudioConfig | None = None,
@@ -46,8 +46,6 @@ def run_evaluate(
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
     preprocessor = preprocessor or model.preprocessor
-    targets = targets or model.targets
-    roi_mapper = roi_mapper or model.roi_mapper
 
     loader = build_test_loader(
         test_annotations,

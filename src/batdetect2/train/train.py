@@ -17,6 +17,7 @@ from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
 from batdetect2.targets import (
     ROIMapperProtocol,
+    TargetConfig,
     TargetProtocol,
     build_roi_mapping,
     build_targets,
@@ -46,6 +47,7 @@ def run_train(
     labeller: Optional["ClipLabeller"] = None,
     audio_config: Optional[AudioConfig] = None,
     model_config: Optional[ModelConfig] = None,
+    targets_config: TargetConfig | None = None,
     train_config: Optional[TrainingConfig] = None,
     logger_config: LoggerConfig | None = None,
     trainer: Trainer | None = None,
@@ -62,23 +64,34 @@ def run_train(
         seed_everything(seed)
 
     model_config = model_config or ModelConfig()
+    targets_config = targets_config or TargetConfig()
     audio_config = audio_config or AudioConfig()
     train_config = train_config or TrainingConfig()
 
     if model is not None:
-        _validate_model_compatibility(model=model, model_config=model_config)
+        if targets is None:
+            raise ValueError(
+                "targets must be provided when training with an existing "
+                "model."
+            )
+
+        if roi_mapper is None:
+            raise ValueError(
+                "roi_mapper must be provided when training with an existing "
+                "model."
+            )
+
+    targets = targets or build_targets(config=targets_config)
+
+    roi_mapper = roi_mapper or build_roi_mapping(config=targets_config.roi)
 
     if model is not None:
-        targets = targets or model.targets
-
-        if roi_mapper is None and targets is model.targets:
-            roi_mapper = model.roi_mapper
-
-    targets = targets or build_targets(config=model_config.targets)
-
-    roi_mapper = roi_mapper or build_roi_mapping(
-        config=model_config.targets.roi
-    )
+        _validate_model_compatibility(
+            model=model,
+            model_config=model_config,
+            class_names=targets.class_names,
+            dimension_names=roi_mapper.dimension_names,
+        )
 
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
@@ -119,18 +132,24 @@ def run_train(
 
     module = build_training_module(
         model_config=model_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         train_config=train_config,
         model=model,
+    )
+
+    evaluator = build_evaluator(
+        train_config.validation,
+        targets=targets,
+        roi_mapper=roi_mapper,
     )
 
     trainer = trainer or build_trainer(
         train_config,
         logger_config=logger_config,
-        evaluator=build_evaluator(
-            train_config.validation,
-            targets=targets,
-            roi_mapper=roi_mapper,
-        ),
+        evaluator=evaluator,
+        targets=targets,
+        roi_mapper=roi_mapper,
         checkpoint_dir=checkpoint_dir,
         num_epochs=num_epochs,
         log_dir=log_dir,
@@ -152,8 +171,14 @@ def run_train(
 def _validate_model_compatibility(
     model: Model,
     model_config: ModelConfig,
+    class_names: list[str],
+    dimension_names: list[str],
 ) -> None:
-    reference_model = build_model(config=model_config)
+    reference_model = build_model(
+        config=model_config,
+        class_names=class_names,
+        dimension_names=dimension_names,
+    )
 
     expected_shapes = {
         key: tuple(value.shape)
@@ -196,6 +221,8 @@ def build_trainer(
     config: TrainingConfig,
     logger_config: LoggerConfig | None,
     evaluator: "EvaluatorProtocol",
+    targets: "TargetProtocol",
+    roi_mapper: "ROIMapperProtocol",
     checkpoint_dir: Path | None = None,
     log_dir: Path | None = None,
     experiment_name: str | None = None,
@@ -234,6 +261,6 @@ def build_trainer(
                 experiment_name=experiment_name,
                 run_name=run_name,
             ),
-            ValidationMetrics(evaluator),
+            ValidationMetrics(evaluator, targets, roi_mapper),
         ],
     )

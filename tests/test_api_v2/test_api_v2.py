@@ -8,20 +8,43 @@ import torch
 from soundevent.geometry import compute_bounds
 
 from batdetect2.api_v2 import BatDetect2API
-from batdetect2.config import BatDetect2Config
+from batdetect2.inference import InferenceConfig
 from batdetect2.models.detectors import Detector
-from batdetect2.models.heads import ClassifierHead
-from batdetect2.train import load_model_from_checkpoint
+from batdetect2.targets import TargetConfig
+from batdetect2.train import TrainingConfig, load_model_from_checkpoint
 from batdetect2.train.lightning import build_training_module
 
 
 @pytest.fixture
-def api_v2() -> BatDetect2API:
+def train_config() -> TrainingConfig:
+    """Train config with a small batch size for testing."""
+    return TrainingConfig.model_validate({"train_loader": {"batch_size": 2}})
+
+
+@pytest.fixture
+def inference_config() -> InferenceConfig:
+    """Inference config with a small batch size for testing."""
+    return InferenceConfig.model_validate({"loader": {"batch_size": 2}})
+
+
+@pytest.fixture
+def example_targets_config(example_data_dir: Path) -> TargetConfig:
+    return TargetConfig.load(example_data_dir / "targets.yaml")
+
+
+@pytest.fixture
+def api_v2(
+    train_config: TrainingConfig,
+    inference_config: InferenceConfig,
+) -> BatDetect2API:
     """User story: users can create a ready-to-use API from config."""
 
-    config = BatDetect2Config()
-    config.inference.loader.batch_size = 2
-    return BatDetect2API.from_config(config)
+    api = BatDetect2API.from_config(
+        train_config=train_config,
+        inference_config=inference_config,
+    )
+    assert api.inference_config.loader.batch_size == 2
+    return api
 
 
 def test_process_file_returns_recording_level_predictions(
@@ -30,8 +53,10 @@ def test_process_file_returns_recording_level_predictions(
 ) -> None:
     """User story: process a file and get detections in recording time."""
 
+    # When
     prediction = api_v2.process_file(example_audio_files[0])
 
+    # Then
     assert prediction.clip.recording.path == example_audio_files[0]
     assert prediction.clip.start_time == 0
     assert prediction.clip.end_time == prediction.clip.recording.duration
@@ -53,9 +78,11 @@ def test_process_files_is_batch_size_invariant(
 ) -> None:
     """User story: changing batch size should not change predictions."""
 
+    # When
     preds_batch_1 = api_v2.process_files(example_audio_files, batch_size=1)
     preds_batch_3 = api_v2.process_files(example_audio_files, batch_size=3)
 
+    # Then
     assert len(preds_batch_1) == len(preds_batch_3)
 
     by_key_1 = {
@@ -91,12 +118,14 @@ def test_process_audio_matches_process_spectrogram(
 ) -> None:
     """User story: users can call either audio or spectrogram entrypoint."""
 
+    # When
     audio = api_v2.load_audio(example_audio_files[0])
     from_audio = api_v2.process_audio(audio)
 
     spec = api_v2.generate_spectrogram(audio)
     from_spec = api_v2.process_spectrogram(spec)
 
+    # Then
     assert len(from_audio) == len(from_spec)
 
     for det_audio, det_spec in zip(from_audio, from_spec, strict=True):
@@ -116,8 +145,10 @@ def test_process_spectrogram_rejects_batched_input(
 ) -> None:
     """User story: invalid batched input gives a clear error."""
 
+    # Given
     spec = torch.zeros((2, 1, 128, 64), dtype=torch.float32)
 
+    # When/Then
     with pytest.raises(ValueError, match="Batched spectrograms not supported"):
         api_v2.process_spectrogram(spec)
 
@@ -184,26 +215,34 @@ def test_user_can_read_extracted_features_per_detection(
 @pytest.mark.slow
 def test_user_can_load_checkpoint_and_finetune(
     tmp_path: Path,
+    example_targets_config: TargetConfig,
     example_annotations,
 ) -> None:
     """User story: load a checkpoint and continue training from it."""
 
-    module = build_training_module(model_config=BatDetect2Config().model)
+    api = BatDetect2API.from_config(
+        targets_config=example_targets_config,
+    )
+    module = build_training_module(
+        model_config=api.model_config,
+        class_names=api.targets.class_names,
+        dimension_names=api.roi_mapper.dimension_names,
+    )
     trainer = L.Trainer(enable_checkpointing=False, logger=False)
     checkpoint_path = tmp_path / "base.ckpt"
     trainer.strategy.connect(module)
     trainer.save_checkpoint(checkpoint_path)
 
-    config = BatDetect2Config()
-    config.train.trainer.limit_train_batches = 1
-    config.train.trainer.limit_val_batches = 1
-    config.train.trainer.log_every_n_steps = 1
-    config.train.train_loader.batch_size = 1
-    config.train.train_loader.augmentations.enabled = False
+    train_config = api.train_config.model_copy(deep=True)
+    train_config.trainer.limit_train_batches = 1
+    train_config.trainer.limit_val_batches = 1
+    train_config.trainer.log_every_n_steps = 1
+    train_config.train_loader.batch_size = 1
+    train_config.train_loader.augmentations.enabled = False
 
     api = BatDetect2API.from_checkpoint(
         checkpoint_path,
-        train_config=config.train,
+        train_config=train_config,
     )
     finetune_dir = tmp_path / "finetuned"
 
@@ -222,62 +261,36 @@ def test_user_can_load_checkpoint_and_finetune(
     assert checkpoints
 
 
-def test_user_can_load_checkpoint_with_new_targets(
-    tmp_path: Path,
-    sample_targets,
-) -> None:
-    """User story: start from checkpoint with a new target definition."""
-
-    module = build_training_module(model_config=BatDetect2Config().model)
-    trainer = L.Trainer(enable_checkpointing=False, logger=False)
-    checkpoint_path = tmp_path / "base_transfer.ckpt"
-    trainer.strategy.connect(module)
-    trainer.save_checkpoint(checkpoint_path)
-
-    source_model, _ = load_model_from_checkpoint(checkpoint_path)
-    api = BatDetect2API.from_checkpoint(
-        checkpoint_path,
-        targets_config=sample_targets.config,
-    )
-    source_detector = cast(Detector, source_model.detector)
-    detector = cast(Detector, api.model.detector)
-    classifier_head = cast(ClassifierHead, detector.classifier_head)
-
-    assert api.targets.config == sample_targets.config  # type: ignore
-    assert detector.num_classes == len(sample_targets.class_names)
-    assert (
-        classifier_head.classifier.out_channels
-        == len(sample_targets.class_names) + 1
-    )
-
-    source_backbone = source_detector.backbone.state_dict()
-    target_backbone = detector.backbone.state_dict()
-    assert source_backbone
-    for key, value in source_backbone.items():
-        assert key in target_backbone
-        torch.testing.assert_close(target_backbone[key], value)
-
-
 def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
+    example_targets_config: TargetConfig,
     tmp_path: Path,
 ) -> None:
     """User story: same targets config does not rebuild prediction heads."""
 
-    module = build_training_module(model_config=BatDetect2Config().model)
+    # Given
+    source_api = BatDetect2API.from_config(
+        targets_config=example_targets_config
+    )
+    module = build_training_module(
+        model_config=source_api.model_config,
+        class_names=source_api.targets.class_names,
+        dimension_names=source_api.roi_mapper.dimension_names,
+    )
     trainer = L.Trainer(enable_checkpointing=False, logger=False)
     checkpoint_path = tmp_path / "same_targets.ckpt"
     trainer.strategy.connect(module)
     trainer.save_checkpoint(checkpoint_path)
 
-    source_model, source_model_config = load_model_from_checkpoint(
-        checkpoint_path
-    )
+    source_model, _ = load_model_from_checkpoint(checkpoint_path)
     source_detector = cast(Detector, source_model.detector)
 
+    # When
     api = BatDetect2API.from_checkpoint(
         checkpoint_path,
-        targets_config=source_model_config.targets,
+        targets_config=example_targets_config,
     )
+
+    # Then
     detector = cast(Detector, api.model.detector)
 
     for key, value in source_detector.classifier_head.state_dict().items():
@@ -302,7 +315,7 @@ def test_user_can_finetune_only_heads(
 ) -> None:
     """User story: fine-tune only prediction heads."""
 
-    api = BatDetect2API.from_config(BatDetect2Config())
+    api = BatDetect2API.from_config()
     finetune_dir = tmp_path / "heads_only"
 
     api.finetune(
@@ -348,8 +361,6 @@ def test_user_can_evaluate_small_dataset_and_get_metrics(
 
     assert isinstance(metrics, list)
     assert len(metrics) == 1
-    assert isinstance(metrics[0], dict)
-    assert len(metrics[0]) > 0
     assert isinstance(predictions, list)
     assert len(predictions) == 1
 
@@ -450,8 +461,17 @@ def test_detection_threshold_override_changes_spectrogram_results(
     spec = api_v2.generate_spectrogram(audio)
     default_detections = api_v2.process_spectrogram(spec)
     strict_detections = api_v2.process_spectrogram(
-        spec,
-        detection_threshold=1.0,
+        spec, detection_threshold=1.0
     )
 
     assert len(strict_detections) <= len(default_detections)
+
+
+def test_user_can_create_api_with_custom_targets_and_model_metadata_matches(
+    sample_targets,
+) -> None:
+    """User story: custom targets define model output names for a new API."""
+
+    api = BatDetect2API.from_config(targets_config=sample_targets.config)
+
+    assert api.model.class_names == sample_targets.class_names

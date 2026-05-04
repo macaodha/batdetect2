@@ -12,6 +12,7 @@ from batdetect2.inference.config import InferenceConfig
 from batdetect2.logging import AppLoggingConfig
 from batdetect2.models import ModelConfig
 from batdetect2.outputs import OutputsConfig
+from batdetect2.targets import TargetConfig
 from batdetect2.train.config import TrainingConfig
 
 __all__ = ["BatDetect2Config"]
@@ -25,6 +26,7 @@ class BatDetect2Config(BaseConfig):
         default_factory=get_default_eval_config
     )
     model: ModelConfig = Field(default_factory=ModelConfig)
+    targets: TargetConfig = Field(default_factory=TargetConfig)
     audio: AudioConfig = Field(default_factory=AudioConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     outputs: OutputsConfig = Field(default_factory=OutputsConfig)

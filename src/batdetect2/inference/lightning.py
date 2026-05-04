@@ -7,21 +7,37 @@ from batdetect2.inference.dataset import DatasetItem, InferenceDataset
 from batdetect2.models import Model
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess.types import ClipDetections
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 
 class InferenceModule(LightningModule):
     def __init__(
         self,
         model: Model,
+        targets: TargetProtocol | None = None,
+        roi_mapper: ROIMapperProtocol | None = None,
         output_transform: OutputTransformProtocol | None = None,
         detection_threshold: float | None = None,
     ):
         super().__init__()
         self.model = model
         self.detection_threshold = detection_threshold
+
+        if output_transform is None and targets is None:
+            raise ValueError(
+                "targets must be provided when building inference output "
+                "transforms."
+            )
+
+        if output_transform is None and roi_mapper is None:
+            raise ValueError(
+                "roi_mapper must be provided when building inference output "
+                "transforms."
+            )
+
         self.output_transform = output_transform or build_output_transform(
-            targets=model.targets,
-            roi_mapper=model.roi_mapper,
+            targets=targets,
+            roi_mapper=roi_mapper,
         )
 
     def predict_step(

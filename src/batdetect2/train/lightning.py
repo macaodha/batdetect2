@@ -9,9 +9,7 @@ from batdetect2.train.optimizers import build_optimizer
 from batdetect2.train.schedulers import build_scheduler
 from batdetect2.train.types import LossProtocol, TrainExample
 
-__all__ = [
-    "TrainingModule",
-]
+__all__ = ["TrainingModule"]
 
 
 class TrainingModule(L.LightningModule):
@@ -21,6 +19,8 @@ class TrainingModule(L.LightningModule):
     def __init__(
         self,
         model_config: dict | None = None,
+        class_names: list[str] | None = None,
+        dimension_names: list[str] | None = None,
         train_config: dict | None = None,
         loss: LossProtocol | None = None,
         model: Model | None = None,
@@ -30,13 +30,31 @@ class TrainingModule(L.LightningModule):
         self.save_hyperparameters(ignore=["model", "loss"], logger=False)
 
         self.model_config = ModelConfig.model_validate(model_config or {})
+        self.class_names = list(class_names or [])
+        self.dimension_names = list(dimension_names or [])
         self.train_config = TrainingConfig.model_validate(train_config or {})
 
         if loss is None:
             loss = build_loss(config=self.train_config.loss)
 
         if model is None:
-            model = build_model(config=self.model_config)
+            if not self.class_names:
+                raise ValueError(
+                    "class_names must be provided when rebuilding a training "
+                    "module without a model."
+                )
+
+            if not self.dimension_names:
+                raise ValueError(
+                    "dimension_names must be provided when rebuilding a "
+                    "training module without a model."
+                )
+
+            model = build_model(
+                config=self.model_config,
+                class_names=self.class_names,
+                dimension_names=self.dimension_names,
+            )
 
         self.loss = loss
         self.model = model
@@ -110,8 +128,7 @@ def load_model_from_checkpoint(
     -------
     tuple[Model, ModelConfig]
         The restored ``Model`` instance and the ``ModelConfig`` that
-        describes its architecture, preprocessing, postprocessing, and
-        targets.
+        describes its architecture, preprocessing, and postprocessing.
     """
     module = TrainingModule.load_from_checkpoint(path)  # type: ignore
     return module.model, module.model_config
@@ -119,6 +136,8 @@ def load_model_from_checkpoint(
 
 def build_training_module(
     model_config: ModelConfig | None = None,
+    class_names: list[str] | None = None,
+    dimension_names: list[str] | None = None,
     train_config: TrainingConfig | None = None,
     model: Model | None = None,
 ) -> TrainingModule:
@@ -130,6 +149,8 @@ def build_training_module(
 
     return TrainingModule(
         model_config=model_config.model_dump(mode="json"),
+        class_names=class_names,
+        dimension_names=dimension_names,
         train_config=train_config.model_dump(mode="json"),
         model=model,
     )

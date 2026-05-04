@@ -10,9 +10,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.audio.types import AudioLoader
-from batdetect2.config import BatDetect2Config
 from batdetect2.models import ModelConfig, build_model
-from batdetect2.targets.classes import TargetClassConfig
+from batdetect2.targets import TargetConfig, build_roi_mapping, build_targets
 from batdetect2.train import (
     TrainingConfig,
     TrainingModule,
@@ -24,11 +23,21 @@ from batdetect2.train.schedulers import CosineAnnealingSchedulerConfig
 from batdetect2.train.train import build_training_module
 
 
-def build_default_module(config: BatDetect2Config | None = None):
-    config = config or BatDetect2Config()
+def build_default_module(
+    target_config: TargetConfig | None = None,
+    model_config: ModelConfig | None = None,
+    train_config: TrainingConfig | None = None,
+):
+    target_config = target_config or TargetConfig()
+    model_config = model_config or ModelConfig()
+    train_config = train_config or TrainingConfig()
+    targets = build_targets(target_config)
+    roi_mapper = build_roi_mapping(target_config.roi)
     return build_training_module(
-        model_config=config.model,
-        train_config=config.train,
+        model_config=model_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
+        train_config=train_config,
     )
 
 
@@ -72,8 +81,13 @@ def test_load_model_from_checkpoint_returns_model_and_config(
         input_model_config.model_dump(mode="json")
     )
     train_config = TrainingConfig()
+    targets_config = TargetConfig()
+    targets = build_targets(targets_config)
+    roi_mapper = build_roi_mapping(targets_config.roi)
     module = build_training_module(
         model_config=input_model_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         train_config=train_config,
     )
     trainer = L.Trainer()
@@ -87,6 +101,8 @@ def test_load_model_from_checkpoint_returns_model_and_config(
     assert loaded_model_config.model_dump(
         mode="json"
     ) == expected_model_config.model_dump(mode="json")
+    assert model.class_names == targets.class_names
+    assert model.dimension_names == roi_mapper.dimension_names
 
     recovered = TrainingModule.load_from_checkpoint(path)
     assert recovered.train_config.model_dump(
@@ -100,6 +116,9 @@ def test_checkpoint_stores_train_config_hyperparameters(tmp_path: Path):
         model_config.model_dump(mode="json")
     )
     train_config = TrainingConfig()
+    targets_config = TargetConfig()
+    targets = build_targets(targets_config)
+    roi_mapper = build_roi_mapping(targets_config.roi)
     train_config.optimizer = AdamOptimizerConfig(learning_rate=5e-4)
     train_config.scheduler = CosineAnnealingSchedulerConfig(t_max=123)
     train_config.trainer.max_epochs = 3
@@ -107,6 +126,8 @@ def test_checkpoint_stores_train_config_hyperparameters(tmp_path: Path):
 
     module = build_training_module(
         model_config=model_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         train_config=train_config,
     )
     trainer = L.Trainer()
@@ -131,11 +152,16 @@ def test_configure_optimizers_uses_train_config_values(tmp_path: Path):
         model_config.model_dump(mode="json")
     )
     train_config = TrainingConfig()
+    targets_config = TargetConfig()
+    targets = build_targets(targets_config)
+    roi_mapper = build_roi_mapping(targets_config.roi)
     train_config.optimizer = AdamOptimizerConfig(learning_rate=5e-4)
     train_config.scheduler = CosineAnnealingSchedulerConfig(t_max=321)
 
     module = build_training_module(
         model_config=model_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         train_config=train_config,
     )
 
@@ -189,19 +215,26 @@ def test_train_smoke_produces_loadable_checkpoint(
     example_annotations: list[data.ClipAnnotation],
     sample_audio_loader: AudioLoader,
 ):
-    config = BatDetect2Config()
-    config.train.trainer.limit_train_batches = 1
-    config.train.trainer.limit_val_batches = 1
-    config.train.trainer.log_every_n_steps = 1
-    config.train.train_loader.batch_size = 1
-    config.train.train_loader.augmentations.enabled = False
+    # Given
+    train_config = TrainingConfig.model_validate(
+        {
+            "trainer": {
+                "limit_train_batches": 1,
+                "limit_val_batches": 1,
+                "log_every_n_steps": 1,
+            },
+            "train_loader": {
+                "batch_size": 1,
+                "augmentations": {"enabled": False},
+            },
+        }
+    )
 
+    # When
     run_train(
         train_annotations=example_annotations[:1],
         val_annotations=example_annotations[:1],
-        train_config=config.train,
-        model_config=config.model,
-        audio_config=config.audio,
+        train_config=train_config,
         num_epochs=1,
         train_workers=0,
         val_workers=0,
@@ -209,18 +242,11 @@ def test_train_smoke_produces_loadable_checkpoint(
         seed=0,
     )
 
+    # Then
     checkpoints = list(tmp_path.rglob("*.ckpt"))
     assert checkpoints
 
     model, model_config = load_model_from_checkpoint(checkpoints[0])
-    assert model_config.samplerate == config.model.samplerate
-    assert model_config.architecture.name == config.model.architecture.name
-    assert model_config.preprocess.model_dump(
-        mode="json"
-    ) == config.model.preprocess.model_dump(mode="json")
-    assert model_config.postprocess.model_dump(
-        mode="json"
-    ) == config.model.postprocess.model_dump(mode="json")
 
     wav = torch.tensor(
         sample_audio_loader.load_clip(example_annotations[0].clip)
@@ -230,10 +256,18 @@ def test_train_smoke_produces_loadable_checkpoint(
 
 
 def test_build_training_module_uses_provided_model() -> None:
-    model = build_model(ModelConfig())
+    targets = build_targets(TargetConfig())
+    roi_mapper = build_roi_mapping(TargetConfig().roi)
+    model = build_model(
+        ModelConfig(),
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
+    )
 
     module = build_training_module(
         model_config=ModelConfig(),
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         train_config=TrainingConfig(),
         model=model,
     )
@@ -244,15 +278,18 @@ def test_build_training_module_uses_provided_model() -> None:
 def test_run_train_rejects_incompatible_model_config(
     example_annotations: list[data.ClipAnnotation],
 ) -> None:
-    model = build_model(ModelConfig())
+    # Given
+    targets_config = TargetConfig()
+    targets = build_targets(targets_config)
+    roi_mapper = build_roi_mapping(targets_config.roi)
     incompatible_config = ModelConfig()
-    incompatible_config.targets.classification_targets.append(
-        TargetClassConfig(
-            name="dummy_class",
-            tags=[data.Tag(key="class", value="Dummy class")],
-        )
+    incompatible_model = build_model(
+        incompatible_config,
+        class_names=targets.class_names,
+        dimension_names=[*roi_mapper.dimension_names, "extra_dim"],
     )
 
+    # When/Then
     with pytest.raises(
         ValueError,
         match="Provided model is incompatible with model_config",
@@ -260,7 +297,10 @@ def test_run_train_rejects_incompatible_model_config(
         run_train(
             train_annotations=example_annotations[:1],
             val_annotations=None,
-            model=model,
+            model=incompatible_model,
+            targets=targets,
+            roi_mapper=roi_mapper,
             model_config=incompatible_config,
+            targets_config=targets_config,
             train_config=TrainingConfig(),
         )

@@ -13,13 +13,14 @@ from soundevent import data, terms
 from batdetect2.audio import build_audio_loader
 from batdetect2.audio.clips import build_clipper
 from batdetect2.audio.types import AudioLoader, ClipperProtocol
-from batdetect2.config import BatDetect2Config
 from batdetect2.data import DatasetConfig, load_dataset
 from batdetect2.data.annotations.batdetect2 import BatDetect2FilesAnnotations
 from batdetect2.preprocess import build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
 from batdetect2.targets import (
+    ROIMapperProtocol,
     TargetConfig,
+    build_roi_mapping,
     build_targets,
     call_type,
 )
@@ -405,6 +406,13 @@ def sample_targets(
 
 
 @pytest.fixture
+def sample_roi_mapper(
+    sample_target_config: TargetConfig,
+) -> ROIMapperProtocol:
+    return build_roi_mapping(sample_target_config.roi)
+
+
+@pytest.fixture
 def sample_labeller(
     sample_targets: TargetProtocol,
     sample_preprocessor: PreprocessorProtocol,
@@ -458,8 +466,15 @@ def create_temp_yaml(tmp_path: Path) -> Callable[[str], Path]:
 
 
 @pytest.fixture
-def tiny_checkpoint_path(tmp_path: Path) -> Path:
-    module = build_training_module(model_config=BatDetect2Config().model)
+def tiny_checkpoint_path(
+    sample_targets: TargetProtocol,
+    sample_roi_mapper: ROIMapperProtocol,
+    tmp_path: Path,
+) -> Path:
+    module = build_training_module(
+        class_names=sample_targets.class_names,
+        dimension_names=sample_roi_mapper.dimension_names,
+    )
     trainer = L.Trainer(enable_checkpointing=False, logger=False)
     checkpoint_path = tmp_path / "model.ckpt"
     trainer.strategy.connect(module)

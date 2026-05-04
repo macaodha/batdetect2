@@ -2,6 +2,7 @@ from collections import Counter
 from typing import List
 
 from pydantic import Field, field_validator
+from soundevent import data
 
 from batdetect2.core.configs import BaseConfig
 from batdetect2.targets.classes import (
@@ -13,6 +14,7 @@ from batdetect2.targets.rois import ROIMappingConfig
 
 __all__ = [
     "TargetConfig",
+    "build_default_target_config",
 ]
 
 
@@ -42,3 +44,20 @@ class TargetConfig(BaseConfig):
                 f"{', '.join(duplicates)}"
             )
         return v
+
+
+def build_default_target_config(class_names: list[str]) -> TargetConfig:
+    """Build a default target configuration object."""
+    return TargetConfig(
+        detection_target=DEFAULT_DETECTION_CLASS,
+        classification_targets=[
+            TargetClassConfig(
+                name=class_name,
+                tags=[
+                    data.Tag(key="class", value=class_name),
+                ],
+            )
+            for class_name in class_names
+        ],
+        roi=ROIMappingConfig(),
+    )

@@ -6,7 +6,7 @@ from batdetect2.targets.classes import (
     build_sound_event_encoder,
     get_class_names_from_config,
 )
-from batdetect2.targets.config import TargetConfig
+from batdetect2.targets.config import TargetConfig, build_default_target_config
 from batdetect2.targets.rois import (
     AnchorBBoxMapperConfig,
     ROIMapperConfig,
@@ -36,13 +36,14 @@ from batdetect2.targets.types import (
     SoundEventFilter,
     TargetProtocol,
 )
+from batdetect2.targets.utils import check_target_compatibility
 
 __all__ = [
     "AnchorBBoxMapperConfig",
     "Position",
-    "ROIMappingConfig",
-    "ROIMapperProtocol",
     "ROIMapperConfig",
+    "ROIMapperProtocol",
+    "ROIMappingConfig",
     "ROITargetMapper",
     "Size",
     "SoundEventDecoder",
@@ -52,12 +53,14 @@ __all__ = [
     "TargetConfig",
     "TargetProtocol",
     "Targets",
-    "build_roi_mapping",
+    "build_default_target_config",
     "build_roi_mapper",
+    "build_roi_mapping",
     "build_sound_event_decoder",
     "build_sound_event_encoder",
     "build_targets",
     "call_type",
+    "check_target_compatibility",
     "data_source",
     "generic_class",
     "get_class_names_from_config",

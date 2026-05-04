@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from batdetect2.api_v2 import BatDetect2API
-from batdetect2.config import BatDetect2Config
 from batdetect2.outputs import build_output_formatter
 from batdetect2.outputs.formats import (
     BatDetect2OutputConfig,
@@ -18,7 +17,7 @@ from batdetect2.postprocess.types import ClipDetections
 def api_v2() -> BatDetect2API:
     """User story: API object manages prediction IO formats."""
 
-    return BatDetect2API.from_config(BatDetect2Config())
+    return BatDetect2API.from_config()
 
 
 @pytest.fixture

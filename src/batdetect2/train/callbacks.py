@@ -10,6 +10,7 @@ from batdetect2.logging import get_image_logger
 from batdetect2.models.types import ModelOutput
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess.types import ClipDetections
+from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 from batdetect2.train.dataset import ValidationDataset
 from batdetect2.train.lightning import TrainingModule
 from batdetect2.train.types import TrainExample
@@ -19,11 +20,15 @@ class ValidationMetrics(Callback):
     def __init__(
         self,
         evaluator: EvaluatorProtocol,
+        targets: TargetProtocol,
+        roi_mapper: ROIMapperProtocol,
         output_transform: OutputTransformProtocol | None = None,
     ):
         super().__init__()
 
         self.evaluator = evaluator
+        self.targets = targets
+        self.roi_mapper = roi_mapper
         self.output_transform = output_transform
 
         self._clip_annotations: List[data.ClipAnnotation] = []
@@ -93,8 +98,8 @@ class ValidationMetrics(Callback):
         model = pl_module.model
         if self.output_transform is None:
             self.output_transform = build_output_transform(
-                targets=model.targets,
-                roi_mapper=model.roi_mapper,
+                targets=self.targets,
+                roi_mapper=self.roi_mapper,
             )
 
         output_transform = self.output_transform

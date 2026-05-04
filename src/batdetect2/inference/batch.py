@@ -45,8 +45,16 @@ def run_batch_inference(
     audio_loader = audio_loader or build_audio_loader(config=audio_config)
 
     preprocessor = preprocessor or model.preprocessor
-    targets = targets or model.targets
-    roi_mapper = roi_mapper or model.roi_mapper
+
+    if targets is None:
+        raise ValueError(
+            "targets must be provided when running batch inference."
+        )
+
+    if roi_mapper is None:
+        raise ValueError(
+            "roi_mapper must be provided when running batch inference."
+        )
 
     output_transform = output_transform or build_output_transform(
         config=output_config.transform,

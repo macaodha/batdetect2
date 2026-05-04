@@ -26,11 +26,8 @@ The primary entry point for building a full, ready-to-use BatDetect2 model
 is the ``build_model`` factory function exported from this module.
 """
 
-from typing import Literal
-
 import torch
 from pydantic import Field
-from soundevent.data import PathLike
 
 from batdetect2.audio.loader import TARGET_SAMPLERATE_HZ
 from batdetect2.core.configs import BaseConfig
@@ -73,7 +70,6 @@ from batdetect2.postprocess.types import (
 )
 from batdetect2.preprocess.config import PreprocessingConfig
 from batdetect2.preprocess.types import PreprocessorProtocol
-from batdetect2.targets.config import TargetConfig
 from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 __all__ = [
@@ -131,10 +127,6 @@ class ModelConfig(BaseConfig):
         Parameters for converting raw model outputs into detections (NMS
         kernel, thresholds, top-k limit).  Defaults to
         ``PostprocessConfig()``.
-    targets : TargetConfig
-        Detection and classification target definitions (class list,
-        detection target, bounding-box mapper).  Defaults to
-        ``TargetConfig()``.
     """
 
     samplerate: int = Field(default=TARGET_SAMPLERATE_HZ, gt=0)
@@ -143,23 +135,6 @@ class ModelConfig(BaseConfig):
         default_factory=PreprocessingConfig
     )
     postprocess: PostprocessConfig = Field(default_factory=PostprocessConfig)
-    targets: TargetConfig = Field(default_factory=TargetConfig)
-
-    @classmethod
-    def load(
-        cls,
-        path: PathLike,
-        field: str | None = None,
-        extra: Literal["ignore", "allow", "forbid"] | None = None,
-        strict: bool | None = None,
-        targets: TargetConfig | None = None,
-    ) -> "ModelConfig":
-        config = super().load(path, field, extra, strict)
-
-        if targets is None:
-            return config
-
-        return config.model_copy(update={"targets": targets})
 
 
 class Model(torch.nn.Module):
@@ -183,33 +158,32 @@ class Model(torch.nn.Module):
     postprocessor : PostprocessorProtocol
         Converts the raw ``ModelOutput`` from ``detector`` into a list of
         per-clip detection tensors.
-    targets : TargetProtocol
-        Describes the set of target classes; used when building heads and
-        during training target construction.
-    roi_mapper : ROIMapperProtocol
-        Maps geometries to target-size channels and back.
+    class_names : list[str]
+        Class names corresponding to the model classification outputs.
+    dimension_names : list[str]
+        Size-dimension names corresponding to the model size outputs.
     """
 
     detector: DetectionModel
     preprocessor: PreprocessorProtocol
     postprocessor: PostprocessorProtocol
-    targets: TargetProtocol
-    roi_mapper: ROIMapperProtocol
+    class_names: list[str]
+    dimension_names: list[str]
 
     def __init__(
         self,
         detector: DetectionModel,
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
-        targets: TargetProtocol,
-        roi_mapper: ROIMapperProtocol,
+        class_names: list[str],
+        dimension_names: list[str],
     ):
         super().__init__()
         self.detector = detector
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
-        self.targets = targets
-        self.roi_mapper = roi_mapper
+        self.class_names = class_names
+        self.dimension_names = dimension_names
 
     def forward(self, wav: torch.Tensor) -> list[ClipDetectionsTensor]:
         """Run the full detection pipeline on a waveform tensor.
@@ -238,8 +212,8 @@ class Model(torch.nn.Module):
 
 def build_model(
     config: ModelConfig | None = None,
-    targets: TargetProtocol | None = None,
-    roi_mapper: ROIMapperProtocol | None = None,
+    class_names: list[str] | None = None,
+    dimension_names: list[str] | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     postprocessor: PostprocessorProtocol | None = None,
 ) -> Model:
@@ -254,11 +228,13 @@ def build_model(
     ----------
     config : ModelConfig, optional
         Full model configuration (samplerate, architecture, preprocessing,
-        postprocessing, targets).  Defaults to ``ModelConfig()`` if not
-        provided.
-    targets : TargetProtocol, optional
-        Pre-built targets object.  If given, overrides
-        ``config.targets``.
+        postprocessing).  Defaults to ``ModelConfig()`` if not provided.
+    class_names : list[str], optional
+        Class names used to size the classifier head. Required when building
+        a new model.
+    dimension_names : list[str], optional
+        Dimension names used to size the bbox head. Required when building a
+        new model.
     preprocessor : PreprocessorProtocol, optional
         Pre-built preprocessor.  If given, overrides
         ``config.preprocess`` and ``config.samplerate`` for the
@@ -278,19 +254,17 @@ def build_model(
     """
     from batdetect2.postprocess import build_postprocessor
     from batdetect2.preprocess import build_preprocessor
-    from batdetect2.targets import build_roi_mapping, build_targets
 
     config = config or ModelConfig()
-    targets = targets or build_targets(config=config.targets)
 
-    targets_config = getattr(targets, "config", None)
-    roi_config = (
-        targets_config.roi
-        if isinstance(targets_config, TargetConfig)
-        else config.targets.roi
-    )
+    if class_names is None:
+        raise ValueError("class_names must be provided when building a model.")
 
-    roi_mapper = roi_mapper or build_roi_mapping(config=roi_config)
+    if dimension_names is None:
+        raise ValueError(
+            "dimension_names must be provided when building a model."
+        )
+
     preprocessor = preprocessor or build_preprocessor(
         config=config.preprocess,
         input_samplerate=config.samplerate,
@@ -300,16 +274,16 @@ def build_model(
         config=config.postprocess,
     )
     detector = build_detector(
-        num_classes=len(targets.class_names),
-        num_sizes=len(roi_mapper.dimension_names),
+        num_classes=len(class_names),
+        num_sizes=len(dimension_names),
         config=config.architecture,
     )
     return Model(
         detector=detector,
         postprocessor=postprocessor,
         preprocessor=preprocessor,
-        targets=targets,
-        roi_mapper=roi_mapper,
+        class_names=class_names,
+        dimension_names=dimension_names,
     )
 
 
@@ -329,6 +303,6 @@ def build_model_with_new_targets(
         detector=detector,
         postprocessor=model.postprocessor,
         preprocessor=model.preprocessor,
-        targets=targets,
-        roi_mapper=roi_mapper,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
     )
