@@ -132,3 +132,4 @@ notebooks/tmp
 
 # Assets
 !assets/*
+/models
