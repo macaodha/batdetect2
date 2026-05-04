@@ -1,0 +1,37 @@
+tasks:
+  - name: sound_event_detection
+    metrics:
+      - name: average_precision
+      - name: roc_auc
+    plots:
+      - name: pr_curve
+      - name: score_distribution
+      - name: example_detection
+  - name: sound_event_classification
+    metrics:
+      - name: average_precision
+      - name: roc_auc
+    plots:
+      - name: pr_curve
+  - name: top_class_detection
+    metrics:
+      - name: average_precision
+    plots:
+      - name: pr_curve
+      - name: confusion_matrix
+      - name: example_classification
+  - name: clip_detection
+    metrics:
+      - name: average_precision
+      - name: roc_auc
+    plots:
+      - name: pr_curve
+      - name: roc_curve
+      - name: score_distribution
+  - name: clip_classification
+    metrics:
+      - name: average_precision
+      - name: roc_auc
+    plots:
+      - name: pr_curve
+      - name: roc_curve

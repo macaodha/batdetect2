@@ -24,8 +24,8 @@ for full options and argument details.
 - Global CLI options are documented in {doc}`base`.
 - Paths with spaces should be wrapped in quotes.
 - Input audio is expected to be mono.
-- Legacy `detect` uses a required threshold argument, while `predict` uses
-  the optional `--detection-threshold` override.
+- Legacy `detect` uses a required threshold argument, while `predict` uses the
+  optional `--detection-threshold` override.
 
 ```{warning}
 `batdetect2 detect` is a legacy command.

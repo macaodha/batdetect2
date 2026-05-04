@@ -1,0 +1,79 @@
+optimizer:
+  name: adam
+  learning_rate: 0.001
+
+scheduler:
+  name: cosine_annealing
+  t_max: 100
+
+labels:
+  sigma: 3
+
+trainer:
+  max_epochs: 10
+  check_val_every_n_epoch: 5
+
+train_loader:
+  batch_size: 8
+  shuffle: true
+
+  clipping_strategy:
+    name: random_subclip
+    duration: 0.256
+
+  augmentations:
+    enabled: true
+    audio:
+      - name: mix_audio
+        probability: 0.2
+        min_weight: 0.3
+        max_weight: 0.7
+      - name: add_echo
+        probability: 0.2
+        max_delay: 0.005
+        min_weight: 0.0
+        max_weight: 1.0
+    spectrogram:
+      - name: scale_volume
+        probability: 0.2
+        min_scaling: 0.0
+        max_scaling: 2.0
+      - name: warp
+        probability: 0.2
+        delta: 0.04
+      - name: mask_time
+        probability: 0.2
+        max_perc: 0.05
+        max_masks: 3
+      - name: mask_freq
+        probability: 0.2
+        max_perc: 0.10
+        max_masks: 3
+
+val_loader:
+  clipping_strategy:
+    name: whole_audio_padded
+    chunk_size: 0.256
+
+loss:
+  detection:
+    weight: 1.0
+    focal:
+      beta: 4
+      alpha: 2
+  classification:
+    weight: 2.0
+    focal:
+      beta: 4
+      alpha: 2
+  size:
+    weight: 0.1
+
+validation:
+  tasks:
+    - name: sound_event_detection
+      metrics:
+        - name: average_precision
+    - name: sound_event_classification
+      metrics:
+        - name: average_precision

@@ -2,7 +2,8 @@
 
 `BatDetect2API` is the main entry point for the current Python workflow.
 
-It wraps model loading, inference, evaluation, output formatting, and training-related entry points behind one object.
+It wraps model loading, inference, evaluation, output formatting, and
+training-related entry points behind one object.
 
 Defined in `batdetect2.api_v2`.
 
@@ -10,8 +11,8 @@ Defined in `batdetect2.api_v2`.
 
 - `BatDetect2API.from_checkpoint(path, ...)`
   - load a trained checkpoint and optional config overrides.
-- `BatDetect2API.from_config(config)`
-  - build a full stack from a `BatDetect2Config` object.
+- `BatDetect2API.from_config(model_config=..., targets_config=..., ...)`
+  - build a full stack from separate config objects.
 
 ## Inference methods
 
@@ -46,10 +47,12 @@ Defined in `batdetect2.api_v2`.
 
 ## Output persistence helpers
 
-- `save_predictions(predictions, path, audio_dir=None, format=None, config=None)`
+- `save_predictions(predictions, path, audio_dir=None, format=None,
+  config=None)`
 - `load_predictions(path, format=None, config=None)`
 
-Use these when you want to save programmatic predictions without going through the CLI.
+Use these when you want to save programmatic predictions without going through
+the CLI.
 
 ## Training and evaluation entry points
 
@@ -60,6 +63,9 @@ Use these when you want to save programmatic predictions without going through t
 
 ## Related pages
 
-- Python tutorial: {doc}`../tutorials/integrate-with-a-python-pipeline`
-- Outputs config reference: {doc}`outputs-config`
-- Output formats reference: {doc}`output-formats`
+- Python tutorial:
+  {doc}`../tutorials/integrate-with-a-python-pipeline`
+- Outputs config reference:
+  {doc}`outputs-config`
+- Output formats reference:
+  {doc}`output-formats`

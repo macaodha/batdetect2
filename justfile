@@ -112,6 +112,14 @@ clean: clean-build clean-pyc clean-test clean-docs
 example-train OPTIONS="":
     uv run batdetect2 train \
         --val-dataset example_data/dataset.yaml \
-        --config example_data/config.yaml \
+        --base-dir . \
+        --targets example_data/targets.yaml \
+        --model-config example_data/configs/model.yaml \
+        --training-config example_data/configs/training.yaml \
+        --audio-config example_data/configs/audio.yaml \
+        --evaluation-config example_data/configs/evaluation.yaml \
+        --inference-config example_data/configs/inference.yaml \
+        --outputs-config example_data/configs/outputs.yaml \
+        --logging-config example_data/configs/logging.yaml \
         {{OPTIONS}} \
         example_data/dataset.yaml

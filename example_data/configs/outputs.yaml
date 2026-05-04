@@ -1,0 +1,9 @@
+format:
+  name: raw
+  include_class_scores: true
+  include_features: true
+  include_geometry: true
+
+transform:
+  detection_transforms: []
+  clip_transforms: []

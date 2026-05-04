@@ -203,8 +203,8 @@ in_channels: 1
 def test_load_backbone_config_from_example_data(example_data_dir: Path):
     """load_backbone_config loads the real example config correctly."""
     config = load_backbone_config(
-        example_data_dir / "config.yaml",
-        field="model.architecture",
+        example_data_dir / "configs" / "model.yaml",
+        field="architecture",
     )
 
     assert isinstance(config, UNetBackboneConfig)
