@@ -118,8 +118,6 @@ example-train OPTIONS="":
         --training-config example_data/configs/training.yaml \
         --audio-config example_data/configs/audio.yaml \
         --evaluation-config example_data/configs/evaluation.yaml \
-        --inference-config example_data/configs/inference.yaml \
-        --outputs-config example_data/configs/outputs.yaml \
         --logging-config example_data/configs/logging.yaml \
         {{OPTIONS}} \
         example_data/dataset.yaml

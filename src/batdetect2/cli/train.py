@@ -86,11 +86,13 @@ __all__ = ["train_command"]
 @click.option(
     "--train-workers",
     type=int,
+    default=0,
     help="Number of worker processes for training data loading.",
 )
 @click.option(
     "--val-workers",
     type=int,
+    default=0,
     help="Number of worker processes for validation data loading.",
 )
 @click.option(
