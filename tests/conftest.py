@@ -472,6 +472,7 @@ def tiny_checkpoint_path(
     tmp_path: Path,
 ) -> Path:
     module = build_training_module(
+        targets_config=sample_targets.get_config(),
         class_names=sample_targets.class_names,
         dimension_names=sample_roi_mapper.dimension_names,
     )

@@ -610,17 +610,15 @@ class BatDetect2API:
         from batdetect2.postprocess import build_postprocessor
         from batdetect2.preprocess import build_preprocessor
         from batdetect2.targets import (
-            build_default_target_config,
             build_roi_mapping,
             build_targets,
             check_target_compatibility,
         )
-        from batdetect2.train import (
-            TrainingConfig,
-            load_model_from_checkpoint,
-        )
+        from batdetect2.train import TrainingConfig, load_model_from_checkpoint
 
-        model, model_config = load_model_from_checkpoint(path)
+        model, configs = load_model_from_checkpoint(path)
+
+        model_config = configs.model
 
         audio_config = audio_config or AudioConfig(
             samplerate=model_config.samplerate,
@@ -630,9 +628,7 @@ class BatDetect2API:
         inference_config = inference_config or InferenceConfig()
         outputs_config = outputs_config or OutputsConfig()
         logging_config = logging_config or AppLoggingConfig()
-        targets_config = targets_config or build_default_target_config(
-            class_names=model.class_names
-        )
+        targets_config = targets_config or configs.targets
 
         targets = build_targets(config=targets_config)
         roi_mapper = build_roi_mapping(config=targets_config.roi)

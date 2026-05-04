@@ -73,7 +73,7 @@ def test_can_save_checkpoint(
     torch.testing.assert_close(output1, output2, rtol=0, atol=0)
 
 
-def test_load_model_from_checkpoint_returns_model_and_config(
+def test_load_model_from_checkpoint_returns_model_and_configs(
     tmp_path: Path,
 ):
     input_model_config = ModelConfig(samplerate=192_000)
@@ -95,12 +95,18 @@ def test_load_model_from_checkpoint_returns_model_and_config(
     trainer.strategy.connect(module)
     trainer.save_checkpoint(path)
 
-    model, loaded_model_config = load_model_from_checkpoint(path)
+    model, loaded_configs = load_model_from_checkpoint(path)
 
     assert model is not None
-    assert loaded_model_config.model_dump(
+    assert loaded_configs.model.model_dump(
         mode="json"
     ) == expected_model_config.model_dump(mode="json")
+    assert loaded_configs.targets.model_dump(
+        mode="json"
+    ) == targets_config.model_dump(mode="json")
+    assert loaded_configs.train.model_dump(
+        mode="json"
+    ) == train_config.model_dump(mode="json")
     assert model.class_names == targets.class_names
     assert model.dimension_names == roi_mapper.dimension_names
 
@@ -135,15 +141,38 @@ def test_checkpoint_stores_train_config_hyperparameters(tmp_path: Path):
     trainer.strategy.connect(module)
     trainer.save_checkpoint(path)
 
-    recovered = TrainingModule.load_from_checkpoint(path)
+    _, recovered_configs = load_model_from_checkpoint(path)
     assert not DeepDiff(
-        recovered.model_config.model_dump(mode="json"),
+        recovered_configs.model.model_dump(mode="json"),
         expected_model_config.model_dump(mode="json"),
     )
     assert not DeepDiff(
-        recovered.train_config.model_dump(mode="json"),
+        recovered_configs.train.model_dump(mode="json"),
         train_config.model_dump(mode="json"),
     )
+
+
+def test_load_model_from_checkpoint_includes_targets_config(tmp_path: Path):
+    targets_config = TargetConfig()
+    targets = build_targets(targets_config)
+    roi_mapper = build_roi_mapping(targets_config.roi)
+    module = build_training_module(
+        model_config=ModelConfig(),
+        targets_config=targets_config,
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
+        train_config=TrainingConfig(),
+    )
+    trainer = L.Trainer()
+    path = tmp_path / "example.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(path)
+
+    _, loaded_configs = load_model_from_checkpoint(path)
+
+    assert loaded_configs.targets.model_dump(
+        mode="json"
+    ) == targets_config.model_dump(mode="json")
 
 
 def test_configure_optimizers_uses_train_config_values(tmp_path: Path):
@@ -179,13 +208,15 @@ def test_configure_optimizers_uses_train_config_values(tmp_path: Path):
     trainer.strategy.connect(module)
     trainer.save_checkpoint(path)
 
-    recovered = TrainingModule.load_from_checkpoint(path)
-    assert recovered.model_config.model_dump(
+    _, recovered_configs = load_model_from_checkpoint(path)
+    assert recovered_configs.model.model_dump(
         mode="json"
     ) == expected_model_config.model_dump(mode="json")
-    assert recovered.train_config.model_dump(
+    assert recovered_configs.train.model_dump(
         mode="json"
     ) == train_config.model_dump(mode="json")
+
+    recovered = TrainingModule.load_from_checkpoint(path)
 
     loaded_optimization_config = recovered.configure_optimizers()
     loaded_optimizer = loaded_optimization_config["optimizer"]
@@ -201,12 +232,28 @@ def test_api_from_checkpoint_reconstructs_model_config(tmp_path: Path):
     trainer.strategy.connect(module)
     trainer.save_checkpoint(path)
 
+    _, stored_configs = load_model_from_checkpoint(path)
     api = BatDetect2API.from_checkpoint(path)
 
     assert api.model_config.model_dump(
         mode="json"
-    ) == module.model_config.model_dump(mode="json")
-    assert api.audio_config.samplerate == module.model_config.samplerate
+    ) == stored_configs.model.model_dump(mode="json")
+    assert api.audio_config.samplerate == stored_configs.model.samplerate
+
+
+def test_api_from_checkpoint_reconstructs_targets_from_checkpoint(
+    tmp_path: Path,
+) -> None:
+    targets_config = TargetConfig()
+    module = build_default_module(target_config=targets_config)
+    trainer = L.Trainer()
+    path = tmp_path / "example.ckpt"
+    trainer.strategy.connect(module)
+    trainer.save_checkpoint(path)
+
+    api = BatDetect2API.from_checkpoint(path)
+
+    assert api.targets.get_config() == targets_config.model_dump(mode="json")
 
 
 @pytest.mark.slow

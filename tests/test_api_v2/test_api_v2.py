@@ -225,6 +225,7 @@ def test_user_can_load_checkpoint_and_finetune(
     )
     module = build_training_module(
         model_config=api.model_config,
+        targets_config=example_targets_config,
         class_names=api.targets.class_names,
         dimension_names=api.roi_mapper.dimension_names,
     )
@@ -273,6 +274,7 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
     )
     module = build_training_module(
         model_config=source_api.model_config,
+        targets_config=example_targets_config,
         class_names=source_api.targets.class_names,
         dimension_names=source_api.roi_mapper.dimension_names,
     )

@@ -1,15 +1,21 @@
+from dataclasses import dataclass
+
 import lightning as L
 from soundevent.data import PathLike
 
 from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.models.types import ModelOutput
+from batdetect2.targets import TargetConfig
 from batdetect2.train.config import TrainingConfig
 from batdetect2.train.losses import build_loss
 from batdetect2.train.optimizers import build_optimizer
 from batdetect2.train.schedulers import build_scheduler
 from batdetect2.train.types import LossProtocol, TrainExample
 
-__all__ = ["TrainingModule"]
+__all__ = [
+    "TrainingModule",
+    "load_model_from_checkpoint",
+]
 
 
 class TrainingModule(L.LightningModule):
@@ -19,6 +25,7 @@ class TrainingModule(L.LightningModule):
     def __init__(
         self,
         model_config: dict | None = None,
+        targets_config: dict | None = None,
         class_names: list[str] | None = None,
         dimension_names: list[str] | None = None,
         train_config: dict | None = None,
@@ -29,9 +36,11 @@ class TrainingModule(L.LightningModule):
 
         self.save_hyperparameters(ignore=["model", "loss"], logger=False)
 
-        self.model_config = ModelConfig.model_validate(model_config or {})
+        self.model_config: dict = model_config or {}
+        self.targets_config: dict = targets_config or {}
         self.class_names = list(class_names or [])
         self.dimension_names = list(dimension_names or [])
+
         self.train_config = TrainingConfig.model_validate(train_config or {})
 
         if loss is None:
@@ -113,9 +122,16 @@ class TrainingModule(L.LightningModule):
         }
 
 
+@dataclass
+class StoredConfig:
+    model: ModelConfig
+    targets: TargetConfig
+    train: TrainingConfig
+
+
 def load_model_from_checkpoint(
     path: PathLike,
-) -> tuple[Model, ModelConfig]:
+) -> tuple[Model, StoredConfig]:
     """Load a model and its configuration from a Lightning checkpoint.
 
     Parameters
@@ -131,11 +147,19 @@ def load_model_from_checkpoint(
         describes its architecture, preprocessing, and postprocessing.
     """
     module = TrainingModule.load_from_checkpoint(path)  # type: ignore
-    return module.model, module.model_config
+    training_config = TrainingConfig.model_validate(module.train_config)
+    model_config = ModelConfig.model_validate(module.model_config)
+    targets_config = TargetConfig.model_validate(module.targets_config)
+    return module.model, StoredConfig(
+        model=model_config,
+        targets=targets_config,
+        train=training_config,
+    )
 
 
 def build_training_module(
     model_config: ModelConfig | None = None,
+    targets_config: TargetConfig | dict | None = None,
     class_names: list[str] | None = None,
     dimension_names: list[str] | None = None,
     train_config: TrainingConfig | None = None,
@@ -147,10 +171,16 @@ def build_training_module(
     if train_config is None:
         train_config = TrainingConfig()
 
+    if targets_config is None:
+        targets_config = TargetConfig()
+
+    targets_config = TargetConfig.model_validate(targets_config)
+
     return TrainingModule(
         model_config=model_config.model_dump(mode="json"),
+        targets_config=targets_config.model_dump(mode="json"),
+        train_config=train_config.model_dump(mode="json"),
         class_names=class_names,
         dimension_names=dimension_names,
-        train_config=train_config.model_dump(mode="json"),
         model=model,
     )

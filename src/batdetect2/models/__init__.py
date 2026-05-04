@@ -211,7 +211,7 @@ class Model(torch.nn.Module):
 
 
 def build_model(
-    config: ModelConfig | None = None,
+    config: ModelConfig | dict | None = None,
     class_names: list[str] | None = None,
     dimension_names: list[str] | None = None,
     preprocessor: PreprocessorProtocol | None = None,
@@ -256,6 +256,9 @@ def build_model(
     from batdetect2.preprocess import build_preprocessor
 
     config = config or ModelConfig()
+
+    if isinstance(config, dict):
+        config = ModelConfig.model_validate(config)
 
     if class_names is None:
         raise ValueError("class_names must be provided when building a model.")

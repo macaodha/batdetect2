@@ -81,7 +81,10 @@ def run_train(
                 "model."
             )
 
-    targets = targets or build_targets(config=targets_config)
+    if targets is None:
+        targets = build_targets(config=targets_config)
+    else:
+        targets_config = TargetConfig.model_validate(targets.get_config())
 
     roi_mapper = roi_mapper or build_roi_mapping(config=targets_config.roi)
 
@@ -132,6 +135,7 @@ def run_train(
 
     module = build_training_module(
         model_config=model_config,
+        targets_config=targets_config,
         class_names=targets.class_names,
         dimension_names=roi_mapper.dimension_names,
         train_config=train_config,
