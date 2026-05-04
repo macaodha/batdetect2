@@ -34,6 +34,8 @@ def build_checkpoint_callback(
     if checkpoint_dir is None:
         checkpoint_dir = config.checkpoint_dir
 
+    checkpoint_dir = Path(checkpoint_dir)
+
     if experiment_name is not None:
         checkpoint_dir = checkpoint_dir / experiment_name
 
