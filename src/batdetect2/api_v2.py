@@ -15,7 +15,11 @@ if TYPE_CHECKING:
     from batdetect2.data import Dataset
     from batdetect2.evaluate import EvaluationConfig, EvaluatorProtocol
     from batdetect2.inference import InferenceConfig
-    from batdetect2.logging import AppLoggingConfig, LoggerConfig
+    from batdetect2.logging import (
+        AppLoggingConfig,
+        LoggerConfig,
+        LoggingCallback,
+    )
     from batdetect2.models import Model, ModelConfig
     from batdetect2.outputs import (
         OutputFormatConfig,
@@ -35,6 +39,7 @@ if TYPE_CHECKING:
         TargetProtocol,
     )
     from batdetect2.train import TrainingConfig
+    from batdetect2.train.logging import TrainLoggingContext
 
 
 DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
@@ -106,6 +111,7 @@ class BatDetect2API:
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         logger_config: LoggerConfig | None = None,
+        logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
     ):
         from batdetect2.train import run_train
 
@@ -130,6 +136,7 @@ class BatDetect2API:
             train_config=train_config or self.train_config,
             audio_config=audio_config or self.audio_config,
             logger_config=logger_config or self.logging_config.train,
+            logging_callbacks=logging_callbacks,
         )
         self.model.eval()
         return self
@@ -153,6 +160,7 @@ class BatDetect2API:
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         logger_config: LoggerConfig | None = None,
+        logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
     ) -> "BatDetect2API":
         """Fine-tune from a checkpoint using a new target definition."""
         from batdetect2.evaluate import build_evaluator
@@ -231,6 +239,7 @@ class BatDetect2API:
             audio_config=api.audio_config,
             train_config=api.train_config,
             logger_config=logger_config or api.logging_config.train,
+            logging_callbacks=logging_callbacks,
         )
         api.model.eval()
         return api

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from lightning import Trainer, seed_everything
+from lightning.pytorch.loggers import Logger
 from loguru import logger
 from soundevent import data
 
@@ -10,6 +11,7 @@ from batdetect2.audio import AudioConfig, AudioLoader, build_audio_loader
 from batdetect2.evaluate import EvaluatorProtocol, build_evaluator
 from batdetect2.logging import (
     LoggerConfig,
+    LoggingCallback,
     TensorBoardLoggerConfig,
     build_logger,
 )
@@ -28,12 +30,21 @@ from batdetect2.train.config import TrainingConfig
 from batdetect2.train.dataset import build_train_loader, build_val_loader
 from batdetect2.train.labels import build_clip_labeler
 from batdetect2.train.lightning import build_training_module
+from batdetect2.train.logging import (
+    ConfigHyperparameterLogging,
+    DataSummaryArtifactLogging,
+    TargetConfigArtifactLogging,
+    TrainLoggingContext,
+)
 from batdetect2.train.types import ClipLabeller
 
 __all__ = [
     "build_trainer",
     "run_train",
 ]
+
+
+DEFAULT_LOG_DIR = Path("outputs") / "logs"
 
 
 def run_train(
@@ -59,6 +70,7 @@ def run_train(
     num_epochs: int | None = None,
     run_name: str | None = None,
     seed: int | None = None,
+    logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
 ):
     if seed is not None:
         seed_everything(seed)
@@ -148,15 +160,44 @@ def run_train(
         roi_mapper=roi_mapper,
     )
 
+    train_logger = build_logger(
+        logger_config or TensorBoardLoggerConfig(),
+        log_dir=log_dir,
+        experiment_name=experiment_name,
+        run_name=run_name,
+    )
+    root_artifact_path = (
+        Path(log_dir) if log_dir is not None else DEFAULT_LOG_DIR
+    )
+    root_artifact_path.mkdir(parents=True, exist_ok=True)
+
+    logging_context = TrainLoggingContext(
+        model_config=model_config,
+        train_config=train_config,
+        audio_config=audio_config,
+        targets=targets,
+        train_dataset=train_annotations,
+        val_dataset=val_annotations,
+    )
+
+    resolved_logging_callbacks = (
+        ConfigHyperparameterLogging(),
+        TargetConfigArtifactLogging(),
+        DataSummaryArtifactLogging(),
+        *logging_callbacks,
+    )
+
+    for callback in resolved_logging_callbacks:
+        callback.run(train_logger, root_artifact_path, logging_context)
+
     trainer = trainer or build_trainer(
         train_config,
-        logger_config=logger_config,
+        train_logger=train_logger,
         evaluator=evaluator,
         targets=targets,
         roi_mapper=roi_mapper,
         checkpoint_dir=checkpoint_dir,
         num_epochs=num_epochs,
-        log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
     )
@@ -223,12 +264,11 @@ def _validate_model_compatibility(
 
 def build_trainer(
     config: TrainingConfig,
-    logger_config: LoggerConfig | None,
+    train_logger: Logger,
     evaluator: "EvaluatorProtocol",
     targets: "TargetProtocol",
     roi_mapper: "ROIMapperProtocol",
     checkpoint_dir: Path | None = None,
-    log_dir: Path | None = None,
     experiment_name: str | None = None,
     run_name: str | None = None,
     num_epochs: int | None = None,
@@ -239,19 +279,8 @@ def build_trainer(
         config=lambda: trainer_conf.to_yaml_string(exclude_none=True),
     )
 
-    train_logger = build_logger(
-        logger_config or TensorBoardLoggerConfig(),
-        log_dir=log_dir,
-        experiment_name=experiment_name,
-        run_name=run_name,
-    )
-
     if num_epochs is not None:
         trainer_conf.max_epochs = num_epochs
-
-    train_logger.log_hyperparams(
-        config.model_dump(mode="json", exclude_none=True)
-    )
 
     train_config = trainer_conf.model_dump(exclude_none=True)
 

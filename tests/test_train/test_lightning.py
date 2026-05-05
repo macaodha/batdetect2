@@ -22,6 +22,10 @@ from batdetect2.train import (
     load_model_from_checkpoint,
     run_train,
 )
+from batdetect2.train.logging import (
+    DatasetConfigArtifact,
+    DatasetConfigArtifactLogging,
+)
 from batdetect2.train.optimizers import AdamOptimizerConfig
 from batdetect2.train.schedulers import CosineAnnealingSchedulerConfig
 from batdetect2.train.train import build_training_module
@@ -367,6 +371,59 @@ def test_build_model_with_new_targets_reuses_backbone_and_rebuilds_heads() -> (
     assert rebuilt_detector.bbox_head is not source_detector.bbox_head
     assert rebuilt_model.class_names == ["single_class"]
     assert rebuilt_model.dimension_names == ["width", "height"]
+
+
+@pytest.mark.slow
+def test_run_train_logs_training_artifacts(
+    tmp_path: Path,
+    example_annotations: list[data.ClipAnnotation],
+    example_dataset,
+) -> None:
+    train_config = TrainingConfig.model_validate(
+        {
+            "trainer": {
+                "limit_train_batches": 1,
+                "limit_val_batches": 1,
+                "log_every_n_steps": 1,
+            },
+            "train_loader": {
+                "batch_size": 1,
+                "augmentations": {"enabled": False},
+            },
+        }
+    )
+
+    run_train(
+        train_annotations=example_annotations[:1],
+        val_annotations=example_annotations[:1],
+        train_config=train_config,
+        num_epochs=1,
+        train_workers=0,
+        val_workers=0,
+        checkpoint_dir=tmp_path / "checkpoints",
+        log_dir=tmp_path / "logs",
+        seed=0,
+        logging_callbacks=[
+            DatasetConfigArtifactLogging(
+                train_dataset_config=DatasetConfigArtifact(
+                    filename="train_dataset.yaml",
+                    config=example_dataset,
+                ),
+                val_dataset_config=DatasetConfigArtifact(
+                    filename="val_dataset.yaml",
+                    config=example_dataset,
+                ),
+            )
+        ],
+    )
+
+    artifact_root = next((tmp_path / "logs").rglob("training_artifacts"))
+
+    assert (artifact_root / "targets.yaml").exists()
+    assert (artifact_root / "train_dataset.yaml").exists()
+    assert (artifact_root / "val_dataset.yaml").exists()
+    assert (artifact_root / "train_class_summary.csv").exists()
+    assert (artifact_root / "val_class_summary.csv").exists()
 
 
 def test_run_train_rejects_incompatible_model_config(

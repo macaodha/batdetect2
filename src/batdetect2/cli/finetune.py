@@ -126,10 +126,14 @@ def finetune_command(
     """Fine-tune a BatDetect2 checkpoint on a new target definition."""
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
-    from batdetect2.data import load_dataset_from_config
+    from batdetect2.data import load_dataset, load_dataset_config
     from batdetect2.logging import AppLoggingConfig
     from batdetect2.targets import TargetConfig
     from batdetect2.train import TrainingConfig
+    from batdetect2.train.logging import (
+        DatasetConfigArtifact,
+        DatasetConfigArtifactLogging,
+    )
 
     logger.info("Initiating fine-tuning process...")
 
@@ -148,16 +152,34 @@ def finetune_command(
         else None
     )
 
-    train_annotations = load_dataset_from_config(
-        train_dataset,
-        base_dir=base_dir,
+    train_dataset_conf = load_dataset_config(train_dataset)
+    train_annotations = load_dataset(train_dataset_conf, base_dir=base_dir)
+
+    val_dataset_conf = (
+        load_dataset_config(val_dataset) if val_dataset else None
     )
-    val_annotations = None
-    if val_dataset is not None:
-        val_annotations = load_dataset_from_config(
-            val_dataset,
-            base_dir=base_dir,
+    val_annotations = (
+        load_dataset(val_dataset_conf, base_dir=base_dir)
+        if val_dataset_conf
+        else None
+    )
+
+    logging_callbacks = [
+        DatasetConfigArtifactLogging(
+            train_dataset_config=DatasetConfigArtifact(
+                filename="train_dataset.yaml",
+                config=train_dataset_conf,
+            ),
+            val_dataset_config=(
+                DatasetConfigArtifact(
+                    filename="val_dataset.yaml",
+                    config=val_dataset_conf,
+                )
+                if val_dataset_conf
+                else None
+            ),
         )
+    ]
 
     api = BatDetect2API.from_checkpoint(
         model_path,
@@ -185,4 +207,5 @@ def finetune_command(
         train_config=train_conf,
         audio_config=audio_conf,
         logger_config=logging_conf.train if logging_conf is not None else None,
+        logging_callbacks=logging_callbacks,
     )

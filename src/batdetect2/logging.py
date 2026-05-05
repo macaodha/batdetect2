@@ -24,9 +24,7 @@ from batdetect2.core.configs import BaseConfig
 if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
-    from lightning.pytorch.loggers import (
-        Logger,
-    )
+    from lightning.pytorch.loggers import Logger
     from matplotlib.figure import Figure
     from soundevent import data
 
@@ -40,11 +38,15 @@ __all__ = [
     "DVCLiveConfig",
     "LoggerConfig",
     "MLFlowLoggerConfig",
+    "LoggingCallback",
     "TensorBoardLoggerConfig",
     "build_logger",
     "enable_logging",
     "get_image_logger",
     "get_table_logger",
+    "log_artifact_file",
+    "log_config_artifact",
+    "log_csv_artifact",
 ]
 
 
@@ -118,6 +120,18 @@ class LoggerBuilder(Protocol, Generic[T]):
         experiment_name: str | None = None,
         run_name: str | None = None,
     ) -> Logger: ...
+
+
+LoggingContext = TypeVar("LoggingContext", contravariant=True)
+
+
+class LoggingCallback(Protocol, Generic[LoggingContext]):
+    def run(
+        self,
+        logger: Logger,
+        artifact_path: Path,
+        context: LoggingContext,
+    ) -> None: ...
 
 
 def create_dvclive_logger(
@@ -270,6 +284,71 @@ def build_logger(
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,
+    )
+
+
+def log_artifact_file(
+    runtime_logger: Logger,
+    path: Path,
+    artifact_path: str = "artifacts",
+) -> None:
+    from lightning.pytorch.loggers import (
+        CSVLogger,
+        MLFlowLogger,
+        TensorBoardLogger,
+    )
+
+    if isinstance(runtime_logger, MLFlowLogger):
+        runtime_logger.experiment.log_artifact(  # type: ignore[call-arg]
+            local_path=str(path),
+            artifact_path=artifact_path,
+            run_id=runtime_logger.run_id,
+        )
+        return
+
+    experiment = getattr(runtime_logger, "experiment", None)
+    if experiment is not None and hasattr(experiment, "log_artifact"):
+        experiment.log_artifact(path=path, name=path.name, copy=True)
+        return
+
+    if isinstance(runtime_logger, (CSVLogger, TensorBoardLogger)):
+        return
+
+    logger.warning(
+        "Skipping artifact logging for unsupported logger type {logger_type}",
+        logger_type=type(runtime_logger).__name__,
+    )
+
+
+def log_config_artifact(
+    logger: Logger,
+    config: BaseConfig,
+    filename: str,
+    artifact_path: Path,
+) -> None:
+    artifact_path.mkdir(parents=True, exist_ok=True)
+    path = artifact_path / filename
+    path.write_text(config.to_yaml_string())
+    log_artifact_file(
+        logger,
+        path,
+        artifact_path=artifact_path.name,
+    )
+
+
+def log_csv_artifact(
+    logger: Logger,
+    df: pd.DataFrame,
+    filename: str,
+    artifact_path: Path,
+) -> None:
+    artifact_path.mkdir(parents=True, exist_ok=True)
+    path = artifact_path / filename
+    df.to_csv(path, index=False)
+    log_artifact_file(
+        logger,
+        path,
+        artifact_path=artifact_path.name,
     )
 
 

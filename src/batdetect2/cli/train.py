@@ -145,7 +145,7 @@ def train_command(
     """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
-    from batdetect2.data import load_dataset_from_config
+    from batdetect2.data import load_dataset_config, load_dataset_from_config
     from batdetect2.evaluate import EvaluationConfig
     from batdetect2.inference import InferenceConfig
     from batdetect2.logging import AppLoggingConfig
@@ -153,6 +153,10 @@ def train_command(
     from batdetect2.outputs import OutputsConfig
     from batdetect2.targets import TargetConfig
     from batdetect2.train import TrainingConfig
+    from batdetect2.train.logging import (
+        DatasetConfigArtifact,
+        DatasetConfigArtifactLogging,
+    )
 
     logger.info("Initiating training process...")
 
@@ -222,6 +226,23 @@ def train_command(
 
     logger.info("Configuration and data loaded. Starting training...")
 
+    logging_callbacks = [
+        DatasetConfigArtifactLogging(
+            train_dataset_config=DatasetConfigArtifact(
+                filename="train_dataset.yaml",
+                config=load_dataset_config(train_dataset),
+            ),
+            val_dataset_config=(
+                DatasetConfigArtifact(
+                    filename="val_dataset.yaml",
+                    config=load_dataset_config(val_dataset),
+                )
+                if val_dataset is not None
+                else None
+            ),
+        )
+    ]
+
     if model_path is not None and model_conf is not None:
         raise click.UsageError(
             "--model-config cannot be used with --model. "
@@ -267,4 +288,5 @@ def train_command(
         experiment_name=experiment_name,
         run_name=run_name,
         seed=seed,
+        logging_callbacks=logging_callbacks,
     )
