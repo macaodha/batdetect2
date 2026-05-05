@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Literal
 
-from huggingface_hub import hf_hub_download
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from soundevent.data import PathLike
 
@@ -73,6 +72,15 @@ def resolve_checkpoint_path(path: PathLike | str) -> Path:
         Resolved local filesystem path to the checkpoint.
     """
     if isinstance(path, str) and path.startswith("hf://"):
+        try:
+            from huggingface_hub import hf_hub_download
+        except ImportError as error:
+            raise ValueError(
+                "Hugging Face checkpoint support is not installed. "
+                "Install it with `uv sync --group huggingface` or "
+                "`pip install huggingface-hub`."
+            ) from error
+
         repo_id, filename = _parse_huggingface_uri(path)
         return Path(hf_hub_download(repo_id=repo_id, filename=filename))
 

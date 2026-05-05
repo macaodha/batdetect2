@@ -1,3 +1,5 @@
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -116,14 +118,39 @@ def test_resolve_checkpoint_path_downloads_huggingface_checkpoint(
         assert filename == "weights/model.ckpt"
         return str(expected_path)
 
-    monkeypatch.setattr(
-        "batdetect2.train.checkpoints.hf_hub_download",
-        fake_hf_hub_download,
+    class FakeHuggingFaceHub(types.ModuleType):
+        hf_hub_download = staticmethod(fake_hf_hub_download)
+
+    fake_module = FakeHuggingFaceHub("huggingface_hub")
+    monkeypatch.setitem(
+        sys.modules,
+        "huggingface_hub",
+        fake_module,
     )
 
     resolved = resolve_checkpoint_path("hf://owner/repo/weights/model.ckpt")
 
     assert resolved == expected_path
+
+
+def test_resolve_checkpoint_path_requires_huggingface_dependency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delitem(sys.modules, "huggingface_hub", raising=False)
+
+    import builtins
+
+    original_import = builtins.__import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "huggingface_hub":
+            raise ImportError("missing")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    with pytest.raises(ValueError, match="Hugging Face checkpoint support"):
+        resolve_checkpoint_path("hf://owner/repo/weights/model.ckpt")
 
 
 def test_resolve_checkpoint_path_rejects_incomplete_huggingface_uri() -> None:
