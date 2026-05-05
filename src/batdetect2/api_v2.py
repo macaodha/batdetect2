@@ -3,13 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
-from soundevent import data
-
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    import numpy as np
     import torch
+    from soundevent import data
 
     from batdetect2.audio import AudioConfig, AudioLoader
     from batdetect2.data import Dataset
@@ -313,6 +312,8 @@ class BatDetect2API:
     def get_top_class_name(self, detection: Detection) -> str:
         """Get highest-confidence class name for one detection."""
 
+        import numpy as np
+
         top_index = int(np.argmax(detection.class_scores))
         return self.targets.class_names[top_index]
 
@@ -368,6 +369,8 @@ class BatDetect2API:
         batch_size: int | None = None,
         detection_threshold: float | None = None,
     ) -> ClipDetections:
+        from soundevent import data
+
         from batdetect2.postprocess import ClipDetections
 
         recording = data.Recording.from_file(audio_file, compute_hash=False)
