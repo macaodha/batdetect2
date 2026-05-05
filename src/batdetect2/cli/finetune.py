@@ -17,8 +17,8 @@ __all__ = ["finetune_command"]
     "--model",
     "model_path",
     required=True,
-    type=click.Path(exists=True),
-    help="Path to a checkpoint to fine-tune from.",
+    type=str,
+    help="Path to a checkpoint or a Hugging Face URI to fine-tune from.",
 )
 @click.option(
     "--targets",
@@ -106,7 +106,7 @@ __all__ = ["finetune_command"]
 )
 def finetune_command(
     train_dataset: Path,
-    model_path: Path,
+    model_path: str,
     targets_config: Path,
     val_dataset: Path | None = None,
     ckpt_dir: Path | None = None,

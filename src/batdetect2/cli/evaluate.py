@@ -12,14 +12,8 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 
 
 @cli.command(name="evaluate", short_help="Evaluate a model checkpoint.")
-@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("model_path", type=str)
 @click.argument("test_dataset", type=click.Path(exists=True))
-@click.option(
-    "--targets",
-    "targets_config",
-    type=click.Path(exists=True),
-    help="Path to targets config file.",
-)
 @click.option(
     "--audio-config",
     type=click.Path(exists=True),
@@ -80,10 +74,9 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
     default=0,
 )
 def evaluate_command(
-    model_path: Path,
+    model_path: str,
     test_dataset: Path,
     base_dir: Path,
-    targets_config: Path | None,
     audio_config: Path | None,
     evaluation_config: Path | None,
     inference_config: Path | None,

@@ -102,7 +102,7 @@ def common_predict_options(func):
 
 
 def _build_api(
-    model_path: Path,
+    model_path: str,
     audio_config: Path | None,
     inference_config: Path | None,
     outputs_config: Path | None,
@@ -144,7 +144,7 @@ def _build_api(
 
 
 def _run_prediction(
-    model_path: Path,
+    model_path: str,
     audio_files: list[Path],
     output_path: Path,
     audio_config: Path | None,
@@ -195,12 +195,12 @@ def _run_prediction(
     name="directory",
     short_help="Predict on audio files in a directory.",
 )
-@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("model_path", type=str)
 @click.argument("audio_dir", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_directory_command(
-    model_path: Path,
+    model_path: str,
     audio_dir: Path,
     output_path: Path,
     audio_config: Path | None,
@@ -239,12 +239,12 @@ def predict_directory_command(
     name="file_list",
     short_help="Predict on paths listed in a text file.",
 )
-@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("model_path", type=str)
 @click.argument("file_list", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_file_list_command(
-    model_path: Path,
+    model_path: str,
     file_list: Path,
     output_path: Path,
     audio_config: Path | None,
@@ -287,12 +287,12 @@ def predict_file_list_command(
     name="dataset",
     short_help="Predict on recordings from a dataset config.",
 )
-@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("model_path", type=str)
 @click.argument("dataset_path", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_dataset_command(
-    model_path: Path,
+    model_path: str,
     dataset_path: Path,
     output_path: Path,
     audio_config: Path | None,

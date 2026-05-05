@@ -4,6 +4,7 @@ import pytest
 from soundevent import data
 
 from batdetect2.train import TrainingConfig, run_train
+from batdetect2.train.checkpoints import resolve_checkpoint_path
 
 pytestmark = pytest.mark.slow
 
@@ -92,3 +93,44 @@ def test_train_controls_which_checkpoints_are_kept(
     assert last_checkpoints
     assert len(best_checkpoints) == 1
     assert "epoch" in best_checkpoints[0].name
+
+
+def test_resolve_checkpoint_path_returns_local_path_unchanged(
+    tmp_path: Path,
+) -> None:
+    local_path = tmp_path / "model.ckpt"
+    local_path.write_bytes(b"checkpoint")
+
+    assert resolve_checkpoint_path(local_path) == local_path
+    assert resolve_checkpoint_path(str(local_path)) == local_path
+
+
+def test_resolve_checkpoint_path_downloads_huggingface_checkpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    expected_path = tmp_path / "downloaded.ckpt"
+
+    def fake_hf_hub_download(repo_id: str, filename: str) -> str:
+        assert repo_id == "owner/repo"
+        assert filename == "weights/model.ckpt"
+        return str(expected_path)
+
+    monkeypatch.setattr(
+        "batdetect2.train.checkpoints.hf_hub_download",
+        fake_hf_hub_download,
+    )
+
+    resolved = resolve_checkpoint_path("hf://owner/repo/weights/model.ckpt")
+
+    assert resolved == expected_path
+
+
+def test_resolve_checkpoint_path_rejects_incomplete_huggingface_uri() -> None:
+    with pytest.raises(ValueError, match="hf://owner/repo/path/to"):
+        resolve_checkpoint_path("hf://owner/repo")
+
+
+def test_resolve_checkpoint_path_rejects_missing_local_path() -> None:
+    with pytest.raises(FileNotFoundError, match="Checkpoint not found"):
+        resolve_checkpoint_path("missing.ckpt")

@@ -18,10 +18,10 @@ __all__ = ["train_command"]
 @click.option(
     "--model",
     "model_path",
-    type=click.Path(exists=True),
+    type=str,
     help=(
-        "Path to a checkpoint to continue training from. If omitted, "
-        "training starts from a fresh model config."
+        "Path to a checkpoint or a Hugging Face URI to continue training "
+        "from. If omitted, training starts from a fresh model config."
     ),
 )
 @click.option(
@@ -118,7 +118,7 @@ __all__ = ["train_command"]
 def train_command(
     train_dataset: Path,
     val_dataset: Path | None = None,
-    model_path: Path | None = None,
+    model_path: str | None = None,
     ckpt_dir: Path | None = None,
     log_dir: Path | None = None,
     base_dir: Path | None = None,

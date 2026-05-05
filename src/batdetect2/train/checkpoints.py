@@ -1,13 +1,16 @@
 from pathlib import Path
 from typing import Literal
 
+from huggingface_hub import hf_hub_download
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
+from soundevent.data import PathLike
 
 from batdetect2.core import BaseConfig
 
 __all__ = [
     "CheckpointConfig",
     "build_checkpoint_callback",
+    "resolve_checkpoint_path",
 ]
 
 DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
@@ -53,3 +56,51 @@ def build_checkpoint_callback(
         save_last=config.save_last,
         every_n_epochs=config.every_n_epochs,
     )
+
+
+def resolve_checkpoint_path(path: PathLike | str) -> Path:
+    """Resolve a local path or Hugging Face checkpoint URI.
+
+    Parameters
+    ----------
+    path : PathLike | str
+        Local checkpoint path or a Hugging Face URI of the form
+        ``hf://owner/repo/path/to/checkpoint.ckpt``.
+
+    Returns
+    -------
+    Path
+        Resolved local filesystem path to the checkpoint.
+    """
+    if isinstance(path, str) and path.startswith("hf://"):
+        repo_id, filename = _parse_huggingface_uri(path)
+        return Path(hf_hub_download(repo_id=repo_id, filename=filename))
+
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {path}")
+
+    return path
+
+
+def _parse_huggingface_uri(uri: str) -> tuple[str, str]:
+    prefix = "hf://"
+    if not uri.startswith(prefix):
+        raise ValueError(
+            "Hugging Face checkpoint URIs must start with 'hf://'."
+        )
+
+    without_prefix = uri.removeprefix(prefix).strip("/")
+    parts = without_prefix.split("/")
+
+    if len(parts) < 3:
+        raise ValueError(
+            "Hugging Face checkpoint URIs must be in the form "
+            "'hf://owner/repo/path/to/checkpoint.ckpt'."
+        )
+
+    repo_id = "/".join(parts[:2])
+    filename = "/".join(parts[2:])
+    return repo_id, filename

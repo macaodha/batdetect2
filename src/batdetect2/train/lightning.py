@@ -6,6 +6,7 @@ from soundevent.data import PathLike
 from batdetect2.models import Model, ModelConfig, build_model
 from batdetect2.models.types import ModelOutput
 from batdetect2.targets import TargetConfig
+from batdetect2.train.checkpoints import resolve_checkpoint_path
 from batdetect2.train.config import TrainingConfig
 from batdetect2.train.losses import build_loss
 from batdetect2.train.optimizers import build_optimizer
@@ -130,7 +131,7 @@ class StoredConfig:
 
 
 def load_model_from_checkpoint(
-    path: PathLike,
+    path: PathLike | str,
 ) -> tuple[Model, StoredConfig]:
     """Load a model and its configuration from a Lightning checkpoint.
 
@@ -146,7 +147,8 @@ def load_model_from_checkpoint(
         The restored ``Model`` instance and the ``ModelConfig`` that
         describes its architecture, preprocessing, and postprocessing.
     """
-    module = TrainingModule.load_from_checkpoint(path)  # type: ignore
+    resolved_path = resolve_checkpoint_path(path)
+    module = TrainingModule.load_from_checkpoint(resolved_path)
     training_config = TrainingConfig.model_validate(module.train_config)
     model_config = ModelConfig.model_validate(module.model_config)
     targets_config = TargetConfig.model_validate(module.targets_config)
