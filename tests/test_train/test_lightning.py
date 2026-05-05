@@ -10,7 +10,11 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.audio.types import AudioLoader
-from batdetect2.models import ModelConfig, build_model
+from batdetect2.models import (
+    ModelConfig,
+    build_model,
+    build_model_with_new_targets,
+)
 from batdetect2.targets import TargetConfig, build_roi_mapping, build_targets
 from batdetect2.train import (
     TrainingConfig,
@@ -320,6 +324,49 @@ def test_build_training_module_uses_provided_model() -> None:
     )
 
     assert module.model is model
+
+
+def test_build_model_with_new_targets_reuses_backbone_and_rebuilds_heads() -> (
+    None
+):
+    source_targets_config = TargetConfig()
+    source_targets = build_targets(source_targets_config)
+    source_roi_mapper = build_roi_mapping(source_targets_config.roi)
+    source_model = build_model(
+        ModelConfig(),
+        class_names=source_targets.class_names,
+        dimension_names=source_roi_mapper.dimension_names,
+    )
+
+    new_targets_config = TargetConfig.model_validate(
+        {
+            "classification_targets": [
+                {
+                    "name": "single_class",
+                    "tags": [{"key": "class", "value": "single_class"}],
+                }
+            ]
+        }
+    )
+    new_targets = build_targets(new_targets_config)
+    new_roi_mapper = build_roi_mapping(new_targets_config.roi)
+
+    rebuilt_model = build_model_with_new_targets(
+        model=source_model,
+        targets=new_targets,
+        roi_mapper=new_roi_mapper,
+    )
+
+    source_detector = source_model.detector
+    rebuilt_detector = rebuilt_model.detector
+
+    assert rebuilt_detector.backbone is source_detector.backbone
+    assert (
+        rebuilt_detector.classifier_head is not source_detector.classifier_head
+    )
+    assert rebuilt_detector.bbox_head is not source_detector.bbox_head
+    assert rebuilt_model.class_names == ["single_class"]
+    assert rebuilt_model.dimension_names == ["width", "height"]
 
 
 def test_run_train_rejects_incompatible_model_config(

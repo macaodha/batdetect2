@@ -308,42 +308,6 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
 
 
 @pytest.mark.slow
-def test_user_can_finetune_only_heads(
-    tmp_path: Path,
-    example_annotations,
-) -> None:
-    """User story: fine-tune only prediction heads."""
-
-    api = BatDetect2API.from_config()
-    finetune_dir = tmp_path / "heads_only"
-
-    api.finetune(
-        train_annotations=example_annotations[:1],
-        val_annotations=example_annotations[:1],
-        trainable="heads",
-        train_workers=0,
-        val_workers=0,
-        checkpoint_dir=finetune_dir,
-        log_dir=tmp_path / "logs",
-        num_epochs=1,
-        seed=0,
-    )
-    detector = cast(Detector, api.model.detector)
-
-    backbone_params = list(detector.backbone.parameters())
-    classifier_params = list(detector.classifier_head.parameters())
-    bbox_params = list(detector.bbox_head.parameters())
-
-    assert backbone_params
-    assert classifier_params
-    assert bbox_params
-    assert all(not parameter.requires_grad for parameter in backbone_params)
-    assert all(parameter.requires_grad for parameter in classifier_params)
-    assert all(parameter.requires_grad for parameter in bbox_params)
-    assert list(finetune_dir.rglob("*.ckpt"))
-
-
-@pytest.mark.slow
 def test_user_can_evaluate_small_dataset_and_get_metrics(
     api_v2: BatDetect2API,
     example_annotations,

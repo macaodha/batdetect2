@@ -2,6 +2,7 @@ from batdetect2.cli.base import cli
 from batdetect2.cli.compat import detect
 from batdetect2.cli.data import data
 from batdetect2.cli.evaluate import evaluate_command
+from batdetect2.cli.finetune import finetune_command
 from batdetect2.cli.inference import predict
 from batdetect2.cli.train import train_command
 
@@ -10,6 +11,7 @@ __all__ = [
     "detect",
     "data",
     "train_command",
+    "finetune_command",
     "evaluate_command",
     "predict",
 ]

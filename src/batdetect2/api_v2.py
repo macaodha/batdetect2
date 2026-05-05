@@ -137,6 +137,7 @@ class BatDetect2API:
     def finetune(
         self,
         train_annotations: Sequence[data.ClipAnnotation],
+        targets_config: TargetConfig,
         val_annotations: Sequence[data.ClipAnnotation] | None = None,
         trainable: Literal[
             "all", "heads", "classifier_head", "bbox_head"
@@ -149,25 +150,76 @@ class BatDetect2API:
         num_epochs: int | None = None,
         run_name: str | None = None,
         seed: int | None = None,
-        model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         logger_config: LoggerConfig | None = None,
     ) -> "BatDetect2API":
-        """Fine-tune the model with trainable-parameter selection."""
+        """Fine-tune from a checkpoint using a new target definition."""
+        from batdetect2.evaluate import build_evaluator
+        from batdetect2.models import build_model_with_new_targets
+        from batdetect2.outputs import (
+            build_output_formatter,
+            build_output_transform,
+        )
+        from batdetect2.targets import (
+            TargetConfig,
+            build_roi_mapping,
+            build_targets,
+        )
         from batdetect2.train import run_train
 
-        self._set_trainable_parameters(trainable)
+        target_config = TargetConfig.model_validate(targets_config)
+        targets = build_targets(config=target_config)
+        roi_mapper = build_roi_mapping(config=target_config.roi)
+        model = build_model_with_new_targets(
+            model=self.model,
+            targets=targets,
+            roi_mapper=roi_mapper,
+        )
+        output_transform = build_output_transform(
+            config=self.outputs_config.transform,
+            targets=targets,
+            roi_mapper=roi_mapper,
+        )
+        api = BatDetect2API(
+            model_config=self.model_config,
+            audio_config=audio_config or self.audio_config,
+            train_config=train_config or self.train_config,
+            evaluation_config=self.evaluation_config,
+            inference_config=self.inference_config,
+            outputs_config=self.outputs_config,
+            logging_config=self.logging_config,
+            targets=targets,
+            roi_mapper=roi_mapper,
+            audio_loader=self.audio_loader,
+            preprocessor=self.preprocessor,
+            postprocessor=self.postprocessor,
+            evaluator=build_evaluator(
+                config=self.evaluation_config,
+                targets=targets,
+                roi_mapper=roi_mapper,
+                transform=output_transform,
+            ),
+            formatter=build_output_formatter(
+                targets,
+                config=self.outputs_config.format,
+            ),
+            output_transform=output_transform,
+            model=model,
+        )
+
+        api._set_trainable_parameters(trainable)
+        api.model.train()
 
         run_train(
             train_annotations=train_annotations,
             val_annotations=val_annotations,
-            model=self.model,
-            targets=self.targets,
-            roi_mapper=self.roi_mapper,
-            model_config=model_config or self.model_config,
-            preprocessor=self.preprocessor,
-            audio_loader=self.audio_loader,
+            model=api.model,
+            targets=api.targets,
+            roi_mapper=api.roi_mapper,
+            model_config=api.model_config,
+            preprocessor=api.preprocessor,
+            audio_loader=api.audio_loader,
             train_workers=train_workers,
             val_workers=val_workers,
             checkpoint_dir=checkpoint_dir,
@@ -176,11 +228,12 @@ class BatDetect2API:
             num_epochs=num_epochs,
             run_name=run_name,
             seed=seed,
-            audio_config=audio_config or self.audio_config,
-            train_config=train_config or self.train_config,
-            logger_config=logger_config or self.logging_config.train,
+            audio_config=api.audio_config,
+            train_config=api.train_config,
+            logger_config=logger_config or api.logging_config.train,
         )
-        return self
+        api.model.eval()
+        return api
 
     def evaluate(
         self,
