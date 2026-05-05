@@ -592,7 +592,6 @@ class BatDetect2API:
     def from_checkpoint(
         cls,
         path: data.PathLike,
-        targets_config: TargetConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         evaluation_config: EvaluationConfig | None = None,
@@ -616,21 +615,21 @@ class BatDetect2API:
             build_targets,
             check_target_compatibility,
         )
-        from batdetect2.train import TrainingConfig, load_model_from_checkpoint
+        from batdetect2.train import load_model_from_checkpoint
 
         model, configs = load_model_from_checkpoint(path)
 
         model_config = configs.model
+        train_config = train_config or configs.train
 
         audio_config = audio_config or AudioConfig(
             samplerate=model_config.samplerate,
         )
-        train_config = train_config or TrainingConfig()
         evaluation_config = evaluation_config or EvaluationConfig()
         inference_config = inference_config or InferenceConfig()
         outputs_config = outputs_config or OutputsConfig()
         logging_config = logging_config or AppLoggingConfig()
-        targets_config = targets_config or configs.targets
+        targets_config = configs.targets
 
         targets = build_targets(config=targets_config)
         roi_mapper = build_roi_mapping(config=targets_config.roi)

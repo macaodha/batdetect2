@@ -106,7 +106,6 @@ def evaluate_command(
     from batdetect2.inference import InferenceConfig
     from batdetect2.logging import AppLoggingConfig
     from batdetect2.outputs import OutputsConfig
-    from batdetect2.targets import TargetConfig
 
     logger.info("Initiating evaluation process...")
 
@@ -120,11 +119,6 @@ def evaluate_command(
         num_annotations=len(test_annotations),
     )
 
-    target_conf = (
-        TargetConfig.load(targets_config)
-        if targets_config is not None
-        else None
-    )
     audio_conf = (
         AudioConfig.load(audio_config) if audio_config is not None else None
     )
@@ -151,7 +145,6 @@ def evaluate_command(
 
     api = BatDetect2API.from_checkpoint(
         model_path,
-        targets_config=target_conf,
         audio_config=audio_conf,
         evaluation_config=eval_conf,
         inference_config=inference_conf,

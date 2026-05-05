@@ -81,3 +81,24 @@ def test_cli_train_rejects_model_and_model_config_together(
 
     assert result.exit_code != 0
     assert "--model-config cannot be used with --model" in result.output
+
+
+def test_cli_train_rejects_model_and_targets_together(
+    tiny_checkpoint_path: Path,
+) -> None:
+    """User story: checkpoint training does not accept new targets."""
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "train",
+            "example_data/dataset.yaml",
+            "--model",
+            str(tiny_checkpoint_path),
+            "--targets",
+            "example_data/targets.yaml",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--targets cannot be used with --model" in result.output

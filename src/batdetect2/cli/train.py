@@ -228,6 +228,12 @@ def train_command(
             "Checkpoint model configuration is loaded from the checkpoint."
         )
 
+    if model_path is not None and target_conf is not None:
+        raise click.UsageError(
+            "--targets cannot be used with --model. "
+            "Checkpoint target configuration is loaded from the checkpoint."
+        )
+
     if model_path is None:
         api = BatDetect2API.from_config(
             model_config=model_conf,
@@ -242,7 +248,6 @@ def train_command(
     else:
         api = BatDetect2API.from_checkpoint(
             model_path,
-            targets_config=target_conf,
             train_config=train_conf,
             audio_config=audio_conf,
             evaluation_config=eval_conf,

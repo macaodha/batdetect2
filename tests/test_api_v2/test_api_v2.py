@@ -287,10 +287,7 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
     source_detector = cast(Detector, source_model.detector)
 
     # When
-    api = BatDetect2API.from_checkpoint(
-        checkpoint_path,
-        targets_config=example_targets_config,
-    )
+    api = BatDetect2API.from_checkpoint(checkpoint_path)
 
     # Then
     detector = cast(Detector, api.model.detector)
