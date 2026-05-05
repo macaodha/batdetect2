@@ -9,10 +9,22 @@ from batdetect2.core import BaseConfig
 __all__ = [
     "CheckpointConfig",
     "build_checkpoint_callback",
+    "get_bundled_checkpoint_names",
     "resolve_checkpoint_path",
 ]
 
 DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
+_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+_BUNDLED_CHECKPOINTS = {
+    "uk_same": _PACKAGE_ROOT
+    / "models"
+    / "checkpoints"
+    / "batdetect2_uk_same.ckpt",
+    "batdetect2_uk_same": _PACKAGE_ROOT
+    / "models"
+    / "checkpoints"
+    / "batdetect2_uk_same.ckpt",
+}
 
 
 class CheckpointConfig(BaseConfig):
@@ -20,6 +32,8 @@ class CheckpointConfig(BaseConfig):
     monitor: str | None = None
     mode: str = "max"
     save_top_k: int = 1
+    # Default to distributable inference checkpoints, not full train resumes.
+    save_weights_only: bool = True
     filename: str | None = None
     save_last: bool | Literal["link"] = "link"
     every_n_epochs: int | None = 1
@@ -49,6 +63,7 @@ def build_checkpoint_callback(
     return ModelCheckpoint(
         dirpath=str(checkpoint_dir),
         save_top_k=config.save_top_k,
+        save_weights_only=config.save_weights_only,
         monitor=config.monitor,
         mode=config.mode,
         filename=config.filename,
@@ -57,14 +72,20 @@ def build_checkpoint_callback(
     )
 
 
+def get_bundled_checkpoint_names() -> tuple[str, ...]:
+    """Return the supported bundled checkpoint aliases."""
+
+    return tuple(_BUNDLED_CHECKPOINTS)
+
+
 def resolve_checkpoint_path(path: PathLike | str) -> Path:
-    """Resolve a local path or Hugging Face checkpoint URI.
+    """Resolve a local path, bundled alias, or Hugging Face checkpoint URI.
 
     Parameters
     ----------
     path : PathLike | str
-        Local checkpoint path or a Hugging Face URI of the form
-        ``hf://owner/repo/path/to/checkpoint.ckpt``.
+        Local checkpoint path, bundled checkpoint alias, or a Hugging Face
+        URI of the form ``hf://owner/repo/path/to/checkpoint.ckpt``.
 
     Returns
     -------
@@ -87,10 +108,23 @@ def resolve_checkpoint_path(path: PathLike | str) -> Path:
     if not isinstance(path, Path):
         path = Path(path)
 
-    if not path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {path}")
+    if path.exists():
+        return path
 
-    return path
+    bundled_path = _BUNDLED_CHECKPOINTS.get(str(path))
+    if bundled_path is not None:
+        if not bundled_path.exists():
+            raise FileNotFoundError(
+                f"Bundled checkpoint is missing: {bundled_path}"
+            )
+        return bundled_path
+
+    bundled_names = ", ".join(get_bundled_checkpoint_names())
+    raise FileNotFoundError(
+        "Checkpoint not found: "
+        f"{path}. Expected a local path, a bundled checkpoint alias "
+        f"({bundled_names}), or a Hugging Face URI."
+    )
 
 
 def _parse_huggingface_uri(uri: str) -> tuple[str, str]:
