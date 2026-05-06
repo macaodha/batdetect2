@@ -54,7 +54,8 @@ class BatDetect2API:
     evaluate predictions, and train or fine-tune models.
 
     In most cases, start with :meth:`from_checkpoint` to load a trained model.
-    Use :meth:`from_config` when you want to build a new model with custom configs.
+    Use :meth:`from_config` when you want to build a new model with custom
+    configs.
 
     Examples
     --------
@@ -93,7 +94,7 @@ class BatDetect2API:
     ):
         """Create a fully configured API instance.
 
-        This initializer is mainly for internal wiring.
+        This initializer is mainly for internal use.
         In most cases, users should create the API with
         :meth:`from_checkpoint` or :meth:`from_config`.
 
@@ -264,7 +265,7 @@ class BatDetect2API:
         targets_config: TargetConfig,
         val_annotations: Sequence[data.ClipAnnotation] | None = None,
         trainable: Literal[
-            "all", "heads", "classifier_head", "bbox_head"
+            "all", "heads", "classifier_head", "size_head"
         ] = "heads",
         train_workers: int = 0,
         val_workers: int = 0,
@@ -279,11 +280,11 @@ class BatDetect2API:
         logger_config: LoggerConfig | None = None,
         logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
     ) -> "BatDetect2API":
-        """Fine-tune the current model with a new target definition.
+        """Fine-tune the current model for new target sounds.
 
         Use this when you want to keep the existing model weights but change
         the target sounds. You can fine-tune the whole model or just the
-        classifier heads.
+        heads.
 
         Parameters
         ----------
@@ -293,7 +294,7 @@ class BatDetect2API:
             Target definition to train against.
         val_annotations : Sequence[data.ClipAnnotation] | None, optional
             Validation annotations.
-        trainable : {"all", "heads", "classifier_head", "bbox_head"}, optional
+        trainable : {"all", "heads", "classifier_head", "size_head"}, optional
             Which model parameters remain trainable.
         train_workers : int, optional
             Number of worker processes for training data loading.
@@ -509,19 +510,63 @@ class BatDetect2API:
         return metrics
 
     def load_audio(self, path: data.PathLike) -> np.ndarray:
-        """Load one audio file into a waveform array."""
+        """Load one audio file into a waveform array.
+
+        Parameters
+        ----------
+        path : data.PathLike
+            Path to the audio file.
+
+        Returns
+        -------
+        np.ndarray
+            Audio waveform loaded from disk.
+        """
         return self.audio_loader.load_file(path)
 
     def load_recording(self, recording: data.Recording) -> np.ndarray:
-        """Load one recording object into a waveform array."""
+        """Load one recording object into a waveform array.
+
+        Parameters
+        ----------
+        recording : data.Recording
+            Recording object describing the audio to load.
+
+        Returns
+        -------
+        np.ndarray
+            Audio waveform for the requested recording.
+        """
         return self.audio_loader.load_recording(recording)
 
     def load_clip(self, clip: data.Clip) -> np.ndarray:
-        """Load one clip object into a waveform array."""
+        """Load one clip object into a waveform array.
+
+        Parameters
+        ----------
+        clip : data.Clip
+            Clip object describing the section of audio to load.
+
+        Returns
+        -------
+        np.ndarray
+            Audio waveform for the requested clip.
+        """
         return self.audio_loader.load_clip(clip)
 
     def get_top_class_name(self, detection: Detection) -> str:
-        """Get highest-confidence class name for one detection."""
+        """Get the name of the highest-confidence class for one detection.
+
+        Parameters
+        ----------
+        detection : Detection
+            Detection whose class scores will be inspected.
+
+        Returns
+        -------
+        str
+            Class name with the highest score.
+        """
 
         import numpy as np
 
@@ -535,7 +580,22 @@ class BatDetect2API:
         include_top_class: bool = True,
         sort_descending: bool = True,
     ) -> list[tuple[str, float]]:
-        """Get class score list as ``(class_name, score)`` pairs."""
+        """Get class scores as ``(class_name, score)`` pairs.
+
+        Parameters
+        ----------
+        detection : Detection
+            Detection whose class scores will be returned.
+        include_top_class : bool, optional
+            If ``False``, omit the highest-scoring class from the result.
+        sort_descending : bool, optional
+            If ``True``, sort scores from highest to lowest.
+
+        Returns
+        -------
+        list[tuple[str, float]]
+            Class-score pairs for the detection.
+        """
 
         scores = [
             (class_name, float(score))
@@ -559,17 +619,22 @@ class BatDetect2API:
             if class_name != top_class_name
         ]
 
-    @staticmethod
-    def get_detection_features(detection: Detection) -> np.ndarray:
-        """Get extracted feature vector for one detection."""
-
-        return detection.features
-
     def generate_spectrogram(
         self,
         audio: np.ndarray,
     ) -> torch.Tensor:
-        """Convert a waveform array into a model spectrogram."""
+        """Convert a waveform array into a spectrogram tensor.
+
+        Parameters
+        ----------
+        audio : np.ndarray
+            Audio waveform.
+
+        Returns
+        -------
+        torch.Tensor
+            Spectrogram tensor ready for model inference.
+        """
         import torch
 
         tensor = torch.tensor(audio).unsqueeze(0)
@@ -703,7 +768,20 @@ class BatDetect2API:
         audio_dir: data.PathLike,
         detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
-        """Run inference on all supported audio files in a directory."""
+        """Run inference on all supported audio files in a directory.
+
+        Parameters
+        ----------
+        audio_dir : data.PathLike
+            Directory containing audio files.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        list[ClipDetections]
+            Predictions for all supported audio files found in the directory.
+        """
         from soundevent.audio.files import get_audio_files
 
         files = list(get_audio_files(audio_dir))
@@ -904,8 +982,8 @@ class BatDetect2API:
     ) -> "BatDetect2API":
         """Build an API instance from config objects.
 
-        Use this when you want to create a new model stack without loading a
-        saved checkpoint.
+        Use this when you want to create a new model without loading a saved
+        checkpoint.
 
         Parameters
         ----------
@@ -1161,7 +1239,7 @@ class BatDetect2API:
 
     def _set_trainable_parameters(
         self,
-        trainable: Literal["all", "heads", "classifier_head", "bbox_head"],
+        trainable: Literal["all", "heads", "classifier_head", "size_head"],
     ) -> None:
         detector = self.model.detector
 
@@ -1177,6 +1255,6 @@ class BatDetect2API:
             for parameter in detector.classifier_head.parameters():
                 parameter.requires_grad = True
 
-        if trainable in {"heads", "bbox_head"}:
+        if trainable in {"heads", "size_head"}:
             for parameter in detector.size_head.parameters():
                 parameter.requires_grad = True

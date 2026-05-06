@@ -200,13 +200,14 @@ def test_user_can_read_extracted_features_per_detection(
 ) -> None:
     """User story: inspect extracted feature vectors per detection."""
 
+    # Given
     prediction = api_v2.process_file(example_audio_files[0])
 
-    assert len(prediction.detections) > 0
+    # When
+    feature_vectors = [det.features for det in prediction.detections]
 
-    feature_vectors = [
-        api_v2.get_detection_features(det) for det in prediction.detections
-    ]
+    # Then
+    assert len(prediction.detections) > 0
     assert len(feature_vectors) == len(prediction.detections)
     assert all(vec.ndim == 1 for vec in feature_vectors)
     assert all(vec.size > 0 for vec in feature_vectors)

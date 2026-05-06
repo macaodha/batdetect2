@@ -1,49 +1,67 @@
 # BatDetect2
-<img style="display: block-inline;" width="64" height="64" src="assets/bat_icon.png"> Code for detecting and classifying bat echolocation calls in high frequency audio recordings.
+<img style="display:
+block-inline;" width="64" height="64" src="assets/bat_icon.png">Code for
+                                                                detecting and
+                                                                classifying bat
+                                                                echolocation
+                                                                calls in high
+                                                                frequency audio
+                                                                recordings.
+
+> [!WARNING]
+> BatDetect2 2.0.1 is out.
+> There are many changes and new recommended workflows.
+> We have left the previous `batdetect2.api` module intact, but if you run
+> into issues or want to upgrade, see the migration guide in the docs site.
+>
+> This update also ships with a refreshed default model.
+> It was trained in the same way and on the same data as before, but you
+> should still expect small output differences in some cases.
 
 ## What BatDetect2 is useful for
 
-BatDetect2 can help you screen recordings for bat calls,
-find recordings that need expert review,
-and compare model outputs across sites or projects with appropriate caution.
+BatDetect2 can help you screen recordings for bat calls, find recordings that
+need expert review, and compare model outputs across sites or projects with
+appropriate caution.
 
-It is best used as a tool to support ecological work,
-not as a replacement for validation or expert interpretation.
+It is best used as a tool to support ecological work, not as a replacement for
+validation or expert interpretation.
 
 ## Start here
 
-If you want the simplest current workflow,
-use the documentation site and start with:
+If you want the simplest current workflow, use the documentation site and start
+with:
 
-- getting started: `docs/source/getting_started.md`
-- first tutorial: `docs/source/tutorials/run-inference-on-folder.md`
+- getting started:
+  `docs/source/getting_started.md`
+- first tutorial:
+  `docs/source/tutorials/run-inference-on-folder.md`
 
-The current docs default to:
-
-- the current command-line workflow: `batdetect2 predict`
-- the current Python workflow: `batdetect2.api_v2.BatDetect2API`
-
-If you need the previous workflow based on `batdetect2 detect` or `batdetect2.api`,
-use the legacy docs section and migration guide in the docs site.
+If you need the previous workflow based on `batdetect2 detect` or
+`batdetect2.api`, use the legacy docs section and migration guide in the docs
+site.
 
 ## Install BatDetect2
 
-If you already use Python,
-activate the environment where you want BatDetect2 to live.
+If you already use Python, activate the environment where you want BatDetect2 to
+live.
 
-If not,
-create a fresh one first so BatDetect2 stays separate from other software on your machine.
+If not, create a fresh one first so BatDetect2 stays separate from other
+software on your machine.
 
 Two common options are:
 
-* Install the Anaconda Python 3.10 distribution for your operating system from [here](https://www.continuum.io/downloads). Create a new environment and activate it:
+* Install the Anaconda Python 3.10 distribution for your operating system from
+  [here](https://www.continuum.io/downloads).
+  Create a new environment and activate it:
 
 ```bash
 conda create -y --name batdetect2 python==3.10
 conda activate batdetect2
 ```
 
-* If you already have Python installed (version >= 3.10,< 3.14), you can create a fresh environment with:
+* If you already have Python installed (version >= 3.10,< 3.14), you can create
+  a fresh environment with:
 
 ```bash
 python -m venv .venv
@@ -57,7 +75,8 @@ You can use pip to install `batdetect2`:
 pip install batdetect2
 ```
 
-Alternatively, download this code from the repository (by clicking on the green button on top right) and unzip it.
+Alternatively, download this code from the repository (by clicking on the green
+button on top right) and unzip it.
 Once unzipped, run this from extracted folder.
 
 ```bash
@@ -68,11 +87,11 @@ Make sure you have the environment activated before installing `batdetect2`.
 
 ## Run BatDetect2 on a folder of recordings
 
-Once installed,
-the simplest current workflow is to run BatDetect2 on a folder of `.wav` files.
+Once installed, the simplest current workflow is to run BatDetect2 on a folder
+of `.wav` files.
 
-If you are working from this repository checkout,
-you can use this example checkpoint path:
+If you are working from this repository checkout, you can use this example
+checkpoint path:
 
 ```text
 src/batdetect2/models/checkpoints/Net2DFast_UK_same.pth.tar
@@ -87,32 +106,37 @@ batdetect2 predict directory \
   outputs
 ```
 
-This will scan the audio files in `example_data/audio`
-and save model outputs to `outputs`.
+This will scan the audio files in `example_data/audio` and save model outputs to
+`outputs`.
 
-For the full beginner walkthrough,
-use `docs/source/tutorials/run-inference-on-folder.md`.
+For the full beginner walkthrough, use
+`docs/source/tutorials/run-inference-on-folder.md`.
 
 ## Legacy workflow
 
-The sections below are kept only for people maintaining older BatDetect2 scripts and analysis pipelines.
+The sections below are kept only for people maintaining older BatDetect2 scripts
+and analysis pipelines.
 
-If you are new to BatDetect2,
-stop here and use the current docs and command above.
+If you are new to BatDetect2, stop here and use the current docs and command
+above.
 
-If you really do need the older workflow,
-the reference material is below.
+If you really do need the older workflow, the reference material is below.
 
 
 ## Try the model
-1) You can try a demo of the model (for UK species) on [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
+1) You can try a demo of the model (for UK species) on
+   [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
 
-2) Alternatively, click [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run the model using Google Colab. You can also run this notebook locally.
+2) Alternatively, click
+   [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb)
+   to run the model using Google Colab.
+   You can also run this notebook locally.
 
 
 ## Running the model on your own data
 
-After following the above steps to install the code you can run the model on your own data.
+After following the above steps to install the code you can run the model on
+your own data.
 
 The remainder of this section is legacy reference material.
 
@@ -133,23 +157,35 @@ batdetect2 detect example_data/audio/ example_data/anns/ 0.3
 ```
 
 `AUDIO_DIR` is the path on your computer to the audio wav files of interest.
-`ANN_DIR` is the path on your computer where the model predictions will be saved. The model will output both `.csv` and `.json` results for each audio file.
-`DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off threshold applied to the calls. A smaller number will result in more calls detected, but with the chance of introducing more mistakes.
+`ANN_DIR` is the path on your computer where the model predictions will be
+saved.
+The model will output both `.csv` and `.json` results for each audio file.
+`DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off
+threshold applied to the calls.
+A smaller number will result in more calls detected, but with the chance of
+introducing more mistakes.
 
-There are also optional arguments, e.g. you can request that the model outputs features (i.e. estimated call parameters) such as duration, max_frequency, etc. by setting the flag `--spec_features`. These will be saved as `*_spec_features.csv` files:
+There are also optional arguments, e.g. you can request that the model outputs
+features (i.e. estimated call parameters) such as duration, max_frequency, etc.
+by setting the flag `--spec_features`.
+These will be saved as `*_spec_features.csv` files:
 `batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --spec_features`
 
-You can also specify which model to use by setting the `--model_path` argument. If not specified, it will default to using a model trained on UK data e.g.
-`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --model_path models/Net2DFast_UK_same.pth.tar`
+You can also specify which model to use by setting the `--model_path` argument.
+If not specified, it will default to using a model trained on UK data e.g.
+`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --model_path
+models/Net2DFast_UK_same.pth.tar`
 
 
 ### Using the Python API
 
 The examples below describe the legacy Python API.
 
-For new work, prefer `batdetect2.api_v2.BatDetect2API` and the current docs site.
+For new work, prefer `batdetect2.api_v2.BatDetect2API` and the current docs
+site.
 
-If you prefer to process your data within a Python script then you can use the `batdetect2` Python API.
+If you prefer to process your data within a Python script then you can use the
+`batdetect2` Python API.
 
 ```python
 from batdetect2 import api
@@ -170,25 +206,32 @@ detections, features = api.process_spectrogram(spec)
 # Do something else ...
 ```
 
-You can integrate the detections or the extracted features to your custom analysis pipeline.
+You can integrate the detections or the extracted features to your custom
+analysis pipeline.
 
 
 ## Training the model on your own data
 Take a look at the training tutorial in the docs site first.
 
-If you are working from this repository checkout,
-start with `docs/source/tutorials/train-a-custom-model.md`.
+If you are working from this repository checkout, start with
+`docs/source/tutorials/train-a-custom-model.md`.
 
 
 ## Data and annotations
-The raw audio data and annotations used to train the models in the paper will be added soon.
-The audio interface used to annotate audio data for training and evaluation is available [here](https://github.com/macaodha/batdetect2_GUI).
+The raw audio data and annotations used to train the models in the paper will be
+added soon.
+The audio interface used to annotate audio data for training and evaluation is
+available [here](https://github.com/macaodha/batdetect2_GUI).
 
 
 ## Warning
-The models developed and shared as part of this repository should be used with caution.
-While they have been evaluated on held out audio data, great care should be taken when using the model outputs for any form of biodiversity assessment.
-Your data may differ, and as a result it is very strongly recommended that you validate the model first using data with known species to ensure that the outputs can be trusted.
+The models developed and shared as part of this repository should be used with
+caution.
+While they have been evaluated on held out audio data, great care should be
+taken when using the model outputs for any form of biodiversity assessment.
+Your data may differ, and as a result it is very strongly recommended that you
+validate the model first using data with known species to ensure that the
+outputs can be trusted.
 
 
 ## FAQ
@@ -196,7 +239,9 @@ For more information please consult our [FAQ](docs/source/faq.md).
 
 
 ## Reference
-If you find our work useful in your research please consider citing our paper which you can find [here](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1):
+If you find our work useful in your research please consider citing our paper
+which you can find
+[here](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1):
 ```
 @article{batdetect2_2022,
     title     = {Towards a General Approach for Bat Echolocation Detection and Classification},
@@ -207,10 +252,6 @@ If you find our work useful in your research please consider citing our paper wh
 ```
 
 ## Acknowledgements
-Thanks to all the contributors who spent time collecting and annotating audio data.
 
-
-### TODOs
-- [x] Release the code and pretrained model  
-- [ ] Release the datasets and annotations used the experiments in the paper 
-- [ ] Add the scripts used to generate the tables and figures from the paper 
+Thanks to all the contributors who spent time collecting and annotating audio
+data.

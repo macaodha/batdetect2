@@ -1,11 +1,10 @@
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
-from batdetect2.train.checkpoints import DEFAULT_CHECKPOINT
 
 __all__ = ["finetune_command"]
 
@@ -20,8 +19,7 @@ __all__ = ["finetune_command"]
     type=str,
     help=(
         "Path to a checkpoint, bundled checkpoint alias, or a Hugging Face "
-        "URI to fine-tune from. Defaults to "
-        f"'{DEFAULT_CHECKPOINT}'."
+        "URI to fine-tune from. Defaults to uk_same"
     ),
 )
 @click.option(
@@ -61,7 +59,7 @@ __all__ = ["finetune_command"]
 )
 @click.option(
     "--trainable",
-    type=click.Choice(["all", "heads", "classifier_head", "bbox_head"]),
+    type=click.Choice(["all", "heads", "classifier_head", "size_head"]),
     default="heads",
     show_default=True,
     help="Which model parameters remain trainable during fine-tuning.",
@@ -119,7 +117,9 @@ def finetune_command(
     training_config: Path | None = None,
     audio_config: Path | None = None,
     logging_config: Path | None = None,
-    trainable: str = "heads",
+    trainable: Literal[
+        "all", "heads", "classifier_head", "size_head"
+    ] = "heads",
     seed: int | None = None,
     num_epochs: int | None = None,
     train_workers: int = 0,
@@ -196,10 +196,7 @@ def finetune_command(
         train_annotations=train_annotations,
         val_annotations=val_annotations,
         targets_config=target_conf,
-        trainable=cast(
-            Literal["all", "heads", "classifier_head", "bbox_head"],
-            trainable,
-        ),
+        trainable=trainable,
         train_workers=train_workers,
         val_workers=val_workers,
         checkpoint_dir=ckpt_dir,
