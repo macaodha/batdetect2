@@ -24,11 +24,15 @@ from batdetect2.postprocess.types import ClipDetections
 from batdetect2.targets.types import TargetProtocol
 
 
+def _default_metrics() -> list[DetectionMetricConfig]:
+    return [DetectionAveragePrecisionConfig()]
+
+
 class DetectionTaskConfig(BaseSEDTaskConfig):
     name: Literal["sound_event_detection"] = "sound_event_detection"
     prefix: str = "detection"
     metrics: list[DetectionMetricConfig] = Field(
-        default_factory=lambda: [DetectionAveragePrecisionConfig()]
+        default_factory=_default_metrics
     )
     plots: list[DetectionPlotConfig] = Field(default_factory=list)
 

@@ -53,7 +53,7 @@ class Registry(Generic[T_Type, P_Type]):
     def __init__(self, name: str, discriminator: str = "name"):
         self._name = name
         self._registry: dict[
-            str, Callable[Concatenate[..., P_Type], T_Type]
+            str, Callable[Concatenate[Any, P_Type], T_Type]
         ] = {}
         self._discriminator = discriminator
         self._config_types: dict[str, Type[BaseModel]] = {}
@@ -80,7 +80,7 @@ class Registry(Generic[T_Type, P_Type]):
             )
 
         def decorator(
-            func: Callable[Concatenate[T_Config, P_Type], T_Type],
+            func: Callable[..., T_Type],
         ):
             self._registry[name] = func
             return func
@@ -102,8 +102,8 @@ class Registry(Generic[T_Type, P_Type]):
     def build(
         self,
         config: BaseModel,
-        *args: P_Type.args,
-        **kwargs: P_Type.kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> T_Type:
         """Builds a logic instance from a config object."""
 

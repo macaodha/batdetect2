@@ -154,17 +154,18 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
         top_class_index = int(np.argmax(prediction.class_scores))
         top_class_score = float(prediction.class_scores[top_class_index])
         top_class = self.get_class_name(top_class_index)
-        return Annotation(
-            start_time=start_time,
-            end_time=end_time,
-            low_freq=low_freq,
-            high_freq=high_freq,
-            class_prob=top_class_score,
-            det_prob=float(prediction.detection_score),
-            individual="",
-            event=self.event_name,
-            **{"class": top_class},
-        )
+        annotation: Annotation = {
+            "start_time": start_time,
+            "end_time": end_time,
+            "low_freq": low_freq,
+            "high_freq": high_freq,
+            "class_prob": top_class_score,
+            "det_prob": float(prediction.detection_score),
+            "individual": "",
+            "event": self.event_name,
+            "class": top_class,
+        }
+        return annotation
 
     @output_formatters.register(BatDetect2OutputConfig)
     @staticmethod

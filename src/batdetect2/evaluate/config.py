@@ -12,13 +12,15 @@ __all__ = [
 ]
 
 
+def _default_tasks() -> list[TaskConfig]:
+    return [
+        DetectionTaskConfig(),
+        ClassificationTaskConfig(),
+    ]
+
+
 class EvaluationConfig(BaseConfig):
-    tasks: List[TaskConfig] = Field(
-        default_factory=lambda: [
-            DetectionTaskConfig(),
-            ClassificationTaskConfig(),
-        ]
-    )
+    tasks: List[TaskConfig] = Field(default_factory=_default_tasks)
 
 
 def get_default_eval_config() -> EvaluationConfig:

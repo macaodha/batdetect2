@@ -102,19 +102,19 @@ def convert_to_annotation_group(
         x_inds.append(0)
         y_inds.append(0)
 
-        annotations.append(
-            Annotation(
-                start_time=start_time,
-                end_time=end_time,
-                low_freq=low_freq,
-                high_freq=high_freq,
-                class_prob=1.0,
-                det_prob=1.0,
-                individual="0",
-                event=event,
-                class_id=class_id,
-            )
-        )
+        annotation_entry: Annotation = {
+            "start_time": start_time,
+            "end_time": end_time,
+            "low_freq": low_freq,
+            "high_freq": high_freq,
+            "class_prob": 1.0,
+            "det_prob": 1.0,
+            "individual": "0",
+            "event": event,
+            "class": get_recording_class_name(recording),
+            "class_id": class_id,
+        }
+        annotations.append(annotation_entry)
 
     return {
         "id": str(recording.path),

@@ -24,11 +24,15 @@ from batdetect2.postprocess.types import ClipDetections
 from batdetect2.targets.types import TargetProtocol
 
 
+def _default_metrics() -> list[TopClassMetricConfig]:
+    return [TopClassAveragePrecisionConfig()]
+
+
 class TopClassDetectionTaskConfig(BaseSEDTaskConfig):
     name: Literal["top_class_detection"] = "top_class_detection"
     prefix: str = "top_class"
     metrics: list[TopClassMetricConfig] = Field(
-        default_factory=lambda: [TopClassAveragePrecisionConfig()]
+        default_factory=_default_metrics
     )
     plots: list[TopClassPlotConfig] = Field(default_factory=list)
 

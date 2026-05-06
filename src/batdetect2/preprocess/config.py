@@ -26,6 +26,13 @@ __all__ = [
 ]
 
 
+def _default_spectrogram_transforms() -> list[SpectrogramTransform]:
+    return [
+        PcenConfig(),
+        SpectralMeanSubtractionConfig(),
+    ]
+
+
 class PreprocessingConfig(BaseConfig):
     """Unified configuration for the audio preprocessing pipeline.
 
@@ -58,10 +65,7 @@ class PreprocessingConfig(BaseConfig):
     audio_transforms: List[AudioTransform] = Field(default_factory=list)
 
     spectrogram_transforms: List[SpectrogramTransform] = Field(
-        default_factory=lambda: [
-            PcenConfig(),
-            SpectralMeanSubtractionConfig(),
-        ]
+        default_factory=_default_spectrogram_transforms
     )
 
     stft: STFTConfig = Field(default_factory=STFTConfig)

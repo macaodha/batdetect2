@@ -71,7 +71,7 @@ class TargetClassConfig(BaseConfig):
 
 DEFAULT_DETECTION_CLASS = TargetClassConfig(
     name="bat",
-    match_if=AllOfConfig(  # ty: ignore[unknown-argument]
+    match_if=AllOfConfig(
         conditions=[
             HasTagConfig(tag=data.Tag(term=call_type, value="Echolocation")),
             NotConfig(
