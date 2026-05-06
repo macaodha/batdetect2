@@ -27,6 +27,10 @@ def make_path_relative(path: PathLike, audio_dir: PathLike) -> Path:
 
         return path.relative_to(audio_dir)
 
+    audio_parts = audio_dir.parts
+    if audio_parts and path.parts[: len(audio_parts)] == audio_parts:
+        return Path(*path.parts[len(audio_parts) :])
+
     return path
 
 
