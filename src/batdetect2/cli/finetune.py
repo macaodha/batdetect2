@@ -5,6 +5,7 @@ import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
+from batdetect2.train.checkpoints import DEFAULT_BUNDLED_CHECKPOINT
 
 __all__ = ["finetune_command"]
 
@@ -16,9 +17,12 @@ __all__ = ["finetune_command"]
 @click.option(
     "--model",
     "model_path",
-    required=True,
     type=str,
-    help="Path to a checkpoint or a Hugging Face URI to fine-tune from.",
+    help=(
+        "Path to a checkpoint, bundled checkpoint alias, or a Hugging Face "
+        "URI to fine-tune from. Defaults to "
+        f"'{DEFAULT_BUNDLED_CHECKPOINT}'."
+    ),
 )
 @click.option(
     "--targets",
@@ -106,7 +110,7 @@ __all__ = ["finetune_command"]
 )
 def finetune_command(
     train_dataset: Path,
-    model_path: str,
+    model_path: str | None,
     targets_config: Path,
     val_dataset: Path | None = None,
     ckpt_dir: Path | None = None,

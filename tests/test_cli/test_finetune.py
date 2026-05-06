@@ -1,6 +1,7 @@
 """CLI tests for finetune command."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
@@ -25,8 +26,41 @@ def test_cli_finetune_help() -> None:
     assert "--outputs-config" not in result.output
 
 
-def test_cli_finetune_requires_model() -> None:
-    """User story: finetune requires a checkpoint argument."""
+def test_cli_finetune_defaults_to_bundled_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """User story: finetune can use the bundled checkpoint by default."""
+
+    called = {}
+
+    class FakeAPI:
+        def finetune(self, **kwargs):
+            called["finetune"] = kwargs
+            return None
+
+    class FakeBatDetect2API:
+        @classmethod
+        def from_checkpoint(cls, path=None, **kwargs):
+            called["path"] = path
+            called["from_checkpoint_kwargs"] = kwargs
+            return FakeAPI()
+
+    monkeypatch.setattr(
+        "batdetect2.api_v2.BatDetect2API",
+        FakeBatDetect2API,
+    )
+    monkeypatch.setattr(
+        "batdetect2.data.load_dataset_config",
+        lambda path: SimpleNamespace(path=path),
+    )
+    monkeypatch.setattr(
+        "batdetect2.data.load_dataset",
+        lambda config, base_dir=None: [],
+    )
+    monkeypatch.setattr(
+        "batdetect2.targets.TargetConfig.load",
+        lambda path: SimpleNamespace(path=path),
+    )
 
     result = CliRunner().invoke(
         cli,
@@ -38,8 +72,9 @@ def test_cli_finetune_requires_model() -> None:
         ],
     )
 
-    assert result.exit_code != 0
-    assert "--model" in result.output
+    assert result.exit_code == 0
+    assert called["path"] is None
+    assert "finetune" in called
 
 
 def test_cli_finetune_requires_targets(tiny_checkpoint_path: Path) -> None:

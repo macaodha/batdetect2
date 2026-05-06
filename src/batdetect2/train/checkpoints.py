@@ -8,19 +8,21 @@ from batdetect2.core import BaseConfig
 
 __all__ = [
     "CheckpointConfig",
+    "DEFAULT_CHECKPOINT",
     "build_checkpoint_callback",
     "get_bundled_checkpoint_names",
     "resolve_checkpoint_path",
 ]
 
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CHECKPOINT_DIR: Path = Path("outputs") / "checkpoints"
-_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-_BUNDLED_CHECKPOINTS = {
-    "uk_same": _PACKAGE_ROOT
+DEFAULT_CHECKPOINT = "uk_same"
+CHECKPOINT_ALIASES = {
+    DEFAULT_CHECKPOINT: PACKAGE_ROOT
     / "models"
     / "checkpoints"
     / "batdetect2_uk_same.ckpt",
-    "batdetect2_uk_same": _PACKAGE_ROOT
+    "batdetect2_uk_same": PACKAGE_ROOT
     / "models"
     / "checkpoints"
     / "batdetect2_uk_same.ckpt",
@@ -32,7 +34,6 @@ class CheckpointConfig(BaseConfig):
     monitor: str | None = None
     mode: str = "max"
     save_top_k: int = 1
-    # Default to distributable inference checkpoints, not full train resumes.
     save_weights_only: bool = True
     filename: str | None = None
     save_last: bool | Literal["link"] = "link"
@@ -74,55 +75,55 @@ def build_checkpoint_callback(
 
 def get_bundled_checkpoint_names() -> tuple[str, ...]:
     """Return the supported bundled checkpoint aliases."""
+    return tuple(CHECKPOINT_ALIASES.keys())
 
-    return tuple(_BUNDLED_CHECKPOINTS)
+
+def resolve_checkpoint_from_huggingface(path: str) -> Path:
+    """Resolve a Hugging Face checkpoint URI."""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as error:
+        raise ValueError(
+            "Hugging Face checkpoint support is not installed. "
+            "Install it with `pip install batdetect2[huggingface]`."
+        ) from error
+
+    repo_id, filename = _parse_huggingface_uri(path)
+    return Path(hf_hub_download(repo_id=repo_id, filename=filename))
 
 
-def resolve_checkpoint_path(path: PathLike | str) -> Path:
-    """Resolve a local path, bundled alias, or Hugging Face checkpoint URI.
+def resolve_checkpoint_path(path: PathLike | str | None = None) -> Path:
+    """Resolve a local path, alias, or Hugging Face checkpoint URI.
 
     Parameters
     ----------
-    path : PathLike | str
-        Local checkpoint path, bundled checkpoint alias, or a Hugging Face
-        URI of the form ``hf://owner/repo/path/to/checkpoint.ckpt``.
+    path : PathLike | str | None
+        Local checkpoint path, checkpoint alias, or a Hugging Face
+        URI of the form ``hf://owner/repo/path/to/checkpoint.ckpt``. If
+        omitted, the default alias checkpoint is used.
 
     Returns
     -------
     Path
         Resolved local filesystem path to the checkpoint.
     """
+    if path is None:
+        path = DEFAULT_CHECKPOINT
+
     if isinstance(path, str) and path.startswith("hf://"):
-        try:
-            from huggingface_hub import hf_hub_download
-        except ImportError as error:
-            raise ValueError(
-                "Hugging Face checkpoint support is not installed. "
-                "Install it with `uv sync --group huggingface` or "
-                "`pip install huggingface-hub`."
-            ) from error
+        return resolve_checkpoint_from_huggingface(path)
 
-        repo_id, filename = _parse_huggingface_uri(path)
-        return Path(hf_hub_download(repo_id=repo_id, filename=filename))
+    if isinstance(path, str) and path in CHECKPOINT_ALIASES:
+        return Path(CHECKPOINT_ALIASES[path])
 
-    if not isinstance(path, Path):
-        path = Path(path)
-
+    path = Path(path)
     if path.exists():
-        return path
-
-    bundled_path = _BUNDLED_CHECKPOINTS.get(str(path))
-    if bundled_path is not None:
-        if not bundled_path.exists():
-            raise FileNotFoundError(
-                f"Bundled checkpoint is missing: {bundled_path}"
-            )
-        return bundled_path
+        return path.resolve()
 
     bundled_names = ", ".join(get_bundled_checkpoint_names())
     raise FileNotFoundError(
-        "Checkpoint not found: "
-        f"{path}. Expected a local path, a bundled checkpoint alias "
+        f"Checkpoint not found: {path}. "
+        "Expected a local path, a checkpoint alias "
         f"({bundled_names}), or a Hugging Face URI."
     )
 

@@ -132,15 +132,15 @@ class StoredConfig:
 
 
 def load_model_from_checkpoint(
-    path: PathLike | str,
+    path: PathLike | str | None = None,
 ) -> tuple[Model, StoredConfig]:
     """Load a model and its configuration from a Lightning checkpoint.
 
     Parameters
     ----------
-    path : PathLike
+    path : PathLike | str | None
         Path to a ``.ckpt`` file produced by the BatDetect2 training
-        pipeline.
+        pipeline. If omitted, the default bundled checkpoint is used.
 
     Returns
     -------

@@ -307,6 +307,12 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
         )
 
 
+def test_api_from_checkpoint_defaults_to_bundled_model() -> None:
+    api = BatDetect2API.from_checkpoint()
+
+    assert api.model.class_names
+
+
 @pytest.mark.slow
 def test_user_can_evaluate_small_dataset_and_get_metrics(
     api_v2: BatDetect2API,

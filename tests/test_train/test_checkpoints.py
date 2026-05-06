@@ -8,6 +8,7 @@ from soundevent import data
 
 from batdetect2.train import TrainingConfig, run_train
 from batdetect2.train.checkpoints import (
+    DEFAULT_BUNDLED_CHECKPOINT,
     get_bundled_checkpoint_names,
     resolve_checkpoint_path,
 )
@@ -144,13 +145,19 @@ def test_resolve_checkpoint_path_returns_local_path_unchanged(
 
 def test_get_bundled_checkpoint_names_lists_supported_aliases() -> None:
     assert get_bundled_checkpoint_names() == (
-        "uk_same",
+        DEFAULT_BUNDLED_CHECKPOINT,
         "batdetect2_uk_same",
     )
 
 
+def test_resolve_checkpoint_path_uses_default_bundled_alias() -> None:
+    resolved = resolve_checkpoint_path()
+
+    assert resolved == resolve_checkpoint_path(DEFAULT_BUNDLED_CHECKPOINT)
+
+
 def test_resolve_checkpoint_path_accepts_bundled_alias() -> None:
-    resolved = resolve_checkpoint_path("uk_same")
+    resolved = resolve_checkpoint_path(DEFAULT_BUNDLED_CHECKPOINT)
 
     assert resolved.name == "batdetect2_uk_same.ckpt"
     assert resolved.exists()

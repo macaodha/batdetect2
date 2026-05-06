@@ -656,7 +656,7 @@ class BatDetect2API:
     @classmethod
     def from_checkpoint(
         cls,
-        path: data.PathLike | str,
+        path: data.PathLike | str | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         evaluation_config: EvaluationConfig | None = None,
