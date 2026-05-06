@@ -1,9 +1,10 @@
-from typing import Any, NamedTuple, Protocol
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
 import torch
 
-from batdetect2.postprocess.types import PostprocessorProtocol
-from batdetect2.preprocess.types import PreprocessorProtocol
+if TYPE_CHECKING:
+    from batdetect2.postprocess.types import PostprocessorProtocol
+    from batdetect2.preprocess.types import PreprocessorProtocol
 
 __all__ = [
     "BackboneProtocol",
@@ -116,8 +117,8 @@ class DetectorProtocol(ModuleProtocol, Protocol):
 
 class ModelProtocol(ModuleProtocol, Protocol):
     detector: DetectorProtocol
-    preprocessor: PreprocessorProtocol
-    postprocessor: PostprocessorProtocol
+    preprocessor: "PreprocessorProtocol"
+    postprocessor: "PostprocessorProtocol"
     class_names: list[str]
     dimension_names: list[str]
 
