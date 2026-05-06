@@ -3,7 +3,7 @@ from batdetect2.cli.compat import detect
 from batdetect2.cli.data import data
 from batdetect2.cli.evaluate import evaluate_command
 from batdetect2.cli.finetune import finetune_command
-from batdetect2.cli.inference import predict
+from batdetect2.cli.inference import process
 from batdetect2.cli.train import train_command
 
 __all__ = [
@@ -13,7 +13,7 @@ __all__ = [
     "train_command",
     "finetune_command",
     "evaluate_command",
-    "predict",
+    "process",
 ]
 
 

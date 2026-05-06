@@ -6,25 +6,20 @@ Welcome to the BatDetect2 documentation.
 
 `batdetect2` detects bat echolocation calls in audio recordings.
 
-It can help you screen large collections of recordings,
-find files that need expert review,
-and support ecology and conservation work where manual review alone would be slow.
+It can help you screen large collections of recordings, find files that need
+expert review, and support ecology and conservation work where manual review
+alone would be slow.
 
-In practice,
-BatDetect2 takes recordings,
-looks for likely bat calls,
-draws a box around each detected event,
-and scores the most likely class for that event.
+In practice, BatDetect2 takes recordings, looks for likely bat calls, draws a
+box around each detected event, and scores the most likely class for that event.
 
 The current default model is trained for 17 UK species.
 
-The library also supports custom training,
-fine-tuning,
-evaluation,
-and more advanced use from Python.
+The library also supports custom training, fine-tuning, evaluation, and more
+advanced use from Python.
 
 For details on the underlying approach, see the pre-print:
-[Towards a General Approach for Bat Echolocation Detection and Classification](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1)
+[Towards a General Approach for Bat Echolocation Detection and Classification](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1)
 
 ## A good first use for BatDetect2
 
@@ -56,7 +51,7 @@ Always validate on reviewed local data before using results for ecological infer
 ```{note}
 Looking for the previous BatDetect2 workflow?
 See {doc}`legacy/index`.
-The legacy docs are still available, but new workflows should use `batdetect2 predict` and `BatDetect2API`.
+The legacy docs are still available, but new workflows should use `batdetect2 process` and `BatDetect2API`.
 ```
 
 ## How to use this site
@@ -65,8 +60,7 @@ Start with {doc}`getting_started` if you are new.
 
 Then choose the section that matches what you need.
 
-If you are here mainly to run the model on recordings,
-start with Tutorials.
+If you are here mainly to run the model on recordings, start with Tutorials.
 
 | Section | Best for | Start here |
 | --- | --- | --- |
@@ -81,7 +75,7 @@ start with Tutorials.
 - GitHub repository:
   [macaodha/batdetect2](https://github.com/macaodha/batdetect2)
 - Questions, bug reports, and feature requests:
-  [GitHub Issues](https://github.com/macaodha/batdetect2/issues)
+  [GitHub Issues](https://github.com/macaodha/batdetect2/issues)
 - Common questions:
   {doc}`faq`
 - Want to contribute?

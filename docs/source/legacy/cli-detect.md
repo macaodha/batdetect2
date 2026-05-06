@@ -4,7 +4,7 @@ This page documents the previous CLI workflow based on `batdetect2 detect`.
 
 ```{warning}
 This is legacy documentation.
-For new workflows, use `batdetect2 predict directory` instead.
+For new workflows, use `batdetect2 process directory` instead.
 If you are migrating, start with {doc}`migration-guide`.
 ```
 
@@ -27,7 +27,7 @@ Common legacy options included:
 The closest current CLI entry point is:
 
 ```bash
-batdetect2 predict directory \
+batdetect2 process directory \
   path/to/model.ckpt \
   path/to/audio_dir \
   path/to/outputs
@@ -35,5 +35,7 @@ batdetect2 predict directory \
 
 ## Related pages
 
-- Migration guide: {doc}`migration-guide`
-- Current predict docs: {doc}`../reference/cli/predict`
+- Migration guide:
+  {doc}`migration-guide`
+- Current process docs:
+  {doc}`../reference/cli/predict`

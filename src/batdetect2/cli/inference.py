@@ -13,11 +13,11 @@ if TYPE_CHECKING:
     from batdetect2.inference import InferenceConfig
     from batdetect2.outputs import OutputsConfig
 
-__all__ = ["predict"]
+__all__ = ["process"]
 
 
-@cli.group(name="predict", short_help="Run prediction workflows.")
-def predict() -> None:
+@cli.group(name="process", short_help="Run processing workflows.")
+def process() -> None:
     """Run model inference on audio.
 
     Choose a subcommand based on how you want to provide input audio.
@@ -25,7 +25,7 @@ def predict() -> None:
 
 
 def common_predict_options(func):
-    """Attach options shared by all ``predict`` subcommands."""
+    """Attach options shared by all ``process`` subcommands."""
 
     @click.option(
         "--audio-config",
@@ -186,9 +186,9 @@ def _run_prediction(
     )
 
 
-@predict.command(
+@process.command(
     name="directory",
-    short_help="Predict on audio files in a directory.",
+    short_help="Process audio files in a directory.",
 )
 @click.argument("model_path", type=str)
 @click.argument("audio_dir", type=click.Path(exists=True))
@@ -207,9 +207,9 @@ def predict_directory_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Run prediction on all supported audio files in a directory.
+    """Run processing on all supported audio files in a directory.
 
-    This command scans ``audio_dir`` for audio files, runs prediction, and
+    This command scans ``audio_dir`` for audio files, runs processing, and
     saves the results to ``output_path``.
     """
     from soundevent.audio.files import get_audio_files
@@ -230,9 +230,9 @@ def predict_directory_command(
     )
 
 
-@predict.command(
+@process.command(
     name="file_list",
-    short_help="Predict on paths listed in a text file.",
+    short_help="Process paths listed in a text file.",
 )
 @click.argument("model_path", type=str)
 @click.argument("file_list", type=click.Path(exists=True))
@@ -251,7 +251,7 @@ def predict_file_list_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Run prediction on audio files listed in a text file.
+    """Run processing on audio files listed in a text file.
 
     The text file should contain one audio path per line. Empty lines are
     ignored.
@@ -278,9 +278,9 @@ def predict_file_list_command(
     )
 
 
-@predict.command(
+@process.command(
     name="dataset",
-    short_help="Predict on recordings from a dataset config.",
+    short_help="Process recordings from a dataset config.",
 )
 @click.argument("model_path", type=str)
 @click.argument("dataset_path", type=click.Path(exists=True))
@@ -299,7 +299,7 @@ def predict_dataset_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Run prediction on recordings referenced in a dataset file.
+    """Run processing on recordings referenced in a dataset file.
 
     Recording paths are read from the dataset and each recording is processed
     once.

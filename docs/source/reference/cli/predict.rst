@@ -1,7 +1,7 @@
-Predict command
+Process command
 ===============
 
-Use ``batdetect2 predict`` to run prediction on audio.
+Use ``batdetect2 process`` to run inference on audio.
 
 Choose a subcommand based on how you want to provide the input:
 
@@ -12,6 +12,6 @@ Choose a subcommand based on how you want to provide the input:
 Use ``--detection-threshold`` when you want to override the configured
 threshold for one run.
 
-.. click:: batdetect2.cli.inference:predict
-   :prog: batdetect2 predict
+.. click:: batdetect2.cli.inference:process
+   :prog: batdetect2 process
    :nested: full

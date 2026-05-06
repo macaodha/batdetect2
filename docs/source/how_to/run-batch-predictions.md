@@ -1,14 +1,15 @@
-# How to run batch predictions
+# How to run batch processing
 
 This guide shows practical command patterns for directory-based and file-list
-prediction runs.
+processing runs.
 
-Use it after you already know which input mode you want and need concrete command templates for a repeatable batch run.
+Use it after you already know which input mode you want and need concrete
+command templates for a repeatable batch run.
 
-## Predict from a directory
+## Process a directory
 
 ```bash
-batdetect2 predict directory \
+batdetect2 process directory \
   path/to/model.ckpt \
   path/to/audio_dir \
   path/to/outputs
@@ -16,27 +17,29 @@ batdetect2 predict directory \
 
 Use this when BatDetect2 should discover the audio files for you.
 
-## Predict from a file list
+## Process a file list
 
 ```bash
-batdetect2 predict file_list \
+batdetect2 process file_list \
   path/to/model.ckpt \
   path/to/audio_files.txt \
   path/to/outputs
 ```
 
-Use this when another part of your workflow already produced the exact recording list to process.
+Use this when another part of your workflow already produced the exact recording
+list to process.
 
-## Predict from a dataset config
+## Process a dataset config
 
 ```bash
-batdetect2 predict dataset \
+batdetect2 process dataset \
   path/to/model.ckpt \
   path/to/annotation_set.json \
   path/to/outputs
 ```
 
-Use this when your project already has a `soundevent` annotation set and you want to extract unique recording paths from it.
+Use this when your project already has a `soundevent` annotation set and you
+want to extract unique recording paths from it.
 
 ## Useful options
 

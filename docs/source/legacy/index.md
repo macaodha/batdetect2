@@ -2,12 +2,15 @@
 
 This section documents the previous BatDetect2 workflow.
 
-Use these pages if you need to keep working with the older `batdetect2 detect` command or the older `batdetect2.api` interface.
+Use these pages if you need to keep working with the older `batdetect2 detect`
+command or the older `batdetect2.api` interface.
 
 For new projects, we recommend the current workflow:
 
-- CLI: `batdetect2 predict`
-- Python: `batdetect2.api_v2.BatDetect2API`
+- CLI:
+  `batdetect2 process`
+- Python:
+  `batdetect2.api_v2.BatDetect2API`
 
 If you are moving from the older workflow, start with {doc}`migration-guide`.
 

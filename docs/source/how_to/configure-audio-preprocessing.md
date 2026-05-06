@@ -46,7 +46,7 @@ Available built-ins:
 For CLI inference/evaluation, use `--audio-config`.
 
 ```bash
-batdetect2 predict directory \
+batdetect2 process directory \
   path/to/model.ckpt \
   path/to/audio_dir \
   path/to/outputs \
@@ -55,10 +55,12 @@ batdetect2 predict directory \
 
 ## 4) Verify quickly on a small subset
 
-Run on a small folder first and confirm that outputs and runtime are as
-expected before full-batch runs.
+Run on a small folder first and confirm that outputs and runtime are as expected
+before full-batch runs.
 
 ## Related pages
 
-- Spectrogram settings: {doc}`configure-spectrogram-preprocessing`
-- Preprocessing config reference: {doc}`../reference/preprocessing-config`
+- Spectrogram settings:
+  {doc}`configure-spectrogram-preprocessing`
+- Preprocessing config reference:
+  {doc}`../reference/preprocessing-config`

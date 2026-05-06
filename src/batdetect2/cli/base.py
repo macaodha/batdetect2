@@ -2,6 +2,8 @@
 
 import click
 
+from batdetect2.cli.ascii import BATDETECT_ASCII_ART
+
 __all__ = [
     "cli",
 ]
@@ -9,29 +11,30 @@ __all__ = [
 
 INFO_STR = """
 BatDetect2
-    Input audio should be mono.
     Wrap paths that contain spaces in quotes.
-    For long recordings, split audio into shorter files before running
-    prediction.
 """
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option(
     "-v",
     "--verbose",
     count=True,
     help="Increase verbosity. -v for INFO, -vv for DEBUG.",
 )
-def cli(verbose: int = 0):
+@click.pass_context
+def cli(ctx: click.Context, verbose: int = 0):
     """Run the BatDetect2 CLI.
 
-    Use subcommands to run prediction, training, evaluation, and dataset
+    Use subcommands to run processing, training, evaluation, and dataset
     utilities.
     """
-    click.echo(INFO_STR)
+
+    if ctx.invoked_subcommand is None:
+        click.echo(BATDETECT_ASCII_ART)
+        click.echo(ctx.get_help())
+        ctx.exit()
 
     from batdetect2.logging import enable_logging
 
     enable_logging(verbose)
-    # click.echo(BATDETECT_ASCII_ART)

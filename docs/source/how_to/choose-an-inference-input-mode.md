@@ -1,8 +1,9 @@
 # How to choose an inference input mode
 
-Use this guide to decide whether `predict directory`, `predict file_list`, or `predict dataset` is the right entry point for your run.
+Use this guide to decide whether `process directory`, `process file_list`, or
+`process dataset` is the right entry point for your run.
 
-## Use `predict directory` when the recordings already live together
+## Use `process directory` when the recordings already live together
 
 This is the simplest choice.
 
@@ -13,13 +14,13 @@ Use it when:
 - you are doing a first pass over a folder of recordings.
 
 ```bash
-batdetect2 predict directory \
+batdetect2 process directory \
   path/to/model.ckpt \
   path/to/audio_dir \
   path/to/outputs
 ```
 
-## Use `predict file_list` when you need explicit control over the file set
+## Use `process file_list` when you need explicit control over the file set
 
 Use it when:
 
@@ -30,13 +31,13 @@ Use it when:
 The list file should contain one path per line.
 
 ```bash
-batdetect2 predict file_list \
+batdetect2 process file_list \
   path/to/model.ckpt \
   path/to/audio_files.txt \
   path/to/outputs
 ```
 
-## Use `predict dataset` when your workflow is already annotation-set driven
+## Use `process dataset` when your workflow is already annotation-set driven
 
 Use it when:
 
@@ -45,13 +46,14 @@ Use it when:
 - you want BatDetect2 to resolve recording paths from the annotation set.
 
 ```bash
-batdetect2 predict dataset \
+batdetect2 process dataset \
   path/to/model.ckpt \
   path/to/annotation_set.json \
   path/to/outputs
 ```
 
-The dataset command reads a `soundevent` annotation set and extracts unique recording paths before inference.
+The dataset command reads a `soundevent` annotation set and extracts unique
+recording paths before inference.
 
 ## Rule of thumb
 
@@ -61,6 +63,9 @@ The dataset command reads a `soundevent` annotation set and extracts unique reco
 
 ## Related pages
 
-- Run batch predictions: {doc}`run-batch-predictions`
-- Tune inference clipping: {doc}`tune-inference-clipping`
-- Predict command reference: {doc}`../reference/cli/predict`
+- Run batch predictions:
+  {doc}`run-batch-predictions`
+- Tune inference clipping:
+  {doc}`tune-inference-clipping`
+- Process command reference:
+  {doc}`../reference/cli/predict`

@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import click
 
@@ -15,7 +16,7 @@ DEFAULT_MODEL_PATH = os.path.join(
 @cli.command(
     short_help="Legacy detection command.",
     epilog=(
-        "Deprecated workflow. Prefer `batdetect2 predict directory` for "
+        "Deprecated workflow. Prefer `batdetect2 process directory` for "
         "new analyses."
     ),
 )
@@ -91,10 +92,16 @@ def detect(
     Note
     ----
     This command is kept for backwards compatibility. Prefer
-    `batdetect2 predict directory` for new workflows.
+    `batdetect2 process directory` for new workflows.
     """
     from batdetect2 import api
     from batdetect2.utils.detector_utils import save_results_to_file
+
+    message = (
+        "The `batdetect2 detect` command is deprecated. Prefer "
+        "`batdetect2 process directory` for new analyses."
+    )
+    click.secho(f"WARNING: {message}", fg="yellow", err=True)
 
     click.echo(f"Loading model: {args['model_path']}")
     model, params = api.load_model(args["model_path"])

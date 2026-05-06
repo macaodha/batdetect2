@@ -1,4 +1,4 @@
-"""Behavior tests for predict CLI workflows."""
+"""Behavior tests for process CLI workflows."""
 
 from pathlib import Path
 
@@ -9,10 +9,10 @@ from soundevent import data, io
 from batdetect2.cli import cli
 
 
-def test_cli_predict_help() -> None:
-    """User story: discover available predict modes."""
+def test_cli_process_help() -> None:
+    """User story: discover available process modes."""
 
-    result = CliRunner().invoke(cli, ["predict", "--help"])
+    result = CliRunner().invoke(cli, ["process", "--help"])
 
     assert result.exit_code == 0
     assert "directory" in result.output
@@ -21,19 +21,19 @@ def test_cli_predict_help() -> None:
 
 
 @pytest.mark.slow
-def test_cli_predict_directory_runs_on_real_audio(
+def test_cli_process_directory_runs_on_real_audio(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
 ) -> None:
-    """User story: run prediction for all files in a directory."""
+    """User story: process all files in a directory."""
 
     output_path = tmp_path / "predictions"
 
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "directory",
             str(tiny_checkpoint_path),
             str(single_audio_dir),
@@ -52,12 +52,12 @@ def test_cli_predict_directory_runs_on_real_audio(
     assert len(list(output_path.glob("*.json"))) == 1
 
 
-def test_cli_predict_file_list_runs_on_real_audio(
+def test_cli_process_file_list_runs_on_real_audio(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
 ) -> None:
-    """User story: run prediction from an explicit list of files."""
+    """User story: process an explicit list of files."""
 
     audio_file = next(single_audio_dir.glob("*.wav"))
     file_list = tmp_path / "files.txt"
@@ -68,7 +68,7 @@ def test_cli_predict_file_list_runs_on_real_audio(
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "file_list",
             str(tiny_checkpoint_path),
             str(file_list),
@@ -87,12 +87,12 @@ def test_cli_predict_file_list_runs_on_real_audio(
     assert len(list(output_path.glob("*.json"))) == 1
 
 
-def test_cli_predict_dataset_runs_on_aoef_metadata(
+def test_cli_process_dataset_runs_on_aoef_metadata(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
 ) -> None:
-    """User story: predict from AOEF dataset metadata file."""
+    """User story: process from AOEF dataset metadata file."""
 
     audio_file = next(single_audio_dir.glob("*.wav"))
     recording = data.Recording.from_file(audio_file)
@@ -103,7 +103,7 @@ def test_cli_predict_dataset_runs_on_aoef_metadata(
     )
     annotation_set = data.AnnotationSet(
         name="test",
-        description="predict dataset test",
+        description="process dataset test",
         clip_annotations=[data.ClipAnnotation(clip=clip, sound_events=[])],
     )
 
@@ -115,7 +115,7 @@ def test_cli_predict_dataset_runs_on_aoef_metadata(
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "dataset",
             str(tiny_checkpoint_path),
             str(dataset_path),
@@ -142,7 +142,7 @@ def test_cli_predict_dataset_runs_on_aoef_metadata(
         ("soundevent", "*.json", True),
     ],
 )
-def test_cli_predict_directory_supports_output_format_override(
+def test_cli_process_directory_supports_output_format_override(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
@@ -157,7 +157,7 @@ def test_cli_predict_directory_supports_output_format_override(
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "directory",
             str(tiny_checkpoint_path),
             str(single_audio_dir),
@@ -180,12 +180,12 @@ def test_cli_predict_directory_supports_output_format_override(
         assert len(list(output_path.glob(expected_pattern))) >= 1
 
 
-def test_cli_predict_dataset_deduplicates_recordings(
+def test_cli_process_dataset_deduplicates_recordings(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
 ) -> None:
-    """User story: duplicated recording entries are predicted once."""
+    """User story: duplicated recording entries are processed once."""
 
     audio_file = next(single_audio_dir.glob("*.wav"))
     recording = data.Recording.from_file(audio_file)
@@ -215,7 +215,7 @@ def test_cli_predict_dataset_deduplicates_recordings(
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "dataset",
             str(tiny_checkpoint_path),
             str(dataset_path),
@@ -234,7 +234,7 @@ def test_cli_predict_dataset_deduplicates_recordings(
     assert len(list(output_path.glob("*.nc"))) == 1
 
 
-def test_cli_predict_rejects_unknown_output_format(
+def test_cli_process_rejects_unknown_output_format(
     tmp_path: Path,
     tiny_checkpoint_path: Path,
     single_audio_dir: Path,
@@ -245,7 +245,7 @@ def test_cli_predict_rejects_unknown_output_format(
     result = CliRunner().invoke(
         cli,
         [
-            "predict",
+            "process",
             "directory",
             str(tiny_checkpoint_path),
             str(single_audio_dir),

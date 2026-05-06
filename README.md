@@ -100,7 +100,7 @@ src/batdetect2/models/checkpoints/Net2DFast_UK_same.pth.tar
 Example command:
 
 ```bash
-batdetect2 predict directory \
+batdetect2 process directory \
   src/batdetect2/models/checkpoints/Net2DFast_UK_same.pth.tar \
   example_data/audio \
   outputs
@@ -145,7 +145,7 @@ The remainder of this section is legacy reference material.
 
 The commands below describe the legacy CLI workflow.
 
-For new work, prefer the current docs and `batdetect2 predict`.
+For new work, prefer the current docs and `batdetect2 process`.
 
 You can run the model by opening the command line and typing:
 ```bash

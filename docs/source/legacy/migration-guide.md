@@ -1,6 +1,7 @@
 # Migration guide: legacy to current workflows
 
-Use this guide when moving from the previous BatDetect2 workflow to the current CLI and API.
+Use this guide when moving from the previous BatDetect2 workflow to the current
+CLI and API.
 
 ## Who should migrate now
 
@@ -9,31 +10,37 @@ You should migrate if:
 - you are starting a new workflow,
 - you want the current docs path,
 - you want the newer CLI and API surface,
-- you are maintaining code that does not depend on the exact legacy JSON or feature outputs.
+- you are maintaining code that does not depend on the exact legacy JSON or
+  feature outputs.
 
 You may need the legacy workflow a bit longer if:
 
 - downstream tooling depends on the exact old output structure,
 - you rely on older notebooks built around `batdetect2.api`,
-- you depend on legacy feature extraction outputs without a validated replacement yet.
+- you depend on legacy feature extraction outputs without a validated
+  replacement yet.
 
 ## CLI mapping
 
-- `batdetect2 detect AUDIO_DIR ANN_DIR DETECTION_THRESHOLD`
-  -> `batdetect2 predict directory MODEL_PATH AUDIO_DIR OUTPUT_PATH --detection-threshold ...`
+- `batdetect2 detect AUDIO_DIR ANN_DIR DETECTION_THRESHOLD` -> `batdetect2
+  process directory MODEL_PATH AUDIO_DIR OUTPUT_PATH --detection-threshold ...`
 
 Main changes:
 
-- the model path is now a positional argument on the `predict` subcommand,
-- the current workflow expects an explicit checkpoint path rather than silently relying on the old default CLI behavior,
+- the model path is now a positional argument on the `process` subcommand,
+- the current workflow expects an explicit checkpoint path rather than silently
+  relying on the old default CLI behavior,
 - output formatting is configurable,
 - threshold override is an option rather than a required positional argument,
-- there are separate subcommands for directory, file-list, and dataset-driven inference.
+- there are separate subcommands for directory, file-list, and dataset-driven
+  inference.
 
 ## Python API mapping
 
-- old: `import batdetect2.api as api`
-- current: `from batdetect2.api_v2 import BatDetect2API`
+- old:
+  `import batdetect2.api as api`
+- current:
+  `from batdetect2.api_v2 import BatDetect2API`
 
 Typical migration shape:
 
@@ -51,7 +58,7 @@ Useful replacements:
 - legacy `process_file` -> current `BatDetect2API.process_file`
 - legacy `process_audio` -> current `BatDetect2API.process_audio`
 - legacy `process_spectrogram` -> current `BatDetect2API.process_spectrogram`
-- legacy one-off batch loops -> current `process_files` or CLI `predict`
+- legacy one-off batch loops -> current `process_files` or CLI `process`
 
 ## Output and terminology changes
 
@@ -78,7 +85,8 @@ Before replacing a legacy workflow in production or research analysis, validate:
 - that outputs are being saved in the right format,
 - that downstream code reads the new outputs correctly,
 - that feature-related assumptions still hold,
-- that evaluation and ecological interpretation are unchanged only where you have actually verified that.
+- that evaluation and ecological interpretation are unchanged only where you
+  have actually verified that.
 
 ## Migration checklist
 
@@ -91,6 +99,9 @@ Before replacing a legacy workflow in production or research analysis, validate:
 
 ## Related pages
 
-- Current getting started: {doc}`../getting_started`
-- Current tutorials: {doc}`../tutorials/index`
-- Current API reference: {doc}`../reference/api`
+- Current getting started:
+  {doc}`../getting_started`
+- Current tutorials:
+  {doc}`../tutorials/index`
+- Current API reference:
+  {doc}`../reference/api`

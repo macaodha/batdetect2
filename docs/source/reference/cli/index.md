@@ -7,7 +7,7 @@ for the full option list.
 
 | Command | Use it for | Required positional args |
 | --- | --- | --- |
-| `batdetect2 predict` | Run prediction on audio | Depends on subcommand (`directory`, `file_list`, `dataset`) |
+| `batdetect2 process` | Run inference on audio | Depends on subcommand (`directory`, `file_list`, `dataset`) |
 | `batdetect2 data` | Inspect and convert dataset configs | Depends on subcommand (`summary`, `convert`) |
 | `batdetect2 train` | Train or fine-tune models | `TRAIN_DATASET` |
 | `batdetect2 finetune` | Fine-tune a checkpoint on new targets | `TRAIN_DATASET` plus `--targets` |
@@ -19,13 +19,13 @@ for the full option list.
 - Global CLI options are documented in {doc}`base`.
 - Paths with spaces should be wrapped in quotes.
 - Input audio is expected to be mono.
-- `predict` uses the optional `--detection-threshold` override.
+- `process` uses the optional `--detection-threshold` override.
 - `finetune` defaults to the bundled `uk_same` checkpoint if `--model` is not
   provided.
 
 ```{warning}
 `batdetect2 detect` is a legacy command.
-Prefer `batdetect2 predict directory` for new workflows.
+Prefer `batdetect2 process directory` for new workflows.
 ```
 
 ## Related pages
@@ -39,7 +39,7 @@ Prefer `batdetect2 predict directory` for new workflows.
 :maxdepth: 1
 
 Base command and global options <base>
-Predict command group <predict>
+Process command group <predict>
 Data command group <data>
 Train command <train>
 Finetune command <finetune>
