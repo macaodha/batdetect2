@@ -7,9 +7,9 @@ from batdetect2.cli.base import cli
 __all__ = ["data"]
 
 
-@cli.group(short_help="Inspect and convert datasets.")
+@cli.group(short_help="Inspect and manage datasets.")
 def data():
-    """Inspect and convert dataset configuration files."""
+    """Inspect and manage dataset configuration files."""
 
 
 @data.command(short_help="Print dataset summary information.")
@@ -64,7 +64,7 @@ def summary(
         base_dir=base_dir,
     )
 
-    print(f"Number of annotated clips: {len(dataset)}")
+    click.echo(f"Number of annotated clips: {len(dataset)}")
 
     if targets_path is None:
         return
@@ -73,7 +73,7 @@ def summary(
 
     summary = compute_class_summary(dataset, targets)
 
-    print(summary.sort_values("class_name").to_markdown())
+    click.echo(summary.sort_values("class_name").to_markdown())
 
 
 @data.command(short_help="Convert dataset config to annotation set.")
@@ -200,6 +200,6 @@ def convert(
         if not audio_dir.is_absolute():
             audio_dir = audio_dir.resolve()
 
-        print(f"Using audio directory: {audio_dir}")
+        click.echo(f"Using audio directory: {audio_dir}")
 
     io.save(annotation_set, output, audio_dir=audio_dir)

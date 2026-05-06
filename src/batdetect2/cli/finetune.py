@@ -14,20 +14,20 @@ __all__ = ["finetune_command"]
 )
 @click.argument("train_dataset", type=click.Path(exists=True))
 @click.option(
-    "--model",
-    "model_path",
-    type=str,
-    help=(
-        "Path to a checkpoint, bundled checkpoint alias, or a Hugging Face "
-        "URI to fine-tune from. Defaults to uk_same"
-    ),
-)
-@click.option(
     "--targets",
     "targets_config",
     required=True,
     type=click.Path(exists=True),
     help="Path to the new targets config file.",
+)
+@click.option(
+    "--model",
+    "model_path",
+    type=str,
+    help=(
+        "Path to a checkpoint, checkpoint alias, or a Hugging Face "
+        "URI to fine-tune from. Defaults to uk_same"
+    ),
 )
 @click.option(
     "--val-dataset",
@@ -108,8 +108,8 @@ __all__ = ["finetune_command"]
 )
 def finetune_command(
     train_dataset: Path,
-    model_path: str | None,
     targets_config: Path,
+    model_path: str | None = None,
     val_dataset: Path | None = None,
     ckpt_dir: Path | None = None,
     log_dir: Path | None = None,
