@@ -11,7 +11,7 @@ for the full option list.
 | `batdetect2 data` | Inspect and convert dataset configs | Depends on subcommand (`summary`, `convert`) |
 | `batdetect2 train` | Train or fine-tune models | `TRAIN_DATASET` |
 | `batdetect2 finetune` | Fine-tune a checkpoint on new targets | `TRAIN_DATASET` plus `--targets` |
-| `batdetect2 evaluate` | Evaluate a checkpoint on a test dataset | `MODEL_PATH`, `TEST_DATASET` |
+| `batdetect2 evaluate` | Evaluate a checkpoint on a test dataset | `TEST_DATASET` |
 | `batdetect2 detect` | Legacy compatibility workflow | `AUDIO_DIR`, `ANN_DIR`, `DETECTION_THRESHOLD` |
 
 ## Notes
@@ -20,6 +20,8 @@ for the full option list.
 - Paths with spaces should be wrapped in quotes.
 - Input audio is expected to be mono.
 - `process` uses the optional `--detection-threshold` override.
+- `evaluate` takes `TEST_DATASET` as a positional argument and uses `--model`
+  for the checkpoint override.
 - `finetune` defaults to the bundled `uk_same` checkpoint if `--model` is not
   provided.
 

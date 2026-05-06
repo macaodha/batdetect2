@@ -15,8 +15,8 @@ def test_cli_evaluate_help() -> None:
     result = CliRunner().invoke(cli, ["evaluate", "--help"])
 
     assert result.exit_code == 0
-    assert "MODEL_PATH" in result.output
     assert "TEST_DATASET" in result.output
+    assert "--model" in result.output
     assert "--evaluation-config" in result.output
 
 
@@ -32,8 +32,9 @@ def test_cli_evaluate_writes_metrics_for_small_dataset(
         cli,
         [
             "evaluate",
-            str(tiny_checkpoint_path),
             str(BASE_DIR / "example_data" / "dataset.yaml"),
+            "--model",
+            str(tiny_checkpoint_path),
             "--base-dir",
             str(BASE_DIR),
             "--workers",

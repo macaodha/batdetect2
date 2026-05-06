@@ -11,7 +11,7 @@ def test_cli_base_help_lists_main_commands() -> None:
     result = CliRunner().invoke(cli, ["--help"])
 
     assert result.exit_code == 0
-    assert "predict" in result.output
+    assert "process" in result.output
     assert "train" in result.output
     assert "evaluate" in result.output
     assert "data" in result.output

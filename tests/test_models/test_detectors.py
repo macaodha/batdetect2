@@ -1,7 +1,8 @@
+from typing import cast
+
 import numpy as np
 import pytest
 import torch
-from typing import cast
 
 from batdetect2.models import UNetBackbone
 from batdetect2.models.backbones import UNetBackboneConfig

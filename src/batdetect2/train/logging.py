@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from lightning.pytorch.loggers import Logger

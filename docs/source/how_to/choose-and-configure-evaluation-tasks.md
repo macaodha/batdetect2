@@ -1,6 +1,7 @@
 # How to choose and configure evaluation tasks
 
-Use this guide when the default evaluation tasks do not match the question you want to answer.
+Use this guide when the default evaluation tasks do not match the question you
+want to answer.
 
 ## Know the default first
 
@@ -24,8 +25,10 @@ Common built-in task families include:
 Choose based on the question you care about.
 
 - Use sound-event tasks when you care about individual call events.
-- Use clip tasks when you care about clip-level presence or clip-level class evidence.
-- Use top-class detection when you want matching based on the highest-scoring class per detection.
+- Use clip tasks when you care about clip-level presence or clip-level class
+  evidence.
+- Use top-class detection when you want matching based on the highest-scoring
+  class per detection.
 
 ## Configure tasks in `EvaluationConfig`
 
@@ -45,22 +48,27 @@ Pass the config with:
 
 ```bash
 batdetect2 evaluate \
-  path/to/model.ckpt \
   path/to/test_dataset.yaml \
+  --model path/to/model.ckpt \
   --base-dir path/to/project_root \
   --evaluation-config path/to/evaluation.yaml
 ```
 
-Include `--base-dir` when the dataset config resolves recordings through relative paths.
+Include `--base-dir` when the dataset config resolves recordings through
+relative paths.
 
 ## Change one thing at a time
 
-When comparing models or settings, avoid changing task definitions, thresholds, matching behavior, and datasets all at once.
+When comparing models or settings, avoid changing task definitions, thresholds,
+matching behavior, and datasets all at once.
 
 Otherwise it becomes hard to explain why the metric changed.
 
 ## Related pages
 
-- Evaluation tutorial: {doc}`../tutorials/evaluate-on-a-test-set`
-- Evaluation config reference: {doc}`../reference/evaluation-config`
-- Evaluation concepts: {doc}`../explanation/evaluation-concepts-and-matching`
+- Evaluation tutorial:
+  {doc}`../tutorials/evaluate-on-a-test-set`
+- Evaluation config reference:
+  {doc}`../reference/evaluation-config`
+- Evaluation concepts:
+  {doc}`../explanation/evaluation-concepts-and-matching`

@@ -3,7 +3,8 @@
 This tutorial shows how to evaluate a trained checkpoint on a held-out dataset
 and inspect the output metrics.
 
-This tutorial is for advanced users who want to compare one trained model against a separate test dataset.
+This tutorial is for advanced users who want to compare one trained model
+against a separate test dataset.
 
 ## Before you start
 
@@ -32,22 +33,22 @@ Use a dataset that was not used for training or tuning.
 
 A held-out dataset is simply a separate dataset kept aside for evaluation.
 
-If you tune thresholds or configs on the same dataset that you report as final evaluation, the results will be optimistic.
+If you tune thresholds or configs on the same dataset that you report as final
+evaluation, the results will be optimistic.
 
 ## 2. Run evaluation
 
 ```bash
 batdetect2 evaluate \
-  path/to/model.ckpt \
   path/to/test_dataset.yaml \
+  --model path/to/model.ckpt \
   --base-dir path/to/project_root \
   --output-dir path/to/eval_outputs
 ```
 
-This command loads the checkpoint,
-runs prediction on the test dataset,
-applies the chosen evaluation tasks,
-and writes metrics and result files to the output directory.
+This command loads the checkpoint, runs prediction on the test dataset, applies
+the chosen evaluation tasks, and writes metrics and result files to the output
+directory.
 
 Use `--base-dir` whenever the dataset config contains relative paths.
 
@@ -73,7 +74,8 @@ Check:
 - which task the metric belongs to,
 - which thresholding or matching assumptions were used,
 - whether class-level behavior matches your use case,
-- whether the failures are concentrated in specific taxa, sites, or recording conditions.
+- whether the failures are concentrated in specific taxa, sites, or recording
+  conditions.
 
 ## 5. Record the evaluation setup
 
@@ -85,7 +87,11 @@ That matters for reproducibility and for later model comparisons.
 
 - Compare thresholds on representative files:
   {doc}`../how_to/tune-detection-threshold`
-- Configure evaluation tasks: {doc}`../how_to/choose-and-configure-evaluation-tasks`
-- Interpret evaluation artifacts: {doc}`../how_to/interpret-evaluation-outputs`
-- Learn the evaluation concepts: {doc}`../explanation/evaluation-concepts-and-matching`
-- Check full evaluate options: {doc}`../reference/cli/evaluate`
+- Configure evaluation tasks:
+  {doc}`../how_to/choose-and-configure-evaluation-tasks`
+- Interpret evaluation artifacts:
+  {doc}`../how_to/interpret-evaluation-outputs`
+- Learn the evaluation concepts:
+  {doc}`../explanation/evaluation-concepts-and-matching`
+- Check full evaluate options:
+  {doc}`../reference/cli/evaluate`

@@ -17,6 +17,10 @@ help:
 install:
     uv sync
 
+# Install full development dependencies for CI and docs builds.
+install-dev:
+    uv sync --all-extras --dev
+
 # Testing & Coverage
 # Run tests using pytest.
 test:
@@ -49,6 +53,9 @@ coverage-serve: coverage-html
 # Build documentation using Sphinx.
 docs:
     uv run sphinx-build -b html {{DOCS_SOURCE}} {{DOCS_BUILD}}
+
+# Check that documentation builds successfully.
+check-docs: docs
 
 # Serve documentation with live reload.
 docs-serve:
@@ -83,6 +90,25 @@ check-types:
 # Combined Checks
 # Run all checks (format-check, lint, typecheck).
 check: check-format check-lint check-types
+
+# Run the standard CI validation sequence.
+ci: check test
+
+# Build source and wheel distributions.
+build-dist:
+    uv run --with build python -m build
+
+# Bump the patch version, commit, and tag.
+bump-patch:
+    uvx bump2version patch
+
+# Bump the minor version, commit, and tag.
+bump-minor:
+    uvx bump2version minor
+
+# Bump the major version, commit, and tag.
+bump-major:
+    uvx bump2version major
 
 # Cleaning tasks
 # Remove Python bytecode and cache.
