@@ -1,55 +1,80 @@
-# Migration guide: legacy to current workflows
+# BatDetect2 2.0 migration guide
 
-Use this guide when moving from the previous BatDetect2 workflow to the current
-CLI and API.
+Use this guide when moving from BatDetect2 1.x workflows to the CLI and API in
+2.x.
 
-## Who should migrate now
+## Why migrate
 
-You should migrate if:
+You get access to newer features.
+The codebase changed quite a bit and now gives you much more control over the
+workflow through config files, improved training and fine-tuning code, and a
+more flexible sound target definition system.
 
-- you are starting a new workflow,
-- you want the current docs path,
-- you want the newer CLI and API surface,
-- you are maintaining code that does not depend on the exact legacy JSON or
-  feature outputs.
+You can also run newer or improved models.
+That includes updated versions of the UK model, plus other models trained with
+the newer codebase.
 
-You may need the legacy workflow a bit longer if:
+We are no longer actively supporting version 1.
+No new enhancements are planned there, and only major bug fixes may still be
+considered.
+Future work is focused on version 2, including compatibility with newer Python
+versions.
 
-- downstream tooling depends on the exact old output structure,
-- you rely on older notebooks built around `batdetect2.api`,
-- you depend on legacy feature extraction outputs without a validated
-  replacement yet.
+## Deprecation plan
 
-## CLI mapping
+We have kept the `batdetect2.api` module and the `batdetect2 detect` CLI command
+in place for now.
+You can keep using them without changing your current workflow.
+However, many of the internal functions were relocated, removed or modified.
+If your code relied on anything outside of the `api` module, it may break.
+It is worth checking the new docs first, since there may already be a newer
+feature that covers your use case.
+If not, please open an issue.
+
+Because the old `api` and CLI command are now redundant with the newer stack, we
+plan to remove them in about a year.
+If you want to keep pipelines up to date and long-running, it is a good idea to
+migrate to version 2.
+
+## How to migrate
+
+If you are only using the `batdetect2 detect` CLI command or the
+`batdetect2.api` module, the migration should be fairly simple.
+This guide only covers these two entry points.
+
+### CLI mapping
 
 - `batdetect2 detect AUDIO_DIR ANN_DIR DETECTION_THRESHOLD` -> `batdetect2
-  process directory MODEL_PATH AUDIO_DIR OUTPUT_PATH --detection-threshold ...`
+  process directory AUDIO_DIR OUTPUT_PATH --detection-threshold
+  DETECTION_THRESHOLD ...`
 
 Main changes:
 
-- the model path is now a positional argument on the `process` subcommand,
-- the current workflow expects an explicit checkpoint path rather than silently
-  relying on the old default CLI behavior,
-- output formatting is configurable,
-- threshold override is an option rather than a required positional argument,
-- there are separate subcommands for directory, file-list, and dataset-driven
-  inference.
+- outputs can be written in different formats.
+  See the output format reference for the available options.
+- the detection threshold is now an option instead of a required positional
+  argument.
+- options like saving CNN features are now controlled through config rather than
+  command flags.
+- there are separate subcommands for processing a directory, file list, or
+  dataset.
 
-## Python API mapping
+### Python API mapping
 
 - old:
   `import batdetect2.api as api`
 - current:
-  `from batdetect2.api_v2 import BatDetect2API`
+  `from batdetect2 import BatDetect2API`
 
 Typical migration shape:
 
 ```python
 from pathlib import Path
 
-from batdetect2.api_v2 import BatDetect2API
+from batdetect2 import BatDetect2API
 
-api = BatDetect2API.from_checkpoint(Path("path/to/model.ckpt"))
+# If no checkpoint is provided, the default UK model is loaded
+api = BatDetect2API.from_checkpoint()
 prediction = api.process_file(Path("path/to/audio.wav"))
 ```
 
@@ -60,48 +85,38 @@ Useful replacements:
 - legacy `process_spectrogram` -> current `BatDetect2API.process_spectrogram`
 - legacy one-off batch loops -> current `process_files` or CLI `process`
 
-## Output and terminology changes
+### Model changes
 
-Legacy workflows often centered on:
+The default checkpoint used by the new CLI `process` commands and by
+`BatDetect2API` is a newer model trained from scratch using the updated training
+code, but the same model architecture, training procedure, and data.
+Performance did not change substantially, but some differences are still
+expected.
 
-- BatDetect2-style JSON output,
-- `cnn_feats`,
-- `spec_features`,
-- `spec_slices`.
+### Species names
 
-Current workflows center on:
+For the default UK model there are two naming changes:
 
-- `ClipDetections` and `Detection` objects,
-- per-detection `detection_score`,
-- per-detection `class_scores`,
-- per-detection `features`,
-- configurable output formatters.
+1. The original model had a typo and instead of `Barbastella barbastellus` it
+   used `Barbastellus barbastellus`.
+   This has now been corrected.
+2. There has been a recent change in name for `Eptesicus serotinus` to
+   `Cnephaeus serotinus`.
 
-## What to validate after migration
+## Stay on version 1
 
-Before replacing a legacy workflow in production or research analysis, validate:
+If you prefer not to migrate to version 2 yet, you can keep using version 1.
+In that case, it is a good idea to pin your dependency:
 
-- that thresholds are still appropriate,
-- that outputs are being saved in the right format,
-- that downstream code reads the new outputs correctly,
-- that feature-related assumptions still hold,
-- that evaluation and ecological interpretation are unchanged only where you
-  have actually verified that.
-
-## Migration checklist
-
-1. Identify the old entry points you use.
-2. Replace them with the current CLI or `BatDetect2API` equivalents.
-3. Choose an output format explicitly.
-4. Re-run on a small reviewed subset.
-5. Compare outputs and downstream behavior.
-6. Update any notebooks or scripts that assume legacy field names.
+```bash
+pip install "batdetect2>=1.3.1,<2"
+```
 
 ## Related pages
 
-- Current getting started:
+- Getting started:
   {doc}`../getting_started`
-- Current tutorials:
+- Tutorials:
   {doc}`../tutorials/index`
-- Current API reference:
+- API reference:
   {doc}`../reference/api`
