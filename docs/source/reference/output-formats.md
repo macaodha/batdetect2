@@ -47,17 +47,29 @@ Writes a prediction-set JSON file.
 
 Defined by `BatDetect2OutputConfig`.
 
-This is the legacy BatDetect2-style JSON output.
+This is the legacy-compatible BatDetect2 formatter.
 
 Key fields:
 
 - `event_name`
 - `annotation_note`
+- `write_detection_csv`
+- `write_cnn_features_csv`
+- `save_if_empty`
+- `preserve_audio_tree`
+- `include_file_path`
 
-Writes one `.json` file per recording.
+By default it writes one `.json` file and one detection `.csv` file per
+recording, preserving the input audio directory layout under the output root.
+
+It can also write legacy `_cnn_features.csv` sidecars when
+`write_cnn_features_csv` is enabled.
 
 ## Related pages
 
-- Outputs config: {doc}`outputs-config`
-- Save predictions in different output formats: {doc}`../how_to/save-predictions-in-different-output-formats`
-- Understanding formatted outputs: {doc}`../explanation/interpreting-formatted-outputs`
+- Outputs config:
+  {doc}`outputs-config`
+- Save predictions in different output formats:
+  {doc}`../how_to/save-predictions-in-different-output-formats`
+- Understanding formatted outputs:
+  {doc}`../explanation/interpreting-formatted-outputs`

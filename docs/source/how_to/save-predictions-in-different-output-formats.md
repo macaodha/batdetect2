@@ -14,7 +14,7 @@ Current built-in output formats include:
 - `soundevent`:
   prediction-set JSON for soundevent-style tooling,
 - `batdetect2`:
-  legacy per-recording JSON output.
+  legacy-compatible per-recording JSON and CSV outputs.
 
 ## Select a format from the CLI
 
@@ -61,7 +61,29 @@ batdetect2 process directory \
 - Use `raw` if you want the richest output surface and easy round-tripping.
 - Use `parquet` if you want tabular analysis in Python or data-lake workflows.
 - Use `soundevent` if you want prediction-set JSON.
-- Use `batdetect2` only when you need the legacy JSON shape.
+- Use `batdetect2` when you need legacy BatDetect2-style outputs.
+
+## Enable legacy CNN feature CSVs
+
+The `batdetect2` formatter can also write the legacy CNN feature sidecar CSVs.
+This is controlled through the outputs config.
+
+Example:
+
+```yaml
+format:
+  name: batdetect2
+  write_cnn_features_csv: true
+transform:
+  detection_transforms: []
+  clip_transforms: []
+```
+
+When enabled, BatDetect2 writes:
+
+- one `.json` file per recording,
+- one detection `.csv` file per recording,
+- one `_cnn_features.csv` file per recording when detections are present.
 
 ## Related pages
 

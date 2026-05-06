@@ -24,10 +24,18 @@ The output workflow is:
 
 ## Default behavior
 
-By default, the current stack uses the raw output formatter unless you override it.
+By default, the current stack uses the raw output formatter unless you override
+it.
+
+For CLI processing commands, omitting `--format` now leaves format selection to
+the loaded outputs config.
+If no outputs config is provided, the CLI still uses its command defaults.
 
 ## Related pages
 
-- Output formats: {doc}`output-formats`
-- Output transforms: {doc}`output-transforms`
-- Save predictions in different output formats: {doc}`../how_to/save-predictions-in-different-output-formats`
+- Output formats:
+  {doc}`output-formats`
+- Output transforms:
+  {doc}`output-transforms`
+- Save predictions in different output formats:
+  {doc}`../how_to/save-predictions-in-different-output-formats`

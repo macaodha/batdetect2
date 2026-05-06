@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import cast
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from batdetect2.api_v2 import BatDetect2API
@@ -96,6 +97,47 @@ def test_load_predictions_with_format_override(
     loaded_item = loaded[0]
     assert isinstance(loaded_item, dict)
     assert "annotation" in loaded_item
+
+
+def test_load_predictions_with_batdetect2_nested_layout(
+    api_v2: BatDetect2API,
+    example_audio_files: list[Path],
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "batdetect2_nested"
+    predictions = [
+        api_v2.process_file(audio_file) for audio_file in example_audio_files
+    ]
+
+    api_v2.save_predictions(
+        predictions,
+        path=output_dir,
+        format="batdetect2",
+        audio_dir=example_audio_files[0].parent,
+    )
+
+    loaded = api_v2.load_predictions(output_dir, format="batdetect2")
+
+    assert len(loaded) == len(example_audio_files)
+
+
+def test_save_predictions_with_batdetect2_writes_cnn_feature_csv(
+    api_v2: BatDetect2API,
+    file_prediction,
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "batdetect2_cnn"
+    api_v2.save_predictions(
+        [file_prediction],
+        path=output_dir,
+        config=BatDetect2OutputConfig(write_cnn_features_csv=True),
+    )
+
+    cnn_csvs = list(output_dir.rglob("*_cnn_features.csv"))
+    assert len(cnn_csvs) == 1
+
+    loaded_df = pd.read_csv(cnn_csvs[0])
+    assert not loaded_df.empty
 
 
 def test_save_predictions_with_soundevent_override(

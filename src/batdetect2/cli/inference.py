@@ -28,6 +28,15 @@ def common_predict_options(func):
     """Attach options shared by all ``process`` subcommands."""
 
     @click.option(
+        "--model",
+        "model_path",
+        type=str,
+        help=(
+            "Path to a checkpoint, checkpoint alias, or a Hugging Face "
+            "URI to fine-tune from. Defaults to uk_same"
+        ),
+    )
+    @click.option(
         "--audio-config",
         type=click.Path(exists=True),
         help=(
@@ -97,7 +106,7 @@ def common_predict_options(func):
 
 
 def _build_api(
-    model_path: str,
+    model_path: str | None,
     audio_config: Path | None,
     inference_config: Path | None,
     outputs_config: Path | None,
@@ -129,7 +138,7 @@ def _build_api(
     )
 
     api = BatDetect2API.from_checkpoint(
-        model_path,
+        path=model_path,
         audio_config=audio_conf,
         inference_config=inference_conf,
         outputs_config=outputs_conf,
@@ -139,7 +148,7 @@ def _build_api(
 
 
 def _run_prediction(
-    model_path: str,
+    model_path: str | None,
     audio_files: list[Path],
     output_path: Path,
     audio_config: Path | None,
@@ -190,12 +199,11 @@ def _run_prediction(
     name="directory",
     short_help="Process audio files in a directory.",
 )
-@click.argument("model_path", type=str)
 @click.argument("audio_dir", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_directory_command(
-    model_path: str,
+    model_path: str | None,
     audio_dir: Path,
     output_path: Path,
     audio_config: Path | None,
@@ -234,14 +242,13 @@ def predict_directory_command(
     name="file_list",
     short_help="Process paths listed in a text file.",
 )
-@click.argument("model_path", type=str)
 @click.argument("file_list", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_file_list_command(
-    model_path: str,
     file_list: Path,
     output_path: Path,
+    model_path: str | None,
     audio_config: Path | None,
     inference_config: Path | None,
     outputs_config: Path | None,
@@ -282,14 +289,13 @@ def predict_file_list_command(
     name="dataset",
     short_help="Process recordings from a dataset config.",
 )
-@click.argument("model_path", type=str)
 @click.argument("dataset_path", type=click.Path(exists=True))
 @click.argument("output_path", type=click.Path())
 @common_predict_options
 def predict_dataset_command(
-    model_path: str,
     dataset_path: Path,
     output_path: Path,
+    model_path: str | None,
     audio_config: Path | None,
     inference_config: Path | None,
     outputs_config: Path | None,
