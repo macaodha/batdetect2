@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import pytest
+from soundevent import data as soundevent_data
 
 from batdetect2.api_v2 import BatDetect2API
 from batdetect2.outputs import build_output_formatter
@@ -11,6 +13,7 @@ from batdetect2.outputs.formats import (
     BatDetect2OutputConfig,
     SoundEventOutputConfig,
 )
+from batdetect2.outputs.formats.batdetect2 import BatDetect2Formatter
 from batdetect2.postprocess.types import ClipDetections
 
 
@@ -77,6 +80,82 @@ def test_save_predictions_with_batdetect2_override(
     assert len(loaded) == 1
     assert "annotation" in loaded[0]
     assert len(loaded[0]["annotation"]) == len(file_prediction.detections)
+
+
+def test_batdetect2_formatter_can_use_raw_class_names(
+    api_v2: BatDetect2API,
+    file_prediction,
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "batdetect2_raw_class_names"
+    api_v2.save_predictions(
+        [file_prediction],
+        path=output_dir,
+        config=BatDetect2OutputConfig(class_label_mode="class_name"),
+    )
+
+    loaded = cast(
+        list[dict], api_v2.load_predictions(output_dir, format="batdetect2")
+    )
+    first_annotation = loaded[0]["annotation"][0]
+
+    assert first_annotation["class"] in api_v2.targets.class_names
+
+
+def test_batdetect2_formatter_can_use_decoded_species_tag() -> None:
+    targets = Mock()
+    targets.class_names = ["myodau"]
+    targets.decode_class.return_value = [
+        soundevent_data.Tag(
+            key="dwc:scientificName",
+            value="Myotis daubentonii",
+        )
+    ]
+
+    formatter = BatDetect2Formatter(
+        targets=targets,
+        event_name="Echolocation",
+        annotation_note="Automatically generated.",
+    )
+
+    assert formatter.get_class_name(0) == "Myotis daubentonii"
+
+
+def test_batdetect2_formatter_can_fallback_to_class_name_when_key_missing() -> (
+    None
+):
+    targets = Mock()
+    targets.class_names = ["myodau"]
+    targets.decode_class.return_value = []
+
+    formatter = BatDetect2Formatter(
+        targets=targets,
+        event_name="Echolocation",
+        annotation_note="Automatically generated.",
+        decoded_label_key="dwc:scientificName",
+        fallback_to_class_name=True,
+    )
+
+    assert formatter.get_class_name(0) == "myodau"
+
+
+def test_batdetect2_formatter_rejects_missing_decoded_key_without_fallback() -> (
+    None
+):
+    targets = Mock()
+    targets.class_names = ["myodau"]
+    targets.decode_class.return_value = []
+
+    formatter = BatDetect2Formatter(
+        targets=targets,
+        event_name="Echolocation",
+        annotation_note="Automatically generated.",
+        decoded_label_key="dwc:scientificName",
+        fallback_to_class_name=False,
+    )
+
+    with pytest.raises(ValueError, match="Could not decode class label"):
+        formatter.get_class_name(0)
 
 
 def test_load_predictions_with_format_override(
