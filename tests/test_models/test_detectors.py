@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import torch
+from typing import cast
 
 from batdetect2.models import UNetBackbone
 from batdetect2.models.backbones import UNetBackboneConfig
@@ -19,12 +20,15 @@ def dummy_spectrogram() -> torch.Tensor:
 def test_build_detector_default():
     """Test building the default detector without a config."""
     num_classes = 5
-    model = build_detector(num_classes=num_classes)
+    model = build_detector(
+        class_names=[f"class_{i}" for i in range(num_classes)],
+        dimension_names=["width", "height"],
+    )
 
     assert isinstance(model, Detector)
     assert model.num_classes == num_classes
     assert isinstance(model.classifier_head, ClassifierHead)
-    assert isinstance(model.bbox_head, BBoxHead)
+    assert isinstance(model.size_head, BBoxHead)
 
 
 def test_build_detector_custom_config():
@@ -32,13 +36,19 @@ def test_build_detector_custom_config():
     num_classes = 3
     config = UNetBackboneConfig(in_channels=2, input_height=128)
 
-    model = build_detector(num_classes=num_classes, config=config)
+    model = build_detector(
+        class_names=[f"class_{i}" for i in range(num_classes)],
+        dimension_names=["width", "height"],
+        config=config,
+    )
 
     assert isinstance(model, Detector)
     assert model.backbone.input_height == 128
 
-    assert isinstance(model.backbone.encoder, Encoder)
-    assert model.backbone.encoder.in_channels == 2
+    backbone = cast(UNetBackbone, model.backbone)
+
+    assert isinstance(backbone.encoder, Encoder)
+    assert backbone.encoder.in_channels == 2
 
 
 def test_build_detector_custom_size_channels():
@@ -47,8 +57,8 @@ def test_build_detector_custom_size_channels():
     config = UNetBackboneConfig(in_channels=1, input_height=128)
 
     model = build_detector(
-        num_classes=num_classes,
-        num_sizes=num_sizes,
+        class_names=[f"class_{i}" for i in range(num_classes)],
+        dimension_names=[f"size_{i}" for i in range(num_sizes)],
         config=config,
     )
 
@@ -62,7 +72,11 @@ def test_detector_forward_pass_shapes(dummy_spectrogram):
     num_classes = 4
     # Build model matching the dummy input shape
     config = UNetBackboneConfig(in_channels=1, input_height=256)
-    model = build_detector(num_classes=num_classes, config=config)
+    model = build_detector(
+        class_names=[f"class_{i}" for i in range(num_classes)],
+        dimension_names=["width", "height"],
+        config=config,
+    )
 
     # Process the spectrogram through the model
     # PyTorch expects shape (Batch, Channels, Height, Width)
@@ -132,7 +146,11 @@ def test_detector_forward_pass_with_preprocessor(sample_preprocessor):
     config = UNetBackboneConfig(
         in_channels=spec.shape[1], input_height=spec.shape[2]
     )
-    model = build_detector(num_classes=3, config=config)
+    model = build_detector(
+        class_names=["class_0", "class_1", "class_2"],
+        dimension_names=["width", "height"],
+        config=config,
+    )
 
     # Process
     output = model(spec)

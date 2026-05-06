@@ -54,12 +54,14 @@ class ClassifierHead(nn.Module):
         1×1 convolution with ``num_classes + 1`` output channels.
     """
 
-    def __init__(self, num_classes: int, in_channels: int):
+    def __init__(self, class_names: list[str], in_channels: int):
         """Initialise the ClassifierHead."""
         super().__init__()
 
-        self.num_classes = num_classes
+        self.class_names = class_names
+        self.num_classes = len(class_names)
         self.in_channels = in_channels
+
         self.classifier = nn.Conv2d(
             self.in_channels,
             self.num_classes + 1,
@@ -165,11 +167,12 @@ class BBoxHead(nn.Module):
         1×1 convolution with 2 output channels (duration, bandwidth).
     """
 
-    def __init__(self, in_channels: int, num_sizes: int = 2):
+    def __init__(self, dimension_names: list[str], in_channels: int):
         """Initialise the BBoxHead."""
         super().__init__()
         self.in_channels = in_channels
-        self.num_sizes = num_sizes
+        self.dimension_names = dimension_names
+        self.num_sizes = len(dimension_names)
 
         self.bbox = nn.Conv2d(
             in_channels=self.in_channels,

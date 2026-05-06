@@ -34,6 +34,7 @@ class CheckpointConfig(BaseConfig):
     monitor: str | None = None
     mode: str = "max"
     save_top_k: int = 1
+    # Save distributable inference checkpoints by default.
     save_weights_only: bool = True
     filename: str | None = None
     save_last: bool | Literal["link"] = "link"

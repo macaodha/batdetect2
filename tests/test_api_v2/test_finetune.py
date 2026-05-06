@@ -18,7 +18,7 @@ def test_user_can_finetune_only_heads(
 
     api = BatDetect2API.from_config()
     source_classifier_head = api.model.detector.classifier_head
-    source_bbox_head = api.model.detector.bbox_head
+    source_size_head = api.model.detector.size_head
     source_backbone = api.model.detector.backbone
     finetune_dir = tmp_path / "heads_only"
 
@@ -39,7 +39,7 @@ def test_user_can_finetune_only_heads(
 
     backbone_params = list(detector.backbone.parameters())
     classifier_params = list(detector.classifier_head.parameters())
-    bbox_params = list(detector.bbox_head.parameters())
+    bbox_params = list(detector.size_head.parameters())
 
     assert backbone_params
     assert classifier_params
@@ -50,7 +50,7 @@ def test_user_can_finetune_only_heads(
     assert finetuned_api is not api
     assert detector.backbone is source_backbone
     assert detector.classifier_head is not source_classifier_head
-    assert detector.bbox_head is not source_bbox_head
+    assert detector.size_head is not source_size_head
     assert list(finetune_dir.rglob("*.ckpt"))
 
 

@@ -19,7 +19,8 @@ if TYPE_CHECKING:
         LoggerConfig,
         LoggingCallback,
     )
-    from batdetect2.models import Model, ModelConfig
+    from batdetect2.models import ModelConfig
+    from batdetect2.models.types import ModelProtocol
     from batdetect2.outputs import (
         OutputFormatConfig,
         OutputFormatterProtocol,
@@ -88,7 +89,7 @@ class BatDetect2API:
         evaluator: EvaluatorProtocol,
         formatter: OutputFormatterProtocol,
         output_transform: OutputTransformProtocol,
-        model: Model,
+        model: ModelProtocol,
     ):
         """Create a fully configured API instance.
 
@@ -128,7 +129,7 @@ class BatDetect2API:
             Default formatter used to save predictions.
         output_transform : OutputTransformProtocol
             Transform that converts model outputs into detections.
-        model : Model
+        model : ModelProtocol
             Model instance.
         """
         self.model_config = model_config
@@ -1177,5 +1178,5 @@ class BatDetect2API:
                 parameter.requires_grad = True
 
         if trainable in {"heads", "bbox_head"}:
-            for parameter in detector.bbox_head.parameters():
+            for parameter in detector.size_head.parameters():
                 parameter.requires_grad = True

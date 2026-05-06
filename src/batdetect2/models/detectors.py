@@ -6,8 +6,8 @@ bounding-box size regression.
 
 Components
 ----------
-- ``Detector`` – the ``torch.nn.Module`` that wires together a backbone
-  (``BackboneModel``) with a ``ClassifierHead`` and a ``BBoxHead`` to
+- ``Detector`` - the ``torch.nn.Module`` that wires together a backbone
+  (``BackboneProtocol``) with a ``ClassifierHead`` and a ``BBoxHead`` to
   produce a ``ModelOutput`` tuple from an input spectrogram.
 - ``build_detector`` – factory function that builds a ready-to-use
   ``Detector`` from a backbone configuration and a target class count.
@@ -18,15 +18,16 @@ preprocessing and output postprocessing are handled by
 """
 
 import torch
-from loguru import logger
 
-from batdetect2.models.backbones import (
-    BackboneConfig,
-    UNetBackboneConfig,
-    build_backbone,
-)
+from batdetect2.models.backbones import BackboneConfig, build_backbone
 from batdetect2.models.heads import BBoxHead, ClassifierHead
-from batdetect2.models.types import BackboneModel, DetectionModel, ModelOutput
+from batdetect2.models.types import (
+    BackboneProtocol,
+    ClassifierHeadProtocol,
+    DetectorProtocol,
+    ModelOutput,
+    SizeHeadProtocol,
+)
 
 __all__ = [
     "Detector",
@@ -34,7 +35,7 @@ __all__ = [
 ]
 
 
-class Detector(DetectionModel):
+class Detector(torch.nn.Module):
     """Complete BatDetect2 detection and classification model.
 
     Combines a backbone feature extractor with two prediction heads:
@@ -51,7 +52,7 @@ class Detector(DetectionModel):
 
     Attributes
     ----------
-    backbone : BackboneModel
+    backbone : BackboneProtocol
         The feature extraction backbone.
     num_classes : int
         Number of target classes (inferred from the classifier head).
@@ -61,13 +62,13 @@ class Detector(DetectionModel):
         Produces duration and bandwidth predictions from backbone features.
     """
 
-    backbone: BackboneModel
+    backbone: BackboneProtocol
 
     def __init__(
         self,
-        backbone: BackboneModel,
-        classifier_head: ClassifierHead,
-        bbox_head: BBoxHead,
+        backbone: BackboneProtocol,
+        classifier_head: ClassifierHeadProtocol,
+        size_head: SizeHeadProtocol,
     ):
         """Initialise the Detector model.
 
@@ -76,7 +77,7 @@ class Detector(DetectionModel):
 
         Parameters
         ----------
-        backbone : BackboneModel
+        backbone : BackboneProtocol
             An initialised backbone module (e.g. built by
             ``build_backbone``).
         classifier_head : ClassifierHead
@@ -90,7 +91,7 @@ class Detector(DetectionModel):
         self.backbone = backbone
         self.num_classes = classifier_head.num_classes
         self.classifier_head = classifier_head
-        self.bbox_head = bbox_head
+        self.size_head = size_head
 
     def forward(self, spec: torch.Tensor) -> ModelOutput:
         """Run the complete detection model on an input spectrogram.
@@ -125,7 +126,7 @@ class Detector(DetectionModel):
         features = self.backbone(spec)
         classification = self.classifier_head(features)
         detection = classification.sum(dim=1, keepdim=True)
-        size_preds = self.bbox_head(features)
+        size_preds = self.size_head(features)
         return ModelOutput(
             detection_probs=detection,
             size_preds=size_preds,
@@ -135,11 +136,11 @@ class Detector(DetectionModel):
 
 
 def build_detector(
-    num_classes: int,
-    num_sizes: int = 2,
+    class_names: list[str],
+    dimension_names: list[str],
     config: BackboneConfig | None = None,
-    backbone: BackboneModel | None = None,
-) -> DetectionModel:
+    backbone: BackboneProtocol | None = None,
+) -> DetectorProtocol:
     """Build a complete BatDetect2 detection model.
 
     Constructs a backbone from ``config``, attaches a ``ClassifierHead``
@@ -158,7 +159,7 @@ def build_detector(
 
     Returns
     -------
-    DetectionModel
+    DetectorProtocol
         An initialised ``Detector`` instance ready for training or
         inference.
 
@@ -168,24 +169,18 @@ def build_detector(
         If ``num_classes`` is not positive, or if the backbone
         configuration is invalid.
     """
-    if backbone is None:
-        config = config or UNetBackboneConfig()
-        logger.opt(lazy=True).debug(
-            "Building model with config: \n{}",
-            lambda: config.to_yaml_string(),  # type: ignore
-        )
-        backbone = build_backbone(config=config)
+    backbone = backbone or build_backbone(config=config)
 
     classifier_head = ClassifierHead(
-        num_classes=num_classes,
+        class_names=class_names,
         in_channels=backbone.out_channels,
     )
     bbox_head = BBoxHead(
         in_channels=backbone.out_channels,
-        num_sizes=num_sizes,
+        dimension_names=dimension_names,
     )
     return Detector(
         backbone=backbone,
         classifier_head=classifier_head,
-        bbox_head=bbox_head,
+        size_head=bbox_head,
     )

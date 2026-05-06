@@ -299,10 +299,10 @@ def test_checkpoint_with_same_targets_config_keeps_heads_unchanged(
             value,
         )
 
-    for key, value in source_detector.bbox_head.state_dict().items():
-        assert key in detector.bbox_head.state_dict()
+    for key, value in source_detector.size_head.state_dict().items():
+        assert key in detector.size_head.state_dict()
         torch.testing.assert_close(
-            detector.bbox_head.state_dict()[key],
+            detector.size_head.state_dict()[key],
             value,
         )
 

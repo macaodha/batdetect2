@@ -368,7 +368,7 @@ def test_build_model_with_new_targets_reuses_backbone_and_rebuilds_heads() -> (
     assert (
         rebuilt_detector.classifier_head is not source_detector.classifier_head
     )
-    assert rebuilt_detector.bbox_head is not source_detector.bbox_head
+    assert rebuilt_detector.size_head is not source_detector.size_head
     assert rebuilt_model.class_names == ["single_class"]
     assert rebuilt_model.dimension_names == ["width", "height"]
 

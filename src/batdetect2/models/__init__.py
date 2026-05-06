@@ -62,7 +62,7 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.heads import BBoxHead, ClassifierHead, DetectorHead
-from batdetect2.models.types import DetectionModel
+from batdetect2.models.types import DetectorProtocol, ModelProtocol
 from batdetect2.postprocess.config import PostprocessConfig
 from batdetect2.postprocess.types import (
     ClipDetectionsTensor,
@@ -149,7 +149,7 @@ class Model(torch.nn.Module):
 
     Attributes
     ----------
-    detector : DetectionModel
+    detector : DetectorProtocol
         The neural network that processes spectrograms and produces raw
         detection, classification, and bounding-box outputs.
     preprocessor : PreprocessorProtocol
@@ -164,7 +164,7 @@ class Model(torch.nn.Module):
         Size-dimension names corresponding to the model size outputs.
     """
 
-    detector: DetectionModel
+    detector: DetectorProtocol
     preprocessor: PreprocessorProtocol
     postprocessor: PostprocessorProtocol
     class_names: list[str]
@@ -173,7 +173,7 @@ class Model(torch.nn.Module):
 
     def __init__(
         self,
-        detector: DetectionModel,
+        detector: DetectorProtocol,
         preprocessor: PreprocessorProtocol,
         postprocessor: PostprocessorProtocol,
         class_names: list[str],
@@ -224,7 +224,7 @@ def build_model(
     dimension_names: list[str] | None = None,
     preprocessor: PreprocessorProtocol | None = None,
     postprocessor: PostprocessorProtocol | None = None,
-) -> Model:
+) -> ModelProtocol:
     """Build a complete, ready-to-use BatDetect2 model.
 
     Assembles a ``Model`` instance from a ``ModelConfig`` and optional
@@ -256,7 +256,7 @@ def build_model(
 
     Returns
     -------
-    Model
+    ModelProtocol
         A fully assembled ``Model`` instance ready for inference or
         training.
     """
@@ -285,8 +285,8 @@ def build_model(
         config=config.postprocess,
     )
     detector = build_detector(
-        num_classes=len(class_names),
-        num_sizes=len(dimension_names),
+        class_names=class_names,
+        dimension_names=dimension_names,
         config=config.architecture,
     )
     return Model(
@@ -300,14 +300,14 @@ def build_model(
 
 
 def build_model_with_new_targets(
-    model: Model,
+    model: ModelProtocol,
     targets: TargetProtocol,
     roi_mapper: ROIMapperProtocol,
-) -> Model:
+) -> ModelProtocol:
     """Build a new model with a different target set."""
     detector = build_detector(
-        num_classes=len(targets.class_names),
-        num_sizes=len(roi_mapper.dimension_names),
+        class_names=targets.class_names,
+        dimension_names=roi_mapper.dimension_names,
         backbone=model.detector.backbone,
     )
 

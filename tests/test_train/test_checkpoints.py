@@ -8,7 +8,7 @@ from soundevent import data
 
 from batdetect2.train import TrainingConfig, run_train
 from batdetect2.train.checkpoints import (
-    DEFAULT_BUNDLED_CHECKPOINT,
+    DEFAULT_CHECKPOINT,
     get_bundled_checkpoint_names,
     resolve_checkpoint_path,
 )
@@ -145,7 +145,7 @@ def test_resolve_checkpoint_path_returns_local_path_unchanged(
 
 def test_get_bundled_checkpoint_names_lists_supported_aliases() -> None:
     assert get_bundled_checkpoint_names() == (
-        DEFAULT_BUNDLED_CHECKPOINT,
+        DEFAULT_CHECKPOINT,
         "batdetect2_uk_same",
     )
 
@@ -153,11 +153,11 @@ def test_get_bundled_checkpoint_names_lists_supported_aliases() -> None:
 def test_resolve_checkpoint_path_uses_default_bundled_alias() -> None:
     resolved = resolve_checkpoint_path()
 
-    assert resolved == resolve_checkpoint_path(DEFAULT_BUNDLED_CHECKPOINT)
+    assert resolved == resolve_checkpoint_path(DEFAULT_CHECKPOINT)
 
 
 def test_resolve_checkpoint_path_accepts_bundled_alias() -> None:
-    resolved = resolve_checkpoint_path(DEFAULT_BUNDLED_CHECKPOINT)
+    resolved = resolve_checkpoint_path(DEFAULT_CHECKPOINT)
 
     assert resolved.name == "batdetect2_uk_same.ckpt"
     assert resolved.exists()
@@ -227,6 +227,6 @@ def test_resolve_checkpoint_path_rejects_incomplete_huggingface_uri() -> None:
 def test_resolve_checkpoint_path_rejects_missing_local_path() -> None:
     with pytest.raises(
         FileNotFoundError,
-        match="bundled checkpoint alias",
+        match="checkpoint alias",
     ):
         resolve_checkpoint_path("missing.ckpt")
