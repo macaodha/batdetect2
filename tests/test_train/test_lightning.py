@@ -451,7 +451,6 @@ def test_run_train_rejects_incompatible_model_config(
             model=incompatible_model,
             targets=targets,
             roi_mapper=roi_mapper,
-            model_config=incompatible_config,
             targets_config=targets_config,
             train_config=TrainingConfig(),
         )

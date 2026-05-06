@@ -57,7 +57,6 @@ def run_train(
     audio_loader: Optional["AudioLoader"] = None,
     labeller: Optional["ClipLabeller"] = None,
     audio_config: Optional[AudioConfig] = None,
-    model_config: Optional[ModelConfig] = None,
     targets_config: TargetConfig | None = None,
     train_config: Optional[TrainingConfig] = None,
     logger_config: LoggerConfig | None = None,
@@ -75,7 +74,11 @@ def run_train(
     if seed is not None:
         seed_everything(seed)
 
-    model_config = model_config or ModelConfig()
+    model_config = (
+        ModelConfig()
+        if model is None
+        else ModelConfig.model_validate(model.get_config())
+    )
     targets_config = targets_config or TargetConfig()
     audio_config = audio_config or AudioConfig()
     train_config = train_config or TrainingConfig()
@@ -172,7 +175,7 @@ def run_train(
     root_artifact_path.mkdir(parents=True, exist_ok=True)
 
     logging_context = TrainLoggingContext(
-        model_config=model_config,
+        model_config=model_config.model_dump(mode="json"),
         train_config=train_config,
         audio_config=audio_config,
         targets=targets,

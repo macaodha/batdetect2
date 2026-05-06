@@ -186,7 +186,6 @@ class BatDetect2API:
         num_epochs: int | None = None,
         run_name: str | None = None,
         seed: int | None = None,
-        model_config: ModelConfig | None = None,
         audio_config: AudioConfig | None = None,
         train_config: TrainingConfig | None = None,
         logger_config: LoggerConfig | None = None,
@@ -217,8 +216,6 @@ class BatDetect2API:
             Run name used by the configured logger.
         seed : int | None, optional
             Random seed for reproducibility.
-        model_config : ModelConfig | None, optional
-            Model config override. If omitted, the API model config is used.
         audio_config : AudioConfig | None, optional
             Audio config override.
         train_config : TrainingConfig | None, optional
@@ -242,7 +239,6 @@ class BatDetect2API:
             model=self.model,
             targets=self.targets,
             roi_mapper=self.roi_mapper,
-            model_config=model_config or self.model_config,
             audio_loader=self.audio_loader,
             preprocessor=self.preprocessor,
             train_workers=train_workers,
@@ -390,7 +386,6 @@ class BatDetect2API:
             model=api.model,
             targets=api.targets,
             roi_mapper=api.roi_mapper,
-            model_config=api.model_config,
             preprocessor=api.preprocessor,
             audio_loader=api.audio_loader,
             train_workers=train_workers,

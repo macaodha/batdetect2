@@ -169,6 +169,7 @@ class Model(torch.nn.Module):
     postprocessor: PostprocessorProtocol
     class_names: list[str]
     dimension_names: list[str]
+    _config: dict[str, object]
 
     def __init__(
         self,
@@ -177,6 +178,7 @@ class Model(torch.nn.Module):
         postprocessor: PostprocessorProtocol,
         class_names: list[str],
         dimension_names: list[str],
+        config: dict[str, object],
     ):
         super().__init__()
         self.detector = detector
@@ -184,6 +186,12 @@ class Model(torch.nn.Module):
         self.postprocessor = postprocessor
         self.class_names = class_names
         self.dimension_names = dimension_names
+        self._config = config
+
+    def get_config(self) -> dict[str, object]:
+        """Return the model configuration as plain JSON-serializable data."""
+
+        return dict(self._config)
 
     def forward(self, wav: torch.Tensor) -> list[ClipDetectionsTensor]:
         """Run the full detection pipeline on a waveform tensor.
@@ -287,6 +295,7 @@ def build_model(
         preprocessor=preprocessor,
         class_names=class_names,
         dimension_names=dimension_names,
+        config=config.model_dump(mode="json"),
     )
 
 
@@ -308,4 +317,5 @@ def build_model_with_new_targets(
         preprocessor=model.preprocessor,
         class_names=targets.class_names,
         dimension_names=roi_mapper.dimension_names,
+        config=model.get_config(),
     )

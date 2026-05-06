@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +30,7 @@ __all__ = [
 
 @dataclass(frozen=True)
 class TrainLoggingContext:
-    model_config: ModelConfig
+    model_config: dict[str, Any]
     train_config: TrainingConfig
     audio_config: AudioConfig
     targets: TargetProtocol
@@ -49,9 +51,10 @@ class ConfigHyperparameterLogging:
         artifact_path: Path,
         context: TrainLoggingContext,
     ) -> None:
+        model_config = ModelConfig.model_validate(context.model_config)
         logger.log_hyperparams(
             {
-                "model": context.model_config.model_dump(
+                "model": model_config.model_dump(
                     mode="json",
                     exclude_none=True,
                 ),
