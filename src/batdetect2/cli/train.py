@@ -13,15 +13,15 @@ __all__ = ["train_command"]
 @click.option(
     "--val-dataset",
     type=click.Path(exists=True),
-    help="Path to validation dataset config file.",
+    help="Path to a validation dataset config file.",
 )
 @click.option(
     "--model",
     "model_path",
     type=str,
     help=(
-        "Path to a checkpoint or a Hugging Face URI to continue training "
-        "from. If omitted, training starts from a fresh model config."
+        "Path to a checkpoint, bundled checkpoint alias, or Hugging Face "
+        "URI. If omitted, training starts from a fresh model config."
     ),
 )
 @click.option(
@@ -36,7 +36,7 @@ __all__ = ["train_command"]
     "--targets",
     "targets_config",
     type=click.Path(exists=True),
-    help="Path to targets config file.",
+    help="Path to a targets config file.",
 )
 @click.option(
     "--model-config",
@@ -46,32 +46,32 @@ __all__ = ["train_command"]
 @click.option(
     "--training-config",
     type=click.Path(exists=True),
-    help="Path to training config file.",
+    help="Path to a training config file.",
 )
 @click.option(
     "--audio-config",
     type=click.Path(exists=True),
-    help="Path to audio config file.",
+    help="Path to an audio config file.",
 )
 @click.option(
     "--evaluation-config",
     type=click.Path(exists=True),
-    help="Path to evaluation config file.",
+    help="Path to an evaluation config file.",
 )
 @click.option(
     "--inference-config",
     type=click.Path(exists=True),
-    help="Path to inference config file.",
+    help="Path to an inference config file.",
 )
 @click.option(
     "--outputs-config",
     type=click.Path(exists=True),
-    help="Path to outputs config file.",
+    help="Path to an outputs config file.",
 )
 @click.option(
     "--logging-config",
     type=click.Path(exists=True),
-    help="Path to logging config file.",
+    help="Path to a logging config file.",
 )
 @click.option(
     "--ckpt-dir",
@@ -139,9 +139,8 @@ def train_command(
 ):
     """Train a BatDetect2 model.
 
-    Train either from a fresh config (`--model-config`) or by fine-tuning an
-    existing checkpoint (`--model`). Training data are loaded from
-    `train_dataset`, with optional validation data from `--val-dataset`.
+    Start from a fresh model config or continue from an existing checkpoint.
+    Training data are loaded from ``train_dataset``.
     """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig

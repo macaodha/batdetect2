@@ -1,65 +1,33 @@
 # `BatDetect2API` reference
 
-`BatDetect2API` is the main entry point for the current Python workflow.
+`BatDetect2API` is the main Python entry point for BatDetect2.
 
-It wraps model loading, inference, evaluation, output formatting, and
-training-related entry points behind one object.
+Use it when you want to load a model, run prediction, inspect detections,
+evaluate results, or train from Python.
 
 Defined in `batdetect2.api_v2`.
 
-## Create an API instance
+## Main ways to create it
 
 - `BatDetect2API.from_checkpoint(path, ...)`
-  - load a trained checkpoint and optional config overrides.
+  - load a trained checkpoint, a bundled checkpoint alias, or a Hugging Face
+    checkpoint.
 - `BatDetect2API.from_config(model_config=..., targets_config=..., ...)`
-  - build a full stack from separate config objects.
+  - build a full model stack from config objects.
 
-## Inference methods
+## Common tasks
 
-- `process_file(audio_file, ...)`
-  - run inference for one recording.
-- `process_files(audio_files, ...)`
-  - run batch inference across a sequence of file paths.
-- `process_directory(audio_dir, ...)`
-  - run inference across the audio files found in one directory.
-- `process_clips(clips, ...)`
-  - run inference on an explicit sequence of clip objects.
-- `process_audio(audio, ...)`
-  - run inference starting from a waveform array.
-- `process_spectrogram(spec, ...)`
-  - run inference starting from a spectrogram tensor.
+- Load a checkpoint and run prediction on one file.
+- Run prediction on many files or clips.
+- Save predictions in one of the supported output formats.
+- Evaluate a model on labelled data.
+- Fine-tune an existing checkpoint on new targets.
 
-## Prediction inspection helpers
+## Generated reference
 
-- `get_top_class_name(detection)`
-  - return the highest-scoring class name for one detection.
-- `get_class_scores(detection, include_top_class=True, sort_descending=True)`
-  - return ranked `(class_name, score)` pairs.
-- `get_detection_features(detection)`
-  - return the per-detection feature vector.
-
-## Audio loading helpers
-
-- `load_audio(path)`
-- `load_recording(recording)`
-- `load_clip(clip)`
-- `generate_spectrogram(audio)`
-
-## Output persistence helpers
-
-- `save_predictions(predictions, path, audio_dir=None, format=None,
-  config=None)`
-- `load_predictions(path, format=None, config=None)`
-
-Use these when you want to save programmatic predictions without going through
-the CLI.
-
-## Training and evaluation entry points
-
-- `train(...)`
-- `finetune(...)`
-- `evaluate(...)`
-- `evaluate_predictions(...)`
+```{eval-rst}
+.. autoclass:: batdetect2.api_v2.BatDetect2API
+```
 
 ## Related pages
 

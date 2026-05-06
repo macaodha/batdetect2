@@ -18,22 +18,21 @@ __all__ = ["predict"]
 
 @cli.group(name="predict", short_help="Run prediction workflows.")
 def predict() -> None:
-    """Run model inference on audio files.
+    """Run model inference on audio.
 
-    Use one of the subcommands to select inputs from a directory, a text file
-    list, or an annotation dataset.
+    Choose a subcommand based on how you want to provide input audio.
     """
 
 
 def common_predict_options(func):
-    """Attach options shared by all `predict` subcommands."""
+    """Attach options shared by all ``predict`` subcommands."""
 
     @click.option(
         "--audio-config",
         type=click.Path(exists=True),
         help=(
             "Path to an audio config file. Use this to override audio "
-            "loading and preprocessing-related settings."
+            "loading settings."
         ),
     )
     @click.option(
@@ -41,7 +40,7 @@ def common_predict_options(func):
         type=click.Path(exists=True),
         help=(
             "Path to an inference config file. Use this to override "
-            "prediction-time thresholds and behavior."
+            "prediction settings."
         ),
     )
     @click.option(
@@ -49,23 +48,19 @@ def common_predict_options(func):
         type=click.Path(exists=True),
         help=(
             "Path to an outputs config file. Use this to control the "
-            "prediction fields written to disk."
+            "saved output format and fields."
         ),
     )
     @click.option(
         "--logging-config",
         type=click.Path(exists=True),
-        help=(
-            "Path to a logging config file. Use this to customize logging "
-            "format and levels."
-        ),
+        help=("Path to a logging config file. Use this to change log output."),
     )
     @click.option(
         "--batch-size",
         type=int,
         help=(
-            "Batch size for inference. If omitted, the value from the "
-            "loaded config is used."
+            "Batch size for inference. If omitted, the config value is used."
         ),
     )
     @click.option(
@@ -82,7 +77,7 @@ def common_predict_options(func):
         type=str,
         help=(
             "Output format name used by the prediction writer. If omitted, "
-            "the default output format is used."
+            "the config default is used."
         ),
     )
     @click.option(
@@ -91,7 +86,7 @@ def common_predict_options(func):
         default=None,
         help=(
             "Optional detection score threshold override. If omitted, "
-            "the model default threshold is used."
+            "the configured threshold is used."
         ),
     )
     @wraps(func)
@@ -212,10 +207,10 @@ def predict_directory_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Predict on all audio files in a directory.
+    """Run prediction on all supported audio files in a directory.
 
-    Loads a checkpoint, scans `audio_dir` for supported audio files, runs
-    inference, and saves predictions to `output_path`.
+    This command scans ``audio_dir`` for audio files, runs prediction, and
+    saves the results to ``output_path``.
     """
     from soundevent.audio.files import get_audio_files
 
@@ -256,9 +251,9 @@ def predict_file_list_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Predict on audio files listed in a text file.
+    """Run prediction on audio files listed in a text file.
 
-    The list file should contain one audio path per line. Empty lines are
+    The text file should contain one audio path per line. Empty lines are
     ignored.
     """
     file_list = Path(file_list)
@@ -304,10 +299,10 @@ def predict_dataset_command(
     format_name: str | None,
     detection_threshold: float | None,
 ) -> None:
-    """Predict on recordings referenced in an annotation dataset.
+    """Run prediction on recordings referenced in a dataset file.
 
-    The dataset is read as a soundevent annotation set and unique recording
-    paths are extracted before inference.
+    Recording paths are read from the dataset and each recording is processed
+    once.
     """
     from soundevent import io
 

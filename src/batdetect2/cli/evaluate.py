@@ -17,27 +17,27 @@ DEFAULT_OUTPUT_DIR = Path("outputs") / "evaluation"
 @click.option(
     "--audio-config",
     type=click.Path(exists=True),
-    help="Path to audio config file.",
+    help="Path to an audio config file.",
 )
 @click.option(
     "--evaluation-config",
     type=click.Path(exists=True),
-    help="Path to evaluation config file.",
+    help="Path to an evaluation config file.",
 )
 @click.option(
     "--inference-config",
     type=click.Path(exists=True),
-    help="Path to inference config file.",
+    help="Path to an inference config file.",
 )
 @click.option(
     "--outputs-config",
     type=click.Path(exists=True),
-    help="Path to outputs config file.",
+    help="Path to an outputs config file.",
 )
 @click.option(
     "--logging-config",
     type=click.Path(exists=True),
-    help="Path to logging config file.",
+    help="Path to a logging config file.",
 )
 @click.option(
     "--base-dir",
@@ -87,10 +87,10 @@ def evaluate_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
-    """Evaluate a checkpoint against a test dataset.
+    """Evaluate a checkpoint on a labelled test dataset.
 
-    Loads model and optional override configs, runs evaluation on
-    `test_dataset`, and writes metrics/artifacts to `output_dir`.
+    This command loads a checkpoint, runs evaluation on ``test_dataset``, and
+    writes metrics to ``output_dir``.
     """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig

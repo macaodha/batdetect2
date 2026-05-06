@@ -8,10 +8,11 @@ __all__ = [
 
 
 INFO_STR = """
-BatDetect2 - Detection and Classification
-    Assumes audio files are mono, not stereo.
-    Spaces in the input paths will throw an error. Wrap in quotes.
-    Input files should be short in duration e.g. < 30 seconds.
+BatDetect2
+    Input audio should be mono.
+    Wrap paths that contain spaces in quotes.
+    For long recordings, split audio into shorter files before running
+    prediction.
 """
 
 
@@ -25,8 +26,8 @@ BatDetect2 - Detection and Classification
 def cli(verbose: int = 0):
     """Run the BatDetect2 CLI.
 
-    This command initializes logging and exposes subcommands for prediction,
-    training, evaluation, and dataset utilities.
+    Use subcommands to run prediction, training, evaluation, and dataset
+    utilities.
     """
     click.echo(INFO_STR)
 

@@ -47,6 +47,30 @@ DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 
 
 class BatDetect2API:
+    """High-level interface for the BatDetect2 workflow.
+
+    Use this to load a model, run inference, inspect detections,
+    evaluate predictions, and train or fine-tune models.
+
+    In most cases, start with :meth:`from_checkpoint` to load a trained model.
+    Use :meth:`from_config` when you want to build a new model with custom configs.
+
+    Examples
+    --------
+    Load the default checkpoint and run prediction on one file.
+
+    >>> from batdetect2.api_v2 import BatDetect2API
+    >>> api = BatDetect2API.from_checkpoint()
+    >>> prediction = api.process_file("recording.wav")
+
+    Load a checkpoint and save predictions for a folder of audio.
+
+    >>> from pathlib import Path
+    >>> api = BatDetect2API.from_checkpoint("uk_same")
+    >>> predictions = api.process_directory("audio")
+    >>> api.save_predictions(predictions, "outputs/")
+    """
+
     def __init__(
         self,
         model_config: ModelConfig,
@@ -66,6 +90,47 @@ class BatDetect2API:
         output_transform: OutputTransformProtocol,
         model: Model,
     ):
+        """Create a fully configured API instance.
+
+        This initializer is mainly for internal wiring.
+        In most cases, users should create the API with
+        :meth:`from_checkpoint` or :meth:`from_config`.
+
+        Parameters
+        ----------
+        model_config : ModelConfig
+            Model configuration.
+        audio_config : AudioConfig
+            Audio loading configuration.
+        train_config : TrainingConfig
+            Training configuration.
+        evaluation_config : EvaluationConfig
+            Evaluation configuration.
+        inference_config : InferenceConfig
+            Inference configuration.
+        outputs_config : OutputsConfig
+            Output formatting configuration.
+        logging_config : AppLoggingConfig
+            Logging configuration.
+        targets : TargetProtocol
+            Target definition used by the model.
+        roi_mapper : ROIMapperProtocol
+            ROI mapping used for size targets.
+        audio_loader : AudioLoader
+            Audio loader.
+        preprocessor : PreprocessorProtocol
+            Preprocessor used before the detector.
+        postprocessor : PostprocessorProtocol
+            Postprocessor used after the detector.
+        evaluator : EvaluatorProtocol
+            Evaluator used for metrics.
+        formatter : OutputFormatterProtocol
+            Default formatter used to save predictions.
+        output_transform : OutputTransformProtocol
+            Transform that converts model outputs into detections.
+        model : Model
+            Model instance.
+        """
         self.model_config = model_config
         self.audio_config = audio_config
         self.train_config = train_config
@@ -90,6 +155,21 @@ class BatDetect2API:
         path: data.PathLike,
         base_dir: data.PathLike | None = None,
     ) -> Dataset:
+        """Load a set of annotations from a dataset config file.
+
+        Parameters
+        ----------
+        path : data.PathLike
+            Path to the dataset config file.
+        base_dir : data.PathLike | None, optional
+            Base directory used to resolve relative paths in the dataset
+            config.
+
+        Returns
+        -------
+        Dataset
+            Loaded dataset of annotations.
+        """
         from batdetect2.data import load_dataset_from_config
 
         return load_dataset_from_config(path, base_dir=base_dir)
@@ -112,6 +192,47 @@ class BatDetect2API:
         logger_config: LoggerConfig | None = None,
         logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
     ):
+        """Train the current model on a set of annotations.
+
+        Parameters
+        ----------
+        train_annotations : Sequence[data.ClipAnnotation]
+            Training annotations.
+        val_annotations : Sequence[data.ClipAnnotation] | None, optional
+            Validation annotations. If omitted, training runs without a
+            validation set.
+        train_workers : int, optional
+            Number of worker processes for training data loading.
+        val_workers : int, optional
+            Number of worker processes for validation data loading.
+        checkpoint_dir : Path | None, optional
+            Directory where checkpoints are saved.
+        log_dir : Path | None, optional
+            Directory where logs are written.
+        experiment_name : str | None, optional
+            Experiment name used by the configured logger.
+        num_epochs : int | None, optional
+            Maximum number of training epochs.
+        run_name : str | None, optional
+            Run name used by the configured logger.
+        seed : int | None, optional
+            Random seed for reproducibility.
+        model_config : ModelConfig | None, optional
+            Model config override. If omitted, the API model config is used.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        train_config : TrainingConfig | None, optional
+            Training config override.
+        logger_config : LoggerConfig | None, optional
+            Training logger config override.
+        logging_callbacks : Sequence[LoggingCallback[TrainLoggingContext]], optional
+            Extra logging callbacks to run during training setup.
+
+        Returns
+        -------
+        BatDetect2API
+            This API instance with the trained model.
+        """
         from batdetect2.train import run_train
 
         self.model.train()
@@ -161,7 +282,52 @@ class BatDetect2API:
         logger_config: LoggerConfig | None = None,
         logging_callbacks: Sequence[LoggingCallback[TrainLoggingContext]] = (),
     ) -> "BatDetect2API":
-        """Fine-tune from a checkpoint using a new target definition."""
+        """Fine-tune the current model with a new target definition.
+
+        Use this when you want to keep the existing model weights but change
+        the target sounds. You can fine-tune the whole model or just the
+        classifier heads.
+
+        Parameters
+        ----------
+        train_annotations : Sequence[data.ClipAnnotation]
+            Training annotations.
+        targets_config : TargetConfig
+            Target definition to train against.
+        val_annotations : Sequence[data.ClipAnnotation] | None, optional
+            Validation annotations.
+        trainable : {"all", "heads", "classifier_head", "bbox_head"}, optional
+            Which model parameters remain trainable.
+        train_workers : int, optional
+            Number of worker processes for training data loading.
+        val_workers : int, optional
+            Number of worker processes for validation data loading.
+        checkpoint_dir : Path | None, optional
+            Directory where checkpoints are saved.
+        log_dir : Path | None, optional
+            Directory where logs are written.
+        experiment_name : str | None, optional
+            Experiment name used by the configured logger.
+        num_epochs : int | None, optional
+            Maximum number of training epochs.
+        run_name : str | None, optional
+            Run name used by the configured logger.
+        seed : int | None, optional
+            Random seed for reproducibility.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        train_config : TrainingConfig | None, optional
+            Training config override.
+        logger_config : LoggerConfig | None, optional
+            Training logger config override.
+        logging_callbacks : Sequence[LoggingCallback[TrainLoggingContext]], optional
+            Extra logging callbacks to run during training setup.
+
+        Returns
+        -------
+        BatDetect2API
+            A new API instance configured for the new targets.
+        """
         from batdetect2.evaluate import build_evaluator
         from batdetect2.models import build_model_with_new_targets
         from batdetect2.outputs import (
@@ -256,6 +422,36 @@ class BatDetect2API:
         outputs_config: OutputsConfig | None = None,
         logger_config: LoggerConfig | None = None,
     ) -> tuple[dict[str, float], list[ClipDetections]]:
+        """Evaluate the current model on a labelled dataset.
+
+        Parameters
+        ----------
+        test_annotations : Sequence[data.ClipAnnotation]
+            Labelled clips used for evaluation.
+        num_workers : int, optional
+            Number of worker processes for dataset loading.
+        output_dir : data.PathLike, optional
+            Directory where metrics and plots are written.
+        experiment_name : str | None, optional
+            Experiment name used by the configured logger.
+        run_name : str | None, optional
+            Run name used by the configured logger.
+        save_predictions : bool, optional
+            If ``True``, save formatted predictions alongside metrics.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        evaluation_config : EvaluationConfig | None, optional
+            Evaluation config override.
+        outputs_config : OutputsConfig | None, optional
+            Output config override.
+        logger_config : LoggerConfig | None, optional
+            Evaluation logger config override.
+
+        Returns
+        -------
+        tuple[dict[str, float], list[ClipDetections]]
+            Evaluation metrics and per-clip predictions.
+        """
         from batdetect2.evaluate import run_evaluate
 
         return run_evaluate(
@@ -282,6 +478,22 @@ class BatDetect2API:
         predictions: Sequence[ClipDetections],
         output_dir: data.PathLike | None = None,
     ):
+        """Evaluate an existing set of predictions.
+
+        Parameters
+        ----------
+        annotations : Sequence[data.ClipAnnotation]
+            Reference annotations.
+        predictions : Sequence[ClipDetections]
+            Predictions to compare against the annotations.
+        output_dir : data.PathLike | None, optional
+            Directory where metrics and plots are written.
+
+        Returns
+        -------
+        dict[str, float]
+            Computed evaluation metrics.
+        """
         from batdetect2.evaluate import save_evaluation_results
 
         clip_evals = self.evaluator.evaluate(
@@ -301,12 +513,15 @@ class BatDetect2API:
         return metrics
 
     def load_audio(self, path: data.PathLike) -> np.ndarray:
+        """Load one audio file into a waveform array."""
         return self.audio_loader.load_file(path)
 
     def load_recording(self, recording: data.Recording) -> np.ndarray:
+        """Load one recording object into a waveform array."""
         return self.audio_loader.load_recording(recording)
 
     def load_clip(self, clip: data.Clip) -> np.ndarray:
+        """Load one clip object into a waveform array."""
         return self.audio_loader.load_clip(clip)
 
     def get_top_class_name(self, detection: Detection) -> str:
@@ -358,6 +573,7 @@ class BatDetect2API:
         self,
         audio: np.ndarray,
     ) -> torch.Tensor:
+        """Convert a waveform array into a model spectrogram."""
         import torch
 
         tensor = torch.tensor(audio).unsqueeze(0)
@@ -369,6 +585,23 @@ class BatDetect2API:
         batch_size: int | None = None,
         detection_threshold: float | None = None,
     ) -> ClipDetections:
+        """Run inference on one audio file.
+
+        Parameters
+        ----------
+        audio_file : data.PathLike
+            Path to the audio file.
+        batch_size : int | None, optional
+            Batch size override. If omitted, the inference config value is
+            used.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        ClipDetections
+            Predictions for the full recording.
+        """
         from soundevent import data
 
         from batdetect2.postprocess import ClipDetections
@@ -405,6 +638,20 @@ class BatDetect2API:
         audio: np.ndarray,
         detection_threshold: float | None = None,
     ) -> list[Detection]:
+        """Run inference on a waveform array.
+
+        Parameters
+        ----------
+        audio : np.ndarray
+            Audio waveform.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        list[Detection]
+            Detected calls.
+        """
         spec = self.generate_spectrogram(audio)
         return self.process_spectrogram(
             spec,
@@ -417,6 +664,27 @@ class BatDetect2API:
         start_time: float = 0,
         detection_threshold: float | None = None,
     ) -> list[Detection]:
+        """Run inference on one spectrogram tensor.
+
+        Parameters
+        ----------
+        spec : torch.Tensor
+            Spectrogram tensor for one recording or clip.
+        start_time : float, optional
+            Start time in seconds used when creating detections.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        list[Detection]
+            Detected calls.
+
+        Raises
+        ------
+        ValueError
+            If a batched spectrogram with more than one item is provided.
+        """
         if spec.ndim == 4 and spec.shape[0] > 1:
             raise ValueError("Batched spectrograms not supported.")
 
@@ -439,6 +707,7 @@ class BatDetect2API:
         audio_dir: data.PathLike,
         detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
+        """Run inference on all supported audio files in a directory."""
         from soundevent.audio.files import get_audio_files
 
         files = list(get_audio_files(audio_dir))
@@ -457,6 +726,30 @@ class BatDetect2API:
         output_config: OutputsConfig | None = None,
         detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
+        """Run inference on multiple audio files.
+
+        Parameters
+        ----------
+        audio_files : Sequence[data.PathLike]
+            Audio file paths.
+        batch_size : int | None, optional
+            Batch size override.
+        num_workers : int, optional
+            Number of worker processes for audio loading.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        inference_config : InferenceConfig | None, optional
+            Inference config override.
+        output_config : OutputsConfig | None, optional
+            Output config override.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        list[ClipDetections]
+            Predictions for each input file.
+        """
         from batdetect2.inference import process_file_list
 
         return process_file_list(
@@ -485,6 +778,30 @@ class BatDetect2API:
         output_config: OutputsConfig | None = None,
         detection_threshold: float | None = None,
     ) -> list[ClipDetections]:
+        """Run inference on multiple clip objects.
+
+        Parameters
+        ----------
+        clips : Sequence[data.Clip]
+            Clips to process.
+        batch_size : int | None, optional
+            Batch size override.
+        num_workers : int, optional
+            Number of worker processes for audio loading.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        inference_config : InferenceConfig | None, optional
+            Inference config override.
+        output_config : OutputsConfig | None, optional
+            Output config override.
+        detection_threshold : float | None, optional
+            Detection score threshold override.
+
+        Returns
+        -------
+        list[ClipDetections]
+            Predictions for each input clip.
+        """
         from batdetect2.inference import run_batch_inference
 
         return run_batch_inference(
@@ -511,6 +828,21 @@ class BatDetect2API:
         format: str | None = None,
         config: OutputFormatConfig | None = None,
     ):
+        """Save predictions to disk in one of the supported output formats.
+
+        Parameters
+        ----------
+        predictions : Sequence[ClipDetections]
+            Predictions to save.
+        path : data.PathLike
+            Output file or directory path, depending on the selected format.
+        audio_dir : data.PathLike | None, optional
+            Audio root directory used when writing relative paths.
+        format : str | None, optional
+            Output format name override.
+        config : OutputFormatConfig | None, optional
+            Output format config override.
+        """
         from batdetect2.outputs import get_output_formatter
 
         formatter = self.formatter
@@ -532,6 +864,22 @@ class BatDetect2API:
         format: str | None = None,
         config: OutputFormatConfig | None = None,
     ) -> list[object]:
+        """Load predictions from disk.
+
+        Parameters
+        ----------
+        path : data.PathLike
+            Path to a saved prediction file or directory.
+        format : str | None, optional
+            Output format name override.
+        config : OutputFormatConfig | None, optional
+            Output format config override.
+
+        Returns
+        -------
+        list[object]
+            Loaded prediction objects returned by the selected formatter.
+        """
         from batdetect2.outputs import get_output_formatter
 
         formatter = self.formatter
@@ -558,6 +906,36 @@ class BatDetect2API:
         outputs_config: OutputsConfig | None = None,
         logging_config: AppLoggingConfig | None = None,
     ) -> "BatDetect2API":
+        """Build an API instance from config objects.
+
+        Use this when you want to create a new model stack without loading a
+        saved checkpoint.
+
+        Parameters
+        ----------
+        model_config : ModelConfig | None, optional
+            Model config. If omitted, the default model config is used.
+        targets_config : TargetConfig | None, optional
+            Target config. If omitted, the default target config is used.
+        audio_config : AudioConfig | None, optional
+            Audio config. If omitted, the default audio config is used.
+        train_config : TrainingConfig | None, optional
+            Training config. If omitted, the default training config is used.
+        evaluation_config : EvaluationConfig | None, optional
+            Evaluation config. If omitted, the default evaluation config is
+            used.
+        inference_config : InferenceConfig | None, optional
+            Inference config. If omitted, the default inference config is used.
+        outputs_config : OutputsConfig | None, optional
+            Output config. If omitted, the default outputs config is used.
+        logging_config : AppLoggingConfig | None, optional
+            Logging config. If omitted, the default logging config is used.
+
+        Returns
+        -------
+        BatDetect2API
+            Configured API instance.
+        """
         from batdetect2.audio import AudioConfig, build_audio_loader
         from batdetect2.evaluate import EvaluationConfig, build_evaluator
         from batdetect2.inference import InferenceConfig
@@ -664,6 +1042,31 @@ class BatDetect2API:
         outputs_config: OutputsConfig | None = None,
         logging_config: AppLoggingConfig | None = None,
     ) -> "BatDetect2API":
+        """Build an API instance from a saved checkpoint.
+
+        Parameters
+        ----------
+        path : data.PathLike | str | None, optional
+            Checkpoint path, bundled checkpoint alias, or Hugging Face URI.
+            If omitted, the default bundled checkpoint is used.
+        audio_config : AudioConfig | None, optional
+            Audio config override.
+        train_config : TrainingConfig | None, optional
+            Training config override.
+        evaluation_config : EvaluationConfig | None, optional
+            Evaluation config override.
+        inference_config : InferenceConfig | None, optional
+            Inference config override.
+        outputs_config : OutputsConfig | None, optional
+            Output config override.
+        logging_config : AppLoggingConfig | None, optional
+            Logging config override.
+
+        Returns
+        -------
+        BatDetect2API
+            Configured API instance.
+        """
         from batdetect2.audio import AudioConfig, build_audio_loader
         from batdetect2.evaluate import EvaluationConfig, build_evaluator
         from batdetect2.inference import InferenceConfig

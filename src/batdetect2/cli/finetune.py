@@ -5,7 +5,7 @@ import click
 from loguru import logger
 
 from batdetect2.cli.base import cli
-from batdetect2.train.checkpoints import DEFAULT_BUNDLED_CHECKPOINT
+from batdetect2.train.checkpoints import DEFAULT_CHECKPOINT
 
 __all__ = ["finetune_command"]
 
@@ -21,7 +21,7 @@ __all__ = ["finetune_command"]
     help=(
         "Path to a checkpoint, bundled checkpoint alias, or a Hugging Face "
         "URI to fine-tune from. Defaults to "
-        f"'{DEFAULT_BUNDLED_CHECKPOINT}'."
+        f"'{DEFAULT_CHECKPOINT}'."
     ),
 )
 @click.option(
@@ -47,24 +47,24 @@ __all__ = ["finetune_command"]
 @click.option(
     "--training-config",
     type=click.Path(exists=True),
-    help="Path to training config file.",
+    help="Path to a training config file.",
 )
 @click.option(
     "--audio-config",
     type=click.Path(exists=True),
-    help="Path to audio config file.",
+    help="Path to an audio config file.",
 )
 @click.option(
     "--logging-config",
     type=click.Path(exists=True),
-    help="Path to logging config file.",
+    help="Path to a logging config file.",
 )
 @click.option(
     "--trainable",
     type=click.Choice(["all", "heads", "classifier_head", "bbox_head"]),
     default="heads",
     show_default=True,
-    help="Which model parameters remain trainable during fine-tuning.",
+    help="Which model parameters stay trainable during fine-tuning.",
 )
 @click.option(
     "--ckpt-dir",
@@ -127,7 +127,11 @@ def finetune_command(
     experiment_name: str | None = None,
     run_name: str | None = None,
 ):
-    """Fine-tune a BatDetect2 checkpoint on a new target definition."""
+    """Fine-tune a checkpoint on a new target definition.
+
+    Use this command when you want to adapt an existing model to a new class
+    list or ROI mapping.
+    """
     from batdetect2.api_v2 import BatDetect2API
     from batdetect2.audio import AudioConfig
     from batdetect2.data import load_dataset, load_dataset_config
