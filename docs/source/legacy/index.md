@@ -1,9 +1,8 @@
-# Legacy documentation
+# BatDetect2 v1.0 documentation
 
-This section documents the previous BatDetect2 workflow.
+This section documents the BatDetect2 workflow for version 1.
 
-Use these pages if you need to keep working with the older `batdetect2 detect`
-command or the older `batdetect2.api` interface.
+Use these pages if you need to keep working with the older `batdetect2 detect` command or the older `batdetect2.api` interface.
 
 For new projects, we recommend the current workflow:
 
@@ -25,6 +24,5 @@ New users should start with {doc}`../getting_started` and {doc}`../tutorials/ind
 
 cli-detect
 python-api
-feature-extraction
 migration-guide
 ```
