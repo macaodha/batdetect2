@@ -80,10 +80,11 @@ prediction = api.process_file(Path("path/to/audio.wav"))
 
 Useful replacements:
 
-- legacy `process_file` -> current `BatDetect2API.process_file`
-- legacy `process_audio` -> current `BatDetect2API.process_audio`
-- legacy `process_spectrogram` -> current `BatDetect2API.process_spectrogram`
-- legacy one-off batch loops -> current `process_files` or CLI `process`
+- `batdetect2.api.process_file` -> current `BatDetect2API.process_file`
+- `batdetect2.api.process_audio` -> current `BatDetect2API.process_audio`
+- `batdetect2.api.process_spectrogram` -> current
+  `BatDetect2API.process_spectrogram`
+- one-off batch loops -> `BatDetect2API.process_files` or CLI `process`
 
 ### Model changes
 

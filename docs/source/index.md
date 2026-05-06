@@ -54,13 +54,13 @@ Then choose the section that matches what you need.
 
 If you are here mainly to run the model on recordings, start with Tutorials.
 
-| Section | Best for | Start here |
-| --- | --- | --- |
-| Tutorials | Step-by-step routes for the most common tasks | {doc}`tutorials/index` |
-| How-to guides | Answers to specific practical questions | {doc}`how_to/index` |
-| Reference | Detailed command and settings help | {doc}`reference/index` |
-| Understanding | Concepts, interpretation, and trade-offs | {doc}`explanation/index` |
-| Legacy | Previous workflow and migration guidance | {doc}`legacy/index` |
+| Section       | Best for                                      | Start here               |
+| ------------- | --------------------------------------------- | ------------------------ |
+| Tutorials     | Step-by-step routes for the most common tasks | {doc}`tutorials/index`   |
+| How-to guides | Answers to specific practical questions       | {doc}`how_to/index`      |
+| Reference     | Detailed command and settings help            | {doc}`reference/index`   |
+| Understanding | Concepts, interpretation, and trade-offs      | {doc}`explanation/index` |
+| Legacy        | Previous workflow and migration guidance      | {doc}`legacy/index`      |
 
 ## Get in touch
 
@@ -81,6 +81,17 @@ Mac Aodha, O., Martinez Balvanera, S., Damstra, E., et al.
 (2022).
 _Towards a General Approach for Bat Echolocation Detection and Classification_.
 bioRxiv.
+
+or the bibtex entry
+
+```bibtex
+@article{batdetect2_2022,
+  title         = {Towards a General Approach for Bat Echolocation Detection and Classification},
+  author        = {Mac Aodha, Oisin and Mart\'{i}nez Balvanera, Santiago and Damstra, Elise and Cooke, Martyn and Eichinski, Philip and Browning, Ella and Barataudm, Michel and Boughey, Katherine and Coles, Roger and Giacomini, Giada and MacSwiney G., M. Cristina and K. Obrist, Martin and Parsons, Stuart and Sattler, Thomas and Jones, Kate E.},
+  journal       = {bioRxiv},
+  year          = {2022}
+}
+```
 
 ```{toctree}
 :maxdepth: 1
