@@ -4,7 +4,7 @@ from lightning import LightningModule
 from torch.utils.data import DataLoader
 
 from batdetect2.inference.dataset import DatasetItem, InferenceDataset
-from batdetect2.models import Model
+from batdetect2.models.types import ModelProtocol
 from batdetect2.outputs import OutputTransformProtocol, build_output_transform
 from batdetect2.postprocess.types import ClipDetections
 from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
@@ -13,7 +13,7 @@ from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 class InferenceModule(LightningModule):
     def __init__(
         self,
-        model: Model,
+        model: ModelProtocol,
         targets: TargetProtocol | None = None,
         roi_mapper: ROIMapperProtocol | None = None,
         output_transform: OutputTransformProtocol | None = None,

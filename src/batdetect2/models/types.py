@@ -1,21 +1,42 @@
-from abc import ABC, abstractmethod
-from typing import NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol
 
 import torch
 
+from batdetect2.postprocess.types import PostprocessorProtocol
+from batdetect2.preprocess.types import PreprocessorProtocol
+
 __all__ = [
-    "BackboneModel",
+    "BackboneProtocol",
     "BlockProtocol",
     "BottleneckProtocol",
+    "ClassifierHeadProtocol",
     "DecoderProtocol",
-    "DetectionModel",
-    "EncoderDecoderModel",
+    "DetectorProtocol",
     "EncoderProtocol",
     "ModelOutput",
+    "ModelProtocol",
+    "ModuleProtocol",
+    "SizeHeadProtocol",
 ]
 
 
-class BlockProtocol(Protocol):
+class ModuleProtocol(Protocol):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def train(self, mode: bool = True) -> torch.nn.Module: ...
+
+    def eval(self) -> torch.nn.Module: ...
+
+    def state_dict(
+        self, *args: Any, **kwargs: Any
+    ) -> dict[str, torch.Tensor]: ...
+
+    def load_state_dict(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def parameters(self) -> Any: ...
+
+
+class BlockProtocol(ModuleProtocol, Protocol):
     in_channels: int
     out_channels: int
 
@@ -24,7 +45,7 @@ class BlockProtocol(Protocol):
     def get_output_height(self, input_height: int) -> int: ...
 
 
-class EncoderProtocol(Protocol):
+class EncoderProtocol(ModuleProtocol, Protocol):
     in_channels: int
     out_channels: int
     input_height: int
@@ -33,7 +54,7 @@ class EncoderProtocol(Protocol):
     def __call__(self, x: torch.Tensor) -> list[torch.Tensor]: ...
 
 
-class BottleneckProtocol(Protocol):
+class BottleneckProtocol(ModuleProtocol, Protocol):
     in_channels: int
     out_channels: int
     input_height: int
@@ -41,7 +62,7 @@ class BottleneckProtocol(Protocol):
     def __call__(self, x: torch.Tensor) -> torch.Tensor: ...
 
 
-class DecoderProtocol(Protocol):
+class DecoderProtocol(ModuleProtocol, Protocol):
     in_channels: int
     out_channels: int
     input_height: int
@@ -62,29 +83,42 @@ class ModelOutput(NamedTuple):
     features: torch.Tensor
 
 
-class BackboneModel(ABC, torch.nn.Module):
+class BackboneProtocol(ModuleProtocol, Protocol):
     input_height: int
     out_channels: int
 
-    @abstractmethod
-    def forward(self, spec: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
+    def forward(self, spec: torch.Tensor) -> torch.Tensor: ...
 
 
-class EncoderDecoderModel(BackboneModel):
-    bottleneck_channels: int
+class ClassifierHeadProtocol(ModuleProtocol, Protocol):
+    num_classes: int
+    in_channels: int
+    class_names: list[str]
 
-    @abstractmethod
-    def encode(self, spec: torch.Tensor) -> torch.Tensor: ...
-
-    @abstractmethod
-    def decode(self, encoded: torch.Tensor) -> torch.Tensor: ...
+    def forward(self, features: torch.Tensor) -> torch.Tensor: ...
 
 
-class DetectionModel(ABC, torch.nn.Module):
-    backbone: BackboneModel
-    classifier_head: torch.nn.Module
-    bbox_head: torch.nn.Module
+class SizeHeadProtocol(ModuleProtocol, Protocol):
+    in_channels: int
+    num_sizes: int
+    dimension_names: list[str]
 
-    @abstractmethod
+    def forward(self, features: torch.Tensor) -> torch.Tensor: ...
+
+
+class DetectorProtocol(ModuleProtocol, Protocol):
+    backbone: BackboneProtocol
+    classifier_head: ClassifierHeadProtocol
+    size_head: SizeHeadProtocol
+
     def forward(self, spec: torch.Tensor) -> ModelOutput: ...
+
+
+class ModelProtocol(ModuleProtocol, Protocol):
+    detector: DetectorProtocol
+    preprocessor: PreprocessorProtocol
+    postprocessor: PostprocessorProtocol
+    class_names: list[str]
+    dimension_names: list[str]
+
+    def get_config(self) -> dict[str, Any]: ...

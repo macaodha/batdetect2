@@ -7,14 +7,14 @@ from torch.utils.data import DataLoader
 from batdetect2.evaluate.dataset import TestDataset, TestExample
 from batdetect2.evaluate.types import EvaluatorProtocol
 from batdetect2.logging import get_image_logger
-from batdetect2.models import Model
+from batdetect2.models.types import ModelProtocol
 from batdetect2.postprocess.types import ClipDetections
 
 
 class EvaluationModule(LightningModule):
     def __init__(
         self,
-        model: Model,
+        model: ModelProtocol,
         evaluator: EvaluatorProtocol,
     ):
         super().__init__()

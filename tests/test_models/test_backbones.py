@@ -13,7 +13,6 @@ from batdetect2.models.backbones import (
     build_backbone,
     load_backbone_config,
 )
-from batdetect2.models.types import BackboneModel
 
 
 def test_unet_backbone_config_defaults():
@@ -61,10 +60,11 @@ def test_build_backbone_custom_config():
     assert backbone.encoder.in_channels == 2
 
 
-def test_build_backbone_returns_backbone_model():
-    """build_backbone always returns a BackboneModel instance."""
+def test_build_backbone_returns_unet_backbone():
+    """build_backbone returns the default UNet backbone."""
     backbone = build_backbone()
-    assert isinstance(backbone, BackboneModel)
+
+    assert isinstance(backbone, UNetBackbone)
 
 
 def test_registry_has_unet_backbone():

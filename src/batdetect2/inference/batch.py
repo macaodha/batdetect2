@@ -10,7 +10,7 @@ from batdetect2.inference.clips import get_clips_from_files
 from batdetect2.inference.config import InferenceConfig
 from batdetect2.inference.dataset import build_inference_loader
 from batdetect2.inference.lightning import InferenceModule
-from batdetect2.models import Model
+from batdetect2.models.types import ModelProtocol
 from batdetect2.outputs import (
     OutputsConfig,
     OutputTransformProtocol,
@@ -22,7 +22,7 @@ from batdetect2.targets.types import ROIMapperProtocol, TargetProtocol
 
 
 def run_batch_inference(
-    model: Model,
+    model: ModelProtocol,
     clips: Sequence[data.Clip],
     targets: TargetProtocol | None = None,
     roi_mapper: ROIMapperProtocol | None = None,
@@ -86,7 +86,7 @@ def run_batch_inference(
 
 
 def process_file_list(
-    model: Model,
+    model: ModelProtocol,
     paths: Sequence[data.PathLike],
     targets: TargetProtocol | None = None,
     roi_mapper: ROIMapperProtocol | None = None,

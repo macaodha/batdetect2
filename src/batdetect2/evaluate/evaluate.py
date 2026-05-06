@@ -11,7 +11,7 @@ from batdetect2.evaluate.dataset import build_test_loader
 from batdetect2.evaluate.evaluator import build_evaluator
 from batdetect2.evaluate.lightning import EvaluationModule
 from batdetect2.logging import CSVLoggerConfig, LoggerConfig, build_logger
-from batdetect2.models import Model
+from batdetect2.models.types import ModelProtocol
 from batdetect2.outputs import OutputsConfig, build_output_transform
 from batdetect2.outputs.types import OutputFormatterProtocol
 from batdetect2.postprocess.types import ClipDetections
@@ -22,7 +22,7 @@ DEFAULT_EVAL_DIR: Path = Path("outputs") / "evaluations"
 
 
 def run_evaluate(
-    model: Model,
+    model: ModelProtocol,
     test_annotations: Sequence[data.ClipAnnotation],
     targets: TargetProtocol,
     roi_mapper: ROIMapperProtocol,

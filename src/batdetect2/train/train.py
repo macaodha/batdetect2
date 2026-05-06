@@ -15,7 +15,8 @@ from batdetect2.logging import (
     TensorBoardLoggerConfig,
     build_logger,
 )
-from batdetect2.models import Model, ModelConfig, build_model
+from batdetect2.models import ModelConfig, build_model
+from batdetect2.models.types import ModelProtocol
 from batdetect2.preprocess import PreprocessorProtocol, build_preprocessor
 from batdetect2.targets import (
     ROIMapperProtocol,
@@ -50,7 +51,7 @@ DEFAULT_LOG_DIR = Path("outputs") / "logs"
 def run_train(
     train_annotations: Sequence[data.ClipAnnotation],
     val_annotations: Sequence[data.ClipAnnotation] | None = None,
-    model: Model | None = None,
+    model: ModelProtocol | None = None,
     targets: Optional["TargetProtocol"] = None,
     roi_mapper: Optional["ROIMapperProtocol"] = None,
     preprocessor: Optional["PreprocessorProtocol"] = None,
@@ -217,7 +218,7 @@ def run_train(
 
 
 def _validate_model_compatibility(
-    model: Model,
+    model: ModelProtocol,
     model_config: ModelConfig,
     class_names: list[str],
     dimension_names: list[str],

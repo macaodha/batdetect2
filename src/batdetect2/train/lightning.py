@@ -4,8 +4,8 @@ import lightning as L
 import torch
 from soundevent.data import PathLike
 
-from batdetect2.models import Model, ModelConfig, build_model
-from batdetect2.models.types import ModelOutput
+from batdetect2.models import ModelConfig, build_model
+from batdetect2.models.types import ModelOutput, ModelProtocol
 from batdetect2.targets import TargetConfig
 from batdetect2.train.checkpoints import resolve_checkpoint_path
 from batdetect2.train.config import TrainingConfig
@@ -21,7 +21,7 @@ __all__ = [
 
 
 class TrainingModule(L.LightningModule):
-    model: Model
+    model: ModelProtocol
     loss: LossProtocol
 
     def __init__(
@@ -32,7 +32,7 @@ class TrainingModule(L.LightningModule):
         dimension_names: list[str] | None = None,
         train_config: dict | None = None,
         loss: LossProtocol | None = None,
-        model: Model | None = None,
+        model: ModelProtocol | None = None,
     ):
         super().__init__()
 
@@ -133,7 +133,7 @@ class StoredConfig:
 
 def load_model_from_checkpoint(
     path: PathLike | str | None = None,
-) -> tuple[Model, StoredConfig]:
+) -> tuple[ModelProtocol, StoredConfig]:
     """Load a model and its configuration from a Lightning checkpoint.
 
     Parameters
@@ -144,7 +144,7 @@ def load_model_from_checkpoint(
 
     Returns
     -------
-    tuple[Model, ModelConfig]
+    tuple[ModelProtocol, ModelConfig]
         The restored ``Model`` instance and the ``ModelConfig`` that
         describes its architecture, preprocessing, and postprocessing.
     """
@@ -169,7 +169,7 @@ def build_training_module(
     class_names: list[str] | None = None,
     dimension_names: list[str] | None = None,
     train_config: TrainingConfig | None = None,
-    model: Model | None = None,
+    model: ModelProtocol | None = None,
 ) -> TrainingModule:
     if model_config is None:
         model_config = ModelConfig()

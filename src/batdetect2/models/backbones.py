@@ -27,6 +27,7 @@ from typing import Annotated, Literal
 
 import torch
 import torch.nn.functional as F
+from loguru import logger
 from pydantic import Field, TypeAdapter
 from soundevent import data
 
@@ -52,7 +53,7 @@ from batdetect2.models.encoder import (
     build_encoder,
 )
 from batdetect2.models.types import (
-    BackboneModel,
+    BackboneProtocol,
     BottleneckProtocol,
     DecoderProtocol,
     EncoderProtocol,
@@ -104,7 +105,7 @@ class UNetBackboneConfig(BaseConfig):
     decoder: DecoderConfig = DEFAULT_DECODER_CONFIG
 
 
-backbone_registry: Registry[BackboneModel, []] = Registry("backbone")
+backbone_registry: Registry[BackboneProtocol, []] = Registry("backbone")
 
 
 @add_import_config(backbone_registry)
@@ -118,7 +119,7 @@ class BackboneImportConfig(ImportConfig):
     name: Literal["import"] = "import"
 
 
-class UNetBackbone(BackboneModel):
+class UNetBackbone(torch.nn.Module):
     """U-Net-style encoder-decoder backbone network.
 
     Combines an encoder, a bottleneck, and a decoder into a single module
@@ -225,7 +226,7 @@ class UNetBackbone(BackboneModel):
 
     @backbone_registry.register(UNetBackboneConfig)
     @staticmethod
-    def from_config(config: UNetBackboneConfig) -> BackboneModel:
+    def from_config(config: UNetBackboneConfig) -> BackboneProtocol:
         encoder = build_encoder(
             in_channels=config.in_channels,
             input_height=config.input_height,
@@ -266,7 +267,7 @@ BackboneConfig = Annotated[
 ]
 
 
-def build_backbone(config: BackboneConfig | None = None) -> BackboneModel:
+def build_backbone(config: BackboneConfig | None = None) -> BackboneProtocol:
     """Build a backbone network from configuration.
 
     Looks up the backbone class corresponding to ``config.name`` in the
@@ -282,10 +283,14 @@ def build_backbone(config: BackboneConfig | None = None) -> BackboneModel:
 
     Returns
     -------
-    BackboneModel
+    BackboneProtocol
         An initialised backbone module.
     """
     config = config or UNetBackboneConfig()
+    logger.opt(lazy=True).debug(
+        "Building model backbone with config: \n{}",
+        lambda: config.to_yaml_string(),
+    )
     return backbone_registry.build(config)
 
 
