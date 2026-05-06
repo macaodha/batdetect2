@@ -4,49 +4,41 @@ Welcome to the BatDetect2 documentation.
 
 ## What is BatDetect2?
 
-`batdetect2` detects bat echolocation calls in audio recordings.
+`batdetect2` is a deep learning model and software package for detecting and
+classifying bat echolocation calls in high-frequency audio recordings.
 
-It can help you screen large collections of recordings, find files that need
-expert review, and support ecology and conservation work where manual review
-alone would be slow.
+You can use it from the command line or from Python, depending on how much
+control you need.
 
-In practice, BatDetect2 takes recordings, looks for likely bat calls, draws a
-box around each detected event, and scores the most likely class for that event.
+In practice, BatDetect2 scans a recording, finds sounds that look like bat
+calls, and returns one result for each detected call.
+Each result can include where the call appears in the recording, shown as a box
+with start and end time and the lowest and highest frequency, how confident the
+model is that it found a call, and how strongly it matches the available
+classes.
 
-The current default model is trained for 17 UK species.
+The built-in default model is trained for 17 UK species.
+The package also supports custom training, fine-tuning, evaluation, and more
+advanced workflows from Python.
 
-The library also supports custom training, fine-tuning, evaluation, and more
-advanced use from Python.
-
-For details on the underlying approach, see the pre-print:
+For more detail on the underlying approach, see the pre-print:
 [Towards a General Approach for Bat Echolocation Detection and Classification](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1)
-
-## A good first use for BatDetect2
-
-BatDetect2 is a good fit when you want to:
-
-- scan many recordings for likely bat activity,
-- prioritize files for expert review,
-- compare outputs across projects with appropriate caution,
-- build reviewed local datasets for later model improvement.
-
-It is not a substitute for validation.
-
-## Main user journeys
-
-- I want to run the model on my recordings:
-  {doc}`tutorials/run-inference-on-folder`
-- I write code and want to use Python:
-  {doc}`tutorials/integrate-with-a-python-pipeline`
-- I want to train or fine-tune a custom model:
-  {doc}`tutorials/train-a-custom-model`
-- I want to evaluate a trained model on held-out data:
-  {doc}`tutorials/evaluate-on-a-test-set`
 
 ```{warning}
 Treat outputs as model predictions, not ground truth.
 Always validate on reviewed local data before using results for ecological inference.
 ```
+
+## What can I do with it?
+
+- I want to run the model on my recordings:
+  {doc}`tutorials/run-inference-on-folder`
+- I write code and want to use it from Python:
+  {doc}`tutorials/integrate-with-a-python-pipeline`
+- I want to train or fine-tune a custom model:
+  {doc}`tutorials/train-a-custom-model`
+- I want to evaluate a trained model on held-out data:
+  {doc}`tutorials/evaluate-on-a-test-set`
 
 ```{note}
 Looking for the previous BatDetect2 workflow?
