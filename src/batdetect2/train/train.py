@@ -10,9 +10,9 @@ from soundevent import data
 from batdetect2.audio import AudioConfig, AudioLoader, build_audio_loader
 from batdetect2.evaluate import EvaluatorProtocol, build_evaluator
 from batdetect2.logging import (
+    CSVLoggerConfig,
     LoggerConfig,
     LoggingCallback,
-    TensorBoardLoggerConfig,
     build_logger,
 )
 from batdetect2.models import ModelConfig, build_model
@@ -165,7 +165,7 @@ def run_train(
     )
 
     train_logger = build_logger(
-        logger_config or TensorBoardLoggerConfig(),
+        logger_config or CSVLoggerConfig(),
         log_dir=log_dir,
         experiment_name=experiment_name,
         run_name=run_name,

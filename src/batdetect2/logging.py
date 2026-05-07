@@ -104,7 +104,7 @@ LoggerConfig = Annotated[
 
 
 class AppLoggingConfig(BaseConfig):
-    train: LoggerConfig = Field(default_factory=TensorBoardLoggerConfig)
+    train: LoggerConfig = Field(default_factory=CSVLoggerConfig)
     evaluation: LoggerConfig = Field(default_factory=CSVLoggerConfig)
     inference: LoggerConfig = Field(default_factory=CSVLoggerConfig)
 

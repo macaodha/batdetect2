@@ -1,12 +1,14 @@
 # Tutorials
 
-Tutorials are the default learning path.
+Welcome to the `batdetect2` tutorials.
 
-Each tutorial follows one recommended route from start to finish.
+These tutorials walk you step by step through the most common use cases and
+workflows.
+They follow the simplest route and are a good place to start with `batdetect2`.
 
-Use tutorials when you want the simplest route to a concrete outcome.
-
-Use {doc}`../how_to/index` when you need to customize a workflow.
+Use {doc}`../how_to/index` for focused guides on specific tasks, or
+{doc}`../explanation/index` if you want to understand the concepts in more
+depth.
 
 ```{toctree}
 :maxdepth: 1

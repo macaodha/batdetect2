@@ -10,6 +10,9 @@ details, or Python API entries.
 
 cli/index
 api
+model-config
+training-config
+logging-config
 inference-config
 evaluation-config
 outputs-config
