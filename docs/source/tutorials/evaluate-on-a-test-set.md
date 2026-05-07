@@ -1,92 +1,133 @@
-# Tutorial: Evaluate on a test set
+# Evaluate on a test set
 
 This tutorial shows how to evaluate a trained checkpoint on a held-out dataset
 and inspect the output metrics.
 
-This tutorial is for advanced users who want to compare one trained model
-against a separate test dataset.
+Use it when you want to measure how a model performs on labelled data that was
+kept aside for testing.
 
 ## Before you start
 
-- A trained model checkpoint.
-- A test dataset config file.
-- (Optional) Targets, audio, inference, and evaluation config overrides.
+You need:
+
+- a test dataset config,
+- a trained checkpoint or model alias.
 
 ```{note}
 This page is for model evaluation.
-If you only want to run BatDetect2 on recordings,
-start with {doc}`run-inference-on-folder` instead.
+If you only want to run BatDetect2 on recordings, start with
+{doc}`run-inference-on-folder` instead.
 ```
 
-## Outcome
+## What you will do
 
 By the end of this tutorial you will have:
 
+- prepared a test dataset config,
 - run `batdetect2 evaluate`,
 - written evaluation metrics and result files,
-- understood what to inspect first,
-- identified the next pages for evaluation concepts and configuration.
+- identified the next pages for model choice and evaluation configuration.
 
-## 1. Start with a held-out dataset
+## 1. Create a test dataset config
+
+Evaluation needs a dataset config that points to the labelled data you want to
+use for testing.
+
+This is the same kind of dataset config used for training.
+It explicitly declares which data sources BatDetect2 should read, including the
+audio files and their annotations.
+
+For an example, see `example_data/dataset.yaml`.
+
+If you need help creating the dataset config, follow the dataset section in
+{doc}`train-a-custom-model`.
+For more detail on dataset source formats, see {doc}`../reference/data-sources`.
 
 Use a dataset that was not used for training or tuning.
 
-A held-out dataset is simply a separate dataset kept aside for evaluation.
-
-If you tune thresholds or configs on the same dataset that you report as final
-evaluation, the results will be optimistic.
-
 ## 2. Run evaluation
+
+For a simple run, use:
+
+```bash
+batdetect2 evaluate \
+  path/to/test_dataset.yaml
+```
+
+If you do not pass `--model`, BatDetect2 uses the built-in default UK model.
+If you want to choose a different checkpoint, alias, or Hugging Face model, see
+{doc}`../how_to/choose-a-model`.
+
+If you want to save the results somewhere else, add `--output-dir`:
 
 ```bash
 batdetect2 evaluate \
   path/to/test_dataset.yaml \
   --model path/to/model.ckpt \
-  --base-dir path/to/project_root \
   --output-dir path/to/eval_outputs
 ```
 
-This command loads the checkpoint, runs prediction on the test dataset, applies
-the chosen evaluation tasks, and writes metrics and result files to the output
-directory.
+This command loads the model, runs prediction on the test dataset, applies the
+evaluation tasks, and writes the results to the output directory.
 
-Use `--base-dir` whenever the dataset config contains relative paths.
+## 3. Check the output files
 
-That is the common case for project-local dataset files.
+By default, the CLI writes evaluation outputs to `outputs/evaluation`.
 
-## 3. Inspect the output directory
+With the default evaluation config, a run will usually create a folder like
+this:
 
-Look for:
+```text
+outputs/evaluation/
+  version_0/
+    metrics.csv
+    hparams.yaml
+```
 
-- summary metrics,
-- generated plots,
-- saved prediction files if they were enabled,
-- enough metadata to reproduce the run later.
+The most important file is `metrics.csv`.
+It contains the metric values computed for the evaluation run.
 
-The exact set depends on the configured evaluation tasks and plots.
+A file like this might start like:
 
-## 4. Interpret the results in context
+```csv
+classification/average_precision/barbar,classification/average_precision/cneser,...,detection/average_precision
+0.898695170879364,0.9408193826675415,...,0.851219117641449
+```
 
-Do not reduce evaluation to a single number.
+The exact columns depend on the evaluation tasks you run.
 
-Check:
+The `hparams.yaml` file records the config used for the evaluation run.
 
-- which task the metric belongs to,
-- which thresholding or matching assumptions were used,
-- whether class-level behavior matches your use case,
-- whether the failures are concentrated in specific taxa, sites, or recording
-  conditions.
+## 4. Expect extra plots and files when configs enable them
 
-## 5. Record the evaluation setup
+You may also see extra outputs such as plots and saved predictions.
 
-Keep the command, config files, checkpoint path, and dataset version together.
+For example, if you run evaluation with `example_data/configs/evaluation.yaml`,
+you should expect a richer output folder with:
 
-That matters for reproducibility and for later model comparisons.
+- `metrics.csv`
+- `hparams.yaml`
+- a `plots/` directory
+- a `predictions/` directory
 
-## What to do next
+That config enables more evaluation tasks and plots than the default setup.
 
-- Compare thresholds on representative files:
-  {doc}`../how_to/tune-detection-threshold`
+So, depending on your evaluation config, you may see files such as:
+
+- precision-recall plots,
+- ROC curves,
+- confusion matrices,
+- example detection plots,
+- saved prediction files.
+
+If you want to control which tasks run and which plots are generated, see
+{doc}`../reference/evaluation-config` and
+{doc}`../how_to/choose-and-configure-evaluation-tasks`.
+
+## Common next steps
+
+- Choose a different model:
+  {doc}`../how_to/choose-a-model`
 - Configure evaluation tasks:
   {doc}`../how_to/choose-and-configure-evaluation-tasks`
 - Interpret evaluation artifacts:
