@@ -67,6 +67,16 @@ can try the following:
 
 ### Installing BatDetect2
 
+> [!NOTE]
+> `2.0.0b1` is a pre-release on PyPI.
+> You may need to request it explicitly by version, for example:
+>
+> ```bash
+> uvx --from batdetect2==2.0.0b1 batdetect2
+> uv tool install batdetect2==2.0.0b1
+> pip install batdetect2==2.0.0b1
+> ```
+
 If you have `uv` installed (if not, we recommend it; follow the instructions
 [here](https://docs.astral.sh/uv/getting-started/installation/)), then you can
 run `batdetect2` one-off with
