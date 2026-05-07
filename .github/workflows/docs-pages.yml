@@ -42,7 +42,7 @@ jobs:
             uv.lock
 
       - name: Install dependencies
-        run: just install-dev
+        run: uv sync --all-extras --all-groups
 
       - name: Build docs
         run: just check-docs

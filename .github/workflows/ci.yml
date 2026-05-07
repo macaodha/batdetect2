@@ -36,7 +36,7 @@ jobs:
             uv.lock
 
       - name: Install dependencies
-        run: just install-dev
+        run: uv sync --all-extras --all-groups
 
       - name: Run formatting, lint, and type checks
         run: just check
@@ -73,7 +73,7 @@ jobs:
             uv.lock
 
       - name: Install dependencies
-        run: just install-dev
+        run: uv sync --all-extras --all-groups
 
       - name: Run test suite
         run: just test
