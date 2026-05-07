@@ -1,12 +1,15 @@
 # How-to Guides
 
-How-to guides help you answer practical questions once you are past the first tutorial.
+How-to guides help you answer practical questions once you are past the first
+tutorial.
 
-Use this section when you already know the basic workflow and want help with one specific task.
+Use this section when you already know the basic workflow and want help with one
+specific task.
 
 ```{toctree}
 :maxdepth: 1
 
+choose-a-model
 choose-an-inference-input-mode
 run-batch-predictions
 tune-inference-clipping
