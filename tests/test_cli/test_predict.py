@@ -209,6 +209,38 @@ def test_cli_process_directory_batdetect2_writes_cnn_features_csv_when_enabled(
     ]
 
 
+def test_cli_process_directory_defaults_to_batdetect2_without_output_options(
+    tmp_path: Path,
+    tiny_checkpoint_path: Path,
+    single_audio_dir: Path,
+) -> None:
+    """User story: default process output stays batdetect2 for CLI users."""
+
+    output_path = tmp_path / "predictions"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "process",
+            "directory",
+            "--model",
+            str(tiny_checkpoint_path),
+            str(single_audio_dir),
+            str(output_path),
+            "--batch-size",
+            "1",
+            "--workers",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_path.exists()
+    assert len(list(output_path.glob("*.json"))) == 1
+    assert len(list(output_path.glob("*.csv"))) == 1
+    assert len(list(output_path.glob("*.nc"))) == 0
+
+
 def test_cli_process_file_list_runs_on_real_audio(
     tmp_path: Path,
     tiny_checkpoint_path: Path,

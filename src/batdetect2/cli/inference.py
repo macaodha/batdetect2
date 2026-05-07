@@ -84,10 +84,10 @@ def common_predict_options(func):
         "--format",
         "format_name",
         type=str,
-        default="batdetect2",
         help=(
             "Output format name used by the prediction writer. If omitted, "
-            "the config default is used."
+            "the loaded outputs config is used, or batdetect2 when no "
+            "outputs config is provided."
         ),
     )
     @click.option(
@@ -186,6 +186,9 @@ def _run_prediction(
 
     if audio_dir is None:
         audio_dir = audio_files[0].parent if audio_files else None
+
+    if format_name is None and outputs_conf is None:
+        format_name = "batdetect2"
 
     api.save_predictions(
         predictions,
