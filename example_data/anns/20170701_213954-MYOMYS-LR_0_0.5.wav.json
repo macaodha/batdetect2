@@ -1,0 +1,177 @@
+{
+  "annotated": true,
+  "annotation": [
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.55,
+      "det_prob": 0.658,
+      "end_time": 0.028,
+      "event": "Echolocation",
+      "high_freq": 107492,
+      "individual": "-1",
+      "low_freq": 33203,
+      "start_time": 0.0225
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.679,
+      "det_prob": 0.742,
+      "end_time": 0.0583,
+      "event": "Echolocation",
+      "high_freq": 113192,
+      "individual": "-1",
+      "low_freq": 28046,
+      "start_time": 0.0525
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.488,
+      "det_prob": 0.585,
+      "end_time": 0.1211,
+      "event": "Echolocation",
+      "high_freq": 107008,
+      "individual": "-1",
+      "low_freq": 33203,
+      "start_time": 0.1155
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.46,
+      "det_prob": 0.503,
+      "end_time": 0.145,
+      "event": "Echolocation",
+      "high_freq": 59621,
+      "individual": "-1",
+      "low_freq": 48671,
+      "start_time": 0.1385
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.656,
+      "det_prob": 0.704,
+      "end_time": 0.1513,
+      "event": "Echolocation",
+      "high_freq": 113493,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.1445
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.549,
+      "det_prob": 0.63,
+      "end_time": 0.2076,
+      "event": "Echolocation",
+      "high_freq": 108573,
+      "individual": "-1",
+      "low_freq": 34062,
+      "start_time": 0.2025
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.503,
+      "det_prob": 0.528,
+      "end_time": 0.224,
+      "event": "Echolocation",
+      "high_freq": 57361,
+      "individual": "-1",
+      "low_freq": 48671,
+      "start_time": 0.2195
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.672,
+      "det_prob": 0.737,
+      "end_time": 0.2374,
+      "event": "Echolocation",
+      "high_freq": 116415,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.2315
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.65,
+      "det_prob": 0.736,
+      "end_time": 0.3058,
+      "event": "Echolocation",
+      "high_freq": 56624,
+      "individual": "-1",
+      "low_freq": 48671,
+      "start_time": 0.2995
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.687,
+      "det_prob": 0.724,
+      "end_time": 0.3312,
+      "event": "Echolocation",
+      "high_freq": 116522,
+      "individual": "-1",
+      "low_freq": 27187,
+      "start_time": 0.3245
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.547,
+      "det_prob": 0.599,
+      "end_time": 0.3762,
+      "event": "Echolocation",
+      "high_freq": 108530,
+      "individual": "-1",
+      "low_freq": 34062,
+      "start_time": 0.3705
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.664,
+      "det_prob": 0.711,
+      "end_time": 0.4184,
+      "event": "Echolocation",
+      "high_freq": 115775,
+      "individual": "-1",
+      "low_freq": 28906,
+      "start_time": 0.4125
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.544,
+      "det_prob": 0.598,
+      "end_time": 0.4423,
+      "event": "Echolocation",
+      "high_freq": 104197,
+      "individual": "-1",
+      "low_freq": 36640,
+      "start_time": 0.4365
+    },
+    {
+      "class": "Pipistrellus pipistrellus",
+      "class_prob": 0.73,
+      "det_prob": 0.78,
+      "end_time": 0.4803,
+      "event": "Echolocation",
+      "high_freq": 58290,
+      "individual": "-1",
+      "low_freq": 48671,
+      "start_time": 0.4745
+    },
+    {
+      "class": "Myotis mystacinus",
+      "class_prob": 0.404,
+      "det_prob": 0.449,
+      "end_time": 0.4947,
+      "event": "Echolocation",
+      "high_freq": 111336,
+      "individual": "-1",
+      "low_freq": 36640,
+      "start_time": 0.4895
+    }
+  ],
+  "class_name": "Myotis mystacinus",
+  "duration": 0.5,
+  "id": "20170701_213954-MYOMYS-LR_0_0.5.wav",
+  "issues": false,
+  "notes": "Automatically generated. Example data do not assume correct!",
+  "time_exp": 1
+}
+

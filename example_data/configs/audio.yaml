@@ -1,0 +1,4 @@
+samplerate: 256000
+resample:
+  enabled: true
+  method: poly

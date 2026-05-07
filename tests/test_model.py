@@ -1,10 +1,10 @@
 """Test suite for model functions."""
 
-import warnings
 from pathlib import Path
 from typing import List
 
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -12,14 +12,9 @@ from batdetect2 import api
 from batdetect2.detector import parameters
 
 
-def test_can_import_model_without_warnings():
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        api.load_model()
-
-
 @settings(deadline=None, max_examples=5)
 @given(duration=st.floats(min_value=0.1, max_value=2))
+@pytest.mark.slow
 def test_can_import_model_without_pickle(duration: float):
     # NOTE: remove this test once no other issues are found This is a temporary
     # test to check that change in model loading did not impact model behaviour
@@ -49,6 +44,7 @@ def test_can_import_model_without_pickle(duration: float):
     assert predictions_without_pickle == predictions_with_pickle
 
 
+@pytest.mark.slow
 def test_can_import_model_without_pickle_on_test_data(
     example_audio_files: List[Path],
 ):

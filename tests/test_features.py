@@ -133,17 +133,16 @@ def test_compute_max_power_bb(max_power: int):
     audio = np.zeros((int(duration * samplerate),))
 
     # Add a signal during the time and frequency range of interest
-    audio[
-        int(start_time * samplerate) : int(end_time * samplerate)
-    ] = 0.5 * librosa.tone(
-        max_power, sr=samplerate, duration=end_time - start_time
+    audio[int(start_time * samplerate) : int(end_time * samplerate)] = (
+        0.5
+        * librosa.tone(
+            max_power, sr=samplerate, duration=end_time - start_time
+        )
     )
 
     # Add a more powerful signal outside frequency range of interest
-    audio[
-        int(start_time * samplerate) : int(end_time * samplerate)
-    ] += 2 * librosa.tone(
-        80_000, sr=samplerate, duration=end_time - start_time
+    audio[int(start_time * samplerate) : int(end_time * samplerate)] += (
+        2 * librosa.tone(80_000, sr=samplerate, duration=end_time - start_time)
     )
 
     params = api.get_config(
@@ -193,8 +192,6 @@ def test_compute_max_power_bb(max_power: int):
         "high_freq": high_freq,
     }
 
-    print(prediction)
-
     max_power_bb = feats.compute_max_power_bb(
         prediction,
         spec,
@@ -221,17 +218,17 @@ def test_compute_max_power():
     audio = np.zeros((int(duration * samplerate),))
 
     # Add a signal during the time and frequency range of interest
-    audio[
-        int(start_time * samplerate) : int(end_time * samplerate)
-    ] = 0.5 * librosa.tone(
-        3_500, sr=samplerate, duration=end_time - start_time
+    audio[int(start_time * samplerate) : int(end_time * samplerate)] = (
+        0.5
+        * librosa.tone(3_500, sr=samplerate, duration=end_time - start_time)
     )
 
     # Add a more powerful signal outside frequency range of interest
-    audio[
-        int(start_time * samplerate) : int(end_time * samplerate)
-    ] += 2 * librosa.tone(
-        max_power, sr=samplerate, duration=end_time - start_time
+    audio[int(start_time * samplerate) : int(end_time * samplerate)] += (
+        2
+        * librosa.tone(
+            max_power, sr=samplerate, duration=end_time - start_time
+        )
     )
 
     params = api.get_config(

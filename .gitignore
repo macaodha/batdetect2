@@ -50,6 +50,7 @@ cover/
 
 # Sphinx documentation
 docs/_build/
+docs/build/
 
 # PyBuilder
 .pybuilder/
@@ -95,8 +96,15 @@ dmypy.json
 *.json
 plots/*
 
+!example_data/anns/*.json
+
 # Model experiments
 experiments/*
+DvcLiveLogger/checkpoints
+logs/
+mlruns/
+/outputs/
+notebooks/lightning_logs
 
 # Jupiter notebooks
 .virtual_documents
@@ -105,8 +113,24 @@ experiments/*
 
 # DO Include
 !batdetect2_notebook.ipynb
-!batdetect2/models/*.pth.tar
+!src/batdetect2/models/checkpoints/*.pth.tar
 !tests/data/*.wav
+!notebooks/*.ipynb
 !tests/data/**/*.wav
-notebooks/lightning_logs
+.aider*
+
+# Intermediate artifacts
 example_data/preprocessed
+
+# Dev notebooks
+notebooks/tmp
+/tmp
+/.agents/skills
+/notebooks
+/AGENTS.md
+/scripts
+/todo.md
+
+# Assets
+!assets/*
+/models

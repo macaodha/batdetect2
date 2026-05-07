@@ -1,0 +1,79 @@
+from typing import Literal
+
+from pydantic import Field
+from soundevent import data
+
+from batdetect2.evaluate.metrics.clip_detection import (
+    ClipDetectionAveragePrecisionConfig,
+    ClipDetectionMetricConfig,
+    ClipEval,
+    build_clip_metric,
+)
+from batdetect2.evaluate.plots.clip_detection import (
+    ClipDetectionPlotConfig,
+    build_clip_detection_plotter,
+)
+from batdetect2.evaluate.tasks.base import (
+    BaseTask,
+    BaseTaskConfig,
+    tasks_registry,
+)
+from batdetect2.postprocess.types import ClipDetections
+from batdetect2.targets.types import TargetProtocol
+
+
+def _default_metrics() -> list[ClipDetectionMetricConfig]:
+    return [ClipDetectionAveragePrecisionConfig()]
+
+
+class ClipDetectionTaskConfig(BaseTaskConfig):
+    name: Literal["clip_detection"] = "clip_detection"
+    prefix: str = "clip_detection"
+    metrics: list[ClipDetectionMetricConfig] = Field(
+        default_factory=_default_metrics
+    )
+    plots: list[ClipDetectionPlotConfig] = Field(default_factory=list)
+
+
+class ClipDetectionTask(BaseTask[ClipEval]):
+    def evaluate_clip(
+        self,
+        clip_annotation: data.ClipAnnotation,
+        prediction: ClipDetections,
+    ) -> ClipEval:
+        clip = clip_annotation.clip
+
+        gt_det = any(
+            self.include_sound_event_annotation(sound_event, clip)
+            for sound_event in clip_annotation.sound_events
+        )
+
+        pred_score = 0
+        for pred in prediction.detections:
+            if not self.include_prediction(pred, clip):
+                continue
+
+            pred_score = max(pred_score, pred.detection_score)
+
+        return ClipEval(
+            gt_det=gt_det,
+            score=pred_score,
+        )
+
+    @tasks_registry.register(ClipDetectionTaskConfig)
+    @staticmethod
+    def from_config(
+        config: ClipDetectionTaskConfig,
+        targets: TargetProtocol,
+    ):
+        metrics = [build_clip_metric(metric) for metric in config.metrics]
+        plots = [
+            build_clip_detection_plotter(plot, targets)
+            for plot in config.plots
+        ]
+        return ClipDetectionTask(
+            prefix=config.prefix,
+            metrics=metrics,
+            targets=targets,
+            plots=plots,
+        )

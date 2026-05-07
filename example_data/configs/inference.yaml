@@ -1,0 +1,9 @@
+loader:
+  batch_size: 8
+
+clipping:
+  enabled: true
+  duration: 0.5
+  overlap: 0.0
+  max_empty: 0.0
+  discard_empty: true

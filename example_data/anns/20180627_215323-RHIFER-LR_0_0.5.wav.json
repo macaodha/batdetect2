@@ -1,0 +1,111 @@
+{
+  "annotated": true,
+  "annotation": [
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.407,
+      "det_prob": 0.407,
+      "end_time": 0.066,
+      "event": "Echolocation",
+      "high_freq": 84254,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.0245
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.759,
+      "det_prob": 0.76,
+      "end_time": 0.1576,
+      "event": "Echolocation",
+      "high_freq": 84048,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.0955
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.754,
+      "det_prob": 0.755,
+      "end_time": 0.269,
+      "event": "Echolocation",
+      "high_freq": 83768,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.2095
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.495,
+      "det_prob": 0.495,
+      "end_time": 0.2869,
+      "event": "Echolocation",
+      "high_freq": 84055,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.2425
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.73,
+      "det_prob": 0.73,
+      "end_time": 0.3631,
+      "event": "Echolocation",
+      "high_freq": 84280,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.3055
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.648,
+      "det_prob": 0.649,
+      "end_time": 0.3798,
+      "event": "Echolocation",
+      "high_freq": 83030,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.3215
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.678,
+      "det_prob": 0.678,
+      "end_time": 0.4611,
+      "event": "Echolocation",
+      "high_freq": 84020,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.4065
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.717,
+      "det_prob": 0.718,
+      "end_time": 0.4987,
+      "event": "Echolocation",
+      "high_freq": 83603,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.4365
+    },
+    {
+      "class": "Rhinolophus ferrumequinum",
+      "class_prob": 0.662,
+      "det_prob": 0.662,
+      "end_time": 0.5503,
+      "event": "Echolocation",
+      "high_freq": 83710,
+      "individual": "-1",
+      "low_freq": 68437,
+      "start_time": 0.4975
+    }
+  ],
+  "class_name": "Rhinolophus ferrumequinum",
+  "duration": 0.5,
+  "id": "20180627_215323-RHIFER-LR_0_0.5.wav",
+  "issues": false,
+  "notes": "Automatically generated. Example data do not assume correct!",
+  "time_exp": 1
+}
+

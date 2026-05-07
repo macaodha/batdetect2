@@ -1,161 +1,156 @@
 # BatDetect2
-<img style="display: block-inline;" width="64" height="64" src="ims/bat_icon.png"> Code for detecting and classifying bat echolocation calls in high frequency audio recordings.
 
-> [!NOTE]
-> We’re actively working to make it easier to train and fine-tune BatDetect2 models using custom data. A major update is coming soon to the main branch—stay tuned! In the meantime, you can follow our progress in the train branch.
+<img style="display:block-inline;" width="64" height="64" src="assets/bat_icon.png">
 
-## Getting started
-### Python Environment
+Code for detecting and classifying bat echolocation calls in high-frequency
+audio recordings.
 
-We recommend using an isolated Python environment to avoid dependency issues. Choose one
-of the following options:
+> [!WARNING]
+> `batdetect2` 2.0.0b1 is out.
+> This is a beta release and we are gathering user feedback.
+> If you run into issues or have feedback on the new workflows, please use the
+> GitHub issues page to let us know.
+>
+> There are many changes and new recommended workflows.
+> We have left the previous `batdetect2.api` module intact, but if you run
+> into issues or want to upgrade, see the
+> [migration guide](docs/source/legacy/migration-guide.md) in the docs site.
+>
+> This update also ships with a refreshed default model.
+> It was trained in the same way and on the same data as before, but you should
+> still expect small output differences in some cases.
 
-* Install the Anaconda Python 3.10 distribution for your operating system from [here](https://www.continuum.io/downloads). Create a new environment and activate it:
+## What is BatDetect2
 
-```bash
-conda create -y --name batdetect2 python==3.10
-conda activate batdetect2
-```
+BatDetect2 is a deep learning model for detecting and classifying bat
+echolocation calls.
+The model generates multiple predictions for each input recording by providing a
+bounding box and predicted class for each individual call within it.
 
-* If you already have Python installed (version >= 3.8,< 3.11) and prefer using virtual environments then:
+This repository also holds `batdetect2`, a Python-based tool to run, train,
+finetune and evaluate BatDetect2-type models, including the built-in model for
+detecting UK bat species.
+You can use the tool from the command line (terminal) or from Python as needed.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
+## Getting Started
+
+We have [extensive documentation](docs/source/index.md) on how to use
+`batdetect2`.
+
+The docs site is still being built and will be live soon.
+If you want a quick peek for now, see the `docs/` folder in this repository.
+
+See our [getting started](docs/source/getting_started.md) guide and then jump
+into any of our tutorials:
+
+- Run the model on a folder of recordings:
+  `docs/source/tutorials/run-inference-on-folder.md`
+- Train your own model:
+  `docs/source/tutorials/train-a-custom-model.md`
+- Evaluate your model:
+  `docs/source/tutorials/evaluate-on-a-test-set.md`
+- Fine-tune a model:
+  `docs/source/tutorials/integrate-with-a-python-pipeline.md`
+
+### Try the model
+
+If you want to try the model for UK bat species without installing anything, you
+can try the following:
+
+1. Demo of the model (for UK species) on
+   [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
+
+2. Alternatively, click
+   [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb)
+   to run the model using Google Colab.
+   You can also run this notebook locally.
 
 ### Installing BatDetect2
-You can use pip to install `batdetect2`:
+
+If you have `uv` installed (if not, we recommend it; follow the instructions
+[here](https://docs.astral.sh/uv/getting-started/installation/)), then you can
+run `batdetect2` one-off with
 
 ```bash
-pip install batdetect2
+uvx batdetect2
 ```
 
-Alternatively, download this code from the repository (by clicking on the green button on top right) and unzip it.
-Once unzipped, run this from extracted folder.
+or if you want to install it permanently:
 
 ```bash
-pip install .
+uv tool install batdetect2
 ```
 
-Make sure you have the environment activated before installing `batdetect2`.
+and test it with
 
-
-## Try the model
-1) You can try a demo of the model (for UK species) on [huggingface](https://huggingface.co/spaces/macaodha/batdetect2).
-
-2) Alternatively, click [here](https://colab.research.google.com/github/macaodha/batdetect2/blob/master/batdetect2_notebook.ipynb) to run the model using Google Colab. You can also run this notebook locally.
-
-
-## Running the model on your own data
-
-After following the above steps to install the code you can run the model on your own data.
-
-
-### Using the command line
-
-You can run the model by opening the command line and typing:
 ```bash
-batdetect2 detect AUDIO_DIR ANN_DIR DETECTION_THRESHOLD
+batdetect2
 ```
-e.g.
+
+### Run BatDetect2 on a folder of recordings
+
+Once installed, you can run BatDetect2 on a folder of `.wav` files.
+By default it will use the model trained on UK data.
+
+Example command:
+
 ```bash
-batdetect2 detect example_data/audio/ example_data/anns/ 0.3
+batdetect2 process directory example_data/audio outputs
 ```
 
-`AUDIO_DIR` is the path on your computer to the audio wav files of interest.
-`ANN_DIR` is the path on your computer where the model predictions will be saved. The model will output both `.csv` and `.json` results for each audio file.
-`DETECTION_THRESHOLD` is a number between 0 and 1 specifying the cut-off threshold applied to the calls. A smaller number will result in more calls detected, but with the chance of introducing more mistakes.
+This will scan the audio files in `example_data/audio` and save model outputs to
+`outputs`.
+If you have your own model checkpoint, you can use it:
 
-There are also optional arguments, e.g. you can request that the model outputs features (i.e. estimated call parameters) such as duration, max_frequency, etc. by setting the flag `--spec_features`. These will be saved as `*_spec_features.csv` files:
-`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --spec_features`
-
-You can also specify which model to use by setting the `--model_path` argument. If not specified, it will default to using a model trained on UK data e.g.
-`batdetect2 detect example_data/audio/ example_data/anns/ 0.3 --model_path models/Net2DFast_UK_same.pth.tar`
-
-
-### Using the Python API
-
-If you prefer to process your data within a Python script then you can use the `batdetect2` Python API.
-
-```python
-from batdetect2 import api
-
-AUDIO_FILE = "example_data/audio/20170701_213954-MYOMYS-LR_0_0.5.wav"
-
-# Process a whole file
-results = api.process_file(AUDIO_FILE)
-
-# Or, load audio and compute spectrograms
-audio = api.load_audio(AUDIO_FILE)
-spec = api.generate_spectrogram(audio)
-
-# And process the audio or the spectrogram with the model
-detections, features, spec = api.process_audio(audio)
-detections, features = api.process_spectrogram(spec)
-
-# Do something else ...
+```bash
+batdetect2 process directory --model path/to/checkpoint.ckpt example_data/audio outputs
 ```
 
-You can integrate the detections or the extracted features to your custom analysis pipeline.
-
-#### Using the Python API with HTTP
-
-```python
-from batdetect2 import api
-import io
-import requests
-
-AUDIO_URL = "<insert your audio url here>"
-
-# Process a whole file from a url
-results = api.process_url(AUDIO_URL)
-
-# Or, load audio and compute spectrograms
-# 'requests.get(AUDIO_URL).content' fetches the raw bytes. You are free to use other sources to fetch the raw bytes
-audio = api.load_audio(io.BytesIO(requests.get(AUDIO_URL).content))
-spec = api.generate_spectrogram(audio)
-
-# And process the audio or the spectrogram with the model
-detections, features, spec = api.process_audio(audio)
-detections, features = api.process_spectrogram(spec)
-```
-
-## Training the model on your own data
-Take a look at the steps outlined in finetuning readme [here](batdetect2/finetune/readme.md) for a description of how to train your own model.
-
+For the full walkthrough, use
+`docs/source/tutorials/run-inference-on-folder.md`.
 
 ## Data and annotations
-The raw audio data and annotations used to train the models in the paper will be added soon.
-The audio interface used to annotate audio data for training and evaluation is available [here](https://github.com/macaodha/batdetect2_GUI).
 
+The raw audio data and annotations used to train the models in the paper will be
+added soon.
+`batdetect2` supports annotations in various formats and is compatible with the
+outputs of [`whombat`](https://github.com/mbsantiago/whombat/) and this
+[earlier version](https://github.com/macaodha/batdetect2_GUI).
+If you're interested in supporting another format, please reach out or submit a
+PR.
 
 ## Warning
-The models developed and shared as part of this repository should be used with caution.
-While they have been evaluated on held out audio data, great care should be taken when using the model outputs for any form of biodiversity assessment.
-Your data may differ, and as a result it is very strongly recommended that you validate the model first using data with known species to ensure that the outputs can be trusted.
 
+The models developed and shared as part of this repository should be used with
+caution.
+While they have been evaluated on held-out audio data, great care should be
+taken when using the model outputs for any form of biodiversity assessment.
+Your data may differ, and as a result it is very strongly recommended that you
+validate the model first using data with known species to ensure that the
+outputs can be trusted.
+If you train a model, make the best effort to be transparent about its training
+and evaluation data, and inform downstream users about its limitations.
 
 ## FAQ
-For more information please consult our [FAQ](faq.md).
 
+For more information please consult our [FAQ](docs/source/faq.md).
 
 ## Reference
-If you find our work useful in your research please consider citing our paper which you can find [here](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1):
+
+If you find our work useful in your research, please consider citing our paper,
+which you can find
+[here](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1):
+
 ```
 @article{batdetect2_2022,
     title     = {Towards a General Approach for Bat Echolocation Detection and Classification},
-    author    = {Mac Aodha, Oisin and  Mart\'{i}nez Balvanera, Santiago and  Damstra, Elise and  Cooke, Martyn and  Eichinski, Philip and  Browning, Ella and  Barataudm, Michel and  Boughey, Katherine and  Coles, Roger and  Giacomini, Giada and MacSwiney G., M. Cristina and  K. Obrist, Martin and Parsons, Stuart and  Sattler, Thomas and  Jones, Kate E.},
+    author    = {Mac Aodha, Oisin and  Mart\'{i}nez Balvanera, Santiago and  Damstra, Elise and  Cooke, Martyn and  Eichinski, Philip and  Browning, Ella and  Barataud, Michel and  Boughey, Katherine and  Coles, Roger and  Giacomini, Giada and MacSwiney G., M. Cristina and  K. Obrist, Martin and Parsons, Stuart and  Sattler, Thomas and  Jones, Kate E.},
     journal   = {bioRxiv},
     year      = {2022}
 }
 ```
 
 ## Acknowledgements
-Thanks to all the contributors who spent time collecting and annotating audio data.
 
-
-### TODOs
-- [x] Release the code and pretrained model  
-- [ ] Release the datasets and annotations used the experiments in the paper 
-- [ ] Add the scripts used to generate the tables and figures from the paper 
+Thanks to all the contributors who spent time collecting and annotating audio
+data.
