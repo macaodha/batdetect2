@@ -6,14 +6,19 @@ Code for detecting and classifying bat echolocation calls in high-frequency
 audio recordings.
 
 > [!WARNING]
-> `batdetect2` 2.0.1 is out.
+> `batdetect2` 2.0.0b1 is out.
+> This is a beta release and we are gathering user feedback.
+> If you run into issues or have feedback on the new workflows, please use the
+> GitHub issues page to let us know.
+>
 > There are many changes and new recommended workflows.
 > We have left the previous `batdetect2.api` module intact, but if you run
 > into issues or want to upgrade, see the
 > [migration guide](docs/source/legacy/migration-guide.md) in the docs site.
 >
 > This update also ships with a refreshed default model.
-> It was trained in the same way and on the same data as before, but you should still expect small output differences in some cases.
+> It was trained in the same way and on the same data as before, but you should
+> still expect small output differences in some cases.
 
 ## What is BatDetect2
 
@@ -31,6 +36,10 @@ You can use the tool from the command line (terminal) or from Python as needed.
 
 We have [extensive documentation](docs/source/index.md) on how to use
 `batdetect2`.
+
+The docs site is still being built and will be live soon.
+If you want a quick peek for now, see the `docs/` folder in this repository.
+
 See our [getting started](docs/source/getting_started.md) guide and then jump
 into any of our tutorials:
 
