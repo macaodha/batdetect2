@@ -9,7 +9,7 @@
 project = "batdetect2"
 copyright = "2025, Oisin Mac Aodha, Santiago Martinez Balvanera"
 author = "Oisin Mac Aodha, Santiago Martinez Balvanera"
-release = "1.1.1"
+release = "2.0.0b1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

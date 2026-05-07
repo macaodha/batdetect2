@@ -38,7 +38,7 @@ jobs:
             uv.lock
 
       - name: Install dependencies
-        run: just install-dev
+        run: uv sync --all-extras --all-groups
 
       - name: Build distributions
         run: just build-dist

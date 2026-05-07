@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from batdetect2.api_v2 import BatDetect2API
 
 __all__ = ["BatDetect2API", "__version__"]
-__version__ = "1.1.1"
+__version__ = "2.0.0b1"
 
 logger.disable("batdetect2")
 
