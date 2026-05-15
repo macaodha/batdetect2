@@ -2,9 +2,7 @@ import torch
 from loguru import logger
 
 from batdetect2.models.types import ModelOutput
-from batdetect2.postprocess.config import (
-    PostprocessConfig,
-)
+from batdetect2.postprocess.config import PostprocessConfig
 from batdetect2.postprocess.extraction import extract_detection_peaks
 from batdetect2.postprocess.nms import NMS_KERNEL_SIZE, non_max_suppression
 from batdetect2.postprocess.types import (
