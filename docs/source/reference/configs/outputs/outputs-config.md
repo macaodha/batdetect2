@@ -38,4 +38,4 @@ If no outputs config is provided, the CLI still uses its command defaults.
 - Output transforms:
   {doc}`output-transforms`
 - Save predictions in different output formats:
-  {doc}`../how_to/save-predictions-in-different-output-formats`
+  {doc}`../../../how_to/inference/save-predictions-in-different-output-formats`

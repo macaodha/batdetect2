@@ -101,12 +101,12 @@ api = BatDetect2API.from_checkpoint(
 ## Related pages
 
 - Run inference on a folder:
-  {doc}`../tutorials/run-inference-on-folder`
+  {doc}`../../tutorials/run-inference-on-folder`
 - `BatDetect2API` reference:
-  {doc}`../reference/api`
+  {doc}`../../reference/api`
 - Process command reference:
-  {doc}`../reference/cli/predict`
+  {doc}`../../reference/cli/predict`
 - Train a custom model:
-  {doc}`../tutorials/train-a-custom-model`
+  {doc}`../../tutorials/train-a-custom-model`
 - Fine-tune from a checkpoint:
-  {doc}`fine-tune-from-a-checkpoint`
+  {doc}`../training/fine-tune-from-a-checkpoint`

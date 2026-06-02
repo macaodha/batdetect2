@@ -25,8 +25,8 @@ For more detail on the underlying approach, see the pre-print:
 [Towards a General Approach for Bat Echolocation Detection and Classification](https://www.biorxiv.org/content/10.1101/2022.12.14.520490v1)
 
 ```{warning}
-Treat outputs as model predictions, not ground truth.
-Always validate on reviewed local data before using results for ecological inference.
+Model outputs are predictions, not ground truth, and may be incorrect in subtle or significant ways.
+We strongly encourage validating results on reviewed local data before using them for downstream analyses.
 ```
 
 ## What can I do with it?

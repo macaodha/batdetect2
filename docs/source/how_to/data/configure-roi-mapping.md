@@ -52,6 +52,9 @@ roi:
 
 ## Related pages
 
-- Target definitions: {doc}`configure-target-definitions`
-- Class definitions: {doc}`define-target-classes`
-- Target encoding overview: {doc}`../explanation/target-encoding-and-decoding`
+- Target definitions:
+  {doc}`configure-target-definitions`
+- Class definitions:
+  {doc}`define-target-classes`
+- Target encoding overview:
+  {doc}`../../explanation/target-encoding-and-decoding`

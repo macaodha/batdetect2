@@ -30,8 +30,8 @@ Example files live under `example_data/configs/`, including
 ## Related pages
 
 - Preprocessing config:
-  {doc}`preprocessing-config`
+  {doc}`../data/preprocessing-config`
 - Postprocess config:
-  {doc}`postprocess-config`
+  {doc}`../data/postprocess-config`
 - Train command reference:
-  {doc}`cli/train`
+  {doc}`../../cli/train`

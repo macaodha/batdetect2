@@ -43,8 +43,8 @@ Example files live under `example_data/configs/`, including
 ## Related pages
 
 - Evaluation config:
-  {doc}`evaluation-config`
+  {doc}`../evaluation/evaluation-config`
 - Train command reference:
-  {doc}`cli/train`
+  {doc}`../../cli/train`
 - Fine-tune from a checkpoint:
-  {doc}`../how_to/fine-tune-from-a-checkpoint`
+  {doc}`../../../how_to/training/fine-tune-from-a-checkpoint`

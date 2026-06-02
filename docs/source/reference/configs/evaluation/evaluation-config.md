@@ -1,6 +1,7 @@
 # Evaluation config reference
 
-`EvaluationConfig` defines which evaluation tasks run and which plots they generate.
+`EvaluationConfig` defines which evaluation tasks run and which plots they
+generate.
 
 Defined in `batdetect2.evaluate.config`.
 
@@ -41,6 +42,9 @@ The default evaluation config starts with:
 
 ## Related pages
 
-- Choose and configure evaluation tasks: {doc}`../how_to/choose-and-configure-evaluation-tasks`
-- Evaluation concepts: {doc}`../explanation/evaluation-concepts-and-matching`
-- Evaluate CLI reference: {doc}`cli/evaluate`
+- Choose and configure evaluation tasks:
+  {doc}`../../../how_to/evaluation/choose-and-configure-evaluation-tasks`
+- Evaluation concepts:
+  {doc}`../../../explanation/evaluation-concepts-and-matching`
+- Evaluate CLI reference:
+  {doc}`../../cli/evaluate`

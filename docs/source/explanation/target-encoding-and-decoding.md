@@ -11,8 +11,8 @@ At training time, the target system:
 2. assigns a classification label (or none for non-specific class matches),
 3. maps event geometry into position and size targets.
 
-This behaviour is configured through `TargetConfig`,
-`TargetClassConfig`, and ROI mapper settings.
+This behaviour is configured through `TargetConfig`, `TargetClassConfig`, and
+ROI mapper settings.
 
 ## Decoding path (model outputs -> tags and geometry)
 
@@ -24,7 +24,8 @@ annotations.
 
 ## Why this matters
 
-Target definitions are not just metadata. They directly shape:
+Target definitions are not just metadata.
+They directly shape:
 
 - what events are treated as positive examples,
 - which class names the model learns,
@@ -34,7 +35,11 @@ Small changes here can alter both training outcomes and prediction semantics.
 
 ## Related pages
 
-- Configure detection target logic: {doc}`../how_to/configure-target-definitions`
-- Configure class mapping: {doc}`../how_to/define-target-classes`
-- Configure ROI mapping: {doc}`../how_to/configure-roi-mapping`
-- Target config reference: {doc}`../reference/targets-config-workflow`
+- Configure detection target logic:
+  {doc}`../how_to/data/configure-target-definitions`
+- Configure class mapping:
+  {doc}`../how_to/data/define-target-classes`
+- Configure ROI mapping:
+  {doc}`../how_to/data/configure-roi-mapping`
+- Target config reference:
+  {doc}`../reference/configs/data/targets-config-workflow`

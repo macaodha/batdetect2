@@ -6,8 +6,9 @@ performance.
 ## Why consistency matters
 
 The detector is trained on spectrograms produced by a specific preprocessing
-pipeline. If inference uses different settings, the model can see a shifted
-input distribution and performance may drop.
+pipeline.
+If inference uses different settings, the model can see a shifted input
+distribution and performance may drop.
 
 Typical mismatch sources:
 
@@ -30,7 +31,8 @@ re-validate on reviewed local data.
 ## Related pages
 
 - Configure audio preprocessing:
-  {doc}`../how_to/configure-audio-preprocessing`
+  {doc}`../how_to/data/configure-audio-preprocessing`
 - Configure spectrogram preprocessing:
-  {doc}`../how_to/configure-spectrogram-preprocessing`
-- Preprocessing config reference: {doc}`../reference/preprocessing-config`
+  {doc}`../how_to/data/configure-spectrogram-preprocessing`
+- Preprocessing config reference:
+  {doc}`../reference/configs/data/preprocessing-config`

@@ -5,7 +5,8 @@ including exports from Whombat.
 
 ## 1) Add an AOEF source entry
 
-In your dataset config, add a source with `format: aoef`.
+In your dataset config, add a source with `format:
+aoef`.
 
 ```yaml
 sources:
@@ -49,5 +50,7 @@ batdetect2 data summary path/to/dataset.yaml
 
 ## 4) Continue to training or evaluation
 
-- For training: {doc}`../tutorials/train-a-custom-model`
-- For field-level reference: {doc}`../reference/data-sources`
+- For training:
+  {doc}`../../tutorials/train-a-custom-model`
+- For field-level reference:
+  {doc}`../../reference/configs/data/data-sources`

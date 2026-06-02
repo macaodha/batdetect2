@@ -34,6 +34,6 @@ Defined in `batdetect2.api_v2`.
 - Python tutorial:
   {doc}`../tutorials/integrate-with-a-python-pipeline`
 - Outputs config reference:
-  {doc}`outputs-config`
+  {doc}`configs/outputs/outputs-config`
 - Output formats reference:
-  {doc}`output-formats`
+  {doc}`configs/outputs/output-formats`

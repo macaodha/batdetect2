@@ -33,8 +33,8 @@ Prefer `batdetect2 process directory` for new workflows.
 ## Related pages
 
 - {doc}`../../tutorials/run-inference-on-folder`
-- {doc}`../../how_to/run-batch-predictions`
-- {doc}`../../how_to/tune-detection-threshold`
+- {doc}`../../how_to/inference/run-batch-predictions`
+- {doc}`../../how_to/inference/tune-detection-threshold`
 - {doc}`../configs`
 
 ```{toctree}

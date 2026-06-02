@@ -55,5 +55,7 @@ Large mismatches can degrade model performance.
 
 ## Related pages
 
-- Why consistency matters: {doc}`../explanation/preprocessing-consistency`
-- Preprocessing config reference: {doc}`../reference/preprocessing-config`
+- Why consistency matters:
+  {doc}`../../explanation/preprocessing-consistency`
+- Preprocessing config reference:
+  {doc}`../../reference/configs/data/preprocessing-config`

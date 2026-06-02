@@ -1,6 +1,7 @@
 # Inference config reference
 
-`InferenceConfig` controls how files are clipped and batched during prediction-time workflows.
+`InferenceConfig` controls how files are clipped and batched during
+prediction-time workflows.
 
 Defined in `batdetect2.inference.config`.
 
@@ -37,5 +38,7 @@ Override `InferenceConfig` when:
 
 ## Related pages
 
-- Tune inference clipping: {doc}`../how_to/tune-inference-clipping`
-- Predict CLI reference: {doc}`cli/predict`
+- Tune inference clipping:
+  {doc}`../../../how_to/inference/tune-inference-clipping`
+- Predict CLI reference:
+  {doc}`../../cli/predict`

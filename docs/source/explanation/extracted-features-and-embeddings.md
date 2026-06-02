@@ -38,6 +38,6 @@ These are related ideas, but not necessarily one-to-one replacements.
 ## Related pages
 
 - Inspect detection features in Python:
-  {doc}`../how_to/inspect-detection-features-in-python`
+  {doc}`../how_to/analysis/inspect-detection-features-in-python`
 - Legacy migration guide:
   {doc}`../legacy/migration-guide`

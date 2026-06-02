@@ -68,4 +68,4 @@ recording paths before inference.
 - Tune inference clipping:
   {doc}`tune-inference-clipping`
 - Process command reference:
-  {doc}`../reference/cli/predict`
+  {doc}`../../reference/cli/predict`

@@ -18,14 +18,20 @@ Defined in `batdetect2.postprocess.config`.
 
 ## Defaults
 
-- `detection_threshold`: `0.01`
-- `classification_threshold`: `0.1`
-- `top_k_per_sec`: `100`
+- `detection_threshold`:
+  `0.01`
+- `classification_threshold`:
+  `0.1`
+- `top_k_per_sec`:
+  `100`
 
 `nms_kernel_size` defaults to the library constant used by the NMS module.
 
 ## Related pages
 
-- Threshold behaviour: {doc}`../explanation/postprocessing-and-thresholds`
-- Threshold tuning workflow: {doc}`../how_to/tune-detection-threshold`
-- CLI predict options: {doc}`cli/predict`
+- Threshold behaviour:
+  {doc}`../../../explanation/postprocessing-and-thresholds`
+- Threshold tuning workflow:
+  {doc}`../../../how_to/inference/tune-detection-threshold`
+- CLI predict options:
+  {doc}`../../cli/predict`

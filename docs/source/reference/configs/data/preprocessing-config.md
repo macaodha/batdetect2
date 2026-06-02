@@ -8,9 +8,12 @@ Defined in `batdetect2.audio.loader`.
 
 Fields:
 
-- `samplerate` (int): target audio sample rate in Hz.
-- `resample.enabled` (bool): whether to resample loaded audio.
-- `resample.method` (`poly` or `fourier`): resampling method.
+- `samplerate` (int):
+  target audio sample rate in Hz.
+- `resample.enabled` (bool):
+  whether to resample loaded audio.
+- `resample.method` (`poly` or `fourier`):
+  resampling method.
 
 ## Model preprocessing config (`PreprocessingConfig`)
 
@@ -18,11 +21,16 @@ Defined in `batdetect2.preprocess.config`.
 
 Top-level fields:
 
-- `audio_transforms`: ordered waveform transforms.
-- `stft`: STFT parameters.
-- `frequencies`: spectrogram frequency range.
-- `spectrogram_transforms`: ordered spectrogram transforms.
-- `size`: final resize settings.
+- `audio_transforms`:
+  ordered waveform transforms.
+- `stft`:
+  STFT parameters.
+- `frequencies`:
+  spectrogram frequency range.
+- `spectrogram_transforms`:
+  ordered spectrogram transforms.
+- `size`:
+  final resize settings.
 
 ### `audio_transforms` built-ins
 
@@ -44,7 +52,8 @@ Top-level fields:
 ### `spectrogram_transforms` built-ins
 
 - `pcen`
-- `scale_amplitude` (`scale: db|power`)
+- `scale_amplitude` (`scale:
+  db|power`)
 - `spectral_mean_subtraction`
 - `peak_normalize`
 
@@ -55,7 +64,9 @@ Top-level fields:
 
 ## Related pages
 
-- Audio preprocessing how-to: {doc}`../how_to/configure-audio-preprocessing`
+- Audio preprocessing how-to:
+  {doc}`../../../how_to/data/configure-audio-preprocessing`
 - Spectrogram preprocessing how-to:
-  {doc}`../how_to/configure-spectrogram-preprocessing`
-- Why consistency matters: {doc}`../explanation/preprocessing-consistency`
+  {doc}`../../../how_to/data/configure-spectrogram-preprocessing`
+- Why consistency matters:
+  {doc}`../../../explanation/preprocessing-consistency`

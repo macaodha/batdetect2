@@ -1,8 +1,9 @@
 # Postprocessing and thresholds
 
 After the detector runs on a spectrogram, the model output is still a set of
-dense prediction tensors. Postprocessing turns that into a final list of call
-detections with positions, sizes, and class scores.
+dense prediction tensors.
+Postprocessing turns that into a final list of call detections with positions,
+sizes, and class scores.
 
 ## What postprocessing does
 
@@ -27,9 +28,10 @@ You can tune this behavior per run without retraining the model.
 
 ## Two common threshold controls
 
-- `detection_threshold`: minimum score required to keep a detection.
-- `classification_threshold`: minimum class score used when assigning class
-  labels.
+- `detection_threshold`:
+  minimum score required to keep a detection.
+- `classification_threshold`:
+  minimum class score used when assigning class labels.
 
 Both settings shape the final output and should be validated on reviewed local
 data.
@@ -39,5 +41,7 @@ data.
 Tune thresholds on a representative subset first, then lock settings for the
 full analysis run.
 
-- How-to: {doc}`../how_to/tune-detection-threshold`
-- CLI reference: {doc}`../reference/cli/predict`
+- How-to:
+  {doc}`../how_to/inference/tune-detection-threshold`
+- CLI reference:
+  {doc}`../reference/cli/predict`

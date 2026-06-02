@@ -53,6 +53,9 @@ selection logic keeps the events you expect.
 
 ## Related pages
 
-- Class mapping: {doc}`define-target-classes`
-- ROI mapping: {doc}`configure-roi-mapping`
-- Targets reference: {doc}`../reference/targets-config-workflow`
+- Class mapping:
+  {doc}`define-target-classes`
+- ROI mapping:
+  {doc}`configure-roi-mapping`
+- Targets reference:
+  {doc}`../../reference/configs/data/targets-config-workflow`

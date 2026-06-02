@@ -6,25 +6,15 @@ tutorial.
 Use this section when you already know the basic workflow and want help with one
 specific task.
 
+The guides are grouped by topic so you can jump straight to the part of the
+workflow you are working on.
+
 ```{toctree}
 :maxdepth: 1
 
-choose-a-model
-choose-an-inference-input-mode
-run-batch-predictions
-tune-inference-clipping
-tune-detection-threshold
-inspect-class-scores-in-python
-inspect-detection-features-in-python
-save-predictions-in-different-output-formats
-fine-tune-from-a-checkpoint
-choose-and-configure-evaluation-tasks
-interpret-evaluation-outputs
-configure-aoef-dataset
-import-legacy-batdetect2-annotations
-configure-audio-preprocessing
-configure-spectrogram-preprocessing
-configure-target-definitions
-define-target-classes
-configure-roi-mapping
+inference-and-outputs
+analysis-in-python
+training-and-fine-tuning
+evaluation
+data-and-targets
 ```

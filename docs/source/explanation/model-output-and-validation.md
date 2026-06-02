@@ -1,8 +1,8 @@
 # Model output and validation
 
-BatDetect2 outputs model predictions, not ground truth. The same configuration
-can behave differently across recording conditions, species compositions, and
-acoustic environments.
+BatDetect2 outputs model predictions, not ground truth.
+The same configuration can behave differently across recording conditions,
+species compositions, and acoustic environments.
 
 ## Why threshold choice matters
 
@@ -10,8 +10,9 @@ acoustic environments.
   positives.
 - Higher thresholds reduce false positives but can miss faint calls.
 
-No threshold is universally correct. The right setting depends on your survey
-objectives and tolerance for false positives versus missed detections.
+No threshold is universally correct.
+The right setting depends on your survey objectives and tolerance for false
+positives versus missed detections.
 
 ## Why local validation is required
 
@@ -26,4 +27,4 @@ Recommended validation checks:
 3. Repeat checks across sites, seasons, and recorder setups.
 
 For practical threshold workflows, see
-{doc}`../how_to/tune-detection-threshold`.
+{doc}`../how_to/inference/tune-detection-threshold`.

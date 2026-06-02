@@ -41,7 +41,8 @@ For an example, see `example_data/dataset.yaml`.
 
 If you need help creating the dataset config, follow the dataset section in
 {doc}`train-a-custom-model`.
-For more detail on dataset source formats, see {doc}`../reference/data-sources`.
+For more detail on dataset source formats, see
+{doc}`../reference/configs/data/data-sources`.
 
 Use a dataset that was not used for training or tuning.
 
@@ -56,7 +57,7 @@ batdetect2 evaluate \
 
 If you do not pass `--model`, BatDetect2 uses the built-in default UK model.
 If you want to choose a different checkpoint, alias, or Hugging Face model, see
-{doc}`../how_to/choose-a-model`.
+{doc}`../how_to/inference/choose-a-model`.
 
 If you want to save the results somewhere else, add `--output-dir`:
 
@@ -121,17 +122,17 @@ So, depending on your evaluation config, you may see files such as:
 - saved prediction files.
 
 If you want to control which tasks run and which plots are generated, see
-{doc}`../reference/evaluation-config` and
-{doc}`../how_to/choose-and-configure-evaluation-tasks`.
+{doc}`../reference/configs/evaluation/evaluation-config` and
+{doc}`../how_to/evaluation/choose-and-configure-evaluation-tasks`.
 
 ## Common next steps
 
 - Choose a different model:
-  {doc}`../how_to/choose-a-model`
+  {doc}`../how_to/inference/choose-a-model`
 - Configure evaluation tasks:
-  {doc}`../how_to/choose-and-configure-evaluation-tasks`
+  {doc}`../how_to/evaluation/choose-and-configure-evaluation-tasks`
 - Interpret evaluation artifacts:
-  {doc}`../how_to/interpret-evaluation-outputs`
+  {doc}`../how_to/evaluation/interpret-evaluation-outputs`
 - Learn the evaluation concepts:
   {doc}`../explanation/evaluation-concepts-and-matching`
 - Check full evaluate options:

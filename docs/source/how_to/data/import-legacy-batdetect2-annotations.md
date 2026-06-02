@@ -4,12 +4,15 @@ Use this guide if your annotations are in older batdetect2 JSON formats.
 
 Two legacy formats are supported:
 
-- `batdetect2`: one annotation JSON file per recording
-- `batdetect2_file`: one merged JSON file for many recordings
+- `batdetect2`:
+  one annotation JSON file per recording
+- `batdetect2_file`:
+  one merged JSON file for many recordings
 
 ## 1) Choose the correct source format
 
-Directory-based annotations (`format: batdetect2`):
+Directory-based annotations (`format:
+batdetect2`):
 
 ```yaml
 sources:
@@ -19,7 +22,8 @@ sources:
     annotations_dir: /path/to/annotation_json_dir
 ```
 
-Merged annotation file (`format: batdetect2_file`):
+Merged annotation file (`format:
+batdetect2_file`):
 
 ```yaml
 sources:
@@ -61,6 +65,9 @@ batdetect2 data convert path/to/dataset.yaml --output path/to/output.json
 
 ## 4) Continue with current workflows
 
-- Run predictions: {doc}`run-batch-predictions`
-- Train on imported data: {doc}`../tutorials/train-a-custom-model`
-- Field-level reference: {doc}`../reference/data-sources`
+- Run predictions:
+  {doc}`../inference/run-batch-predictions`
+- Train on imported data:
+  {doc}`../../tutorials/train-a-custom-model`
+- Field-level reference:
+  {doc}`../../reference/configs/data/data-sources`

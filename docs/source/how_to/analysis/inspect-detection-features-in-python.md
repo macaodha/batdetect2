@@ -1,6 +1,7 @@
 # How to inspect detection features in Python
 
-Use this guide when you want the per-detection feature vectors exposed by the current API.
+Use this guide when you want the per-detection feature vectors exposed by the
+current API.
 
 ## Get the feature vector for one detection
 
@@ -34,16 +35,21 @@ They can be useful for:
 
 They do not replace validation.
 
-They also do not automatically have a one-to-one interpretation as ecological variables.
+They also do not automatically have a one-to-one interpretation as ecological
+variables.
 
 ## Save predictions with features included
 
-If you need features on disk, use an output format that supports them, such as `raw` or `parquet`, and keep feature inclusion enabled.
+If you need features on disk, use an output format that supports them, such as
+`raw` or `parquet`, and keep feature inclusion enabled.
 
-See {doc}`save-predictions-in-different-output-formats`.
+See {doc}`../inference/save-predictions-in-different-output-formats`.
 
 ## Related pages
 
-- Understanding features and embeddings: {doc}`../explanation/extracted-features-and-embeddings`
-- Output formats reference: {doc}`../reference/output-formats`
-- API reference: {doc}`../reference/api`
+- Understanding features and embeddings:
+  {doc}`../../explanation/extracted-features-and-embeddings`
+- Output formats reference:
+  {doc}`../../reference/configs/outputs/output-formats`
+- API reference:
+  {doc}`../../reference/api`

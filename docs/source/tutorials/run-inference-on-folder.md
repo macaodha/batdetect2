@@ -1,10 +1,13 @@
 # Run BatDetect2 on a folder of audio files
 
-This tutorial shows how to run BatDetect2 on a folder of recordings from the command line.
+This tutorial shows how to run BatDetect2 on a folder of recordings from the
+command line.
 
-Use it when you want a first pass over a folder of audio recordings and want to see what BatDetect2 finds.
+Use it when you want a first pass over a folder of audio recordings and want to
+see what BatDetect2 finds.
 
-If you want to follow the tutorial exactly, you can use the example recordings that come with the repository.
+If you want to follow the tutorial exactly, you can use the example recordings
+that come with the repository.
 
 ## Before you start
 
@@ -18,7 +21,8 @@ If you have not installed BatDetect2 yet, start with {doc}`../getting_started`.
 
 ## Optional: use the repository example files
 
-If you want to follow the steps with the same paths shown here, clone the repository and move into it:
+If you want to follow the steps with the same paths shown here, clone the
+repository and move into it:
 
 ```bash
 git clone https://github.com/macaodha/batdetect2.git
@@ -57,7 +61,8 @@ project/
 If `outputs/` does not exist yet, that is fine.
 BatDetect2 can create it.
 
-If you are using the repository example files, your layout already looks like this:
+If you are using the repository example files, your layout already looks like
+this:
 
 ```text
 batdetect2/
@@ -95,7 +100,8 @@ What this does:
 You do not need to choose a model for this first run.
 If you do nothing, BatDetect2 uses the built-in default UK model.
 
-If you want to use a different model later, see {doc}`../how_to/choose-a-model`.
+If you want to use a different model later, see
+{doc}`../how_to/inference/choose-a-model`.
 
 ## 3. Check the output files
 
@@ -104,7 +110,8 @@ After the command finishes, look in your output folder.
 By default, the CLI writes predictions in the `batdetect2` output format.
 This is a JSON-based format used for BatDetect2-style outputs.
 
-With the default settings, you will usually see one `.json` file and one `_detections.csv` file per recording.
+With the default settings, you will usually see one `.json` file and one
+`_detections.csv` file per recording.
 
 For the repository example run, that means files like:
 
@@ -141,16 +148,20 @@ One of the JSON files will look roughly like this:
 
 Very briefly:
 
-- `annotated: false` means this is a prediction file, not a reviewed annotation file.
+- `annotated:
+  false` means this is a prediction file, not a reviewed annotation file.
 - `annotation` holds the list of detections.
-- Each detection includes a predicted class, detection score, class score, time bounds, and frequency bounds.
+- Each detection includes a predicted class, detection score, class score, time
+  bounds, and frequency bounds.
 
 For more detail, see {doc}`../explanation/interpreting-formatted-outputs`.
-If you want to save results in another format, see {doc}`../how_to/save-predictions-in-different-output-formats`.
+If you want to save results in another format, see
+{doc}`../how_to/inference/save-predictions-in-different-output-formats`.
 
 ## 4. Run the same folder with a higher threshold
 
-If you want, you can also run the same folder again with a higher detection threshold and save that run in a separate output folder.
+If you want, you can also run the same folder again with a higher detection
+threshold and save that run in a separate output folder.
 
 ```bash
 batdetect2 process directory \
@@ -206,12 +217,18 @@ batdetect2 process file_list \
     example_outputs/selected_outputs
 ```
 
-This is useful when your recordings are spread across folders, or when you only want to run a chosen subset.
+This is useful when your recordings are spread across folders, or when you only
+want to run a chosen subset.
 
 ## Common next steps
 
-- If your recordings are not all in one folder, or you want to compare input modes, see {doc}`../how_to/choose-an-inference-input-mode`.
-- If you want to save results in another format, see {doc}`../how_to/save-predictions-in-different-output-formats`.
-- If you want to choose a different model, see {doc}`../how_to/choose-a-model`.
-- If you already write code and want more control from Python, see {doc}`integrate-with-a-python-pipeline`.
-- If you want the full command reference, including `--model`, see {doc}`../reference/cli/predict`.
+- If your recordings are not all in one folder, or you want to compare input
+  modes, see {doc}`../how_to/inference/choose-an-inference-input-mode`.
+- If you want to save results in another format, see
+  {doc}`../how_to/inference/save-predictions-in-different-output-formats`.
+- If you want to choose a different model, see
+  {doc}`../how_to/inference/choose-a-model`.
+- If you already write code and want more control from Python, see
+  {doc}`integrate-with-a-python-pipeline`.
+- If you want the full command reference, including `--model`, see
+  {doc}`../reference/cli/predict`.

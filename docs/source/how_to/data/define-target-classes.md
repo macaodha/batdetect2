@@ -1,7 +1,6 @@
 # How to define target classes
 
-Use this guide to map annotations to classification labels used during
-training.
+Use this guide to map annotations to classification labels used during training.
 
 ## 1) Add classification target entries
 
@@ -54,6 +53,9 @@ classification_targets:
 
 ## Related pages
 
-- Detection-target filtering: {doc}`configure-target-definitions`
-- ROI mapping: {doc}`configure-roi-mapping`
-- Targets config reference: {doc}`../reference/targets-config-workflow`
+- Detection-target filtering:
+  {doc}`configure-target-definitions`
+- ROI mapping:
+  {doc}`configure-roi-mapping`
+- Targets config reference:
+  {doc}`../../reference/configs/data/targets-config-workflow`

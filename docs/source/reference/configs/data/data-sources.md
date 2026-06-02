@@ -24,16 +24,19 @@ Optional fields:
 - `description`
 - `filter`
 
-`filter` is only used when `annotations_path` points to an
-`AnnotationProject`.
+`filter` is only used when `annotations_path` points to an `AnnotationProject`.
 
 AOEF filter options:
 
-- `only_completed` (default: `true`)
-- `only_verified` (default: `false`)
-- `exclude_issues` (default: `true`)
+- `only_completed` (default:
+  `true`)
+- `only_verified` (default:
+  `false`)
+- `exclude_issues` (default:
+  `true`)
 
-Use `filter: null` to disable project filtering.
+Use `filter:
+null` to disable project filtering.
 
 ## Legacy per-file (`format: batdetect2`)
 
@@ -65,12 +68,15 @@ Optional fields:
 
 Legacy filter options:
 
-- `only_annotated` (default: `true`)
-- `exclude_issues` (default: `true`)
+- `only_annotated` (default:
+  `true`)
+- `exclude_issues` (default:
+  `true`)
 
-Use `filter: null` to disable filtering.
+Use `filter:
+null` to disable filtering.
 
 ## Related guides
 
-- {doc}`../how_to/configure-aoef-dataset`
-- {doc}`../how_to/import-legacy-batdetect2-annotations`
+- {doc}`../../../how_to/data/configure-aoef-dataset`
+- {doc}`../../../how_to/data/import-legacy-batdetect2-annotations`

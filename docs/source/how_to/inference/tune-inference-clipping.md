@@ -66,8 +66,8 @@ Check a reviewed subset before applying clipping changes to a full project.
 ## Related pages
 
 - Inference config reference:
-  {doc}`../reference/inference-config`
+  {doc}`../../reference/configs/inference/inference-config`
 - Run batch predictions:
   {doc}`run-batch-predictions`
 - Understanding the pipeline:
-  {doc}`../explanation/pipeline-overview`
+  {doc}`../../explanation/pipeline-overview`

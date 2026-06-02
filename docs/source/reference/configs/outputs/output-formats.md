@@ -70,6 +70,6 @@ It can also write legacy `_cnn_features.csv` sidecars when
 - Outputs config:
   {doc}`outputs-config`
 - Save predictions in different output formats:
-  {doc}`../how_to/save-predictions-in-different-output-formats`
+  {doc}`../../../how_to/inference/save-predictions-in-different-output-formats`
 - Understanding formatted outputs:
-  {doc}`../explanation/interpreting-formatted-outputs`
+  {doc}`../../../explanation/interpreting-formatted-outputs`

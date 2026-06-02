@@ -33,5 +33,7 @@ Built-in examples include:
 
 ## Related pages
 
-- Outputs config: {doc}`outputs-config`
-- Understanding outputs: {doc}`../explanation/interpreting-formatted-outputs`
+- Outputs config:
+  {doc}`outputs-config`
+- Understanding outputs:
+  {doc}`../../../explanation/interpreting-formatted-outputs`

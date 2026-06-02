@@ -63,4 +63,4 @@ before full-batch runs.
 - Spectrogram settings:
   {doc}`configure-spectrogram-preprocessing`
 - Preprocessing config reference:
-  {doc}`../reference/preprocessing-config`
+  {doc}`../../reference/configs/data/preprocessing-config`
