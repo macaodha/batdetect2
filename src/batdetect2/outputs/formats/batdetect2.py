@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal, Sequence, TypedDict, cast
 
@@ -93,8 +94,11 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
     def format(
         self, predictions: Sequence[ClipDetections]
     ) -> List[FileAnnotation]:
+        merged_predictions = merge_clip_detections(predictions)
+
         return [
-            self.format_prediction(prediction) for prediction in predictions
+            self.format_prediction(prediction)
+            for prediction in merged_predictions
         ]
 
     def save(
@@ -349,3 +353,48 @@ class BatDetect2Formatter(OutputFormatterProtocol[FileAnnotation]):
             preserve_audio_tree=config.preserve_audio_tree,
             include_file_path=config.include_file_path,
         )
+
+
+def merge_clip_detections(
+    predictions: Sequence[ClipDetections],
+) -> List[ClipDetections]:
+    """Merge clip predictions into one recording-level prediction.
+
+    This intentionally discards the original clip boundaries because the
+    legacy BatDetect2 file format only stores recording-level detections.
+    """
+    rec_to_clips = defaultdict(list)
+    rec_mapping = {}
+
+    for prediction in predictions:
+        recording = prediction.clip.recording
+        key = recording.path
+        rec_to_clips[key].append(prediction)
+        rec_mapping[key] = recording
+
+    merged_predictions = []
+    for rec_path, clips in rec_to_clips.items():
+        recording = rec_mapping[rec_path]
+        merged_predictions.append(
+            ClipDetections(
+                clip=data.Clip(
+                    recording=recording,
+                    start_time=0,
+                    end_time=recording.duration,
+                ),
+                detections=sorted(
+                    [
+                        detection
+                        for clip_detections in clips
+                        for detection in clip_detections.detections
+                    ],
+                    key=lambda detection: (
+                        detection.detection_score,
+                        *compute_bounds(detection.geometry),
+                    ),
+                    reverse=True,
+                ),
+            )
+        )
+
+    return merged_predictions
