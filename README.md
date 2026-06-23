@@ -6,7 +6,7 @@ Code for detecting and classifying bat echolocation calls in high-frequency
 audio recordings.
 
 > [!WARNING]
-> `batdetect2` 2.0.0b1 is out.
+> `batdetect2` 2.0.0b2 is out.
 > This is a beta release and we are gathering user feedback.
 > If you run into issues or have feedback on the new workflows, please use the
 > GitHub issues page to let us know.
@@ -68,13 +68,13 @@ can try the following:
 ### Installing BatDetect2
 
 > [!NOTE]
-> `2.0.0b1` is a pre-release on PyPI.
+> `2.0.0b2` is a pre-release on PyPI.
 > You may need to request it explicitly by version, for example:
 >
 > ```bash
-> uvx --from batdetect2==2.0.0b1 batdetect2
-> uv tool install batdetect2==2.0.0b1
-> pip install batdetect2==2.0.0b1
+> uvx --from batdetect2==2.0.0b2 batdetect2
+> uv tool install batdetect2==2.0.0b2
+> pip install batdetect2==2.0.0b2
 > ```
 
 If you have `uv` installed (if not, we recommend it; follow the instructions
