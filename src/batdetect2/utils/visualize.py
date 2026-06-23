@@ -52,9 +52,9 @@ class InteractivePlotter:
         self.spec_slices = spec_slices
         self.call_info = call_info
         # _, self.labels = np.unique([cc['class'] for cc in call_info], return_inverse=True)
-        self.labels = np.zeros(len(call_info), dtype=np.int)
+        self.labels = np.zeros(len(call_info), dtype=int)
         self.annotated = np.zeros(
-            self.labels.shape[0], dtype=np.int
+            self.labels.shape[0], dtype=int
         )  # can populate this with 1's where we have labels
         self.labels_cols = [
             colors[self.labels[ii]] for ii in range(len(self.labels))
