@@ -6,7 +6,6 @@ from click.testing import CliRunner
 
 from batdetect2.cli import cli
 
-
 BASE_DIR = Path(__file__).parent.parent.parent
 
 
