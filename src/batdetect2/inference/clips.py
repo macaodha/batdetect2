@@ -2,7 +2,9 @@ from typing import List, Sequence
 from uuid import uuid5
 
 import numpy as np
+from loguru import logger
 from soundevent import data
+from soundfile import LibsndfileError
 
 
 def get_clips_from_files(
@@ -16,7 +18,15 @@ def get_clips_from_files(
     clips: List[data.Clip] = []
 
     for path in paths:
-        recording = data.Recording.from_file(path, compute_hash=compute_hash)
+        try:
+            recording = data.Recording.from_file(
+                path,
+                compute_hash=compute_hash,
+            )
+        except LibsndfileError as e:
+            logger.warning(f"Skipping unreadable audio file {path}: {e}")
+            continue
+
         clips.extend(
             get_recording_clips(
                 recording,
