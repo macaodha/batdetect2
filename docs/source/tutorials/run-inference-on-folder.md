@@ -97,6 +97,23 @@ What this does:
 - runs the model on each recording,
 - saves the results in `path/to/outputs`.
 
+```{eval-rst}
+.. admonition:: Save CLI logs to a file
+   :collapsible: closed
+   :class: tip dropdown
+
+   If you want to keep a copy of the CLI logs, add ``--log-file`` before the
+   subcommand:
+
+   .. code-block:: bash
+
+      batdetect2 --log-file path/to/cli.log process directory \
+        path/to/audio \
+        path/to/outputs
+
+   This writes the same CLI logs to ``path/to/cli.log`` and to the terminal.
+```
+
 You do not need to choose a model for this first run.
 If you do nothing, BatDetect2 uses the built-in default UK model.
 

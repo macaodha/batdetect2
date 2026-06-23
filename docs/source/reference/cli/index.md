@@ -17,6 +17,8 @@ for the full option list.
 ## Notes
 
 - Global CLI options are documented in {doc}`base`.
+- Use `--log-file path/to/cli.log` to save CLI logs to a file while still
+  showing them in the terminal.
 - Paths with spaces should be wrapped in quotes.
 - Input audio is expected to be mono.
 - `process` uses the optional `--detection-threshold` override.
