@@ -1,4 +1,6 @@
+import numpy as np
 from matplotlib import axes, patches
+from soundevent.geometry import compute_bounds
 from soundevent.plot import plot_geometry
 
 from batdetect2.evaluate.metrics.detection import ClipEval
@@ -8,13 +10,111 @@ from batdetect2.plotting.clips import (
     plot_clip,
 )
 from batdetect2.plotting.common import create_ax
+from batdetect2.postprocess import ClipDetections, Detection
 
 __all__ = [
-    "plot_clip_detections",
+    "plot_clip_evaluation",
+    "plot_detection",
 ]
 
 
-def plot_clip_detections(
+def plot_detection(
+    detection: Detection,
+    figsize: tuple[int, int] = (10, 10),
+    ax: axes.Axes | None = None,
+    fill: bool = False,
+    linewidth: float = 1.0,
+    linestyle: str = "--",
+    color: str = "red",
+    show_class: bool = True,
+    class_names: list[str] | None = None,
+    fontsize: float | str = "small",
+):
+    ax = create_ax(figsize=figsize, ax=ax)
+
+    plot_geometry(
+        detection.geometry,
+        ax=ax,
+        add_points=False,
+        facecolor="none" if not fill else color,
+        alpha=detection.detection_score,
+        linewidth=linewidth,
+        linestyle=linestyle,
+        color=color,
+    )
+
+    if not show_class:
+        return ax
+
+    start_time, low_freq, _, _ = compute_bounds(detection.geometry)
+
+    top_class = np.argmax(detection.class_scores)
+    score = detection.class_scores[top_class]
+
+    if class_names is not None:
+        class_name = class_names[top_class]
+    else:
+        class_name = f"class {top_class}"
+
+    ax.text(
+        start_time,
+        low_freq,
+        f"{class_name}={score:.2f}",
+        va="top",
+        ha="left",
+        color=color,
+        fontsize=fontsize,
+        alpha=detection.detection_score,
+    )
+    return ax
+
+
+def plot_clip_detection(
+    clip_detections: ClipDetections,
+    figsize: tuple[int, int] = (10, 10),
+    ax: axes.Axes | None = None,
+    audio_loader: AudioLoader | None = None,
+    preprocessor: PreprocessorProtocol | None = None,
+    threshold: float | None = None,
+    spec_cmap: str = "gray",
+    fill: bool = False,
+    linewidth: float = 1.0,
+    linestyle: str = "--",
+    color: str = "red",
+    show_class: bool = True,
+    class_names: list[str] | None = None,
+    fontsize: float | str = "small",
+):
+    ax = create_ax(figsize=figsize, ax=ax)
+
+    plot_clip(
+        clip_detections.clip,
+        audio_loader=audio_loader,
+        preprocessor=preprocessor,
+        ax=ax,
+        spec_cmap=spec_cmap,
+    )
+
+    for detection in clip_detections.detections:
+        if threshold and detection.detection_score < threshold:
+            continue
+
+        ax = plot_detection(
+            detection,
+            ax=ax,
+            class_names=class_names,
+            fontsize=fontsize,
+            fill=fill,
+            linewidth=linewidth,
+            linestyle=linestyle,
+            color=color,
+            show_class=show_class,
+        )
+
+    return ax
+
+
+def plot_clip_evaluation(
     clip_eval: ClipEval,
     figsize: tuple[int, int] = (10, 10),
     ax: axes.Axes | None = None,

@@ -21,7 +21,7 @@ from batdetect2.core import ImportConfig, Registry, add_import_config
 from batdetect2.evaluate.metrics.common import compute_precision_recall
 from batdetect2.evaluate.metrics.detection import ClipEval
 from batdetect2.evaluate.plots.base import BasePlot, BasePlotConfig
-from batdetect2.plotting.detections import plot_clip_detections
+from batdetect2.plotting.detections import plot_clip_evaluation
 from batdetect2.plotting.metrics import plot_pr_curve, plot_roc_curve
 from batdetect2.preprocess import PreprocessingConfig, build_preprocessor
 from batdetect2.preprocess.types import PreprocessorProtocol
@@ -276,7 +276,7 @@ class ExampleDetectionPlot(BasePlot):
             fig = self.create_figure()
             ax = fig.subplots()
 
-            plot_clip_detections(
+            plot_clip_evaluation(
                 clip_eval,
                 ax=ax,
                 audio_loader=self.audio_loader,
