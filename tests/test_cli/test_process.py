@@ -88,3 +88,44 @@ def test_cli_process_directory_merges_clip_outputs_per_recording(
     )
 
     assert actual_annotations == expected_annotations
+
+
+def test_cli_process_directory_skips_corrupted_files(
+    tmp_path: Path,
+    contrib_dir: Path,
+) -> None:
+    recording_path = contrib_dir / "jeff37" / "0166_20240531_223911.wav"
+
+    source_folder = tmp_path / "audio"
+    source_folder.mkdir()
+    shutil.copy2(
+        recording_path,
+        source_folder / "example_audio.wav",
+    )
+
+    corrupted_file = source_folder / "corrupted.wav"
+    corrupted_file.write_text("corrupted")
+
+    destination_folder = tmp_path / "results"
+    destination_folder.mkdir()
+
+    result = CliRunner().invoke(
+        cli,
+        args=[
+            "process",
+            "directory",
+            str(source_folder),
+            str(destination_folder),
+            "--detection-threshold",
+            "0.3",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert destination_folder.exists()
+
+    output_json = destination_folder / "example_audio.wav.json"
+    assert output_json.exists()
+
+    corrupted_file_json = destination_folder / "corrupted.wav.json"
+    assert not corrupted_file_json.exists()
