@@ -50,7 +50,7 @@ __all__ = [
 ]
 
 
-def enable_logging(level: int):
+def enable_logging(level: int, log_file: Path | None = None) -> None:
     logger.remove()
 
     if level == 0:
@@ -61,6 +61,11 @@ def enable_logging(level: int):
         log_level = "DEBUG"
 
     logger.add(sys.stderr, level=log_level)
+
+    if log_file is not None:
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        logger.add(log_file, level=log_level)
+
     logger.enable("batdetect2")
 
 
