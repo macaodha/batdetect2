@@ -49,8 +49,11 @@ into any of our tutorials:
   `docs/source/tutorials/train-a-custom-model.md`
 - Evaluate your model:
   `docs/source/tutorials/evaluate-on-a-test-set.md`
-- Fine-tune a model:
+- Use BatDetect2 from a Python pipeline:
   `docs/source/tutorials/integrate-with-a-python-pipeline.md`
+
+To fine-tune a model from a checkpoint, see
+`docs/source/how_to/training/fine-tune-from-a-checkpoint.md`.
 
 ### Try the model
 

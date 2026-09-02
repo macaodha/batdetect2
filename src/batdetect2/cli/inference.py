@@ -33,7 +33,7 @@ def common_predict_options(func):
         type=str,
         help=(
             "Path to a checkpoint, checkpoint alias, or a Hugging Face "
-            "URI to fine-tune from. Defaults to uk_same"
+            "URI to run inference with. Defaults to uk_same"
         ),
     )
     @click.option(
