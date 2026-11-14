@@ -1,0 +1,45 @@
+name: Export ONNX
+
+# Manually triggered: exports a checkpoint to ONNX, checks it against PyTorch
+# and uploads the model, labels and metadata as a workflow artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint:
+        description: "Checkpoint path or URI (empty: the bundled default model)"
+        required: false
+        default: ""
+      opset:
+        description: "ONNX opset"
+        required: false
+        default: "17"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Export and check
+        env:
+          CHECKPOINT: ${{ inputs.checkpoint }}
+          OPSET: ${{ inputs.opset }}
+        run: |
+          uv run --with onnx --with onnxruntime python .github/scripts/export_onnx.py \
+            --output dist/onnx --opset "$OPSET" ${CHECKPOINT:+--checkpoint "$CHECKPOINT"}
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: batdetect2-onnx
+          path: dist/onnx
